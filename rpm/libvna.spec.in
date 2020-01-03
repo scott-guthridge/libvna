@@ -1,0 +1,57 @@
+Name: @PACKAGE_TARNAME@
+Version: @PACKAGE_VERSION@
+Release: 1%{?dist}
+Summary: Electrical Network Parameter Library
+Group: Applications/Engineering
+License: GPLv3+
+#URL: http://www.rompromity.net/libvna/index.html
+Source: %{name}-%{version}.tar.gz
+BuildRequires: libyaml-devel
+
+%description
+Libvna provides 12-error term (and other) calibration, generalized
+network parameter conversion, and ability to load and store Touchstone
+and native format parameter data for electrical vector network analyzers.
+
+%package	devel
+Summary:	Development files for %{name}
+Group:		Development/Libraries
+#Requires:	%{name}%{?_isa} = %{version}-%{release}
+
+%description devel
+The %{name}-devel package contains libraries, header files and documentation
+for developing applicatinos that use %{name}.
+
+%prep
+%setup -q
+
+%build
+%configure
+make %{?_smp_mflags}
+
+%install
+make DESTDIR=$RPM_BUILD_ROOT install
+find $RPM_BUILD_ROOT -name '*.la' -exec rm -f {} \;
+
+%post   -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
+%clean
+make clean
+
+%files
+%defattr(-,root,root,-)
+%doc README COPYING
+%{_libdir}/*.so.*
+
+%files devel
+%{_docdir}/%{name}/README-EXAMPLES
+%{_docdir}/%{name}/*-example.c
+%{_docdir}/%{name}/*-example.gnuplot
+%{_includedir}/*
+%{_libdir}/*.so
+%{_libdir}/*.a
+%{_mandir}/*/*
+
+%changelog

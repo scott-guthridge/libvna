@@ -1,0 +1,45 @@
+LIBVNA: Vector Network Analyzer Library
+Copyright © 2020 D Scott Guthridge <scott-guthridge@rompromity.net>
+
+Library for electrical vector network analyzers.  The library provides
+functions for doing 12-error parameter (and other) calibration,
+generalized conversions between parameter types, and loading and saving
+network parameter data in Touchstone 1, Touchstone 2 and a native format.
+Refer to the provided manual pages and examples.
+
+Build, Test and Install
+
+    $ ./configure
+    $ make
+    $ make check
+    # make install
+
+
+If you have gnuplot installed, you can see an interesting example of
+VNA calibration at work by running:
+
+    $ make plot
+
+
+To build RPM files:
+    $ make srcrpm
+    $ make rpms
+
+
+The library is still undergoing some final development and hasn't had its
+first official release yet.  While the version remains at 0.0, we may
+break binary compatibility without reflecting it in the library version.
+
+If you'd like to help, please contact me.  The main things I could use
+help on right now are:
+
+    - A review of the API
+    	- Does it make sense?  Is it the right abstraction?
+	- Does it allow for future extensions without breaking binary
+	  compatibility.
+	- What's missing?
+
+    - A review of the code (almost 24000 lines of C99 code)
+
+And please make suggestions for how the library could be improved.
+

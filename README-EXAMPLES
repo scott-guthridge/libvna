@@ -1,0 +1,55 @@
+== LIBVNA Examples ==
+
+The example programs from the man pages are included here.
+
+vnacal-example.c:
+    Example of using the vnacal functions to calibrate a simulated
+    imperfect vector network analyzer.  In this case, it's showing
+    six-error term calibration.
+
+    Build:
+	cc -g -o vnacal-example vnacal-example.c -lvna -lyaml -lm
+
+    Run:
+	./vnacal-example > vnacal-example.out
+	gnuplot vnacal-example.gnuplot
+
+    In the plot, dashed lines are measured values, solid lines are the
+    value corrected by calibration and points are calulated expected
+    values (which as you can see, correctly lie on the solid lines).
+    The S12 calibrated curve and expected points are not visible on
+    the plot as they're exactly covered by the S21 calibrated curve and
+    expected points.
+
+
+vnaconv-example.c:
+    Simple of example of converting a 2x2 s-parameter matrix to
+    z-parameters.
+
+    Build:
+	cc -g -o vnaconv-example vnaconv-example.c -lvna -lm
+
+    Run:
+	./vnaconv-example
+
+
+vnadata-example.c:
+    Example of storing parameter data in a vnadata_t object and converting
+    from z-parameters to s-parameters.
+
+    Build:
+	cc -g -o vnadata-example vnadata-example.c -lvna -lm
+
+    Run:
+	./vnadata-example
+
+
+vnafile-example:
+    Example of saving a 3x3 s-parameter matrix to a file.
+
+    Build:
+	cc -o vnafile-example vnafile-example.c -lvna -lm
+
+    Run:
+	./vnafile-example
+

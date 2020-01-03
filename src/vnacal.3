@@ -1,0 +1,1159 @@
+.\"
+.\" Vector Network Analyzer Library
+.\" Copyright © 2020 D Scott Guthridge <scott_guthridge@rompromity.net>
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published
+.\" by the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.\"
+.TH VNACAL 3 "JULY 2017" GNU
+.nh
+.SH NAME
+vnacal_error_fn_t, vnacal_calset_alloc, vnacal_calset_set_frequency_vector, vnacal_calset_add_vector, vnacal_calset_set_reference, vnacal_calset_set_reference_vector, vnacal_calset_set_z0, vnacal_calset_free, vnacal_create, vnacal_save, vnacal_load, vnacal_get_filename, vnacal_get_sets, vnacal_get_setname, vnacal_get_rows, vnacal_get_columns, vnacal_get_frequencies, vnacal_get_fmax, vnacal_get_fmin, vnacal_get_frequency_vector, vnacal_set_fprecision, vnacal_set_dprecision, vnacal_property_set, vnacal_property_get, vnacal_property_delete, vnacal_property_type, vnacal_property_count, vnacal_property_keys, vnacal_free, vnacal_input_alloc, vnacal_input_set_frequency_vector, vnacal_input_add_vector, vnacal_input_add_mapped_vector, vnacal_input_get_value, vnacal_input_apply, vnacal_input_free \- vector network analyzer calibration
+.\"
+.SH SYNOPSIS
+.B #include <vnacal.h>
+.\"
+.PP
+.BI "typedef void vnacal_error_fn_t(const char *" message ,
+.BI "void *" error_arg );
+.\"
+.PP
+.BI "vnacal_calset_t *vnacal_calset_alloc(const char *" setname ,
+.in +4n
+.BI "int " rows ", int " columns ", int " frequencies ,
+.br
+.BI "vnacal_error_fn_t *" error_fn ", void *" error_arg );
+.in -4n
+.\"
+.PP
+.BI "int vnacal_calset_set_frequency_vector(vnacal_calset_t *" vcsp ", "
+.in +4n
+.BI "const double *" frequency_vector );
+.in -4n
+.\"
+.PP
+.BI "int vnacal_calset_add_vector(vnacal_calset_t *" vcsp ", int " row ,
+.in +4n
+.BI "int " column ", int " term ", const double complex *" vector );
+.in -4n
+.\"
+.PP
+.BI "int vnacal_calset_set_reference(vnacal_calset_t *" vcsp ,
+.BI "int " reference ,
+.in +4n
+.BI "double complex " gamma );
+.in -4n
+.\"
+.PP
+.BI "int vnacal_calset_set_reference_vector(vnacal_calset_t *" vcsp ,
+.in +4n
+.BI "int " reference ", int " frequencies ", const double *" frequency_vector ,
+.br
+.BI "const double complex *" gamma_vector );
+.in -4n
+.\"
+.PP
+.BI "int vnacal_calset_set_z0(vnacal_calset_t *" vcsp ", double complex" z0 );
+.\"
+.PP
+.BI "void vnacal_calset_free(vnacal_calset_t *" vcsp );
+.\"
+.PP
+.BI "vnacal_t *vnacal_create(int " sets ", vnacal_calset_t **" vcspp ,
+.in +4n
+.BI "vnacal_error_fn_t *" error_fn ", void *" error_arg );
+.in -4n
+.\"
+.PP
+.BI "int vnacal_save(vnacal_t *" vcp ", const char *" pathname ,
+.in +4n
+.BI "const char *" dotdir );
+.in -4n
+.\"
+.PP
+.BI "vnacal_t *vnacal_load(const char *" pathname ", const char *" dotdir ,
+.in +4n
+.BI "vnacal_error_fn_t *" error_fn ", void *" error_arg );
+.in -4n
+.\"
+.PP
+.BI "const char *vnacal_get_filename(const vnacal_t *" vcp );
+.\"
+.PP
+.BI "int vnacal_get_sets(const vnacal_t *" vcp );
+.\"
+.PP
+.BI "const char *vnacal_get_setname(const vnacal_t *" vcp ", int " set );
+.\"
+.PP
+.BI "int vnacal_get_rows(const vnacal_t *" vcp ", int " set );
+.\"
+.PP
+.BI "int vnacal_get_columns(const vnacal_t *" vcp ", int " set );
+.\"
+.PP
+.BI "int vnacal_get_frequencies(const vnacal_t *" vcp ", int " set );
+.\"
+.PP
+.BI "double vnacal_get_fmin(const vnacal_t *" vcp ", int " set );
+.\"
+.PP
+.BI "double vnacal_get_fmax(const vnacal_t *" vcp ", int " set );
+.\"
+.PP
+.BI "const double *vnacal_get_frequency_vector(const vnacal_t *" vcp ,
+.in +4n
+.BI "int " set );
+.in -4n
+.\"
+.PP
+.BI "int vnacal_set_fprecision(vnacal_t *" vcp ", int " precision );
+.\"
+.PP
+.BI "int vnacal_set_dprecision(vnacal_t *" vcp ", int " precision );
+.\"
+.PP
+.BI "int vnacal_property_set(vnacal_t *" vcp ", int " set ,
+.in +4n
+.BI "const char *" format ", ...);"
+.in -4n
+.\"
+.PP
+.BI "const char *vnacal_property_get(vnacal_t *" vcp ", int " set ,
+.in +4n
+.BI "const char *" format ", ...);"
+.in -4n
+.\"
+.PP
+.BI "int vnacal_property_delete(vnacal_t *" vcp ", int " set ,
+.in +4n
+.BI "const char *" format ", ...);"
+.in -4n
+.\"
+.PP
+.BI "int vnacal_property_type(vnacal_t *" vcp ", int " set ,
+.in +4n
+.BI "const char *" format ", ...);"
+.in -4n
+.\"
+.PP
+.BI "ssize_t vnacal_property_count(vnacal_t *" vcp ", int " set ,
+.in +4n
+.BI "const char *" format ", ...);"
+.in -4n
+.\"
+.PP
+.BI "const char **vnacal_property_keys(vnacal_t *" vcp ", int " set ,
+.in +4n
+.BI "const char *" format ", ...);"
+.in -4n
+.\"
+.PP
+.BI "void vnacal_free(vnacal_t *" vcp );
+.PP
+.PP
+.\"
+.PP
+.BI "vnacal_input_t *vnacal_input_alloc(vnacal_t *" vcp ,
+.BI "int " set ,
+.in +4n
+.BI "int " rows ", int " columns ", int " frequencies );
+.in -4n
+.\"
+.PP
+.BI "int vnacal_input_set_frequency_vector(vnacal_input_t *" vip ,
+.in +4n
+.BI "const double *" frequency_vector );
+.in -4n
+.\"
+.PP
+.BI "int vnacal_input_add_vector(vnacal_input_t *" vip ,
+.in +4n
+.BI "int " row ", int " column ", const double complex *" vector );
+.in -4n
+.\"
+.PP
+.BI "int vnacal_input_add_mapped_vector(vnacal_input_t *" vip ", int " vrow ,
+.in +4n
+.BI "int " vcolumn ", int " drow ", int " dcolumn ,
+.BI "const double complex *" vector );
+.in -4n
+.\"
+.PP
+.BI "double complex vnacal_input_get_value(vnacal_input_t *" vip ", int " row ,
+.in +4n
+.BI "int " column ", int " findex );
+.in -4n
+.\"
+.PP
+.BI "double complex vnacal_input_apply(vnacal_input_t *" vip ,
+.in +4n
+.BI "vnadata_t *" s_parameters );
+.in -4n
+.\"
+.PP
+.BI "double complex vnacal_input_free(vnacal_input_t *" vip );
+
+Link with \fI-lvna\fP \fI-lyaml\fP \fI-lm\fP.
+.sp
+.\"
+.SH DESCRIPTION
+This library calculates error terms for electical vector network analyzers
+(VNA's) and uses the calculated error terms to convert measured voltages
+from a device under test (DUT) to an S-parameter matrix.
+.PP
+The library is used in two phases: calibration and application.
+In the calibration phase, VNA measurements of known reference standards
+are made and stored into a \fBvnacal_calset_t\fP object.
+This object is then given to the \fBvnacal_create\fP() function which uses
+it to create a \fBvnacal_t\fP object containing error terms for the VNA.
+The \fBvnacal_t\fP object is saved to a file using \fBvnacal_save\fP().
+In the application phase, \fBvnacal_load\fP() loads the error terms back
+from the file.
+VNA measurements are made for a device under test and stored into a
+\fBvnacal_input_t\fP object.
+Finally, the \fBvnacal_input_apply\fP() function applies the error
+terms to the measured values and generates the S-parameter matrix.
+The next sections go through this process in detail.
+.SS "Calibration"
+.PP
+The first step in creating a new calibration is to use
+\fBvnacal_calset_alloc\fP() to create an opaque \fBvnacal_calset_t\fP
+object with name \fIsetname\fP.
+The \fIrows\fP and \fIcolumns\fP parameters give the dimensions of the
+calibration matrix: \fIrows\fP is the number of VNA ports that detect
+signal and \fIcolumns\fP is the number of VNA ports that drive signal.
+For example, a simple two-port VNA that drives signal and measures
+reflection on the first port, but only measures transmitted signal on
+the second port would have dimension 2x1, while a two-port VNA with full
+S parameter switch would have dimension 2x2.
+The \fIfrequencies\fP parameter gives the number of calibration frequency
+points and determines the length of the vectors in several of the
+subsequent functions.
+The optional \fIerror_fn\fP is a pointer to function the library calls
+with a single line \fImessage\fP (without newline) to report errors.
+If given as \s-2NULL\s+2, the library functions set \fIerrno\fP and
+return failure but do not print messages; \fIerror_arg\fP is a pointer
+to arbitrary user data passed through to the error function.
+.PP
+\fBvnacal_calset_set_frequency_vector\fP() loads a vector of
+calibration frequency points into the \fBvnacal_calset_t\fP object;
+\fIfrequency_vector\fP must be non-negative and ascending with length
+equal to \fIfrequencies\fP above.
+.PP
+The next step is to make VNA calibration measurements using known
+standards and add them to the \fBvnacal_calset_t\fP object.
+Each element of the calibration matrix contains three calibration
+terms.
+The diagonal elements, i,i, contain the reflected values from each of the
+three reference standards, while the off diagonal elements, i,j contain
+through and leakage measurements for port j driving signal to port i.
+Calibration progresses as follows.
+For each diagonal element of the calibration matrix, measure
+the reflected signal from each of the three known reference impedances
+while keeping all other VNA ports terminated with proper load impedances.
+For each off-diagonal element, connect port j to port i and
+measure the through signal while keeping all other VNA ports terminated.
+.PP
+The \fBvnacal_calset_add_vector\fP() function adds a measurement to
+the calibration matrix cell addressed by \fIrow\fP and \fIcolumn\fP.
+In keeping with C programming language conventions, rows, columns and
+other indices are numbered beginning with zero, not one.
+For diagonal matrix elements, \fIterm\fP should be one of:
+.sp
+.in +4n
+\s-2VNACAL_Sii_REF0\s+2
+.in +4n
+Reflected signal back to port i when connected to known reference 0
+.in -4n
+.sp
+\s-2VNACAL_Sii_REF1\s+2
+.in +4n
+Reflected signal back to port i when connected to known reference 1
+.in -4n
+.sp
+\s-2VNACAL_Sii_REF2\s+2
+.in +4n
+Reflected signal back to port i when connected to known reference 2
+.in -4n
+.in -4n
+.PP
+For off-diagonal matrix elements, \fIterm\fP should be one of:
+.sp
+.in +4n
+\s-2VNACAL_Sjj_THROUGH\s+2
+.in +4n
+Reflected signal back to port j when connected to port i in through
+configuration
+.in -4n
+.sp
+\s-2VNACAL_Sij_THROUGH\s+2
+.in +4n
+Forward signal from port j to port i in through configuration
+.in -4n
+.sp
+\s-2VNACAL_Sij_LEAKAGE\s+2
+.in +4n
+Leakage signal from port j to port i when the ports are isolated
+from each other.
+This parameter is measured opportunistically whenever port j is
+driving signal and port i is not being used.
+.in -4n
+.in -4n
+.PP
+\fIvector\fP is a vector of length \fIfrequencies\fP of measured
+complex voltages.
+If \fBvnacal_calset_add_vector\fP() is called more than once for the
+same \fIrow\fP, \fIcolumn\fP and \fIterm\fP, the vectors are averaged.
+.PP
+The \fBvnacal_calset_set_reference\fP() function sets the given
+\fIreference\fP (zero-based) to \fIgamma\fP.
+References are given in gamma \- the conversion from impedance is gamma =
+(Z - Z0*) / (Z + Z0), where * is the conjugate operator.
+If not called, the three gamma values default to -1.0 (short), 1.0 (open)
+and 0.0 (load), respectively.
+.PP
+\fBvnacal_calset_set_reference_vector\fP() sets reference gamma
+values for the given \fIreference\fP on a per-frequency basis.
+This is useful if you have precise measurements of the reference
+standards from another VNA.
+Using this interface, it's also possible to use reactive references
+which vary in impedance by frequency.
+The \fIfrequencies\fP parameter gives the number of elements in
+both \fIfrequency_vector\fP and \fIgamma_vector\fP.
+These frequencies don't have to align with those given to
+\fBvnacal_calset_alloc\fP(); however, they must span the entire range.
+The the library uses rational function interpolation to interpolate
+between frequency points when the calibration frequences don't align
+with the reference frequencies.
+.PP
+\fBvnacalset_set_z0\fP() sets the system impedance for the vector network
+analyzer ports.
+If not set, the value defaults to 50.0 ohms.
+The library currently assumes all VNA ports must have the same system
+system impedance.
+.PP
+The last steps of calibration are to use \fBvnacal_create\fP() to
+create error terms and \fBvnacal_save\fP() to save the calibration
+to a file.
+.PP
+It's possible to save a group of related calibration sets together in
+the same file.
+This can be useful, for example, if you have a programmable attenuator
+and want to calibrate separately for each attenuation level.
+When saving more than one calibration set together, each must be given
+a unique name.
+.PP
+\fBvnacal_calset_free\fP() frees the memory used by the
+\fBvnacal_calset_t\fP object.
+This can be done safely after calling \fBvnacal_create\fP().
+.PP
+\fBvnacal_create\fP() generates error terms from the calibration
+measurements and
+returns a pointer to an opaque \fBvnacal_t\fP object needed by most of
+the other library functions.
+The \fIvcspp\fP parameter is a vector of pointers of length \fIsets\fP to
+\fBvnacal_calset_t\fP, allowing multiple calibration sets to be included.
+\fIerror_fn\fP is an optional pointer to a function the library calls
+to report errors as in \fBvnacal_calset_alloc\fP().
+The number of error terms generated from each set is equal to the number
+of terms in the calibration matrix, that is, 3 * rows * columns, e.g. a
+2x2 calibration matrix produces 12 error terms.
+.PP
+\fBvnacal_save\fP() saves the calibration to a file.
+The \fIvcp\fP parameter is a pointer to the \fBvnacal_t\fP object returned
+from \fBvnacal_create\fP() or \fBvnacal_load\fP(); \fIpathname\fP is the
+calibration file name; \fIdotdir\fP is an optional directory relative
+to \s-2$HOME\s+2.
+If \fIpathname\fP is absolute or if it ends with a \fB.vnacal\fP
+extension, the library saves the calibration to \fIpathname\fP.
+Otherwise, if the \s-2HOME\s+2 environment variable is set and
+\fIdotdir\fP is non-\s-2NULL\s+2, the library saves the calibration to
+\s-2$HOME\s+2/\fIdotdir\fP/\fIpathname\fP.vnacal, creating directories
+under \s-2$HOME\s+2 as necessary.
+.PP
+\fBvnacal_set_fprecision\fP() and \fBvnacal_set_dprecision\fP control
+the numerical precision \fBvnacal_save\fP() uses for frequency and data
+floating point numbers, respecively.
+The parameter, \fIprecision\fP may be either the number of
+signicant digits to use (minimum 1), or the special value
+\s-2VNACAL_MAX_PRECISION\s+2.
+The later directs \fBvnacal_save\fP() to use hexadecimal floating point
+notation which preserves all available precision through the process of
+saving and loading the calibration data.
+.\"
+.SS "Applying the Calibration to Measured Data"
+.PP
+Once a calibration model has been created or an existing calibration
+has been loaded from a file, it can be used to convert voltages measured
+for a device under test to S-parameters.
+The typical flow is: use \fBvnacal_load\fP() to load a previously saved
+calibration; use \fBvnacal_input_alloc\fP() to create a \fBvnacal_input_t\fP
+object; make measurements from the device under test using parameters
+from the calibration such as the frequency range and VNA switch settings
+to guide the process, save the measurements to the \fBvnacal_input_t\fP;
+finally, use \fBvnacal_input_apply\fP() to produce S-parameters.
+.PP
+\fBvnacal_load\fP() loads a previously saved calibration from a file and
+returns a pointer to an opaque \fBvnacal_t\fP object needed by most of
+the other library functions.
+If the file specified by \fIpathname\fP exists, the library loads from
+\fIpathname\fP.
+Otherwise, if \fIpathname\fP does not end in a \fB.vnacal\fP
+extension and \fIpathname\fP.vnacal exists, the library loads from
+\fIpathname\fP.vnacal.
+Otherwise, if the \s-2HOME\s+2 environment variable is set
+and \fIdotdir\fP is non-\s-2NULL\s+2, the library loads from
+\s-2$HOME\s+2/\fIdotdir\fP/\fIpathname\fP.vnacal.
+The \fIerror_fn\fP and \fIerror_arg\fP parameters are the same as in
+\fBvnacal_create\fP().
+.PP
+\fBvnacal_get_filename\fP() returns the file name of the calibration
+file.
+This function returns \s-2NULL\s+2 if the \fBvnacal_t\fP object came
+from \fBvnacal_create\fP and \fBvnacal_save\fP() hasn't been called.
+.PP
+\fBvnacal_get_sets\fP() returns the number of calibration sets.
+.PP
+\fBvnacal_get_setname\fP() returns the name of the set indexed by \fIset\fP.
+.PP
+\fBvnacal_get_rows\fP(), \fBvnacal_get_columns\fP(), and
+\fBvnacal_get_frequencies\fP() return the number of rows, columns and
+frequencies, respectively, in the calibration set indexed by \fIset\fP.
+.PP
+\fBvnacal_get_fmin\fP() and \fBvnacal_get_fmax\fP() return the minimum
+and maximum frequencies, respectively, in the calibration indexed by
+\fIset\fP.
+.PP
+\fBvnacal_get_frequencies\fP() returns a pointer to the vector of
+frequencies in the calibration set.
+.PP
+\fBvnacal_free\fP() frees the memory for the calibration obtained from
+\fBvnacal_create\fP() or \fBvnacal_load\fP().
+.PP
+\fBvnacal_input_alloc\fP() returns an opaque \fBvnacal_input_t\fP
+object into which measurements from a device under test can be stored.
+The \fIvcp\fP and \fIset\fP parameters specify the associated calibration
+set; \fIrows\fP, \fIcolumns\fP and \fIfrequencies\fP give the dimensions
+of the S-parameter matrix and number of frequency points.
+.PP
+\fBvnacal_input_set_frequency_vector\fP() loads a vector of
+measured frequency points into the \fBvnacal_input_t\fP object;
+\fIfrequency_vector\fP must be non-negative and ascending with length
+equal to \fIfrequencies\fP given to \fBvnacal_input_alloc\fP().
+The frequency points given to this function don't have to match those
+given in the calibration matrix; however, they have to be within the
+calibration frequency range.
+If the measurement frequencies don't coincide with the calibration
+frequencies, \fBvnacal_apply\fP() uses rational function interpolation
+to interpolate.
+.PP
+The \fBvnacal_input_add_vector\fP() function adds a measurement to the
+matrix cell addressed by \fIrow\fP and \fIcolumn\fP.
+This function may be used when the calibration matrix is 2x1 or 1x2,
+or when the dimensions of \fBvnacal_input_t\fP object don't exceed those
+of the calibration matrix.
+If these conditions are not met, use the more general
+\fIvnacal_input_add_mapped_vector\fP() instead.
+If this function is called more than once on the same matrix element,
+the vectors are averaged.
+.PP
+The \fBvnacal_input_add_mapped_vector\fP() function adds a measurement
+to the matrix cell addressed by \fIdrow\fP and \fIdcolumn\fP, where
+\fIdcolumn\fP is the DUT port being driven, \fIdrow\fP is the DUT
+port being measured, \fIvcolumn\fP is the VNA port driving signal and
+\fIvrow\fP is the VNA port detecting signal.
+The mapping of VNA ports to DUT ports must be consistent over multiple
+calls, or the later measurements will be discarded.
+If called more than once on the same matrix element, the vectors are
+averaged.
+.PP
+The \fBvnacal_input_get_value\fP() function returns the current input
+value for the specified \fIrow\fP, \fIcolumn\fP and frequency index
+(\fIfindex\fP), in the \fBvnacal_input_t\fP object.
+.PP
+The \fBvnacal_input_apply\fP() function applies error corrections to
+the accumulated measurements and returns the S-parameter matrix.
+.PP
+The \fBvnacal_input_free\fP() function frees the \fBvnacal_input_t\fP
+object.
+.\"
+.SS "User-Defined Properties"
+The library provides methods for storing user-defined structures and
+arrays in the calibration file.
+This is useful for describing the vector network analyzer, conditions
+under which the calibration was made, which detector measures which
+signal, switch settings needed for each measurement and other parameters.
+All property functions take similar arguments: \fIvcp\fP is a pointer
+to the \fBvnacal_t\fP object returned from \fBvnacal_create\fP() or
+\fBvnacal_load\fP(); \fIset\fP is the index of the calibration set,
+or -1 to indicate a global property; \fIformat\fP is a format string as
+in \fBsprintf\fP(); and \fB...\fP is a list of additional arguments as
+appropriate for \fIformat\fP.
+The functions use \fIformat\fP and the additional arguments to construct
+a string which they then interpret.
+The generated string begins with a key consisting of a list of
+dot-separated identifiers and square-bracket delimited array indices
+describing a path through the properties, which form a tree.
+The key may begin with a dot; a key consisting of only of a dot represents
+the root of the tree.
+Some example keys are: \(lq.\(rq, \(lqabc\(rq, \(lqabc.def\(rq,
+\(lq[0]\(rq, \(lqnames[0]\(rq, \(lqnames[1]\(rq, and
+\(lq.abc.def[2][0].ghi\(rq.
+Identifiers consist of ASCII characters in [-+A-Za-z0-9_] and valid
+unicode characters encoded in UTF-8.
+The examples below show how these keys are used.
+.PP
+The \fBvnacal_property_set\fP() function adds or modifies a property.
+The given \fIformat\fP and variable arguments form a string in
+\fIkey\fP=\fIvalue\fP format.
+The left hand side must be a valid key as described above; the
+right hand side can be any text string \- it may contain newlines.
+Here are some examples:
+.sp
+vnacal_property_set(vcp, -1, "value1=5");
+.in +4n
+In the global property space, create a key-value map and set \fIvalue1\fP
+to 5.
+.in -4n
+.sp
+vnacal_property_set(vcp, -1, "value2=%d", j);
+.in +4n
+In the global property space, create a key-value map and set \fIvalue2\fP
+to the value in variable \fIj\fP.
+.in -4n
+.sp
+vnacal_property_set(vcp, 0, "my_value%d=%d", i, j);
+.in +4n
+In calibration set zero, create a key-value map using \fIi\fP to complete
+the name and use \fIj\fP as the value.
+.in -4n
+.sp
+vnacal_property_set(vcp, 0, "description=XYZ VNA\\nwith 2ft cables");
+.in +4n
+In calibration set zero, create a key-value map and set \fIdescription\fP
+to the given text.
+.in -4n
+.sp
+vnacal_property_set(vcp, set, "foo.bar=xyz");
+.in +4n
+Create a key-value map with member \fIfoo\fP containing a nested key-value
+map with \fIbar\fP set to \(lqxyz\(rq.
+.in -4n
+.sp
+.nf
+vnacal_property_set(vcp, set, "detectorMatrix[0][0]=1");
+vnacal_property_set(vcp, set, "detectorMatrix[0][1]=2");
+vnacal_property_set(vcp, set, "detectorMatrix[1][0]=2");
+vnacal_property_set(vcp, set, "detectorMatrix[1][1]=1");
+.fi
+.in +4n
+Create a key-value map with a nested set of lists under
+\fIdetectorMatrix\fP, forming a 2x2 matrix.
+.in -4n
+.sp
+.nf
+vnacal_property_set(vcp, set, "ref[0].name=short");
+vnacal_property_set(vcp, set, "ref[0].gamma=-1.0");
+vnacal_property_set(vcp, set, "ref[1].name=open");
+vnacal_property_set(vcp, set, "ref[1].gamma=1.0");
+vnacal_property_set(vcp, set, "ref[2].name=load");
+vnacal_property_set(vcp, set, "ref[2].gamma=0.0");
+.fi
+.in +4n
+Create a key-value map with member \fIref\fP containing a list of three
+key-value maps with \fIname\fP and \fIgamma\fP submembers set as shown.
+.in -4n
+.PP
+Calling \fBvnacal_property_set\fP() on an existing property changes the
+property to the new value.
+If the key path contains an element with a conflicting type,
+\fBvnacal_property_set\fP() replaces the conflicting element.
+For example, if after building \fIref\fP in the previous example, we set
+"ref=newValue", then \fIref\fP changes from a list to a scalar,
+deleting all six entries set above.
+Similarly, setting the root element, ".=newValue", replaces the
+entire property tree with a scalar.
+.PP
+The \fBvnacal_property_get\fP() function retrieves a scalar value from
+the property tree.
+For example, after adding the values in the examples above,
+vnacal_property_get(vcp, set, "value1") returns the string "5";
+vnacal_property_get(vcp, set, "ref[1].gamma") returns the string "1.0".
+If the key doesn't refer to a scalar, \fBvnacal_property_get\fP()
+sets \fIerrno\fP and returns \s-2NULL\s+2.
+.PP
+The \fBvnacal_property_delete\fP() function deletes a property from
+the tree.
+For example vnacal_property_delete(vcp, set, "detectorMatrix") deletes
+\fIdetectorMatrix\fP and its descendents; vnacal_property_delete(vcp, set,
+".") deletes all properties.
+.PP
+The \fBvnacal_property_type\fP() function returns 'm' if the key refers
+to a key-value map, 'l' if the key refers to a list, or 's' if the key
+refers to a scalar.
+Given the examples above, vnacal_property_type(vcp, set, ".")
+returns 'm', vnacal_property_type(vcp, set, "detectorMatrix") returns 'l',
+vnacal_property_type(vcp, set, "detectorMatrix[0]") returns 'l',
+and vnacal_property_type(vcp, set, "detectorMatrix[0][0]") returns 's'.
+If the key doesn't exist or a component along the path isn't the specified
+type, \fBvnacal_property_type\fP() sets \fIerrno\fP and returns -1.
+.PP
+The \fBvnacal_property_count\fP() returns the number of elements in a
+specified map or list.
+If applied to a scalar, it sets \fIerrno\fP and returns -1.
+.PP
+Given a key-value map, \fBvnacal_property_keys\fP() returns a vector of
+pointers to all the keys in the map.
+The caller is responsible for freeing the returned vector (but not the
+strings it points to) by a call to \fBfree\fP(3).
+If applied to something other than a map, \fBvnacal_property_keys\fP()
+sets \fIerrno\fP and returns \s-2NULL\s+2.
+.\"
+.SH "RETURN VALUE"
+The \fBvnacal_calset_alloc\fP() function returns a pointer to a
+\fBvnacal_calset_t\fP object.
+On error, it sets \fIerrno\fP and returns \s-2NULL\s+2.
+.PP
+The \fBvnacal_create\fP() and \fBvnacal_load\fP() functions return a
+pointer to an opaque \fBvnacal_t\fP object.
+On error, these functions set \fIerrno\fP and return \s-2NULL\s+2.
+.PP
+The \fBvnacal_input_alloc\fP() function returns a pointer to an opaque
+\fBvnacal_input_t\fP object.
+On error, it sets \fIerrno\fP and returns \s-2NULL\s+2.
+.PP
+The \fBvnacal_calset_add_vector\fP(),
+\fBvnacal_calset_set_frequency_vector\fP(),
+\fBvnacal_calset_set_referece\fP(),
+\fBvnacal_calset_set_reference_vector\fP(),
+\fBvnacal_calset_set_z0\fP(),
+\fBvnacal_input_add_mapped_vector\fP(),
+\fBvnacal_input_add_vector\fP(),
+\fBvnacal_input_apply\fP(),
+\fBvnacal_input_set_frequency_vector\fP(),
+\fBvnacal_property_delete\fP(),
+\fBvnacal_property_set\fP(),
+\fBvnacal_save\fP(),
+\fBvnacal_set_dprecision\fP() and
+\fBvnacal_set_fprecision\fP() functions return 0 on success, or set
+\fIerrno\fP and return -1 on failure.
+.PP
+The \fBvnacal_get_filename\fP() function returns the calibration
+file name, or \s-2NULL\s+2 if the \fBvnacal_t\fP object came from
+\fBvnacal_create\fP() and \fBvnacal_save\fP() hasn't yet been called.
+.PP
+The \fBvnacal_get_fmin\fP() and \fBvnacal_get_fmax\fP() functions
+return minimum and maximum frequencies in the calibration, respectively.
+On error, they set \fIerrno\fP and return \s-2HUGE_VAL\s+2.
+.PP
+The \fBvnacal_get_frequency_vector\fP() function returns a pointer to
+the vector of calibration frequencies.  On error, it sets \fIerrno\fP
+and returns \s-2NULL\s+2.
+.PP
+The \fBvnacal_get_setname\fP() function returns the name of the
+calibration set.
+If the \fIset\fP is invalid, it sets \fIerrno\fP and returns \s-2NULL\s+2.
+.PP
+The \fBvnacal_get_sets\fP(), \fBvnacal_get_rows\fP(),
+\fBvnacal_get_columns\fP() and \fBvnacal_get_frequencies\fP() functions
+return the number of calibration sets, number of matrix rows, number of
+matrix columns and number of frequencies, respectively.
+On error, they set \fIerrno\fP and return -1.
+.PP
+The \fBvnacal_property_get\fP() function returns the value of the
+requested property, or \s-2NULL\s+2 if the property doesn't exist.
+.PP
+The \fBvnacal_property_type\fP() function returns 'm' for map, 'l'
+for list, 's' for scalar, or sets \fIerrno\fP and returns -1 if the key
+doesn't exist.
+.PP
+The \fBvnacal_property_count\fP() function returns the number of elements
+in a map or list, or if the key doesn't exist or isn't a map or list,
+sets \fIerrno\fP and returns -1.
+.PP
+The \fBvnacal_property_keys\fP() function function returns a vector of
+pointers to the keys of a map object.
+Caller is responsible for freeing the returned vector (but not the strings).
+If the key doesn't exist or if the key refers to something that's not
+a map, it sets \fIerrno\fP and returns \s-2NULL\s+2.
+.PP
+The \fBvnacal_input_get_value\fP() function returns an uncalibrated
+value from the input matrix.
+.PP
+The \fBvnacal_calset_free\fP(), \fBvnacal_free\fP() and
+\fBvnacal_input_free\fP() functions return void.
+.SH ERRORS
+The library functions reports the following errors:
+.IP \fBEDOM\fP
+An index given to \fBvnacal_property_*\fP() is out of bounds.
+.IP \fBEINVAL\fP
+A library function was given an invalid parameter, or a key given to
+one of the \fBvnacal_property_*\fP() functions contains invalid syntax
+or a component of the key has a type that doesn't match the property tree.
+.IP \fBENOENT\fP
+A \fBvnacal_property_*\fP() function was given a key that doesnt exist.
+.IP \fBENOMEM\fP
+A \fBmalloc\fP(3), \fBcalloc\fP(3) or \fBrealloc\fP(3) call failed due
+to no memory.
+.PP
+In addition, the library may report any error generated by \fBfopen\fP(3),
+\fBgetchar\fP(3) or \fBfprintf\fP(3).
+.\" .SH BUGS
+.\" None known.
+.\"
+.SH EXAMPLES
+.nf
+.ft CW
+/*
+ * Vector Network Analyzer Calibration Library
+ * Copyright © 2020 D Scott Guthridge <scott_guthridge@rompromity.net>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <stdio.h>
+#include <vnacal.h>
+
+/*
+ * MAX: find maximum of two numbers
+ */
+#ifndef MAX
+#define MAX(x, y)       ((x) >= (y) ? (x) : (y))
+#endif /* MAX */
+
+/*
+ * FMIN, FMAX: frequency range of the VNA in Hz
+ */
+#define FMIN            10e+3
+#define FMAX            100e+6
+
+/*
+ * C_ROWS, C_COLUMNS, C_FREQUENCIES: calibration dimensions
+ *   Calibration matrix is 2x1, i.e. the VNA drives signal and
+ *   measures reflected power on the first port only.  It measures
+ *   forward power on the second port only.  C_FREQUENCIES is the
+ *   number of frequency points used for the calibration.
+ */
+#define C_ROWS            2
+#define C_COLUMNS         1
+#define C_FREQUENCIES    79
+
+/*
+ * M_ROWS, M_COLUMNS, C_FREQUENCIES: measurement dimensions
+ *   We measure full 2x2 S-parameters from the device under test.
+ *   The number of frequency points used in the measurement doesn't
+ *   have to match the calibration -- the library interpolates
+ *   between error parameters if necessary.
+ */
+#define M_ROWS            2
+#define M_COLUMNS         2
+#define M_FREQUENCIES   100
+
+/*
+ * PI, Z0, W1, W2: misc constants
+ *   PI is used below to convert from Hz to angular frequency
+ *   Z0 is the system impedance
+ *   W1 is the undamped natural frequency of the errors in our VNA
+ *   W2 is the undamped natural frequency of our simulated DUT
+ */
+#define PI      3.14159265
+#define Z0      50.0
+#define W1      (2 * PI * 10e+6)
+#define W2      (2 * PI * 1e+6)
+
+/*
+ * measurement_t: which simulated measurement should vna_measure return
+ */
+typedef enum measurement {
+    SHORT_CALIBRATION,
+    OPEN_CALIBRATION,
+    LOAD_CALIBRATION,
+    THROUGH_CALIBRATION,
+    FORWARD_MEASUREMENT,
+    REVERSE_MEASUREMENT
+} measurement_t;
+
+/*
+ * vna_measure: simulate the requested VNA measurement
+ *   @measurement: which measurement to simulate
+ *   @frequencies: number of frequency points
+ *   @m_frequency_vector: returned vector of frequencies
+ *   @detector0_vector: returned voltages from detector 0
+ *   @detector1_vector: returned voltages from detector 1
+ *
+ *   To avoid confusion, we refer to the two ports of the VNA as
+ *   port 0 and port 1 (as opposed to 1 and 2) to match C array
+ *   indices, which start with zero.
+ *
+ *   Our simulated VNA has two flaws: first, there is a stray
+ *   capacitance of 1 / (Z0 * W1) [318pF] between port 0 and ground;
+ *   second, there is an inductance of Z0 / W1 [796 nH] in series
+ *   with port 1.
+ *
+ *   The simulated device under test (DUT) is a second order
+ *   LC divider low pass filter with L = Z0 / W2 [7.96 uH] and
+ *   C = 1 / (Z0 * W2) [3.18nF].
+ *
+ */
+static int vna_measure(measurement_t measurement,
+        int frequencies, double *m_frequency_vector,
+        double complex *detector0_vector,
+        double complex *detector1_vector)
+{
+    double c = log(FMAX / FMIN);
+
+    /*
+     * For each frequency FMIN to FMAX spaced uniformly on a log
+     * scale...
+     */
+    for (int findex = 0; findex < frequencies; ++findex) {
+        double f = FMIN * exp((double)findex / (frequencies - 1) * c);
+        double complex s = I * 2 * PI * f;
+        double complex d, detector0, detector1;
+
+        switch (measurement) {
+        case SHORT_CALIBRATION:
+            /*
+             * The shorted calibration standard on port 0 shunts
+             * out the stray capacitance, giving a perfect gamma
+             * value of -1.  Port 1 is connected to a terminator
+             * and receives no signal, but the detector picks up
+             * a bit of internal noise.
+             */
+            detector0 = -1.0;
+            detector1 =  0.1;
+            break;
+
+        case OPEN_CALIBRATION:
+            /*
+             * The open calibration standard exposes the stray
+             * capacitance on port 0.  Port 1 continues to pick up
+             * internal noise.
+             */
+            detector0 = (1.0 - s/W1) / (1.0 + s/W1);
+            detector1 = -0.3;
+            break;
+
+        case LOAD_CALIBRATION:
+            /*
+             * The load calibration is in parallel with the stray
+             * capacitance on port 0.  Port 1 picks up yet more
+             * internal noise.
+             */
+            detector0 = -s / (s + 2*W1);
+            detector1 = 0.2;
+            break;
+
+        case THROUGH_CALIBRATION:
+            /*
+             * In the through configuration, the stray capacitance
+             * on port 0 and stray inductance on port 1 form a
+             * resonant circuit with a high-pass reflected signal
+             * and low-pass transmitted signal.
+             */
+            d = s*s + 2*W1*s + 2*W1*W1;
+            detector0 = -s*s / d;
+            detector1 = 2*W1*W1 / d;
+            break;
+
+        case FORWARD_MEASUREMENT:
+            /*
+             * In the forward configuration, the DUT forms a fourth
+             * order resonant circuit with the stray impedances of
+             * the VNA.
+             */
+            d = s*s*s*s + 2*W1*s*s*s + (W1+W2)*(W1+W2)*s*s
+                + 2*W1*W2*(W1+W2)*s + 2*W1*W1*W2*W2;
+            detector0 = -(s*s*s*s - (W1*W1 - 2*W1*W2 - W2*W2)*s*s) / d;
+            detector1 = 2*W1*W1*W2*W2 / d;
+            break;
+
+        case REVERSE_MEASUREMENT:
+            /*
+             * In the reverse configuration, the stray capacitance on
+             * port 0 is in parallel with the DUT capacitor and the
+             * stray inductance on port 1 is in series with the DUT
+             * inductor forming only a second order resonant circuit.
+             */
+            d = s*s + 2*W1*W2/(W1+W2)*s + 2*W1*W1*W2*W2/((W1+W2)*(W1+W2));
+            detector0 = -s*s / d;
+            detector1 = 2*W1*W1*W2*W2/((W1+W2)*(W1+W2)) / d;
+            break;
+
+        default:
+            abort();
+        }
+
+        /*
+         * Return the requested vectors.
+         */
+        if (m_frequency_vector != NULL)
+            m_frequency_vector[findex] = f;
+        if (detector0_vector != NULL)
+            detector0_vector[findex] = detector0;
+        if (detector1_vector != NULL)
+            detector1_vector[findex] = detector1;
+    }
+    return 0;
+}
+
+/*
+ * error_fn: error printing function for the library
+ *   @message: single line error message without a newline
+ *   @error_arg: passed through to the error function (unused here)
+ */
+static void error_fn(const char *message, void *error_arg)
+{
+    (void)fprintf(stderr, "example: %s\\n", message);
+}
+
+/*
+ * main
+ */
+int main(int argc, char **argv)
+{
+    vnacal_calset_t *vcsp;
+    double frequency_vector[MAX(C_FREQUENCIES, M_FREQUENCIES)];
+    double complex vector0[MAX(C_FREQUENCIES, M_FREQUENCIES)];
+    double complex vector1[MAX(C_FREQUENCIES, M_FREQUENCIES)];
+    vnacal_input_t *vip;
+    vnadata_t *s_matrix;
+    vnacal_t *vcp;
+
+    /*
+     * Allocate the structure to hold the calibration measurements.
+     */
+    if ((vcsp = vnacal_calset_alloc(/*setname=*/"default",
+                    C_ROWS, C_COLUMNS, C_FREQUENCIES,
+                    error_fn, /*error_arg=*/NULL)) == NULL) {
+        (void)fprintf(stderr, "vnacal_calset_alloc: %s\\n",
+                strerror(errno));
+        exit(2);
+    }
+
+    /*
+     * Make the calibration measurements for short, open, load and
+     * through standards.  Normally, we would interact with the
+     * user between each of these steps to get the user to connect
+     * each standard in sequence.  In our simulated environment,
+     * we can skip that part.  The frequency vector is filled
+     * from the first measurement only -- the frequencies for the
+     * other calibration steps have to be the same as the first.
+     * The three leakage measurements are averaged.
+     */
+
+    /*
+     * Short calibration
+     */
+    vna_measure(SHORT_CALIBRATION, C_FREQUENCIES,
+            frequency_vector, vector0, vector1);
+    vnacal_calset_set_frequency_vector(vcsp, frequency_vector);
+    vnacal_calset_add_vector(vcsp, 0, 0, VNACAL_Sii_REF0, vector0);
+    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_LEAKAGE, vector1);
+
+    /*
+     * Open calibration
+     */
+    vna_measure(OPEN_CALIBRATION, C_FREQUENCIES, NULL, vector0, vector1);
+    vnacal_calset_add_vector(vcsp, 0, 0, VNACAL_Sii_REF1, vector0);
+    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_LEAKAGE, vector1);
+
+    /*
+     * Load calibration
+     */
+    vna_measure(LOAD_CALIBRATION, C_FREQUENCIES, NULL, vector0, vector1);
+    vnacal_calset_add_vector(vcsp, 0, 0, VNACAL_Sii_REF2, vector0);
+    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_LEAKAGE, vector1);
+
+    /*
+     * Through calibration.
+     */
+    vna_measure(THROUGH_CALIBRATION, C_FREQUENCIES, NULL, vector0, vector1);
+    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sjj_THROUGH, vector0);
+    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_THROUGH, vector1);
+
+    /*
+     * Create the calibration from the measurements and save it to
+     * a file.
+     */
+    if ((vcp = vnacal_create(/*sets=*/1, &vcsp, error_fn,
+                    /*error_arg=*/NULL)) == NULL) {
+        (void)fprintf(stderr, "vnacal_create: %s\\n",
+                strerror(errno));
+        exit(3);
+    }
+    if (vnacal_save(vcp, "example.vnacal", ".excal") == -1) {
+        (void)fprintf(stderr, "vnacal_save: %s\\n",
+                strerror(errno));
+        exit(4);
+    }
+    vnacal_calset_free(vcsp);
+    vnacal_free(vcp);
+    vcp = NULL;
+
+    /*
+     * Now, use the calibration we made above to correct imperfect
+     * measurements of the device under test.  Starting here, we
+     * would normally be in a different program, but to keep the
+     * example shorter we've combined them.
+     *
+     * Begin by loading the saved calibration.
+     */
+    if ((vcp = vnacal_load("example.vnacal", ".excal", error_fn,
+                    /*error_arg=*/NULL)) == NULL) {
+        (void)fprintf(stderr, "vnacal_load: %s\\n",
+                strerror(errno));
+        exit(5);
+    }
+
+    /*
+     * Allocate a vnacal_input_t object to apply the calibration
+     * to measured values.
+     */
+    if ((vip = vnacal_input_alloc(vcp, /*set=*/0,
+                    M_ROWS, M_COLUMNS, M_FREQUENCIES)) == NULL) {
+        (void)fprintf(stderr, "example: vnadata_alloc: %s\\n",
+                strerror(errno));
+        exit(6);
+    }
+
+    /*
+     * Allocate a vnadata_t object to hold the S parameters.
+     */
+    if ((s_matrix = vnadata_alloc_empty()) == NULL) {
+        (void)fprintf(stderr, "example: vnadata_alloc_empty: %s\\n",
+                strerror(errno));
+        exit(7);
+    }
+
+    /*
+     * Make the forward and reverse measurements of the device under
+     * test.  We would normally have to interact with the user between
+     * these steps in order to get the user to swap the connections.
+     * Alternatively, if the VNA has a relay to swap ports automatically,
+     * we would send different relay codes for these two measurements.
+     * Note though, that if the VNA has a relay to swap ports, we'd
+     * want to make a 2x2 calibration matrix above instead of 2x1 so
+     * that the calibration also covers the relay.
+     */
+
+    /*
+     * Forward measurement
+     */
+    vna_measure(FORWARD_MEASUREMENT, M_FREQUENCIES, frequency_vector,
+            vector0, vector1);
+    vnacal_input_set_frequency_vector(vip, frequency_vector);
+    vnacal_input_add_vector(vip, 0, 0, vector0);
+    vnacal_input_add_vector(vip, 1, 0, vector1);
+
+    /*
+     * Reverse measurement
+     */
+    vna_measure(REVERSE_MEASUREMENT, M_FREQUENCIES, NULL,
+            vector0, vector1);
+    vnacal_input_add_vector(vip, 1, 1, vector0);
+    vnacal_input_add_vector(vip, 0, 1, vector1);
+
+    /*
+     * First, calculate and print the S-parameters we would expect
+     * from the device under test if we measured them with a
+     * perfect VNA.
+     */
+    (void)printf("# expected\\n");
+    for (int i = 0; i < M_FREQUENCIES; ++i) {
+        double complex s = 2 * PI * I * frequency_vector[i];
+        double complex d = s*s + 2*W2*s + 2*W2*W2;
+        double complex s00 =  s*s     / d;
+        double complex s01 =  2*W2*W2 / d;
+        double complex s10 =  2*W2*W2 / d;
+        double complex s11 = -s*s     / d;
+
+        (void)printf("%e %+e %+e %+e %+e %+e %+e %+e %+e\\n",
+                frequency_vector[i],
+                creal(s00), cimag(s00),
+                creal(s01), cimag(s01),
+                creal(s10), cimag(s10),
+                creal(s11), cimag(s11));
+    }
+    (void)printf("\\n\\n");
+
+    /*
+     * Now print the values as measured from the imperfect VNA.
+     */
+    (void)printf("# measured\\n");
+    for (int i = 0; i < M_FREQUENCIES; ++i) {
+        double complex m00 = vnacal_input_get_value(vip, 0, 0, i);
+        double complex m01 = vnacal_input_get_value(vip, 0, 1, i);
+        double complex m10 = vnacal_input_get_value(vip, 1, 0, i);
+        double complex m11 = vnacal_input_get_value(vip, 1, 1, i);
+
+        (void)printf("%e %+e %+e %+e %+e %+e %+e %+e %+e\\n",
+                frequency_vector[i],
+                creal(m00), cimag(m00),
+                creal(m01), cimag(m01),
+                creal(m10), cimag(m10),
+                creal(m11), cimag(m11));
+    }
+    (void)printf("\\n\\n");
+
+    /*
+     * Apply the calibration to the measured data and print the
+     * corrected s_matrix values.
+     */
+    if (vnacal_input_apply(vip, s_matrix) == -1) {
+        (void)fprintf(stderr, "vnacal_input_apply: %s\\n",
+                strerror(errno));
+        exit(8);
+    }
+    (void)printf("# calibrated\\n");
+    for (int i = 0; i < M_FREQUENCIES; ++i) {
+        double complex s00, s01, s10, s11;
+
+        s00 = vnadata_get_cell(s_matrix, i, 0, 0);
+        s01 = vnadata_get_cell(s_matrix, i, 0, 1);
+        s10 = vnadata_get_cell(s_matrix, i, 1, 0);
+        s11 = vnadata_get_cell(s_matrix, i, 1, 1);
+        (void)printf("%e %+e %+e %+e %+e %+e %+e %+e %+e\\n",
+                frequency_vector[i],
+                creal(s00), cimag(s00),
+                creal(s01), cimag(s01),
+                creal(s10), cimag(s10),
+                creal(s11), cimag(s11));
+    }
+    vnacal_input_free(vip);
+    vnacal_free(vcp);
+
+    exit(0);
+    /*NOTREACHED*/
+}
+.ft R
+.fi
+.\"
+.SH "SEE ALSO"
+.BR vnacal "(3)," vnadata "(3)," vnaformat "(3)"
