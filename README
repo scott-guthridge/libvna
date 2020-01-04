@@ -2,13 +2,27 @@ LIBVNA: Vector Network Analyzer Library
 Copyright © 2020 D Scott Guthridge <scott-guthridge@rompromity.net>
 
 Library for electrical vector network analyzers.  The library provides
-functions for doing 12-error parameter (and other) calibration,
-generalized conversions between parameter types, and loading and saving
+functions for 12-error parameter (and other) VNA calibration, generalized
+conversions between network parameter types, and loading and saving
 network parameter data in Touchstone 1, Touchstone 2 and a native format.
 Refer to the provided manual pages and examples.
 
-Build, Test and Install
+Prerequisites:
+    - You'll need a C99 level C compiler such as gcc or clang.
 
+    - You'll need to install the libyaml development package:
+
+	Fedora, RedHat, Centos
+	    sudo yum install libyaml-devel
+
+	Debian, Ubuntu
+	    sudo apt-get install libyaml-dev
+
+	If all else fails, download and build from source:
+	    https://pyyaml.org/wiki/LibYAML
+
+
+Build, Test and Install:
     $ ./bootstrap	# If building from git; skip if building from tarball.
     $ ./configure
     $ make
@@ -18,7 +32,6 @@ Build, Test and Install
 
 If you have gnuplot installed, you can see an interesting example of
 VNA calibration at work by running:
-
     $ make plot
 
 
@@ -42,5 +55,5 @@ help on right now are:
 
     - A review of the code (almost 24000 lines of C99 code)
 
-And please make suggestions for how the library could be improved.
+Finally, please make suggestions for how the library could be improved.
 
