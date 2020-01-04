@@ -9,6 +9,7 @@ Refer to the provided manual pages and examples.
 
 Build, Test and Install
 
+    $ ./bootstrap	# If building from git; skip if building from tarball.
     $ ./configure
     $ make
     $ make check
