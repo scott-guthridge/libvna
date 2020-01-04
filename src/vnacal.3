@@ -27,6 +27,7 @@ vnacal_error_fn_t, vnacal_calset_alloc, vnacal_calset_set_frequency_vector, vnac
 .BI "typedef void vnacal_error_fn_t(const char *" message ,
 .BI "void *" error_arg );
 .\"
+.SS "Calibration Set"
 .PP
 .BI "vnacal_calset_t *vnacal_calset_alloc(const char *" setname ,
 .in +4n
@@ -63,11 +64,12 @@ vnacal_error_fn_t, vnacal_calset_alloc, vnacal_calset_set_frequency_vector, vnac
 .in -4n
 .\"
 .PP
-.BI "int vnacal_calset_set_z0(vnacal_calset_t *" vcsp ", double complex" z0 );
+.BI "int vnacal_calset_set_z0(vnacal_calset_t *" vcsp ", double complex " z0 );
 .\"
 .PP
 .BI "void vnacal_calset_free(vnacal_calset_t *" vcsp );
 .\"
+.SS "Calibration Object"
 .PP
 .BI "vnacal_t *vnacal_create(int " sets ", vnacal_calset_t **" vcspp ,
 .in +4n
@@ -123,6 +125,10 @@ vnacal_error_fn_t, vnacal_calset_alloc, vnacal_calset_set_frequency_vector, vnac
 .BI "int vnacal_set_dprecision(vnacal_t *" vcp ", int " precision );
 .\"
 .PP
+.BI "void vnacal_free(vnacal_t *" vcp );
+.\"
+.SS "Calibration Properties"
+.PP
 .BI "int vnacal_property_set(vnacal_t *" vcp ", int " set ,
 .in +4n
 .BI "const char *" format ", ...);"
@@ -158,11 +164,7 @@ vnacal_error_fn_t, vnacal_calset_alloc, vnacal_calset_set_frequency_vector, vnac
 .BI "const char *" format ", ...);"
 .in -4n
 .\"
-.PP
-.BI "void vnacal_free(vnacal_t *" vcp );
-.PP
-.PP
-.\"
+.SS "Calibration Input Object"
 .PP
 .BI "vnacal_input_t *vnacal_input_alloc(vnacal_t *" vcp ,
 .BI "int " set ,
@@ -209,7 +211,7 @@ Link with \fI-lvna\fP \fI-lyaml\fP \fI-lm\fP.
 .\"
 .SH DESCRIPTION
 This library calculates error terms for electical vector network analyzers
-(VNA's) and uses the calculated error terms to convert measured voltages
+(VNAs) and uses the calculated error terms to convert measured voltages
 from a device under test (DUT) to an S-parameter matrix.
 .PP
 The library is used in two phases: calibration and application.
@@ -317,11 +319,12 @@ If \fBvnacal_calset_add_vector\fP() is called more than once for the
 same \fIrow\fP, \fIcolumn\fP and \fIterm\fP, the vectors are averaged.
 .PP
 The \fBvnacal_calset_set_reference\fP() function sets the given
-\fIreference\fP (zero-based) to \fIgamma\fP.
-References are given in gamma \- the conversion from impedance is gamma =
-(Z - Z0*) / (Z + Z0), where * is the conjugate operator.
-If not called, the three gamma values default to -1.0 (short), 1.0 (open)
-and 0.0 (load), respectively.
+\fIreference\fP (zero-based) to \fIgamma\fP, where gamma is the reflection
+coefficient.
+When working with reference impedances, the conversion from impedance to
+reflection coefficient is (Z - Z0*) / (Z + Z0), where * is the conjugate
+operator.  If not called, the three gamma values default to -1.0 (short),
+1.0 (open) and 0.0 (load), respectively.
 .PP
 \fBvnacal_calset_set_reference_vector\fP() sets reference gamma
 values for the given \fIreference\fP on a per-frequency basis.
@@ -340,8 +343,8 @@ with the reference frequencies.
 \fBvnacalset_set_z0\fP() sets the system impedance for the vector network
 analyzer ports.
 If not set, the value defaults to 50.0 ohms.
-The library currently assumes all VNA ports must have the same system
-system impedance.
+The library currently assumes all VNA ports have the same system
+impedance.
 .PP
 The last steps of calibration are to use \fBvnacal_create\fP() to
 create error terms and \fBvnacal_save\fP() to save the calibration
@@ -435,7 +438,7 @@ frequencies, respectively, in the calibration set indexed by \fIset\fP.
 and maximum frequencies, respectively, in the calibration indexed by
 \fIset\fP.
 .PP
-\fBvnacal_get_frequencies\fP() returns a pointer to the vector of
+\fBvnacal_get_frequency_vector\fP() returns a pointer to the vector of
 frequencies in the calibration set.
 .PP
 \fBvnacal_free\fP() frees the memory for the calibration obtained from
@@ -493,7 +496,7 @@ The library provides methods for storing user-defined structures and
 arrays in the calibration file.
 This is useful for describing the vector network analyzer, conditions
 under which the calibration was made, which detector measures which
-signal, switch settings needed for each measurement and other parameters.
+signal, switch settings needed for each measurement and other information.
 All property functions take similar arguments: \fIvcp\fP is a pointer
 to the \fBvnacal_t\fP object returned from \fBvnacal_create\fP() or
 \fBvnacal_load\fP(); \fIset\fP is the index of the calibration set,
