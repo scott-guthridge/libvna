@@ -201,24 +201,6 @@ static int _vnafile_convert(vnafile_t *vfp,
 }
 
 /*
- * _vnafile_get_matrix: return the matrix of the requested type
- *   @conversions: cached conversions
- *   @vdp: input data
- *   @type: desired type
- */
-static const vnadata_t *_vnafile_get_matrix(vnadata_t **conversions,
-	const vnadata_t *vdp, vnadata_parameter_type_t type)
-{
-    if (conversions[type] != NULL) {
-	return conversions[type];
-    }
-    if (type == vnadata_get_type(vdp)) {
-	return vdp;
-    }
-    return NULL;
-}
-
-/*
  * _vnafile_find_type: try to determine the file format from the filename
  *   @filename: input or output filename
  */
@@ -285,15 +267,19 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
     int output_fields = 1;
     int current_field = 0;
     int field_width;
-    int port_width;
-    char port_buf[2 * 3 * sizeof(int) + 1];
+    int port_width, port_pair_width;
+    int parameter_width = 0;
+    char parameter_buf[3 + 2 * 3 * sizeof(int) + 1];
     const double complex *z0_vector = vnadata_get_z0_vector(vdp);
 
     /*
-     * Get the characteristics of the underlying s-parameter matrix.
+     * Get the number of rows and columns.  We have to do a little
+     * munging here if the vdp's parameter type is Zin because a Zin
+     * vector is really a diagonal matrix stored as a vector.  We want
+     * the dimensions of the matrix, not the vector here.
      */
-    rows             = vnadata_get_rows(vdp);
-    columns          = vnadata_get_columns(vdp);
+    rows    = vnadata_get_rows(vdp);
+    columns = vnadata_get_columns(vdp);
     if (vdp->vd_type == VPT_ZIN) {
 	if (rows == 1) {
 	    rows = columns;
@@ -301,33 +287,29 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 	    columns = rows;
 	}
     }
-    ports            = MAX(rows, columns);
-    diagonals        = MIN(rows, columns);
+    ports     = MAX(rows, columns);
+    diagonals = MIN(rows, columns);
 
     /*
-     * If vdp is only a vector, fix rows and columns to reflect those
-     * of the underlying s-parameter matrix.
-     */
-    if (vdp->vd_type == VPT_ZIN) {
-	if (rows == 1) {
-	    rows = columns;
-	} else if (columns == 1) {
-	    columns = rows;
-	}
-    }
-
-    /*
-     * Determine the number of digits needed to display the port number.
+     * Determine the number of digits needed to display both a single
+     * port number and a pair of port numbers.
      */
     if ((ports + 1) < 10) {
 	port_width = 1;
     } else {
 	port_width = (int)floor(log10(ports + 0.5)) + 1;
     }
+    if (ports > 9) {
+	port_pair_width = 2 * port_width + 1;
+    } else {
+	port_pair_width = 2 * port_width;
+    }
 
     /*
-     * Determine the number of output fields and from it determine
-     * the number of digits needed to display the field number.
+     * Determine the number of output fields and from it determine the
+     * number of digits needed to display the field number.  At the
+     * same time find the number of digits needed for the parameter name
+     * and ports.
      */
     if (z0_vector == NULL) {
 	output_fields += 2 * ports;
@@ -335,42 +317,40 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
     for (int format = 0; format < vfp->vf_format_count; ++format) {
 	const vnafile_format_t *vffp = &vfp->vf_format_vector[format];
 
-	switch (vffp->vff_parameter) {
-	case VNAFILE_PARAMETER_S:
-	case VNAFILE_PARAMETER_Z:
-	case VNAFILE_PARAMETER_Y:
-	    output_fields += 2 * rows * columns;
+	switch (vffp->vff_format) {
+	case VNAFILE_FORMAT_DB_ANGLE:
+	case VNAFILE_FORMAT_MAG_ANGLE:
+	case VNAFILE_FORMAT_REAL_IMAG:
+	    if (vffp->vff_parameter != VPT_ZIN) {
+		output_fields += 2 * rows * columns;
+		parameter_width = MAX(parameter_width, 1 + port_pair_width);
+	    } else {
+		output_fields += diagonals;
+		parameter_width = MAX(parameter_width, 3 + port_width);
+	    }
 	    break;
 
-	case VNAFILE_PARAMETER_T:
-	case VNAFILE_PARAMETER_H:
-	case VNAFILE_PARAMETER_G:
-	case VNAFILE_PARAMETER_A:
-	case VNAFILE_PARAMETER_B:
-	    output_fields += 8;
-	    break;
-
-	case VNAFILE_PARAMETER_ZIN:
-	    output_fields += 2 * ports;
-	    break;
-
-	case VNAFILE_PARAMETER_IL:
-	    output_fields += rows * columns - diagonals;
-	    break;
-
-	case VNAFILE_PARAMETER_RL:
-	    output_fields += diagonals;
-	    break;
-
-	case VNAFILE_PARAMETER_PRC:
-	case VNAFILE_PARAMETER_PRL:
-	case VNAFILE_PARAMETER_SRC:
-	case VNAFILE_PARAMETER_SRL:
+	case VNAFILE_FORMAT_PRC:
+	case VNAFILE_FORMAT_PRL:
+	case VNAFILE_FORMAT_SRC:
+	case VNAFILE_FORMAT_SRL:
 	    output_fields += 2 * diagonals;
+	    parameter_width = MAX(parameter_width, 3 + port_width);
 	    break;
 
-	case VNAFILE_PARAMETER_VSWR:
+	case VNAFILE_FORMAT_IL:
+	    output_fields += rows * columns - diagonals;
+	    parameter_width = MAX(parameter_width, 2 + port_pair_width);
+	    break;
+
+	case VNAFILE_FORMAT_RL:
 	    output_fields += diagonals;
+	    parameter_width = MAX(parameter_width, 2 + port_width);
+	    break;
+
+	case VNAFILE_FORMAT_VSWR:
+	    output_fields += diagonals;
+	    parameter_width = MAX(parameter_width, 4 + port_width);
 	    break;
 
 	default:
@@ -412,27 +392,20 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
     /*
      * Print a key for each field.
      */
-    (void)fprintf(fp, "# field %*d: frequency     (Hz)\n",
-	    field_width, ++current_field);
+    (void)fprintf(fp, "# field %*d: %-*s (Hz)\n",
+	    field_width, ++current_field, 10 + parameter_width, "frequency");
     if (z0_vector == NULL) {
-	int pwidth;
-
-	if (ports > 9) {
-	    pwidth = 2 * port_width + 1;
-	} else {
-	    pwidth = 2 * port_width;
-	}
 	for (int port = 0; port < ports; ++port) {
-	    (void)sprintf(port_buf, "%d", port + 1);
-	    (void)fprintf(fp, "# field %*d: Z%-*s real      (ohms)\n",
-		    field_width, ++current_field, pwidth, port_buf);
-	    (void)fprintf(fp, "# field %*d: Z%-*s imaginary (ohms)\n",
-		    field_width, ++current_field, pwidth, port_buf);
+	    (void)sprintf(parameter_buf, "Z%d", port + 1);
+	    (void)fprintf(fp, "# field %*d: %-*s real      (ohms)\n",
+		    field_width, ++current_field, parameter_width, parameter_buf);
+	    (void)fprintf(fp, "# field %*d: %-*s imaginary (ohms)\n",
+		    field_width, ++current_field, parameter_width, parameter_buf);
 	}
     }
     for (int format = 0; format < vfp->vf_format_count; ++format) {
 	const vnafile_format_t *vffp = &vfp->vf_format_vector[format];
-	char name;
+	const char *name;
 	const char *const *type_vector;
 	static const char *st_types[] = {
 	    "v-ratio", NULL
@@ -452,89 +425,133 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 	static const char *ab_types[] = {
 	    "v-ratio", "ohms", "seimens", "i-ratio", NULL
 	};
-
-	switch (vffp->vff_parameter) {
-	    do {
-	case VNAFILE_PARAMETER_S:
-		name = 'S';
+	switch (vffp->vff_format) {
+	case VNAFILE_FORMAT_DB_ANGLE:
+	case VNAFILE_FORMAT_MAG_ANGLE:
+	case VNAFILE_FORMAT_REAL_IMAG:
+	    /*
+	     * Handle Zin.
+	     */
+	    if (vffp->vff_parameter == VPT_ZIN) {
+		for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
+		    (void)sprintf(parameter_buf, "Zin%d", diagonal + 1);
+		    (void)fprintf(fp, "# field %*d: %-*s",
+			field_width, ++current_field,
+			parameter_width, parameter_buf);
+		    switch (vffp->vff_format) {
+		    case VNAFILE_FORMAT_REAL_IMAG:
+			(void)fprintf(fp, " real      (ohms)\n");
+			break;
+		    case VNAFILE_FORMAT_MAG_ANGLE:
+			(void)fprintf(fp, " magnitude (ohms)\n");
+			break;
+		    default:
+			abort();
+			/*NOTREACHED*/
+		    }
+		    (void)fprintf(fp, "# field %*d: %-*s",
+			field_width, ++current_field,
+			parameter_width, parameter_buf);
+		    switch (vffp->vff_format) {
+		    case VNAFILE_FORMAT_REAL_IMAG:
+			(void)fprintf(fp, " imaginary (ohms)\n");
+			break;
+		    case VNAFILE_FORMAT_MAG_ANGLE:
+			(void)fprintf(fp, " angle     (degrees)\n");
+			break;
+		    default:
+			abort();
+			/*NOTREACHED*/
+		    }
+		}
+		break;
+	    }
+	    /*
+	     * Handle matrix types.
+	     */
+	    switch (vffp->vff_parameter) {
+	    case VPT_S:
+		name = "S";
 		type_vector = st_types;
 		break;
 
-	case VNAFILE_PARAMETER_Z:
-		name = 'Z';
+	    case VPT_Z:
+		name = "Z";
 		type_vector = z_types;
 		break;
 
-	case VNAFILE_PARAMETER_Y:
-		name = 'Y';
+	    case VPT_Y:
+		name = "Y";
 		type_vector = y_types;
 		break;
 
-	case VNAFILE_PARAMETER_T:
-		name = 'T';
+	    case VPT_T:
+		name = "T";
 		type_vector = st_types;
 		break;
 
-	case VNAFILE_PARAMETER_H:
-		name = 'H';
+	    case VPT_H:
+		name = "H";
 		type_vector = h_types;
 		break;
 
-	case VNAFILE_PARAMETER_G:
-		name = 'G';
+	    case VPT_G:
+		name = "G";
 		type_vector = g_types;
 		break;
 
-	case VNAFILE_PARAMETER_A:
-		name = 'A';
+	    case VPT_A:
+		name = "A";
 		type_vector = ab_types;
 		break;
 
-	case VNAFILE_PARAMETER_B:
-		name = 'B';
+	    case VPT_B:
+		name = "B";
 		type_vector = ab_types;
 		break;
-	    } while (false);
+
+	    default:
+		abort();
+		/*NOTREACHED*/
+	    }
 	    for (int row = 0; row < rows; ++row) {
 		for (int column = 0; column < columns; ++column) {
 		    const char *type = (type_vector[1] == NULL) ?
 			type_vector[0] : type_vector[row * columns + column];
-		    int pwidth;
 
-		    if (ports > 9) {
-			(void)sprintf(port_buf, "%d,%d", row + 1, column + 1);
-			pwidth = 2 * port_width + 1;
+		    if (ports <= 9) {
+			(void)sprintf(parameter_buf, "%s%d%d",
+				name, row + 1, column + 1);
 		    } else {
-			(void)sprintf(port_buf, "%d%d", row + 1, column + 1);
-			pwidth = 2 * port_width;
+			(void)sprintf(parameter_buf, "%s%d,%d",
+				name, row + 1, column + 1);
 		    }
-
-		    (void)fprintf(fp, "# field %*d: %c%-*s",
-			field_width, ++current_field, name, pwidth,
-			port_buf);
-		    switch (vffp->vff_coordinates) {
-		    case VNAFILE_COORDINATES_REAL_IMAG:
+		    (void)fprintf(fp, "# field %*d: %-*s",
+			field_width, ++current_field,
+			parameter_width, parameter_buf);
+		    switch (vffp->vff_format) {
+		    case VNAFILE_FORMAT_REAL_IMAG:
 			(void)fprintf(fp, " real      (%s)\n", type);
 			break;
-		    case VNAFILE_COORDINATES_MAG_ANGLE:
+		    case VNAFILE_FORMAT_MAG_ANGLE:
 			(void)fprintf(fp, " magnitude (%s)\n", type);
 			break;
-		    case VNAFILE_COORDINATES_DB_ANGLE:
+		    case VNAFILE_FORMAT_DB_ANGLE:
 			(void)fprintf(fp, " magnitude (dB)\n");
 			break;
 		    default:
 			abort();
 			/*NOTREACHED*/
 		    }
-		    (void)fprintf(fp, "# field %*d: %c%-*s",
-			field_width, ++current_field, name, pwidth,
-			port_buf);
-		    switch (vffp->vff_coordinates) {
-		    case VNAFILE_COORDINATES_REAL_IMAG:
+		    (void)fprintf(fp, "# field %*d: %-*s",
+			field_width, ++current_field,
+			parameter_width, parameter_buf);
+		    switch (vffp->vff_format) {
+		    case VNAFILE_FORMAT_REAL_IMAG:
 			(void)fprintf(fp, " imaginary (%s)\n", type);
 			break;
-		    case VNAFILE_COORDINATES_MAG_ANGLE:
-		    case VNAFILE_COORDINATES_DB_ANGLE:
+		    case VNAFILE_FORMAT_MAG_ANGLE:
+		    case VNAFILE_FORMAT_DB_ANGLE:
 			(void)fprintf(fp, " angle     (degrees)\n");
 			break;
 		    default:
@@ -545,39 +562,52 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 	    }
 	    break;
 
-	case VNAFILE_PARAMETER_ZIN:
+	case VNAFILE_FORMAT_PRC:
+	    assert(vffp->vff_parameter == VPT_ZIN);
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-                (void)sprintf(port_buf, "%d", diagonal + 1);
-                (void)fprintf(fp, "# field %*d: Zin%-*s",
-                    field_width, ++current_field, port_width, port_buf);
-		switch (vffp->vff_coordinates) {
-		case VNAFILE_COORDINATES_REAL_IMAG:
-		    (void)fprintf(fp, " real      (ohms)\n");
-		    break;
-		case VNAFILE_COORDINATES_MAG_ANGLE:
-		    (void)fprintf(fp, " magnitude (ohms)\n");
-		    break;
-		default:
-		    abort();
-		    /*NOTREACHED*/
-		}
-                (void)fprintf(fp, "# field %*d: Zin%-*s",
-                    field_width, ++current_field, port_width, port_buf);
-		switch (vffp->vff_coordinates) {
-		case VNAFILE_COORDINATES_REAL_IMAG:
-		    (void)fprintf(fp, " imaginary (ohms)\n");
-		    break;
-		case VNAFILE_COORDINATES_MAG_ANGLE:
-		    (void)fprintf(fp, " angle     (degrees)\n");
-		    break;
-		default:
-		    abort();
-		    /*NOTREACHED*/
-		}
+                (void)sprintf(parameter_buf, "PRC%d", diagonal + 1);
+                (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
+                    field_width, ++current_field, parameter_width, parameter_buf);
+                (void)fprintf(fp, "# field %*d: %-*s C         (farads)\n",
+                    field_width, ++current_field, parameter_width, parameter_buf);
             }
             break;
 
-	case VNAFILE_PARAMETER_IL:
+	case VNAFILE_FORMAT_PRL:
+	    assert(vffp->vff_parameter == VPT_ZIN);
+            for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
+                (void)sprintf(parameter_buf, "PRL%d", diagonal + 1);
+                (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
+                    field_width, ++current_field, parameter_width, parameter_buf);
+                (void)fprintf(fp, "# field %*d: %-*s L         (henries)\n",
+                    field_width, ++current_field, parameter_width, parameter_buf);
+            }
+            break;
+
+	case VNAFILE_FORMAT_SRC:
+	    assert(vffp->vff_parameter == VPT_ZIN);
+            for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
+                (void)sprintf(parameter_buf, "SRC%d", diagonal + 1);
+                (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
+                    field_width, ++current_field, parameter_width, parameter_buf);
+                (void)fprintf(fp, "# field %*d: %-*s C         (farads)\n",
+                    field_width, ++current_field, parameter_width, parameter_buf);
+            }
+            break;
+
+	case VNAFILE_FORMAT_SRL:
+	    assert(vffp->vff_parameter == VPT_ZIN);
+            for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
+                (void)sprintf(parameter_buf, "SRL%d", diagonal + 1);
+                (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
+                    field_width, ++current_field, parameter_width, parameter_buf);
+                (void)fprintf(fp, "# field %*d: %-*s L         (henries)\n",
+                    field_width, ++current_field, parameter_width, parameter_buf);
+            }
+            break;
+
+	case VNAFILE_FORMAT_IL:
+	    assert(vffp->vff_parameter == VPT_S);
 	    for (int row = 0; row < rows; ++row) {
 		for (int column = 0; column < columns; ++column) {
 		    int pwidth;
@@ -585,72 +615,35 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 		    if (row == column) {
 			continue;
 		    }
-		    if (ports > 9) {
-			(void)sprintf(port_buf, "%d,%d", row + 1, column + 1);
-			pwidth = 2 * port_width + 1;
+		    if (ports <= 9) {
+			(void)sprintf(parameter_buf, "IL%d%d",
+				row + 1, column + 1);
 		    } else {
-			(void)sprintf(port_buf, "%d%d", row + 1, column + 1);
-			pwidth = 2 * port_width;
+			(void)sprintf(parameter_buf, "IL%d,%d",
+				row + 1, column + 1);
 		    }
-		    (void)fprintf(fp, "# field %*d: IL%-*s magnitude (dB)\n",
-			field_width, ++current_field, pwidth, port_buf);
+		    (void)fprintf(fp, "# field %*d: %-*s magnitude (dB)\n",
+			field_width, ++current_field,
+			parameter_width, parameter_buf);
 		}
 	    }
             break;
 
-	case VNAFILE_PARAMETER_RL:
+	case VNAFILE_FORMAT_RL:
+	    assert(vffp->vff_parameter == VPT_S);
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-                (void)sprintf(port_buf, "%d", diagonal + 1);
-                (void)fprintf(fp, "# field %*d: RL%-*s magnitude (dB)\n",
-                    field_width, ++current_field, port_width, port_buf);
+                (void)sprintf(parameter_buf, "RL%d", diagonal + 1);
+                (void)fprintf(fp, "# field %*d: %-*s magnitude (dB)\n",
+                    field_width, ++current_field, parameter_width, parameter_buf);
             }
             break;
 
-	case VNAFILE_PARAMETER_PRC:
+	case VNAFILE_FORMAT_VSWR:
+	    assert(vffp->vff_parameter == VPT_S);
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-                (void)sprintf(port_buf, "%d", diagonal + 1);
-                (void)fprintf(fp, "# field %*d: PRC%-*s R         (ohms)\n",
-                    field_width, ++current_field, port_width, port_buf);
-                (void)fprintf(fp, "# field %*d: PRC%-*s C         (farads)\n",
-                    field_width, ++current_field, port_width, port_buf);
-            }
-            break;
-
-	case VNAFILE_PARAMETER_PRL:
-            for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-                (void)sprintf(port_buf, "%d", diagonal + 1);
-                (void)fprintf(fp, "# field %*d: PRL%-*s R         (ohms)\n",
-                    field_width, ++current_field, port_width, port_buf);
-                (void)fprintf(fp, "# field %*d: PRL%-*s L         (henries)\n",
-                    field_width, ++current_field, port_width, port_buf);
-            }
-            break;
-
-	case VNAFILE_PARAMETER_SRC:
-            for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-                (void)sprintf(port_buf, "%d", diagonal + 1);
-                (void)fprintf(fp, "# field %*d: SRC%-*s R         (ohms)\n",
-                    field_width, ++current_field, port_width, port_buf);
-                (void)fprintf(fp, "# field %*d: SRC%-*s C         (farads)\n",
-                    field_width, ++current_field, port_width, port_buf);
-            }
-            break;
-
-	case VNAFILE_PARAMETER_SRL:
-            for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-                (void)sprintf(port_buf, "%d", diagonal + 1);
-                (void)fprintf(fp, "# field %*d: SRL%-*s R         (ohms)\n",
-                    field_width, ++current_field, port_width, port_buf);
-                (void)fprintf(fp, "# field %*d: SRL%-*s L         (henries)\n",
-                    field_width, ++current_field, port_width, port_buf);
-            }
-            break;
-
-	case VNAFILE_PARAMETER_VSWR:
-            for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-                (void)sprintf(port_buf, "%d", diagonal + 1);
-                (void)fprintf(fp, "# field %*d: VSWR%-*s\n",
-                    field_width, ++current_field, port_width, port_buf);
+                (void)sprintf(parameter_buf, "VSWR%d", diagonal + 1);
+                (void)fprintf(fp, "# field %*d: %-*s\n",
+                    field_width, ++current_field, parameter_width, parameter_buf);
             }
             break;
 
@@ -673,7 +666,7 @@ static void print_touchstone_header(vnafile_t *vfp, FILE *fp,
 	const vnadata_t *vdp, double z0_touchstone)
 {
     vnafile_format_t *vffp = &vfp->vf_format_vector[0];
-    char parameter;
+    char parameter_name;
     const char *format;
     int ports = vnadata_get_rows(vdp);
     const double complex *z0_vector = vnadata_get_z0_vector(vdp);
@@ -685,40 +678,40 @@ static void print_touchstone_header(vnafile_t *vfp, FILE *fp,
 	(void)fprintf(fp, "[Version] 2.0\n");
     }
     switch (vffp->vff_parameter) {
-    case VNAFILE_PARAMETER_S:
-	parameter = 'S';
+    case VPT_S:
+	parameter_name = 'S';
 	break;
-    case VNAFILE_PARAMETER_Z:
-	parameter = 'Z';
+    case VPT_Z:
+	parameter_name = 'Z';
 	break;
-    case VNAFILE_PARAMETER_Y:
-	parameter = 'Y';
+    case VPT_Y:
+	parameter_name = 'Y';
 	break;
-    case VNAFILE_PARAMETER_H:
-	parameter = 'H';
+    case VPT_H:
+	parameter_name = 'H';
 	break;
-    case VNAFILE_PARAMETER_G:
-	parameter = 'G';
+    case VPT_G:
+	parameter_name = 'G';
 	break;
     default:
 	abort();
 	/*NOTREACHED*/
     }
-    switch (vffp->vff_coordinates) {
-    case VNAFILE_COORDINATES_DB_ANGLE:
+    switch (vffp->vff_format) {
+    case VNAFILE_FORMAT_DB_ANGLE:
 	format = "DB";
 	break;
-    case VNAFILE_COORDINATES_MAG_ANGLE:
+    case VNAFILE_FORMAT_MAG_ANGLE:
 	format = "MA";
 	break;
-    case VNAFILE_COORDINATES_REAL_IMAG:
+    case VNAFILE_FORMAT_REAL_IMAG:
 	format = "RI";
 	break;
     default:
 	abort();
 	/*NOTREACHED*/
     }
-    (void)fprintf(fp, "# Hz %c %s R ", parameter, format);
+    (void)fprintf(fp, "# Hz %c %s R ", parameter_name, format);
     (void)print_value(fp, vfp->vf_dprecision, /*plus=*/false, /*pad=*/false,
 	    z0_touchstone);
     (void)fputc('\n', fp);
@@ -869,20 +862,38 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	}
 
 	/*
-	 * Touchstone format supports only S, Z, Y, H & G parameters.
+	 * Touchstone format supports only S, Z, Y, H & G parameters
+	 * and only DB, MA and RI formats.
 	 */
 	{
 	    vnafile_format_t *vffp = &vfp->vf_format_vector[0];
+	    vnadata_parameter_type_t parameter = vffp->vff_parameter;
+	    bool bad = false;
 
-	    switch (vffp->vff_parameter) {
-	    case VNAFILE_PARAMETER_S:
-	    case VNAFILE_PARAMETER_Z:
-	    case VNAFILE_PARAMETER_Y:
-	    case VNAFILE_PARAMETER_H:
-	    case VNAFILE_PARAMETER_G:
+	    if (parameter == VPT_UNDEF) {
+		parameter = vdp->vd_type;
+	    }
+	    switch (parameter) {
+	    case VPT_S:
+	    case VPT_Z:
+	    case VPT_Y:
+	    case VPT_H:
+	    case VPT_G:
 		break;
 
 	    default:
+		bad = true;
+	    }
+	    switch (vffp->vff_format) {
+	    case VNAFILE_FORMAT_DB_ANGLE:
+	    case VNAFILE_FORMAT_MAG_ANGLE:
+	    case VNAFILE_FORMAT_REAL_IMAG:
+		break;
+
+	    default:
+		bad = true;
+	    }
+	    if (bad) {
 		_vnafile_error(vfp, "%s: error: cannot save parameter %s in "
 			"touchstone format", function,
 			_vnafile_format_to_name(vffp));
@@ -956,35 +967,27 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	break;
 
     case VNAFILE_NATIVE:
-	/*
-	 * In native format, disallow nonsensical use of dB for values
+	/* 
+	 * For native format, disallow nonsensical use of dB for values
 	 * that are neither power nor root power.  Unfortunately,
 	 * Touchstone allows this, defining dB as 20*log10(cabs(value)),
-	 * even for parameters that are dimensionless or in units of
-	 * ohms or seimens.
+	 * even for parameters in units of ohms or seimens.
 	 */
 	for (int i = 0; i < vfp->vf_format_count; ++i) {
 	    vnafile_format_t *vffp = &vfp->vf_format_vector[i];
+	    vnadata_parameter_type_t parameter = vffp->vff_parameter;
 
-	    switch (vffp->vff_parameter) {
-	    case VNAFILE_PARAMETER_Z:
-	    case VNAFILE_PARAMETER_Y:
-	    case VNAFILE_PARAMETER_H:
-	    case VNAFILE_PARAMETER_G:
-	    case VNAFILE_PARAMETER_A:
-	    case VNAFILE_PARAMETER_B:
-	    case VNAFILE_PARAMETER_ZIN:
-		if (vffp->vff_coordinates == VNAFILE_COORDINATES_DB_ANGLE) {
-		    _vnafile_error(vfp, "%s: error: %s: in native format, only "
-			    "power or root-power parameters can be displayed "
-			    "in dB", function, _vnafile_format_to_name(vffp));
-		    errno = EINVAL;
-		    goto out;
-		}
-		break;
-
-	    default:
-		break;
+	    if (parameter == VPT_UNDEF) {
+		parameter = vdp->vd_type;
+	    }
+	    if (vffp->vff_format == VNAFILE_FORMAT_DB_ANGLE &&
+		    parameter != VPT_S && parameter != VPT_T) {
+		_vnafile_error(vfp, "%s: error: %s: in native format, "
+			"only power or root-power parameters can be "
+			"displayed in dB",
+			function, _vnafile_format_to_name(vffp));
+		errno = EINVAL;
+		goto out;
 	    }
 	}
 	break;
@@ -1002,7 +1005,7 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	for (int i = 0; i < vfp->vf_format_count; ++i) {
 	    vnafile_format_t *vffp = &vfp->vf_format_vector[i];
 
-	    if (vffp->vff_parameter == VNAFILE_PARAMETER_RL) {
+	    if (vffp->vff_format == VNAFILE_FORMAT_RL) {
 		_vnafile_error(vfp, "%s: error: return loss requires at "
 			"least one off-diagonal element", function);
 		goto out;
@@ -1059,59 +1062,12 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
      */
     for (int i = 0; i < vfp->vf_format_count; ++i) {
 	vnafile_format_t *vffp = &vfp->vf_format_vector[i];
-	vnadata_parameter_type_t target_type;
 
-	switch (vffp->vff_parameter) {
-	case VNAFILE_PARAMETER_S:
-	case VNAFILE_PARAMETER_IL:
-	case VNAFILE_PARAMETER_RL:
-	case VNAFILE_PARAMETER_VSWR:
-	    target_type = VPT_S;
-	    break;
-
-	case VNAFILE_PARAMETER_Z:
-	    target_type = VPT_Z;
-	    break;
-
-	case VNAFILE_PARAMETER_Y:
-	    target_type = VPT_Y;
-	    break;
-
-	case VNAFILE_PARAMETER_T:
-	    target_type = VPT_T;
-	    break;
-
-	case VNAFILE_PARAMETER_H:
-	    target_type = VPT_H;
-	    break;
-
-	case VNAFILE_PARAMETER_G:
-	    target_type = VPT_G;
-	    break;
-
-	case VNAFILE_PARAMETER_A:
-	    target_type = VPT_A;
-	    break;
-
-	case VNAFILE_PARAMETER_B:
-	    target_type = VPT_B;
-	    break;
-
-	case VNAFILE_PARAMETER_ZIN:
-	case VNAFILE_PARAMETER_PRC:
-	case VNAFILE_PARAMETER_PRL:
-	case VNAFILE_PARAMETER_SRC:
-	case VNAFILE_PARAMETER_SRL:
-	    target_type = VPT_ZIN;
-	    break;
-
-	default:
-	    abort();
-	    /*NOTREACHED*/
-	}
-	if (_vnafile_convert(vfp, conversions, vdp, target_type,
-			     function) == -1) {
-	    goto out;
+	if (vffp->vff_parameter != VPT_UNDEF) {
+	    if (_vnafile_convert(vfp, conversions, vdp, vffp->vff_parameter,
+			function) == -1) {
+		goto out;
+	    }
 	}
     }
 
@@ -1121,6 +1077,29 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
     if (function == vnafile_check_name) {
 	rc = 0;
 	goto out;
+    }
+
+    /*
+     * Go through the format vector and fixup any instances of "ri",
+     * "ma" and "db" without parameter types with the parameter type
+     * from the data object.
+     */
+    {
+	bool changed = false;
+
+	for (int i = 0; i < vfp->vf_format_count; ++i) {
+	    vnafile_format_t *vffp = &vfp->vf_format_vector[i];
+
+	    if (vffp->vff_parameter == VPT_UNDEF) {
+		vffp->vff_parameter = vdp->vd_type;
+		changed = true;
+	    }
+	}
+	if (changed) {
+	    if (_vnafile_update_format_string(vfp) == -1) {
+		goto out;
+	    }
+	}
     }
 
     /*
@@ -1186,58 +1165,18 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	for (int format = 0; format < vfp->vf_format_count; ++format) {
 	    const vnafile_format_t *vffp = &vfp->vf_format_vector[format];
 	    const vnadata_t *matrix = NULL;
+	    const double complex *data = NULL;
 	    bool last_arg;
-	    
+	    bool done = false;
+
 	    /*
 	     * Get the needed matrix.
 	     */
-	    switch (vffp->vff_parameter) {
-	    case VNAFILE_PARAMETER_S:
-	    case VNAFILE_PARAMETER_IL:
-	    case VNAFILE_PARAMETER_RL:
-	    case VNAFILE_PARAMETER_VSWR:
-		matrix = _vnafile_get_matrix(conversions, vdp, VPT_S);
-		break;
-
-	    case VNAFILE_PARAMETER_Z:
-		matrix = _vnafile_get_matrix(conversions, vdp, VPT_Z);
-		break;
-
-	    case VNAFILE_PARAMETER_Y:
-		matrix = _vnafile_get_matrix(conversions, vdp, VPT_Y);
-		break;
-
-	    case VNAFILE_PARAMETER_T:
-		matrix = _vnafile_get_matrix(conversions, vdp, VPT_T);
-		break;
-
-	    case VNAFILE_PARAMETER_H:
-		matrix = _vnafile_get_matrix(conversions, vdp, VPT_H);
-		break;
-
-	    case VNAFILE_PARAMETER_G:
-		matrix = _vnafile_get_matrix(conversions, vdp, VPT_G);
-		break;
-
-	    case VNAFILE_PARAMETER_A:
-		matrix = _vnafile_get_matrix(conversions, vdp, VPT_A);
-		break;
-
-	    case VNAFILE_PARAMETER_B:
-		matrix = _vnafile_get_matrix(conversions, vdp, VPT_B);
-		break;
-
-	    case VNAFILE_PARAMETER_ZIN:
-	    case VNAFILE_PARAMETER_PRC:
-	    case VNAFILE_PARAMETER_PRL:
-	    case VNAFILE_PARAMETER_SRC:
-	    case VNAFILE_PARAMETER_SRL:
-		matrix = _vnafile_get_matrix(conversions, vdp, VPT_ZIN);
-		break;
-
-	    default:
-		abort();
-		/*NOTREACHED*/
+	    assert(vffp->vff_parameter != VPT_UNDEF);
+	    if (vffp->vff_parameter == vdp->vd_type) {
+		matrix = vdp;
+	    } else {
+		matrix = conversions[vffp->vff_parameter];
 	    }
 	    assert(matrix != NULL);
 
@@ -1245,14 +1184,78 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	     * Print
 	     */
 	    switch (vffp->vff_parameter) {
-	    case VNAFILE_PARAMETER_S:
-	    case VNAFILE_PARAMETER_Z:
-	    case VNAFILE_PARAMETER_Y:
-	    case VNAFILE_PARAMETER_T:
-	    case VNAFILE_PARAMETER_H:
-	    case VNAFILE_PARAMETER_G:
-	    case VNAFILE_PARAMETER_A:
-	    case VNAFILE_PARAMETER_B:
+	    case VPT_S:
+		switch (vffp->vff_format) {
+		case VNAFILE_FORMAT_IL:
+		    for (int row = 0; row < rows; ++row) {
+			for (int column = 0; column < columns; ++column) {
+			    double complex value;
+
+			    if (row == column) {
+				continue;
+			    }
+			    value = vnadata_get_cell(matrix, findex, row, column);
+			    (void)fputc(' ', fp);
+			    last_arg = format == vfp->vf_format_count - 1 &&
+				row == rows - 1 && column == columns - 1;
+			    print_value(fp, vfp->vf_dprecision,
+				    /*plus=*/true, /*pad=*/!last_arg,
+				    -20.0 * log10(cabs(value)));
+			}
+		    }
+		    done = true;
+		    break;
+
+		case VNAFILE_FORMAT_RL:
+		    for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
+			double complex value;
+
+			value = vnadata_get_cell(matrix, findex, diagonal,
+				diagonal);
+			(void)fputc(' ', fp);
+			last_arg = format == vfp->vf_format_count - 1 &&
+			    diagonal == diagonals - 1;
+			print_value(fp, vfp->vf_dprecision,
+				/*plus=*/true, /*pad=*/!last_arg,
+				-20.0 * log10(cabs(value)));
+		    }
+		    done = true;
+		    break;
+
+		case VNAFILE_FORMAT_VSWR:
+		    for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
+			double complex sxx;
+			double a;
+			double vswr;
+
+			sxx = vnadata_get_cell(matrix, findex,
+				diagonal, diagonal);
+			a = cabs(sxx);
+			vswr = (1.0 + a) / fabs(1.0 - a);
+			(void)fputc(' ', fp);
+			last_arg = format == vfp->vf_format_count - 1 &&
+			    diagonal == diagonals - 1;
+			print_value(fp, vfp->vf_dprecision,
+				/*plus=*/false, /*pad=*/!last_arg, vswr);
+		    }
+		    done = true;
+		    break;
+
+		default:
+		    break;
+		}
+		if (done) {
+		    break;
+		}
+		/*FALLTHROUGH*/
+
+	    case VPT_Z:
+	    case VPT_Y:
+	    case VPT_T:
+	    case VPT_H:
+	    case VPT_G:
+	    case VPT_A:
+	    case VPT_B:
 		for (int row = 0; row < rows; ++row) {
 		    for (int column = 0; column < columns; ++column) {
 			double complex value;
@@ -1272,7 +1275,7 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			}
 
 			/*
-			 * Format according to given coordinates.
+			 * Format based on vff_format.
 			 *
 			 * Special case the 2x2 matrix in Touchstone 1
 			 * which prints in column major order.
@@ -1285,8 +1288,8 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    value = vnadata_get_cell(matrix, findex,
 				    row, column);
 			}
-			switch (vffp->vff_coordinates) {
-			case VNAFILE_COORDINATES_DB_ANGLE:
+			switch (vffp->vff_format) {
+			case VNAFILE_FORMAT_DB_ANGLE:
 			    (void)fputc(' ', fp);
 			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
 				    /*pad=*/true, 20.0 * log10(cabs(value)));
@@ -1301,7 +1304,7 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    }
 			    break;
 
-			case VNAFILE_COORDINATES_MAG_ANGLE:
+			case VNAFILE_FORMAT_MAG_ANGLE:
 			    (void)fprintf(fp, "  ");
 			    print_value(fp, vfp->vf_dprecision, /*plus=*/false,
 				    /*pad=*/true, cabs(value));
@@ -1316,14 +1319,14 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    }
 			    break;
 
-			case VNAFILE_COORDINATES_REAL_IMAG:
+			case VNAFILE_FORMAT_REAL_IMAG:
 			    last_arg = format == vfp->vf_format_count - 1 &&
 				row == rows - 1 && column == columns - 1;
 			    (void)fputc(' ', fp);
-			    print_value(fp, vfp->vf_fprecision, /*plus=*/true,
+			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
 				    /*pad=*/true, creal(value));
 			    (void)fputc(' ', fp);
-			    print_value(fp, vfp->vf_fprecision, /*plus=*/true,
+			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
 				    /*pad=*/!last_arg, cimag(value));
 			    break;
 
@@ -1335,196 +1338,131 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 		}
 		break;
 
-	    case VNAFILE_PARAMETER_ZIN:
-		{
-		    const double complex *data;
-
-		    data = vnadata_get_matrix(matrix, findex);
-		    for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-			double complex value;
-
-			value = data[diagonal];
-			switch (vffp->vff_coordinates) {
-			case VNAFILE_COORDINATES_MAG_ANGLE:
-			    (void)fprintf(fp, "  ");
-			    print_value(fp, vfp->vf_dprecision, /*plus=*/false,
-				    /*pad=*/true, cabs(value));
-			    if (aprecision == VNAFILE_MAX_PRECISION) {
-				(void)fprintf(fp, " %+a",
-					180.0 / PI * carg(value));
-			    } else {
-				(void)fprintf(fp, "  %+*.*f",
-					aprecision + 2,
-					aprecision - 3,
-					180.0 / PI * carg(value));
-			    }
-			    break;
-
-			case VNAFILE_COORDINATES_REAL_IMAG:
-			    last_arg = format == vfp->vf_format_count - 1;
-			    (void)fputc(' ', fp);
-			    print_value(fp, vfp->vf_fprecision, /*plus=*/true,
-				    /*pad=*/true, creal(value));
-			    (void)fputc(' ', fp);
-			    print_value(fp, vfp->vf_fprecision, /*plus=*/true,
-				    /*pad=*/!last_arg, cimag(value));
-			    break;
-
-			default:
-			    abort();
-			    /*NOTREACHED*/
-			}
-		    }
-		}
-		break;
-
-	    case VNAFILE_PARAMETER_IL:
-		for (int row = 0; row < rows; ++row) {
-		    for (int column = 0; column < columns; ++column) {
-			double complex value;
-
-			if (row == column) {
-			    continue;
-			}
-			value = vnadata_get_cell(matrix, findex, row, column);
-			(void)fputc(' ', fp);
-			last_arg = format == vfp->vf_format_count - 1;
-			print_value(fp, vfp->vf_dprecision, /*plus=*/true,
-				/*pad=*/!last_arg, -20.0 * log10(cabs(value)));
-		    }
-		}
-		break;
-
-	    case VNAFILE_PARAMETER_RL:
+	    case VPT_ZIN:
+		data = vnadata_get_matrix(matrix, findex);
 		for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
 		    double complex value;
 
-		    value = vnadata_get_cell(matrix, findex, diagonal,
-			    diagonal);
-		    (void)fputc(' ', fp);
-		    last_arg = format == vfp->vf_format_count - 1;
-		    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
-			    /*pad=*/!last_arg, -20.0 * log10(cabs(value)));
-		}
-		break;
+		    value = data[diagonal];
+		    switch (vffp->vff_format) {
+		    case VNAFILE_FORMAT_MAG_ANGLE:
+			(void)fprintf(fp, "  ");
+			print_value(fp, vfp->vf_dprecision, /*plus=*/false,
+				/*pad=*/true, cabs(value));
+			if (aprecision == VNAFILE_MAX_PRECISION) {
+			    (void)fprintf(fp, " %+a",
+				    180.0 / PI * carg(value));
+			} else {
+			    (void)fprintf(fp, "  %+*.*f",
+				    aprecision + 2,
+				    aprecision - 3,
+				    180.0 / PI * carg(value));
+			}
+			break;
 
-	    case VNAFILE_PARAMETER_PRC:
-		{
-		    const double complex *data;
-
-		    data = vnadata_get_matrix(matrix, findex);
-		    for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-			double complex z;
-			double zr, zi;
-			double r, x, c;
-
-			z = data[diagonal];
-			zr = creal(z);
-			zi = cimag(z);
-			r = (zr*zr + zi*zi) / zr;
-			x = (zr*zr + zi*zi) / zi;
-			c = -1.0 / (2.0 * PI * frequency_vector[findex] * x);
+		    case VNAFILE_FORMAT_REAL_IMAG:
+			last_arg = format == vfp->vf_format_count - 1 &&
+			    diagonal == diagonals - 1;
 			(void)fputc(' ', fp);
 			print_value(fp, vfp->vf_dprecision, /*plus=*/true,
-				/*pad=*/true, r);
+				/*pad=*/true, creal(value));
 			(void)fputc(' ', fp);
-			last_arg = format == vfp->vf_format_count - 1;
 			print_value(fp, vfp->vf_dprecision, /*plus=*/true,
-				/*pad=*/!last_arg, c);
+				/*pad=*/!last_arg, cimag(value));
+			break;
+
+		    case VNAFILE_FORMAT_PRC:
+			{
+			    double complex z;
+			    double zr, zi;
+			    double r, x, c;
+
+			    z = data[diagonal];
+			    zr = creal(z);
+			    zi = cimag(z);
+			    r = (zr*zr + zi*zi) / zr;
+			    x = (zr*zr + zi*zi) / zi;
+			    c = -1.0 / (2.0 * PI * frequency_vector[findex] * x);
+			    (void)fputc(' ', fp);
+			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+				    /*pad=*/true, r);
+			    (void)fputc(' ', fp);
+			    last_arg = format == vfp->vf_format_count - 1 &&
+				diagonal == diagonals - 1;
+			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+				    /*pad=*/!last_arg, c);
+			}
+			break;
+
+		    case VNAFILE_FORMAT_PRL:
+			{
+			    double complex z;
+			    double zr, zi;
+			    double r, x, l;
+
+			    z = data[diagonal];
+			    zr = creal(z);
+			    zi = cimag(z);
+			    r = (zr*zr + zi*zi) / zr;
+			    x = (zr*zr + zi*zi) / zi;
+			    l = x / (2.0 * PI * frequency_vector[findex]);
+			    (void)fputc(' ', fp);
+			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+				    /*pad=*/true, r);
+			    (void)fputc(' ', fp);
+			    last_arg = format == vfp->vf_format_count - 1 &&
+				diagonal == diagonals - 1;
+			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+				    /*pad=*/!last_arg, l);
+			}
+			break;
+
+		    case VNAFILE_FORMAT_SRC:
+			{
+			    double complex z;
+			    double zr, zi;
+			    double c;
+
+			    z = data[diagonal];
+			    zr = creal(z);
+			    zi = cimag(z);
+			    c = -1.0 / (2.0 * PI * frequency_vector[findex] * zi);
+			    (void)fputc(' ', fp);
+			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+				    /*pad=*/true, zr);
+			    (void)fputc(' ', fp);
+			    last_arg = format == vfp->vf_format_count - 1 &&
+				diagonal == diagonals - 1;
+			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+				    /*pad=*/!last_arg, c);
+			}
+			break;
+
+		    case VNAFILE_FORMAT_SRL:
+			{
+			    double complex z;
+			    double zr, zi;
+			    double l;
+
+			    z = data[diagonal];
+			    zr = creal(z);
+			    zi = cimag(z);
+			    l = zi / (2.0 * PI * frequency_vector[findex]);
+			    (void)fputc(' ', fp);
+			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+				    /*pad=*/true, zr);
+			    (void)fputc(' ', fp);
+			    last_arg = format == vfp->vf_format_count - 1 &&
+				diagonal == diagonals - 1;
+			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+				    /*pad=*/!last_arg, l);
+			}
+			break;
+
+		    default:
+			abort();
+			/*NOTREACHED*/
 		    }
-		}
-		break;
-
-	    case VNAFILE_PARAMETER_PRL:
-		{
-		    const double complex *data;
-
-		    data = vnadata_get_matrix(matrix, findex);
-		    for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-			double complex z;
-			double zr, zi;
-			double r, x, l;
-
-			z = data[diagonal];
-			zr = creal(z);
-			zi = cimag(z);
-			r = (zr*zr + zi*zi) / zr;
-			x = (zr*zr + zi*zi) / zi;
-			l = x / (2.0 * PI * frequency_vector[findex]);
-			(void)fputc(' ', fp);
-			print_value(fp, vfp->vf_dprecision, /*plus=*/true,
-				/*pad=*/true, r);
-			(void)fputc(' ', fp);
-			last_arg = format == vfp->vf_format_count - 1;
-			print_value(fp, vfp->vf_dprecision, /*plus=*/true,
-				/*pad=*/!last_arg, l);
-		    }
-		}
-		break;
-
-	    case VNAFILE_PARAMETER_SRC:
-		{
-		    const double complex *data;
-
-		    data = vnadata_get_matrix(matrix, findex);
-		    for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-			double complex z;
-			double zr, zi;
-			double c;
-
-			z = data[diagonal];
-			zr = creal(z);
-			zi = cimag(z);
-			c = -1.0 / (2.0 * PI * frequency_vector[findex] * zi);
-			(void)fputc(' ', fp);
-			print_value(fp, vfp->vf_dprecision, /*plus=*/true,
-				/*pad=*/true, zr);
-			(void)fputc(' ', fp);
-			last_arg = format == vfp->vf_format_count - 1;
-			print_value(fp, vfp->vf_dprecision, /*plus=*/true,
-				/*pad=*/!last_arg, c);
-		    }
-		}
-		break;
-
-	    case VNAFILE_PARAMETER_SRL:
-		{
-		    const double complex *data;
-
-		    data = vnadata_get_matrix(matrix, findex);
-		    for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-			double complex z;
-			double zr, zi;
-			double l;
-
-			z = data[diagonal];
-			zr = creal(z);
-			zi = cimag(z);
-			l = zi / (2.0 * PI * frequency_vector[findex]);
-			(void)fputc(' ', fp);
-			print_value(fp, vfp->vf_dprecision, /*plus=*/true,
-				/*pad=*/true, zr);
-			(void)fputc(' ', fp);
-			last_arg = format == vfp->vf_format_count - 1;
-			print_value(fp, vfp->vf_dprecision, /*plus=*/true,
-				/*pad=*/!last_arg, l);
-		    }
-		}
-		break;
-
-	    case VNAFILE_PARAMETER_VSWR:
-		for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-		    double complex sxx;
-		    double a;
-		    double vswr;
-
-		    sxx = vnadata_get_cell(matrix, findex, diagonal, diagonal);
-		    a = cabs(sxx);
-		    vswr = (1.0 + a) / fabs(1.0 - a);
-		    (void)fputc(' ', fp);
-		    last_arg = format == vfp->vf_format_count - 1;
-		    print_value(fp, vfp->vf_dprecision, /*plus=*/false,
-			    /*pad=*/!last_arg, vswr);
 		}
 		break;
 

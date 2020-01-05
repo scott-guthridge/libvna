@@ -103,8 +103,8 @@ vnafile_example_SOURCES = vnafile-example.c
 vnafile_example_LDADD = libvna.la -lm
 vnafile_example_LDFLAGS = -static
 
-dist_doc_DATA = vnacal-example.c vnaconv-example.c vnadata-example.c \
-	vnafile-example.c vnacal-example.gnuplot
+dist_doc_DATA = vnacal-example.c vnacal-example.gnuplot vnaconv-example.c \
+	vnadata-example.c vnafile-example.c vnafile-example.ts
 
 vnacal-example.out: vnacal-example
 	./vnacal-example > "$@"

@@ -400,27 +400,6 @@ static int expect_nnint_arg(native_scan_state_t *nssp, int *value)
 }
 
 /*
- * matchQuality: how well each vnafile parameter satifies each vnadata parameter
- *   Higher is better.  Zero is non-viable.  Caller will subtract one if
- *   coordinate conversion is necessary.
- */
-static const int matchQuality[VNAFILE_PARAMETER_COUNT] = {
-    [VNAFILE_PARAMETER_S]    = 4,
-    [VNAFILE_PARAMETER_Z]    = 4,
-    [VNAFILE_PARAMETER_Y]    = 4,
-    [VNAFILE_PARAMETER_T]    = 4,
-    [VNAFILE_PARAMETER_H]    = 4,
-    [VNAFILE_PARAMETER_G]    = 4,
-    [VNAFILE_PARAMETER_A]    = 4,
-    [VNAFILE_PARAMETER_B]    = 4,
-    [VNAFILE_PARAMETER_ZIN]  = 2,
-    [VNAFILE_PARAMETER_PRC]  = 1,
-    [VNAFILE_PARAMETER_PRL]  = 1,
-    [VNAFILE_PARAMETER_SRC]  = 1,
-    [VNAFILE_PARAMETER_SRL]  = 1,
-};
-
-/*
  * _vnafile_load_native: load matrix data in libvna native format
  *   @vfp: pointer to the object returned from vnafile_alloc
  *   @fp: file pointer
@@ -444,7 +423,7 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
     int best_drows = -1;
     int best_dcolumns = -1;
     vnadata_parameter_type_t best_parameter_type = VPT_UNDEF;
-    bool parameters_given = false;
+    int parameter_line = -1;
     bool fz0 = false;
     double complex *z0_vector = NULL;
     const vnafile_format_t *best_vffp = NULL;
@@ -535,7 +514,7 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	    if (vnafile_set_format(vfp, FIELD(&nss, 1)) == -1) {
 		goto out;
 	    }
-	    parameters_given = true;
+	    parameter_line = nss.nss_line;
 	    if (scan_line(&nss) == -1) {
 		goto out;
 	    }
@@ -674,7 +653,7 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	errno = EBADMSG;
 	goto out;
     }
-    if (!parameters_given) {
+    if (parameter_line == -1) {
 	_vnafile_error(vfp, "%s (line %d) error: "
 		"required keyword #:parameters missing",
 		nss.nss_filename, nss.nss_line);
@@ -702,18 +681,34 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 
 	/*
 	 * Validate the parameter type against the matrix dimensions
-	 * and determine the parameter type.  Here, we're relying on
-	 * the corresponding members of vnadata_parameter_type_t and
-	 * vnafile_parameter_t having the same values.  Determine the
-	 * dimensions of the data matrix and the number of fields.
+	 * and determine the parameter type.  Determine the dimensions
+	 * of the data matrix and the number of fields.
 	 */
-	parameter_type = (vnadata_parameter_type_t)vffp->vff_parameter;
+	parameter_type = vffp->vff_parameter;
 	switch (vffp->vff_parameter) {
-	case VNAFILE_PARAMETER_S:
+	case VPT_UNDEF:
+	    _vnafile_error(vfp, "%s (line %d) error: "
+		    "%s parameter with no type",
+		    nss.nss_filename, parameter_line,
+		    vnadata_get_typename(vffp->vff_parameter));
+	    errno = EBADMSG;
+	    goto out;
+
+	case VPT_S:
+	    switch (vffp->vff_format) {
+	    case VNAFILE_FORMAT_IL:
+	    case VNAFILE_FORMAT_RL:
+	    case VNAFILE_FORMAT_VSWR:
+		fields = diagonals;
+		break;
+
+	    default:
+		break;
+	    }
 	    break;
 
-	case VNAFILE_PARAMETER_Z:
-	case VNAFILE_PARAMETER_Y:
+	case VPT_Z:
+	case VPT_Y:
 	    if (rows != columns) {
 		_vnafile_error(vfp, "%s (line %d) error: "
 			"%s parameters require a square matrix",
@@ -724,11 +719,11 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	    }
 	    break;
 
-	case VNAFILE_PARAMETER_T:
-	case VNAFILE_PARAMETER_H:
-	case VNAFILE_PARAMETER_G:
-	case VNAFILE_PARAMETER_A:
-	case VNAFILE_PARAMETER_B:
+	case VPT_T:
+	case VPT_H:
+	case VPT_G:
+	case VPT_A:
+	case VPT_B:
 	    if (rows != 2 || columns != 2) {
 		_vnafile_error(vfp, "%s (line %d) error: "
 			"%s parameters require a 2x2 matrix",
@@ -738,21 +733,10 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		goto out;
 	    }
 
-	case VNAFILE_PARAMETER_ZIN:
-	case VNAFILE_PARAMETER_PRC:
-	case VNAFILE_PARAMETER_PRL:
-	case VNAFILE_PARAMETER_SRC:
-	case VNAFILE_PARAMETER_SRL:
-	    parameter_type = VPT_ZIN;
+	case VPT_ZIN:
 	    drows = 1;
 	    dcolumns = diagonals;
 	    fields = 2 * diagonals;
-	    break;
-
-	case VNAFILE_PARAMETER_IL:
-	case VNAFILE_PARAMETER_RL:
-	case VNAFILE_PARAMETER_VSWR:
-	    fields = diagonals;
 	    break;
 
 	default:
@@ -761,17 +745,43 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	}
 
 	/*
-	 * Find the best parameter type and format.
+	 * Find the best parameter type and format.  Matrix types
+	 * are always better than Zin.  Then we fine tune based on
+	 * the amount of math we have to do convert the parameter.
 	 */
-	quality = matchQuality[vffp->vff_parameter];
-	switch (vffp->vff_coordinates) {
-	case VNAFILE_COORDINATES_REAL:
-	case VNAFILE_COORDINATES_REAL_REAL:
-	case VNAFILE_COORDINATES_REAL_IMAG:
-	    break;
-
-	default:
-	    --quality;		/* additional conversion needed */
+	if (vffp->vff_parameter != VPT_ZIN) {
+	    switch (vffp->vff_format) {
+	    case VNAFILE_FORMAT_REAL_IMAG:
+		quality = 6;	/* no conversion */
+		break;
+	    case VNAFILE_FORMAT_MAG_ANGLE:
+		quality = 5;	/* complex trig */
+		break;
+	    case VNAFILE_FORMAT_DB_ANGLE:
+		quality = 4;	/* exponentiation and complex trig */
+		break;
+	    default:
+		quality = 0;
+		break;
+	    }
+	} else {
+	    switch (vffp->vff_format) {
+	    case VNAFILE_FORMAT_REAL_IMAG:
+		quality = 3;	/* no conversion */
+		break;
+	    case VNAFILE_FORMAT_PRC:
+	    case VNAFILE_FORMAT_PRL:
+	    case VNAFILE_FORMAT_SRC:
+	    case VNAFILE_FORMAT_SRL:
+		quality = 2;	/* multiplication and division */
+		break;
+	    case VNAFILE_FORMAT_MAG_ANGLE:
+		quality = 1;	/* trigonometry */
+		break;
+	    default:
+		quality = 0;
+		break;
+	    }
 	}
 	if (quality > best_quality) {
 	    best_quality = quality;
@@ -918,49 +928,33 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		    errno = EBADMSG;
 		    goto out;
 		}
-		switch (best_vffp->vff_parameter) {
-		case VNAFILE_PARAMETER_S:
-		case VNAFILE_PARAMETER_Z:
-		case VNAFILE_PARAMETER_Y:
-		case VNAFILE_PARAMETER_T:
-		case VNAFILE_PARAMETER_H:
-		case VNAFILE_PARAMETER_G:
-		case VNAFILE_PARAMETER_A:
-		case VNAFILE_PARAMETER_B:
-		case VNAFILE_PARAMETER_ZIN:
-		    switch (best_vffp->vff_coordinates) {
-		    case VNAFILE_COORDINATES_DB_ANGLE:
-			value = pow(10.0, v1 / 20.0) *
-			    cexp(I * PI / 180.0 * v2);
-			break;
-
-		    case VNAFILE_COORDINATES_MAG_ANGLE:
-			value = v1 * cexp(I * PI / 180.0 * v2);
-			break;
-
-		    case VNAFILE_COORDINATES_REAL_IMAG:
-			value = v1 + I * v2;
-			break;
-
-		    default:
-			abort();
-			/*NOTREACHED*/
-		    }
+		switch (best_vffp->vff_format) {
+		case VNAFILE_FORMAT_DB_ANGLE:
+		    value = pow(10.0, v1 / 20.0) *
+			cexp(I * PI / 180.0 * v2);
 		    break;
 
-		case VNAFILE_PARAMETER_PRC:
+		case VNAFILE_FORMAT_MAG_ANGLE:
+		    value = v1 * cexp(I * PI / 180.0 * v2);
+		    break;
+
+		case VNAFILE_FORMAT_REAL_IMAG:
+		    value = v1 + I * v2;
+		    break;
+
+		case VNAFILE_FORMAT_PRC:
 		    value = 1.0 / (1.0 / v1 + 2.0 * PI * I * f * v2);
 		    break;
 
-		case VNAFILE_PARAMETER_PRL:
+		case VNAFILE_FORMAT_PRL:
 		    value = 1.0 / (1.0 / v1 - I / (2.0 * PI * I * f * v2));
 		    break;
 
-		case VNAFILE_PARAMETER_SRC:
+		case VNAFILE_FORMAT_SRC:
 		    value = v1 - I / (2.0 * PI * f * v2);
 		    break;
 
-		case VNAFILE_PARAMETER_SRL:
+		case VNAFILE_FORMAT_SRL:
 		    value = v1 + 2.0 * PI * I * f * v2;
 		    break;
 

@@ -35,53 +35,29 @@ extern "C" {
 #endif
 
 /*
- * vnafile_parameter_t: network parameter to display
- * 
- * Note:
- *    The first ten members must have the same values as the corresponding
- *    members of vnadata_parameter_type_t.
+ * vnafile_format_t: describes whether result is real or complex, and
+ *      whether it should be printed as scalar, decibels, rectangular,
+ *      polar, RC, RL, or VSWR
  */
-typedef enum vnafile_parameter {
-    VNAFILE_PARAMETER_UNDEF,
-    VNAFILE_PARAMETER_S,
-    VNAFILE_PARAMETER_Z,
-    VNAFILE_PARAMETER_Y,
-    VNAFILE_PARAMETER_T,
-    VNAFILE_PARAMETER_H,
-    VNAFILE_PARAMETER_G,
-    VNAFILE_PARAMETER_A,
-    VNAFILE_PARAMETER_B,
-    VNAFILE_PARAMETER_ZIN,
-    VNAFILE_PARAMETER_IL,
-    VNAFILE_PARAMETER_RL,
-    VNAFILE_PARAMETER_PRC,
-    VNAFILE_PARAMETER_PRL,
-    VNAFILE_PARAMETER_SRC,
-    VNAFILE_PARAMETER_SRL,
-    VNAFILE_PARAMETER_VSWR,
-    VNAFILE_PARAMETER_COUNT
-} vnafile_parameter_t;
-
-/*
- * vnafile_coordinates_t: describes whether result is real or complex, and
- *      whether it should be printed as scalar, decibels, rectangular
- *      or polar
- */
-typedef enum vnafile_coordinates {
-    VNAFILE_COORDINATES_DB,
-    VNAFILE_COORDINATES_REAL,
-    VNAFILE_COORDINATES_REAL_REAL,
-    VNAFILE_COORDINATES_DB_ANGLE,
-    VNAFILE_COORDINATES_MAG_ANGLE,
-    VNAFILE_COORDINATES_REAL_IMAG
-} vnafile_coordinates_t;
+typedef enum vnafile_format_type {
+    VNAFILE_FORMAT_DB_ANGLE,	/* dB and angle */
+    VNAFILE_FORMAT_MAG_ANGLE,	/* magnitude, angle */
+    VNAFILE_FORMAT_REAL_IMAG,	/* real, imaginary */
+    VNAFILE_FORMAT_PRC,		/* parallel R-C (VPT_ZIN only) */
+    VNAFILE_FORMAT_PRL,		/* parallel R-L (VPT_ZIN only) */
+    VNAFILE_FORMAT_SRC,		/* series   R-C (VPT_ZIN only) */
+    VNAFILE_FORMAT_SRL,		/* series   R-L (VPT_ZIN only) */
+    VNAFILE_FORMAT_IL,		/* insertion loss (VPT_S only) */
+    VNAFILE_FORMAT_RL,		/* return loss    (VPT_S only) */
+    VNAFILE_FORMAT_VSWR		/* voltage standing wave ratio (VPT_S only) */
+} vnafile_format_type_t;
 
 /*
  * vnafile_format_t: parsed format descriptor
  */
 typedef struct vnafile_format {
-    vnafile_parameter_t   vff_parameter;
-    vnafile_coordinates_t vff_coordinates;
+    vnadata_parameter_type_t vff_parameter;
+    vnafile_format_type_t    vff_format;
 } vnafile_format_t;
 
 /*
@@ -104,12 +80,15 @@ extern void _vnafile_error(const vnafile_t *vfp, const char *format, ...);
 /* _vnafile_format_to_name: return the given format descriptor as a string */
 extern const char *_vnafile_format_to_name(const vnafile_format_t *vffp);
 
+/* _vnafile_update_format_string: recompute vf_format_string */
+extern int _vnafile_update_format_string(vnafile_t *vfp);
+
 /* _vnafile_find_type: try to determine the file type from the filename */
 extern vnafile_type_t _vnafile_find_type(const char *filename, int *ports);
 
 /* _vnafile_set_simple_format: set a single parameter */
 extern int _vnafile_set_simple_format(vnafile_t *vfp,
-	vnadata_parameter_type_t parameter, vnafile_coordinates_t coordinates);
+	vnadata_parameter_type_t parameter, vnafile_format_type_t format);
 
 /* _vnafile_load_native: load a native format file */
 extern int _vnafile_load_native(vnafile_t *vfp, FILE *fp,

@@ -1344,7 +1344,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
      * Update the vnafile object.
      */
     {
-	vnafile_coordinates_t coordinates;
+	vnafile_format_type_t format_type;
 
 	/* set the file type */
 	vfp->vf_type = (version == 2) ?
@@ -1353,19 +1353,19 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 	/* set the format string */
 	switch (tps.tps_data_format) {
 	case 'D':
-	    coordinates = VNAFILE_COORDINATES_DB_ANGLE;
+	    format_type = VNAFILE_FORMAT_DB_ANGLE;
 	    break;
 	case 'M':
-	    coordinates = VNAFILE_COORDINATES_MAG_ANGLE;
+	    format_type = VNAFILE_FORMAT_MAG_ANGLE;
 	    break;
 	case 'R':
-	    coordinates = VNAFILE_COORDINATES_REAL_IMAG;
+	    format_type = VNAFILE_FORMAT_REAL_IMAG;
 	    break;
 	default:
 	    abort();
 	}
 	if (_vnafile_set_simple_format(vfp, tps.tps_parameter_type,
-		    coordinates) == -1) {
+		    format_type) == -1) {
 	    _vnafile_error(vfp, "%s (line %d) error: "
 		    "malloc: %s", tps.tps_filename, tps.tps_line,
 		    strerror(errno));

@@ -61,6 +61,12 @@ static int parse_format(vnafile_format_t *vffp, const char *format)
     const char *cur = format;
 
     /*
+     * Set defaults.
+     */
+    vffp->vff_parameter = VPT_UNDEF;
+    vffp->vff_format = VNAFILE_FORMAT_REAL_IMAG;
+
+    /*
      * Switch on the first letter of the parameter specifier.
      */
     switch (cur[0]) {
@@ -69,48 +75,50 @@ static int parse_format(vnafile_format_t *vffp, const char *format)
 
     case 'a':
 	++cur;
-	vffp->vff_parameter = VNAFILE_PARAMETER_A;
-	vffp->vff_coordinates = VNAFILE_COORDINATES_REAL_IMAG;
+	vffp->vff_parameter = VPT_A;
 	goto parse_coordinates;
 
     case 'b':
 	++cur;
-	vffp->vff_parameter = VNAFILE_PARAMETER_B;
-	vffp->vff_coordinates = VNAFILE_COORDINATES_REAL_IMAG;
+	vffp->vff_parameter = VPT_B;
 	goto parse_coordinates;
+
+    case 'd':
+	goto parse_coordinates;		/* db */
 
     case 'g':
 	++cur;
-	vffp->vff_parameter = VNAFILE_PARAMETER_G;
-	vffp->vff_coordinates = VNAFILE_COORDINATES_REAL_IMAG;
+	vffp->vff_parameter = VPT_G;
 	goto parse_coordinates;
 
     case 'h':
 	++cur;
-	vffp->vff_parameter = VNAFILE_PARAMETER_H;
-	vffp->vff_coordinates = VNAFILE_COORDINATES_REAL_IMAG;
+	vffp->vff_parameter = VPT_H;
 	goto parse_coordinates;
 
     case 'i':
 	if (cur[1] == 'l') {
 	    cur += 2;
-	    vffp->vff_parameter = VNAFILE_PARAMETER_IL;
-	    vffp->vff_coordinates = VNAFILE_COORDINATES_DB;
+	    vffp->vff_parameter = VPT_S;
+	    vffp->vff_format = VNAFILE_FORMAT_IL;
 	    break;
 	}
 	break;
 
+    case 'm':
+	goto parse_coordinates;		/* ma */
+
     case 'p':
 	if (strncmp(cur, "prc", 3) == 0) {
 	    cur += 3;
-	    vffp->vff_parameter = VNAFILE_PARAMETER_PRC;
-	    vffp->vff_coordinates = VNAFILE_COORDINATES_REAL_REAL;
+	    vffp->vff_parameter = VPT_ZIN;
+	    vffp->vff_format = VNAFILE_FORMAT_PRC;
 	    break;
 	}
 	if (strncmp(cur, "prl", 3) == 0) {
 	    cur += 3;
-	    vffp->vff_parameter = VNAFILE_PARAMETER_PRL;
-	    vffp->vff_coordinates = VNAFILE_COORDINATES_REAL_REAL;
+	    vffp->vff_parameter = VPT_ZIN;
+	    vffp->vff_format = VNAFILE_FORMAT_PRL;
 	    break;
 	}
 	break;
@@ -118,61 +126,56 @@ static int parse_format(vnafile_format_t *vffp, const char *format)
     case 'r':
 	if (cur[1] == 'l') {
 	    cur += 2;
-	    vffp->vff_parameter = VNAFILE_PARAMETER_RL;
-	    vffp->vff_coordinates = VNAFILE_COORDINATES_DB;
+	    vffp->vff_parameter = VPT_S;
+	    vffp->vff_format = VNAFILE_FORMAT_RL;
 	    break;
 	}
-	break;
+	goto parse_coordinates;		/* ri */
 
     case 's':
 	if (strncmp(cur, "src", 3) == 0) {
 	    cur += 3;
-	    vffp->vff_parameter = VNAFILE_PARAMETER_SRC;
-	    vffp->vff_coordinates = VNAFILE_COORDINATES_REAL_REAL;
+	    vffp->vff_parameter = VPT_ZIN;
+	    vffp->vff_format = VNAFILE_FORMAT_SRC;
 	    break;
 	}
 	if (strncmp(cur, "srl", 3) == 0) {
 	    cur += 3;
-	    vffp->vff_parameter = VNAFILE_PARAMETER_SRL;
-	    vffp->vff_coordinates = VNAFILE_COORDINATES_REAL_REAL;
+	    vffp->vff_parameter = VPT_ZIN;
+	    vffp->vff_format = VNAFILE_FORMAT_SRL;
 	    break;
 	}
 	++cur;
-	vffp->vff_parameter = VNAFILE_PARAMETER_S;
-	vffp->vff_coordinates = VNAFILE_COORDINATES_REAL_IMAG;
+	vffp->vff_parameter = VPT_S;
 	goto parse_coordinates;
 
     case 't':
 	++cur;
-	vffp->vff_parameter = VNAFILE_PARAMETER_T;
-	vffp->vff_coordinates = VNAFILE_COORDINATES_REAL_IMAG;
+	vffp->vff_parameter = VPT_T;
 	goto parse_coordinates;
 
     case 'v':
 	if (strncmp(cur, "vswr", 4) == 0) {
 	    cur += 4;
-	    vffp->vff_parameter = VNAFILE_PARAMETER_VSWR;
-	    vffp->vff_coordinates = VNAFILE_COORDINATES_REAL;
+	    vffp->vff_parameter = VPT_S;
+	    vffp->vff_format = VNAFILE_FORMAT_VSWR;
 	    break;
 	}
 	break;
 
     case 'y':
 	++cur;
-	vffp->vff_parameter = VNAFILE_PARAMETER_Y;
-	vffp->vff_coordinates = VNAFILE_COORDINATES_REAL_IMAG;
+	vffp->vff_parameter = VPT_Y;
 	goto parse_coordinates;
 
     case 'z':
 	if (strncmp(cur, "zin", 3) == 0) {
 	    cur += 3;
-	    vffp->vff_parameter = VNAFILE_PARAMETER_ZIN;
-	    vffp->vff_coordinates = VNAFILE_COORDINATES_MAG_ANGLE;
+	    vffp->vff_parameter = VPT_ZIN;
 	    goto parse_coordinates;
 	}
 	++cur;
-	vffp->vff_parameter = VNAFILE_PARAMETER_Z;
-	vffp->vff_coordinates = VNAFILE_COORDINATES_REAL_IMAG;
+	vffp->vff_parameter = VPT_Z;
 	goto parse_coordinates;
 
     parse_coordinates:
@@ -180,21 +183,21 @@ static int parse_format(vnafile_format_t *vffp, const char *format)
 	case 'd':
 	    if (strncmp(cur, "db", 2) == 0) {
 		cur += 2;
-		vffp->vff_coordinates = VNAFILE_COORDINATES_DB_ANGLE;
+		vffp->vff_format = VNAFILE_FORMAT_DB_ANGLE;
 	    }
 	    break;
 
 	case 'm':
 	    if (strncmp(cur, "ma", 2) == 0) {
 		cur += 2;
-		vffp->vff_coordinates = VNAFILE_COORDINATES_MAG_ANGLE;
+		vffp->vff_format = VNAFILE_FORMAT_MAG_ANGLE;
 	    }
 	    break;
 
 	case 'r':
 	    if (strncmp(cur, "ri", 2) == 0) {
 		cur += 2;
-		vffp->vff_coordinates = VNAFILE_COORDINATES_REAL_IMAG;
+		vffp->vff_format = VNAFILE_FORMAT_REAL_IMAG;
 	    }
 	    break;
 
@@ -225,147 +228,171 @@ bad_format:
  */
 const char *_vnafile_format_to_name(const vnafile_format_t *vffp)
 {
-    switch (vffp->vff_parameter) {
-    case VNAFILE_PARAMETER_S:
-	switch (vffp->vff_coordinates) {
-	case VNAFILE_COORDINATES_REAL_IMAG:
-	    return "Sri";
-	case VNAFILE_COORDINATES_MAG_ANGLE:
-	    return "Sma";
-	case VNAFILE_COORDINATES_DB_ANGLE:
-	    return "SdB";
-	default:
-	    break;
-	}
-	break;
-
-    case VNAFILE_PARAMETER_T:
-	switch (vffp->vff_coordinates) {
-	case VNAFILE_COORDINATES_REAL_IMAG:
-	    return "Tri";
-	case VNAFILE_COORDINATES_MAG_ANGLE:
-	    return "Tma";
-	case VNAFILE_COORDINATES_DB_ANGLE:
-	    return "TdB";
-	default:
-	    break;
-	}
-	break;
-
-    case VNAFILE_PARAMETER_Z:
-	switch (vffp->vff_coordinates) {
-	case VNAFILE_COORDINATES_REAL_IMAG:
-	    return "Zri";
-	case VNAFILE_COORDINATES_MAG_ANGLE:
-	    return "Zma";
-	case VNAFILE_COORDINATES_DB_ANGLE:
-	    return "ZdB";
-	default:
-	    break;
-	}
-	break;
-
-    case VNAFILE_PARAMETER_Y:
-	switch (vffp->vff_coordinates) {
-	case VNAFILE_COORDINATES_REAL_IMAG:
-	    return "Yri";
-	case VNAFILE_COORDINATES_MAG_ANGLE:
-	    return "Yma";
-	case VNAFILE_COORDINATES_DB_ANGLE:
-	    return "YdB";
-	default:
-	    break;
-	}
-	break;
-
-    case VNAFILE_PARAMETER_H:
-	switch (vffp->vff_coordinates) {
-	case VNAFILE_COORDINATES_REAL_IMAG:
-	    return "Hri";
-	case VNAFILE_COORDINATES_MAG_ANGLE:
-	    return "Hma";
-	case VNAFILE_COORDINATES_DB_ANGLE:
-	    return "HdB";
-	default:
-	    break;
-	}
-	break;
-
-    case VNAFILE_PARAMETER_G:
-	switch (vffp->vff_coordinates) {
-	case VNAFILE_COORDINATES_REAL_IMAG:
-	    return "Gri";
-	case VNAFILE_COORDINATES_MAG_ANGLE:
-	    return "Gma";
-	case VNAFILE_COORDINATES_DB_ANGLE:
-	    return "GdB";
-	default:
-	    break;
-	}
-	break;
-
-    case VNAFILE_PARAMETER_A:
-	switch (vffp->vff_coordinates) {
-	case VNAFILE_COORDINATES_REAL_IMAG:
-	    return "Ari";
-	case VNAFILE_COORDINATES_MAG_ANGLE:
-	    return "Ama";
-	case VNAFILE_COORDINATES_DB_ANGLE:
-	    return "AdB";
-	default:
-	    break;
-	}
-	break;
-
-    case VNAFILE_PARAMETER_B:
-	switch (vffp->vff_coordinates) {
-	case VNAFILE_COORDINATES_REAL_IMAG:
-	    return "Bri";
-	case VNAFILE_COORDINATES_MAG_ANGLE:
-	    return "Bma";
-	case VNAFILE_COORDINATES_DB_ANGLE:
-	    return "BdB";
-	default:
-	    break;
-	}
-	break;
-
-    case VNAFILE_PARAMETER_ZIN:
-	switch (vffp->vff_coordinates) {
-	case VNAFILE_COORDINATES_REAL_IMAG:
-	    return "Zinri";
-	case VNAFILE_COORDINATES_MAG_ANGLE:
-	    return "Zinma";
-	default:
-	    break;
-	}
-	break;
-
-    case VNAFILE_PARAMETER_IL:
-	return "IL";
-    case VNAFILE_PARAMETER_RL:
-	return "RL";
-    case VNAFILE_PARAMETER_PRC:
+    switch (vffp->vff_format) {
+    case VNAFILE_FORMAT_PRC:
 	return "PRC";
-    case VNAFILE_PARAMETER_PRL:
+
+    case VNAFILE_FORMAT_PRL:
 	return "PRL";
-    case VNAFILE_PARAMETER_SRC:
+
+    case VNAFILE_FORMAT_SRC:
 	return "SRC";
-    case VNAFILE_PARAMETER_SRL:
+
+    case VNAFILE_FORMAT_SRL:
 	return "SRL";
-    case VNAFILE_PARAMETER_VSWR:
+
+    case VNAFILE_FORMAT_IL:
+	return "IL";
+
+    case VNAFILE_FORMAT_RL:
+	return "RL";
+
+    case VNAFILE_FORMAT_VSWR:
 	return "VSWR";
+
     default:
-	break;
+	switch (vffp->vff_parameter) {
+	case VPT_UNDEF:
+	    switch (vffp->vff_format) {
+	    case VNAFILE_FORMAT_REAL_IMAG:
+		return "ri";
+	    case VNAFILE_FORMAT_MAG_ANGLE:
+		return "ma";
+	    case VNAFILE_FORMAT_DB_ANGLE:
+		return "dB";
+	    default:
+		break;
+	    }
+	    break;
+
+	case VPT_S:
+	    switch (vffp->vff_format) {
+	    case VNAFILE_FORMAT_REAL_IMAG:
+		return "Sri";
+	    case VNAFILE_FORMAT_MAG_ANGLE:
+		return "Sma";
+	    case VNAFILE_FORMAT_DB_ANGLE:
+		return "SdB";
+	    default:
+		break;
+	    }
+	    break;
+
+	case VPT_T:
+	    switch (vffp->vff_format) {
+	    case VNAFILE_FORMAT_REAL_IMAG:
+		return "Tri";
+	    case VNAFILE_FORMAT_MAG_ANGLE:
+		return "Tma";
+	    case VNAFILE_FORMAT_DB_ANGLE:
+		return "TdB";
+	    default:
+		break;
+	    }
+	    break;
+
+	case VPT_Z:
+	    switch (vffp->vff_format) {
+	    case VNAFILE_FORMAT_REAL_IMAG:
+		return "Zri";
+	    case VNAFILE_FORMAT_MAG_ANGLE:
+		return "Zma";
+	    case VNAFILE_FORMAT_DB_ANGLE:
+		return "ZdB";
+	    default:
+		break;
+	    }
+	    break;
+
+	case VPT_Y:
+	    switch (vffp->vff_format) {
+	    case VNAFILE_FORMAT_REAL_IMAG:
+		return "Yri";
+	    case VNAFILE_FORMAT_MAG_ANGLE:
+		return "Yma";
+	    case VNAFILE_FORMAT_DB_ANGLE:
+		return "YdB";
+	    default:
+		break;
+	    }
+	    break;
+
+	case VPT_H:
+	    switch (vffp->vff_format) {
+	    case VNAFILE_FORMAT_REAL_IMAG:
+		return "Hri";
+	    case VNAFILE_FORMAT_MAG_ANGLE:
+		return "Hma";
+	    case VNAFILE_FORMAT_DB_ANGLE:
+		return "HdB";
+	    default:
+		break;
+	    }
+	    break;
+
+	case VPT_G:
+	    switch (vffp->vff_format) {
+	    case VNAFILE_FORMAT_REAL_IMAG:
+		return "Gri";
+	    case VNAFILE_FORMAT_MAG_ANGLE:
+		return "Gma";
+	    case VNAFILE_FORMAT_DB_ANGLE:
+		return "GdB";
+	    default:
+		break;
+	    }
+	    break;
+
+	case VPT_A:
+	    switch (vffp->vff_format) {
+	    case VNAFILE_FORMAT_REAL_IMAG:
+		return "Ari";
+	    case VNAFILE_FORMAT_MAG_ANGLE:
+		return "Ama";
+	    case VNAFILE_FORMAT_DB_ANGLE:
+		return "AdB";
+	    default:
+		break;
+	    }
+	    break;
+
+	case VPT_B:
+	    switch (vffp->vff_format) {
+	    case VNAFILE_FORMAT_REAL_IMAG:
+		return "Bri";
+	    case VNAFILE_FORMAT_MAG_ANGLE:
+		return "Bma";
+	    case VNAFILE_FORMAT_DB_ANGLE:
+		return "BdB";
+	    default:
+		break;
+	    }
+	    break;
+
+	case VPT_ZIN:
+	    switch (vffp->vff_format) {
+	    case VNAFILE_FORMAT_REAL_IMAG:
+		return "Zinri";
+	    case VNAFILE_FORMAT_MAG_ANGLE:
+		return "Zinma";
+	    default:
+		break;
+	    }
+	    break;
+
+	default:
+	    break;
+	}
     }
     abort();
+    /*NOTREACHED*/
 }
 
 /*
- * update_format_string: regenerate vfp_format_string
+ * _vnafile_update_format_string: regenerate vfp_format_string
  *   @vfp: pointer to the object returned from vnafile_alloc
  */
-static int update_format_string(vnafile_t *vfp)
+int _vnafile_update_format_string(vnafile_t *vfp)
 {
     char *new_string = NULL;
     char *cur;
@@ -425,10 +452,10 @@ vnafile_t *vnafile_alloc(vnafile_error_fn_t *error_fn, void *error_arg)
 	return NULL;
     }
     (void)memset((void *)vfp->vf_format_vector, 0, sizeof(vnafile_format_t));
-    vfp->vf_format_vector[0].vff_parameter = VNAFILE_PARAMETER_S;
-    vfp->vf_format_vector[0].vff_coordinates = VNAFILE_COORDINATES_REAL_IMAG;
+    vfp->vf_format_vector[0].vff_parameter = VPT_UNDEF;
+    vfp->vf_format_vector[0].vff_format = VNAFILE_FORMAT_REAL_IMAG;
     vfp->vf_format_count = 1;
-    if (update_format_string(vfp) == -1) {
+    if (_vnafile_update_format_string(vfp) == -1) {
 	vnafile_free(vfp);
 	return NULL;
     }
@@ -483,22 +510,30 @@ const char *vnafile_get_format(const vnafile_t *vfp)
  * vnafile_set_format: set the format string
  *   @vfp: pointer to the object returned from vnafile_alloc
  *   @format: a comma-separated case-insensitive list of the following:
- *     {S,Z,Y,T,H,G,A,B}[{ri,ma,dB}]
+ *     [{S,Z,Y,T,H,G,A,B}][{ri,ma,dB}]
  *     {il,rl}
  *     zin[{ri,ma}]
  *     {prc,prl,src,srl}
  *     vswr
  *
- *   If not set, the default is "SdB".
+ *   If format is NULL or empty string, default to "ri".
  */
 int vnafile_set_format(vnafile_t *vfp, const char *format)
 {
     vnafile_format_t *vffp_new = NULL;
-    size_t length = strlen(format);
+    size_t length;
     char *format_copy = NULL;
     char *cur;
     int nfields = 1;
     int rc = -1;
+
+    /*
+     * If format is NULL, default it to "ri".
+     */
+    if (format == NULL) {
+	format = "ri";
+    }
+    length = strlen(format);
 
     /*
      * Make a copy of the format string with spaces removed and
@@ -562,7 +597,7 @@ int vnafile_set_format(vnafile_t *vfp, const char *format)
     /*
      * Update the format string.
      */
-    if (update_format_string(vfp) == -1) {
+    if (_vnafile_update_format_string(vfp) == -1) {
 	goto out;
     }
     rc = 0;
@@ -577,64 +612,24 @@ out:
  * _vnafile_set_simple_format: set the format string (1 parameter)
  *   @vfp: pointer to the object returned from vnafile_alloc
  *   @parameter: parameter type
- *   @coordinates: coordinate system
+ *   @format: coordinate system
  */
 int _vnafile_set_simple_format(vnafile_t *vfp,
-	vnadata_parameter_type_t parameter, vnafile_coordinates_t coordinates)
+	vnadata_parameter_type_t parameter, vnafile_format_type_t format)
 {
     vnafile_format_t *vffp_new = NULL;
-    vnafile_parameter_t file_parameter;
     int rc;
 
     /*
-     * Convert vnadata_parameter_type_t to vnafile_parameter_t.
-     */
-    switch (parameter) {
-    case VPT_UNDEF:
-	file_parameter = VNAFILE_PARAMETER_UNDEF;
-	break;
-    case VPT_S:
-	file_parameter = VNAFILE_PARAMETER_S;
-	break;
-    case VPT_Z:
-	file_parameter = VNAFILE_PARAMETER_Z;
-	break;
-    case VPT_Y:
-	file_parameter = VNAFILE_PARAMETER_Y;
-	break;
-    case VPT_T:
-	file_parameter = VNAFILE_PARAMETER_T;
-	break;
-    case VPT_H:
-	file_parameter = VNAFILE_PARAMETER_H;
-	break;
-    case VPT_G:
-	file_parameter = VNAFILE_PARAMETER_G;
-	break;
-    case VPT_A:
-	file_parameter = VNAFILE_PARAMETER_A;
-	break;
-    case VPT_B:
-	file_parameter = VNAFILE_PARAMETER_B;
-	break;
-    case VPT_ZIN:
-	file_parameter = VNAFILE_PARAMETER_ZIN;
-	break;
-    default:
-	errno = EINVAL;
-	return -1;
-    }
-
-    /*
-     * Allocate the new format vector.
+     * Allocate the new format vector, length 1.
      */
     if ((vffp_new = malloc(sizeof(vnafile_format_t))) == NULL) {
 	_vnafile_error(vfp, "malloc: %s", strerror(errno));
 	goto out;
     }
     (void)memset((void *)vffp_new, 0, sizeof(*vffp_new));
-    vffp_new->vff_parameter   = file_parameter;
-    vffp_new->vff_coordinates = coordinates;
+    vffp_new->vff_parameter = parameter;
+    vffp_new->vff_format = format;
 
     /*
      * Install the new vector.
@@ -646,7 +641,7 @@ int _vnafile_set_simple_format(vnafile_t *vfp,
     /*
      * Update the format string.
      */
-    if (update_format_string(vfp) == -1) {
+    if (_vnafile_update_format_string(vfp) == -1) {
 	goto out;
     }
     rc = 0;

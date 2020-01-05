@@ -2,13 +2,15 @@
   of vnafile_parameter_t.  Eliminate vnafile_parameter_t by making PRL,
   SRC, VSWR, etc. info "coordinates".  Rename vnafile_coordinates_t
   to vnafile_format_type_t.
+  DONE
+
+- Improve vnafile-example
+  DONE
 
 - Inspect all malloc, calloc and realloc calls for size zero (which can
   legally return NULL).
 
 - Add vnadata-test
-
-- Improve vnafile-example
 
 - Consider making vnaproperty public: write vnaproperty.3 man page and
   example program.
