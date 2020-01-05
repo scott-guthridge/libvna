@@ -18,7 +18,7 @@
 .TH VNACONV 3 "JULY 2017" GNU
 .nh
 .SH NAME
-vnaconv_s2z, vnaconv_s2y, vnaconv_s2t, vnaconv_s2h, vnaconv_s2g, vnaconv_s2a, vnaconv_s2b, vnaconv_z2s, vnaconv_z2y, vnaconv_z2t, vnaconv_z2h, vnaconv_z2g, vnaconv_z2a, vnaconv_z2b, vnaconv_y2s, vnaconv_y2z, vnaconv_y2t, vnaconv_y2h, vnaconv_y2g, vnaconv_y2a, vnaconv_y2b, vnaconv_t2s, vnaconv_t2z, vnaconv_t2y, vnaconv_t2h, vnaconv_t2g, vnaconv_t2a, vnaconv_t2b, vnaconv_h2z, vnaconv_h2y, vnaconv_h2g, vnaconv_h2a, vnaconv_h2b, vnaconv_h2s, vnaconv_h2t, vnaconv_g2s, vnaconv_g2t, vnaconv_g2z, vnaconv_g2y, vnaconv_g2h, vnaconv_g2a, vnaconv_g2b, vnaconv_a2s, vnaconv_a2t, vnaconv_a2z, vnaconv_a2y, vnaconv_a2h, vnaconv_a2g, vnaconv_a2b, vnaconv_b2s, vnaconv_b2t, vnaconv_b2z, vnaconv_b2y, vnaconv_b2h, vnaconv_b2g, vnaconv_b2a, vnaconv_s2zi, vnaconv_z2zi, vnaconv_y2zi, vnaconv_t2zi, vnaconv_h2zi, vnaconv_g2zi, vnaconv_a2zi, vnaconv_b2zi, vnaconv_s2zn, vnaconv_s2yn, vnaconv_z2sn, vnaconv_z2yn, vnaconv_y2zn, vnaconv_y2sn, vnaconv_s2zin, vnaconv_z2zin, vnaconv_y2zin, vnaconv_s2zimn \- convert 2-port and N-port network parameters
+vnaconv_s2z, vnaconv_s2y, vnaconv_s2t, vnaconv_s2h, vnaconv_s2g, vnaconv_s2a, vnaconv_s2b, vnaconv_z2s, vnaconv_z2y, vnaconv_z2t, vnaconv_z2h, vnaconv_z2g, vnaconv_z2a, vnaconv_z2b, vnaconv_y2s, vnaconv_y2z, vnaconv_y2t, vnaconv_y2h, vnaconv_y2g, vnaconv_y2a, vnaconv_y2b, vnaconv_t2s, vnaconv_t2z, vnaconv_t2y, vnaconv_t2h, vnaconv_t2g, vnaconv_t2a, vnaconv_t2b, vnaconv_h2z, vnaconv_h2y, vnaconv_h2g, vnaconv_h2a, vnaconv_h2b, vnaconv_h2s, vnaconv_h2t, vnaconv_g2s, vnaconv_g2t, vnaconv_g2z, vnaconv_g2y, vnaconv_g2h, vnaconv_g2a, vnaconv_g2b, vnaconv_a2s, vnaconv_a2t, vnaconv_a2z, vnaconv_a2y, vnaconv_a2h, vnaconv_a2g, vnaconv_a2b, vnaconv_b2s, vnaconv_b2t, vnaconv_b2z, vnaconv_b2y, vnaconv_b2h, vnaconv_b2g, vnaconv_b2a, vnaconv_s2zi, vnaconv_z2zi, vnaconv_y2zi, vnaconv_t2zi, vnaconv_h2zi, vnaconv_g2zi, vnaconv_a2zi, vnaconv_b2zi, vnaconv_s2zn, vnaconv_s2yn, vnaconv_z2sn, vnaconv_z2yn, vnaconv_y2zn, vnaconv_y2sn, vnaconv_s2zin, vnaconv_z2zin, vnaconv_y2zin \- convert 2-port and N-port network parameters
 .\"
 .SH SYNOPSIS
 .SS "Include and Link"
@@ -350,12 +350,6 @@ Link with \fI-lvnaconv\fP \fI-lm\fP.
 .in +4n
 .BI "const double complex *" z0 ", int " n ");"
 .in -4n
-.SS "Rectangular Matrix to Input Impedance"
-.BI "void vnaconv_s2zimn(const double complex *" s ", double complex *" zi ,
-.in +4n
-.BI "const double complex *" z0 ", int " rows ", int " columns ");"
-.in -4n
-.sp
 .\"
 .SH DESCRIPTION
 These functions convert between various mathematical representations

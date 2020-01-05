@@ -25,15 +25,15 @@ libvna_la_SOURCES = archdep.h archdep.c \
 	vnaconv_h2s.c vnaconv_h2t.c vnaconv_h2y.c vnaconv_h2z.c \
 	vnaconv_h2zi.c vnaconv_s2a.c vnaconv_s2b.c vnaconv_s2g.c \
 	vnaconv_s2h.c vnaconv_s2t.c vnaconv_s2y.c vnaconv_s2yn.c \
-	vnaconv_s2z.c vnaconv_s2zi.c vnaconv_s2zimn.c vnaconv_s2zin.c \
-	vnaconv_s2zn.c vnaconv_t2a.c vnaconv_t2b.c vnaconv_t2g.c \
-	vnaconv_t2h.c vnaconv_t2s.c vnaconv_t2y.c vnaconv_t2z.c \
-	vnaconv_t2zi.c vnaconv_y2a.c vnaconv_y2b.c vnaconv_y2g.c \
-	vnaconv_y2h.c vnaconv_y2s.c vnaconv_y2sn.c vnaconv_y2t.c \
-	vnaconv_y2z.c vnaconv_y2zi.c vnaconv_y2zin.c vnaconv_y2zn.c \
-	vnaconv_z2a.c vnaconv_z2b.c vnaconv_z2g.c vnaconv_z2h.c \
-	vnaconv_z2s.c vnaconv_z2sn.c vnaconv_z2t.c vnaconv_z2y.c \
-	vnaconv_z2yn.c vnaconv_z2zi.c vnaconv_z2zin.c \
+	vnaconv_s2z.c vnaconv_s2zi.c vnaconv_s2zin.c vnaconv_s2zn.c \
+	vnaconv_t2a.c vnaconv_t2b.c vnaconv_t2g.c vnaconv_t2h.c \
+	vnaconv_t2s.c vnaconv_t2y.c vnaconv_t2z.c vnaconv_t2zi.c \
+	vnaconv_y2a.c vnaconv_y2b.c vnaconv_y2g.c vnaconv_y2h.c \
+	vnaconv_y2s.c vnaconv_y2sn.c vnaconv_y2t.c vnaconv_y2z.c \
+	vnaconv_y2zi.c vnaconv_y2zin.c vnaconv_y2zn.c vnaconv_z2a.c \
+	vnaconv_z2b.c vnaconv_z2g.c vnaconv_z2h.c vnaconv_z2s.c \
+	vnaconv_z2sn.c vnaconv_z2t.c vnaconv_z2y.c vnaconv_z2yn.c \
+	vnaconv_z2zi.c vnaconv_z2zin.c \
 	vnadata_internal.h vnadata_add_frequency.c vnadata_alloc.c \
 	vnadata_convert.c vnadata_convert_to_fz0.c vnadata_convert_to_z0.c \
 	vnadata_get_fz0.c vnadata_get_fz0_vector.c vnadata_get_typename.c \
