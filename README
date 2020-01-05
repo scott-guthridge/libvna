@@ -35,6 +35,11 @@ VNA calibration at work by running:
     $ make plot
 
 
+To build PDF versions of the man pages (requries pdfroff).  The .pdf
+files appear in src/
+    $ make pdfman
+
+
 To build RPM files:
     $ make srcrpm
     $ make rpms

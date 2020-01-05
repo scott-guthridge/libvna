@@ -12,7 +12,10 @@ srcrpm rpms: dist
 plot: all
 	(cd src && $(MAKE) $(AM_MAKEFLAGS) $@)
 
+pdfman:
+	(cd src && $(MAKE) $(AM_MAKEFLAGS) $@)
+
 clean-local:
 	rm -f archdep.o
 
-.PHONY: srcrpm rpms plot
+.PHONY: srcrpm rpms plot pdfroff

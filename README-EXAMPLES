@@ -17,9 +17,9 @@ vnacal-example.c:
     In the plot, dashed lines are measured values, solid lines are the
     value corrected by calibration and points are calulated expected
     values (which as you can see, correctly lie on the solid lines).
-    The S12 calibrated curve and expected points are not visible on
-    the plot as they're exactly covered by the S21 calibrated curve and
-    expected points.
+    Notice that S11 is very far off before correction.  The S12 calibrated
+    curve and expected points aren't visible in the figure as they're
+    exactly covered by the S21 calibrated curve and expected points.
 
 
 vnaconv-example.c:

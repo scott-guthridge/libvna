@@ -1,4 +1,7 @@
 ACLOCAL_AMFLAGS= -I m4
+GNUPLOT= gnuplot
+PDFROFF= pdfroff
+SUFFIXES= .3 .pdf
 
 #
 # Library
@@ -110,7 +113,13 @@ vnacal-example.out: vnacal-example
 	./vnacal-example > "$@"
 
 plot: vnacal-example.out vnacal-example.gnuplot
-	gnuplot vnacal-example.gnuplot
+	$(GNUPLOT) vnacal-example.gnuplot
+
+.3.pdf:
+	$(PDFROFF) -t -e -man --no-toc-relocation $< > "$@"
+
+pdfman: vnacal.pdf vnaconv.pdf vnadata.pdf vnafile.pdf
 
 clean-local:
-	rm -f example.vnacal vnacal-example.out vnacal-test.vnacal
+	rm -f example.vnacal vnacal-example.out vnacal-test.vnacal \
+		vnacal.pdf vnaconv.pdf vnadata.pdf vnafile.pdf
