@@ -159,8 +159,6 @@ VSWR	voltage standing wave ratio
 .in -4n
 .sp
 with the following optional coordinate system modifiers:
-.sp
-.sp
 .in +4n
 .TS
 l l.
@@ -172,7 +170,9 @@ dB	decibels, angle
 .sp
 In the Touchstone file formats, only one specifier can be given and it must
 be restricted to one of the s, z, y, h or g variants.
-If \fBvnafile_set_format\fP() isn't called, the default format is "ri".
+If \fBvnafile_set_format\fP() isn't called, the default format
+is \(lqri\(rq, with the parameter type determined by the given
+\fBvnadata_t\fP object.
 .\"
 .PP
 The \fBvnafile_get_fprecision\fP(), \fBvnafile_set_fprecision\fP(),
@@ -195,24 +195,24 @@ really refer to a file.
 .PP
 The \fBvnafile_check\fP() tests if the given combination of options and
 parameter data are valid for \fBvnafile_save\fP().
-In other words, it performs a dry run of save to catch errors early
-before actual parameter data has been computed.
+In other words, it performs a dry run of save to catch errors before
+anything is actually written.
 Some examples of things it checks are: that the format string is compatible
 with Touchstone formats, that a parameter matrix with dimensions other
 than 2x2 isn't being converted to one of the two-port formats
 (t, g, h, a or b), and that multiple system impedances aren't given in
 Touchstone 1 format.
 .PP
-The \fBvnafile_save\fP() function saves the VNA parameter data given
-in \fIvdp\fP to \fIfilename\fP.
-The \fBvnafile_savef\fP() function saves the parameter data into the
-caller-supplied open file pointer \fIfp\fP.
-It uses \fIvnafile\fP for error messages only \- this parameter doesn't
-have to refer to an actual file.
+The \fBvnafile_save\fP() function saves the VNA parameter data given in
+\fIvdp\fP to \fIfilename\fP.
+The \fBvnafile_savef\fP() function does the same, except that it uses
+the caller-supplied open file pointer \fIfp\fP.
+In the later case, \fIvnafile\fP is used for error messages only \-
+it doesn't have to refer to an actual file.
 .SH "RETURN VALUE"
 The \fBvnafile_alloc\fP() function returns a pointer to a \fBvnadata_t\fP
 object used by the rest of the functions.
-The various get functions return the requested data; they do not return
+The various get functions return the requested data; they don't return
 errors.
 The integer-valued functions \fBvnafile_set_file_type\fP(),
 \fBvnafile_set_format\fP(), \fBvnafile_set_fprecision\fP(),
@@ -230,7 +230,6 @@ return -1 on error.
  * ".s3p", etc.  for Touchstone 1, ".ts" for Touchstone 2 and anything
  * else for native format.
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

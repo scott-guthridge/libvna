@@ -23,7 +23,6 @@
  * ".s3p", etc.  for Touchstone 1, ".ts" for Touchstone 2 and anything
  * else for native format.
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
