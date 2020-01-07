@@ -46,9 +46,7 @@ make clean
 %{_libdir}/*.so.*
 
 %files devel
-%{_docdir}/%{name}/README-EXAMPLES
-%{_docdir}/%{name}/*-example.c
-%{_docdir}/%{name}/*-example.gnuplot
+%{_docdir}/%{name}/*
 %{_includedir}/*
 %{_libdir}/*.so
 %{_libdir}/*.a

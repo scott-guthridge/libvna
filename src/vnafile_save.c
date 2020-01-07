@@ -610,8 +610,6 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 	    assert(vffp->vff_parameter == VPT_S);
 	    for (int row = 0; row < rows; ++row) {
 		for (int column = 0; column < columns; ++column) {
-		    int pwidth;
-
 		    if (row == column) {
 			continue;
 		    }

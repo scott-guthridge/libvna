@@ -23,31 +23,66 @@ Prerequisites:
 
 
 Build, Test and Install:
-    $ ./bootstrap	# If building from git; skip if building from tarball.
-    $ ./configure
-    $ make
-    $ make check
-    # make install
+    ./bootstrap		# If building from git; skip if building from tarball.
+    ./configure
+    make
+    make check
+    sudo make install
+
+    The files are installed in /usr/local/ 
+	/usr/local/include/*.h
+	/usr/local/lib/libvna.so.*
+	/usr/local/share/doc/libvna/*
+	/usr/local/share/man/man3/*.3
+
+    And the example programs and README-EXAMPLES files are copied into
+    /usr/local/share/doc/libvna.  The README-EXAMPLES is really worded
+    for someone building the example programs by hand after the library
+    has been installed on the system.  After running a make all here,
+    though the examples will already be built in the src/ directory.
 
 
 If you have gnuplot installed, you can see an interesting example of
 VNA calibration at work by running:
-    $ make plot
+    make plot
 
 
-To build PDF versions of the man pages (requries pdfroff).  The .pdf
-files appear in src/
-    $ make pdfman
+Fixing library path problems:
+    Some Linux distros (such as Fedora 31) don't include /usr/local/lib
+    in the default dyanamic library search path.  If you get an error like
+    the following when trying to run a program you linked against libvna:
+
+	error while loading shared libraries: libvna.so.0: cannot open
+	shared object file: No such file or directory
+
+    Add /usr/local/lib to the default library search path:
+
+    	sudo echo "/usr/local/lib" > /etc/ld.so.conf.d/local.conf
+	sudo chmod 644 /etc/ld.so.conf.d/local.conf
+	sudo ldconfig
+
+
+To build PDF versions of the man pages (requries pdfroff):
+    make pdfman
+
+    The .pdf files appear in src/
 
 
 To build RPM files:
-    $ make srcrpm
-    $ make rpms
+    make srcrpm
+    make rpms
+
+    The source RPM appears in rpm/libvna-*.src.rpm.  Binary RPMs appear
+    in an architecture-specific subdirectory, e.g. rpm/x86-64/.
+
+    When installing from RPM, the installed files go into the normal
+    system directories such as /usr/include, /usr/lib64, /usr/share/doc,
+    and /usr/share/man instead of /usr/local/
 
 
-The library is still undergoing some final development and hasn't had its
-first official release yet.  While the version remains at 0.0, we may
-break binary compatibility without reflecting it in the library version.
+The library is still undergoing some final development.  While the
+version remains at 0.0.x, there may be a few compatiblity breaks not
+reflected in the library .so version.
 
 If you'd like to help, please contact me.  The main things I could use
 help on right now are:
