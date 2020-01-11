@@ -4,7 +4,7 @@ Release: 1%{?dist}
 Summary: Electrical Network Parameter Library
 Group: Applications/Engineering
 License: GPLv3+
-#URL: http://www.rompromity.net/libvna/index.html
+URL: http://www.rompromity.net/libvna/test+measurement/index.html
 Source: %{name}-%{version}.tar.gz
 BuildRequires: libyaml-devel
 
