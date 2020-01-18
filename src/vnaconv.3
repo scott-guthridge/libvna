@@ -433,7 +433,7 @@ V1 and V2 be the voltages at ports 1 and 2,
 .br
 I1 and I2 be the currents into ports 1 and 2, and
 .br
-Z1 and Z2 as the system impedances the device sees looking out of
+Z1 and Z2 be the system impedances the device sees looking out of
 its ports.
 .in -4n
 .sp
@@ -705,7 +705,7 @@ values if the conversion is nondeterministic.
 #include <vnaconv.h>
 
 static double complex s[2][2] = {
-    {  0.000000 - 0.000000 * I,  0.000000 + 0.000000 * I },
+    {  0.000000 + 0.000000 * I,  0.000000 + 0.000000 * I },
     {  10.00000 + 0.000000 * I,  0.000000 + 0.000000 * I }
 };
 

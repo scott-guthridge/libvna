@@ -355,6 +355,11 @@ static void test_conversions_2x2()
 	TEST_EQUAL(v[0], zi[0], "s2zin: zi0");
 	TEST_EQUAL(v[1], zi[1], "s2zin: zi1");
 
+	(void)memset((void *)v, 0, sizeof(v));
+	vnaconv_s2zimn(*s, v, z0, 2, 2);
+	TEST_EQUAL(v[0], zi[0], "s2zimn: zi0");
+	TEST_EQUAL(v[1], zi[1], "s2zimn: zi1");
+
 	(void)memset((void *)u, 0, sizeof(u));
 	vnaconv_t2s(t, u);
 	TEST_EQUAL(U11, S11, "t2s: S11");
@@ -432,10 +437,10 @@ static void test_conversions_2x2()
 
 	(void)memset((void *)u, 0, sizeof(u));
 	vnaconv_z2y(z, u);
-	TEST_EQUAL(U11, Y11, "zy2: Y11");
-	TEST_EQUAL(U12, Y12, "zy2: Y12");
-	TEST_EQUAL(U21, Y21, "zy2: Y21");
-	TEST_EQUAL(U22, Y22, "zy2: Y22");
+	TEST_EQUAL(U11, Y11, "z2y: Y11");
+	TEST_EQUAL(U12, Y12, "z2y: Y12");
+	TEST_EQUAL(U21, Y21, "z2y: Y21");
+	TEST_EQUAL(U22, Y22, "z2y: Y22");
 
 	(void)memset((void *)u, 0, sizeof(u));
 	vnaconv_z2yn(*z, *u, 2);
@@ -473,14 +478,284 @@ static void test_conversions_2x2()
 	TEST_EQUAL(U22, B22, "z2b: B22");
 
 	(void)memset((void *)v, 0, sizeof(v));
-	vnaconv_z2zin(*z, v, z0, 2);
-	TEST_EQUAL(v[0], zi[0], "z2zin: zi0");
-	TEST_EQUAL(v[1], zi[1], "z2zin: zi1");
+	vnaconv_z2zi(z, v, z0);
+	TEST_EQUAL(v[0], zi[0], "z2zi: zi0");
+	TEST_EQUAL(v[1], zi[1], "z2zi: zi1");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_y2s(y, u, z0);
+	TEST_EQUAL(U11, S11, "y2s: S11");
+	TEST_EQUAL(U12, S12, "y2s: S12");
+	TEST_EQUAL(U21, S21, "y2s: S21");
+	TEST_EQUAL(U22, S22, "y2s: S22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_y2t(y, u, z0);
+	TEST_EQUAL(U11, T11, "y2t: T11");
+	TEST_EQUAL(U12, T12, "y2t: T12");
+	TEST_EQUAL(U21, T21, "y2t: T21");
+	TEST_EQUAL(U22, T22, "y2t: T22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_y2z(y, u);
+	TEST_EQUAL(U11, Z11, "y2z: Y11");
+	TEST_EQUAL(U12, Z12, "y2z: Y12");
+	TEST_EQUAL(U21, Z21, "y2z: Y21");
+	TEST_EQUAL(U22, Z22, "y2z: Y22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_y2h(y, u);
+	TEST_EQUAL(U11, H11, "y2h: H11");
+	TEST_EQUAL(U12, H12, "y2h: H12");
+	TEST_EQUAL(U21, H21, "y2h: H21");
+	TEST_EQUAL(U22, H22, "y2h: H22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_y2g(y, u);
+	TEST_EQUAL(U11, G11, "y2g: G11");
+	TEST_EQUAL(U12, G12, "y2g: G12");
+	TEST_EQUAL(U21, G21, "y2g: G21");
+	TEST_EQUAL(U22, G22, "y2g: G22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_y2a(y, u);
+	TEST_EQUAL(U11, A11, "y2a: A11");
+	TEST_EQUAL(U12, A12, "y2a: A12");
+	TEST_EQUAL(U21, A21, "y2a: A21");
+	TEST_EQUAL(U22, A22, "y2a: A22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_y2b(y, u);
+	TEST_EQUAL(U11, B11, "y2b: B11");
+	TEST_EQUAL(U12, B12, "y2b: B12");
+	TEST_EQUAL(U21, B21, "y2b: B21");
+	TEST_EQUAL(U22, B22, "y2b: B22");
+
+	(void)memset((void *)v, 0, sizeof(v));
+	vnaconv_y2zi(y, v, z0);
+	TEST_EQUAL(v[0], zi[0], "y2zi: zi0");
+	TEST_EQUAL(v[1], zi[1], "y2zi: zi1");
 
 	(void)memset((void *)v, 0, sizeof(v));
 	vnaconv_y2zin(*y, v, z0, 2);
 	TEST_EQUAL(v[0], zi[0], "y2zin: zi0");
 	TEST_EQUAL(v[1], zi[1], "y2zin: zi1");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_h2s(h, u, z0);
+	TEST_EQUAL(U11, S11, "h2s: S11");
+	TEST_EQUAL(U12, S12, "h2s: S12");
+	TEST_EQUAL(U21, S21, "h2s: S21");
+	TEST_EQUAL(U22, S22, "h2s: S22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_h2t(h, u, z0);
+	TEST_EQUAL(U11, T11, "h2t: T11");
+	TEST_EQUAL(U12, T12, "h2t: T12");
+	TEST_EQUAL(U21, T21, "h2t: T21");
+	TEST_EQUAL(U22, T22, "h2t: T22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_h2z(h, u);
+	TEST_EQUAL(U11, Z11, "h2z: Y11");
+	TEST_EQUAL(U12, Z12, "h2z: Y12");
+	TEST_EQUAL(U21, Z21, "h2z: Y21");
+	TEST_EQUAL(U22, Z22, "h2z: Y22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_h2y(h, u);
+	TEST_EQUAL(U11, Y11, "h2y: Y11");
+	TEST_EQUAL(U12, Y12, "h2y: Y12");
+	TEST_EQUAL(U21, Y21, "h2y: Y21");
+	TEST_EQUAL(U22, Y22, "h2y: Y22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_h2g(h, u);
+	TEST_EQUAL(U11, G11, "h2g: G11");
+	TEST_EQUAL(U12, G12, "h2g: G12");
+	TEST_EQUAL(U21, G21, "h2g: G21");
+	TEST_EQUAL(U22, G22, "h2g: G22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_h2a(h, u);
+	TEST_EQUAL(U11, A11, "h2a: A11");
+	TEST_EQUAL(U12, A12, "h2a: A12");
+	TEST_EQUAL(U21, A21, "h2a: A21");
+	TEST_EQUAL(U22, A22, "h2a: A22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_h2b(h, u);
+	TEST_EQUAL(U11, B11, "h2b: B11");
+	TEST_EQUAL(U12, B12, "h2b: B12");
+	TEST_EQUAL(U21, B21, "h2b: B21");
+	TEST_EQUAL(U22, B22, "h2b: B22");
+
+	(void)memset((void *)v, 0, sizeof(v));
+	vnaconv_h2zi(h, v, z0);
+	TEST_EQUAL(v[0], zi[0], "h2zi: zi0");
+	TEST_EQUAL(v[1], zi[1], "h2zi: zi1");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_g2s(g, u, z0);
+	TEST_EQUAL(U11, S11, "g2s: S11");
+	TEST_EQUAL(U12, S12, "g2s: S12");
+	TEST_EQUAL(U21, S21, "g2s: S21");
+	TEST_EQUAL(U22, S22, "g2s: S22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_g2t(g, u, z0);
+	TEST_EQUAL(U11, T11, "g2t: T11");
+	TEST_EQUAL(U12, T12, "g2t: T12");
+	TEST_EQUAL(U21, T21, "g2t: T21");
+	TEST_EQUAL(U22, T22, "g2t: T22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_g2z(g, u);
+	TEST_EQUAL(U11, Z11, "g2z: Z11");
+	TEST_EQUAL(U12, Z12, "g2z: Z12");
+	TEST_EQUAL(U21, Z21, "g2z: Z21");
+	TEST_EQUAL(U22, Z22, "g2z: Z22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_g2y(g, u);
+	TEST_EQUAL(U11, Y11, "g2y: Y11");
+	TEST_EQUAL(U12, Y12, "g2y: Y12");
+	TEST_EQUAL(U21, Y21, "g2y: Y21");
+	TEST_EQUAL(U22, Y22, "g2y: Y22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_g2h(g, u);
+	TEST_EQUAL(U11, H11, "g2h: H11");
+	TEST_EQUAL(U12, H12, "g2h: H12");
+	TEST_EQUAL(U21, H21, "g2h: H21");
+	TEST_EQUAL(U22, H22, "g2h: H22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_g2a(g, u);
+	TEST_EQUAL(U11, A11, "g2a: A11");
+	TEST_EQUAL(U12, A12, "g2a: A12");
+	TEST_EQUAL(U21, A21, "g2a: A21");
+	TEST_EQUAL(U22, A22, "g2a: A22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_g2b(g, u);
+	TEST_EQUAL(U11, B11, "g2b: B11");
+	TEST_EQUAL(U12, B12, "g2b: B12");
+	TEST_EQUAL(U21, B21, "g2b: B21");
+	TEST_EQUAL(U22, B22, "g2b: B22");
+
+	(void)memset((void *)v, 0, sizeof(v));
+	vnaconv_g2zi(g, v, z0);
+	TEST_EQUAL(v[0], zi[0], "g2zi: zi0");
+	TEST_EQUAL(v[1], zi[1], "g2zi: zi1");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_a2s(a, u, z0);
+	TEST_EQUAL(U11, S11, "a2s: S11");
+	TEST_EQUAL(U12, S12, "a2s: S12");
+	TEST_EQUAL(U21, S21, "a2s: S21");
+	TEST_EQUAL(U22, S22, "a2s: S22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_a2t(a, u, z0);
+	TEST_EQUAL(U11, T11, "a2t: T11");
+	TEST_EQUAL(U12, T12, "a2t: T12");
+	TEST_EQUAL(U21, T21, "a2t: T21");
+	TEST_EQUAL(U22, T22, "a2t: T22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_a2z(a, u);
+	TEST_EQUAL(U11, Z11, "a2z: Y11");
+	TEST_EQUAL(U12, Z12, "a2z: Y12");
+	TEST_EQUAL(U21, Z21, "a2z: Y21");
+	TEST_EQUAL(U22, Z22, "a2z: Y22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_a2y(a, u);
+	TEST_EQUAL(U11, Y11, "a2y: Y11");
+	TEST_EQUAL(U12, Y12, "a2y: Y12");
+	TEST_EQUAL(U21, Y21, "a2y: Y21");
+	TEST_EQUAL(U22, Y22, "a2y: Y22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_a2h(a, u);
+	TEST_EQUAL(U11, H11, "a2h: H11");
+	TEST_EQUAL(U12, H12, "a2h: H12");
+	TEST_EQUAL(U21, H21, "a2h: H21");
+	TEST_EQUAL(U22, H22, "a2h: H22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_a2g(a, u);
+	TEST_EQUAL(U11, G11, "a2g: G11");
+	TEST_EQUAL(U12, G12, "a2g: G12");
+	TEST_EQUAL(U21, G21, "a2g: G21");
+	TEST_EQUAL(U22, G22, "a2g: G22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_a2b(a, u);
+	TEST_EQUAL(U11, B11, "a2b: B11");
+	TEST_EQUAL(U12, B12, "a2b: B12");
+	TEST_EQUAL(U21, B21, "a2b: B21");
+	TEST_EQUAL(U22, B22, "a2b: B22");
+
+	(void)memset((void *)v, 0, sizeof(v));
+	vnaconv_a2zi(a, v, z0);
+	TEST_EQUAL(v[0], zi[0], "a2zi: zi0");
+	TEST_EQUAL(v[1], zi[1], "a2zi: zi1");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_b2s(b, u, z0);
+	TEST_EQUAL(U11, S11, "b2s: S11");
+	TEST_EQUAL(U12, S12, "b2s: S12");
+	TEST_EQUAL(U21, S21, "b2s: S21");
+	TEST_EQUAL(U22, S22, "b2s: S22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_b2t(b, u, z0);
+	TEST_EQUAL(U11, T11, "b2t: T11");
+	TEST_EQUAL(U12, T12, "b2t: T12");
+	TEST_EQUAL(U21, T21, "b2t: T21");
+	TEST_EQUAL(U22, T22, "b2t: T22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_b2z(b, u);
+	TEST_EQUAL(U11, Z11, "b2z: Y11");
+	TEST_EQUAL(U12, Z12, "b2z: Y12");
+	TEST_EQUAL(U21, Z21, "b2z: Y21");
+	TEST_EQUAL(U22, Z22, "b2z: Y22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_b2y(b, u);
+	TEST_EQUAL(U11, Y11, "b2y: Y11");
+	TEST_EQUAL(U12, Y12, "b2y: Y12");
+	TEST_EQUAL(U21, Y21, "b2y: Y21");
+	TEST_EQUAL(U22, Y22, "b2y: Y22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_b2h(b, u);
+	TEST_EQUAL(U11, H11, "b2h: H11");
+	TEST_EQUAL(U12, H12, "b2h: H12");
+	TEST_EQUAL(U21, H21, "b2h: H21");
+	TEST_EQUAL(U22, H22, "b2h: H22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_b2g(b, u);
+	TEST_EQUAL(U11, G11, "b2g: G11");
+	TEST_EQUAL(U12, G12, "b2g: G12");
+	TEST_EQUAL(U21, G21, "b2g: G21");
+	TEST_EQUAL(U22, G22, "b2g: G22");
+
+	(void)memset((void *)u, 0, sizeof(u));
+	vnaconv_b2a(b, u);
+	TEST_EQUAL(U11, A11, "b2a: A11");
+	TEST_EQUAL(U12, A12, "b2a: A12");
+	TEST_EQUAL(U21, A21, "b2a: A21");
+	TEST_EQUAL(U22, A22, "b2a: A22");
+
+	(void)memset((void *)v, 0, sizeof(v));
+	vnaconv_b2zi(b, v, z0);
+	TEST_EQUAL(v[0], zi[0], "b2zi: zi0");
+	TEST_EQUAL(v[1], zi[1], "b2zi: zi1");
 
 	if (opt_v) {
 	    printf("-------------\n");
@@ -593,39 +868,39 @@ static void test_conversions_3x3()
 
 	(void)memset((void *)u, 0, sizeof(u));
 	vnaconv_z2yn(*z, *u, 3);
-	TEST_EQUAL(U11, Y11, "zy2: Y11");
-	TEST_EQUAL(U12, Y12, "zy2: Y12");
-	TEST_EQUAL(U13, Y13, "zy2: Y13");
-	TEST_EQUAL(U21, Y21, "zy2: Y21");
-	TEST_EQUAL(U22, Y22, "zy2: Y22");
-	TEST_EQUAL(U23, Y23, "zy2: Y23");
-	TEST_EQUAL(U31, Y31, "zy2: Y31");
-	TEST_EQUAL(U32, Y32, "zy2: Y32");
-	TEST_EQUAL(U33, Y33, "zy2: Y33");
+	TEST_EQUAL(U11, Y11, "z2y: Y11");
+	TEST_EQUAL(U12, Y12, "z2y: Y12");
+	TEST_EQUAL(U13, Y13, "z2y: Y13");
+	TEST_EQUAL(U21, Y21, "z2y: Y21");
+	TEST_EQUAL(U22, Y22, "z2y: Y22");
+	TEST_EQUAL(U23, Y23, "z2y: Y23");
+	TEST_EQUAL(U31, Y31, "z2y: Y31");
+	TEST_EQUAL(U32, Y32, "z2y: Y32");
+	TEST_EQUAL(U33, Y33, "z2y: Y33");
 
 	(void)memset((void *)u, 0, sizeof(u));
 	vnaconv_y2sn(*y, *u, z0, 3);
-	TEST_EQUAL(U11, S11, "z2s: S11");
-	TEST_EQUAL(U12, S12, "z2s: S12");
-	TEST_EQUAL(U13, S13, "z2s: S13");
-	TEST_EQUAL(U21, S21, "z2s: S21");
-	TEST_EQUAL(U22, S22, "z2s: S22");
-	TEST_EQUAL(U23, S23, "z2s: S23");
-	TEST_EQUAL(U31, S31, "z2s: S31");
-	TEST_EQUAL(U32, S32, "z2s: S32");
-	TEST_EQUAL(U33, S33, "z2s: S33");
+	TEST_EQUAL(U11, S11, "y2s: S11");
+	TEST_EQUAL(U12, S12, "y2s: S12");
+	TEST_EQUAL(U13, S13, "y2s: S13");
+	TEST_EQUAL(U21, S21, "y2s: S21");
+	TEST_EQUAL(U22, S22, "y2s: S22");
+	TEST_EQUAL(U23, S23, "y2s: S23");
+	TEST_EQUAL(U31, S31, "y2s: S31");
+	TEST_EQUAL(U32, S32, "y2s: S32");
+	TEST_EQUAL(U33, S33, "y2s: S33");
 
 	(void)memset((void *)u, 0, sizeof(u));
 	vnaconv_y2zn(*y, *u, 3);
-	TEST_EQUAL(U11, Z11, "zy2: Z11");
-	TEST_EQUAL(U12, Z12, "zy2: Z12");
-	TEST_EQUAL(U13, Z13, "zy2: Z13");
-	TEST_EQUAL(U21, Z21, "zy2: Z21");
-	TEST_EQUAL(U22, Z22, "zy2: Z22");
-	TEST_EQUAL(U23, Z23, "zy2: Z23");
-	TEST_EQUAL(U31, Z31, "zy2: Z31");
-	TEST_EQUAL(U32, Z32, "zy2: Z32");
-	TEST_EQUAL(U33, Z33, "zy2: Z33");
+	TEST_EQUAL(U11, Z11, "y2z: Z11");
+	TEST_EQUAL(U12, Z12, "y2z: Z12");
+	TEST_EQUAL(U13, Z13, "y2z: Z13");
+	TEST_EQUAL(U21, Z21, "y2z: Z21");
+	TEST_EQUAL(U22, Z22, "y2z: Z22");
+	TEST_EQUAL(U23, Z23, "y2z: Z23");
+	TEST_EQUAL(U31, Z31, "y2z: Z31");
+	TEST_EQUAL(U32, Z32, "y2z: Z32");
+	TEST_EQUAL(U33, Z33, "y2z: Z33");
 
 	vnaconv_s2zin(*s, zi, z0, 3);
 	if (opt_v) {
