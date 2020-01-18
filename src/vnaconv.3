@@ -666,10 +666,15 @@ above.
 .in -4n
 .\"
 .PP
-The matrix to input impedance functions, e.g. \fBvnaconv_s2zi\fP()
-and \fBvnaconv_z2zin\fP(), find the input impedances into each port of
-the network given that all other ports are terminated by the specified
+In addition to functions that convert between parameter forms, there
+are also functions that calculate the input impedances looking into
+each port of the network when all other ports are terminated at the
 system impedances.
+For example, \fBvnaconv_s2zi\fP() finds the input impedances from a
+2x2 s-parameter matrix, while \fBvnaconv_z2zin\fP() finds the input
+impedances from an \fIn\fP by \fIn\fP z-parameter matrix.
+The \fIzi\fP parameter refers to a caller-allocated vector of length
+\fIn\fP.
 .\"
 .SH "RETURN VALUE"
 All functions return void.  The result matrix may contain inf and/or nan

@@ -476,8 +476,9 @@ to the matrix cell addressed by \fIdrow\fP and \fIdcolumn\fP, where
 \fIdcolumn\fP is the DUT port being driven, \fIdrow\fP is the DUT
 port being measured, \fIvcolumn\fP is the VNA port driving signal and
 \fIvrow\fP is the VNA port detecting signal.
-The mapping of VNA ports to DUT ports must be consistent over multiple
-calls, or the later measurements will be discarded.
+The mapping of VNA row-column pair to DUT row-column pair must be
+consistent over multiple calls, or the later measurements will be
+discarded.
 If called more than once on the same matrix element, the vectors are
 averaged.
 .PP
@@ -486,7 +487,8 @@ value for the specified \fIrow\fP, \fIcolumn\fP and frequency index
 (\fIfindex\fP), in the \fBvnacal_input_t\fP object.
 .PP
 The \fBvnacal_input_apply\fP() function applies error corrections to
-the accumulated measurements and returns the S-parameter matrix.
+the accumulated measurements and stores the S-parameter matrix into
+the user-allocated \fBvnadata_t\fP object.
 .PP
 The \fBvnacal_input_free\fP() function frees the \fBvnacal_input_t\fP
 object.
@@ -666,7 +668,7 @@ and returns \s-2NULL\s+2.
 .PP
 The \fBvnacal_get_setname\fP() function returns the name of the
 calibration set.
-If the \fIset\fP is invalid, it sets \fIerrno\fP and returns \s-2NULL\s+2.
+If \fIset\fP is invalid, it sets \fIerrno\fP and returns \s-2NULL\s+2.
 .PP
 The \fBvnacal_get_sets\fP(), \fBvnacal_get_rows\fP(),
 \fBvnacal_get_columns\fP() and \fBvnacal_get_frequencies\fP() functions
@@ -705,7 +707,7 @@ A library function was given an invalid parameter, or a key given to
 one of the \fBvnacal_property_*\fP() functions contains invalid syntax
 or a component of the key has a type that doesn't match the property tree.
 .IP \fBENOENT\fP
-A \fBvnacal_property_*\fP() function was given a key that doesnt exist.
+A \fBvnacal_property_*\fP() function was given a key that doesn't exist.
 .IP \fBENOMEM\fP
 A \fBmalloc\fP(3), \fBcalloc\fP(3) or \fBrealloc\fP(3) call failed due
 to no memory.
@@ -1135,7 +1137,6 @@ int main(int argc, char **argv)
     vnacal_free(vcp);
 
     exit(0);
-    /*NOTREACHED*/
 }
 .ft R
 .fi

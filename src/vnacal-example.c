@@ -433,5 +433,4 @@ int main(int argc, char **argv)
     vnacal_free(vcp);
 
     exit(0);
-    /*NOTREACHED*/
 }
