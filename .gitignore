@@ -27,6 +27,7 @@ Makefile.in
 /missing
 /stamp-h1
 /test-driver
+rpm/libvna.spec
 src/example.vnacal
 src/test-suited
 src/vnacal-example

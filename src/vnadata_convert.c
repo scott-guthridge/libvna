@@ -27,34 +27,6 @@
 #include "vnaconv.h"
 #include "vnadata_internal.h"
 
-#ifndef MIN
-#define MIN(x, y)	((x) <= (y) ? (x) : (y))
-#endif /* MIN */
-
-/*
- * _vnaconv_s2zimn: calculate the m x n input port impedances
- *   @s:       serialized s matrix in (rows x columns)
- *   @zi:      zin vector out (length MIN(rows, columns))
- *   @z0:      system impedance vector in (length MIN(rows, columns))
- *   @rows:    rows in s-parameter matrix
- *   @columns: columns in s-parameter matrix
- *
- * This is such a special-case function (used to generalize the s to
- * Zin case) that it's static here and not included in vnaconv's public
- * API.
- */
-static void _vnaconv_s2zimn(const double complex *s, double complex *zi,
-	const double complex *z0, int rows, int columns)
-{
-    int ports = MIN(rows, columns);
-
-    for (int i = 0; i < ports; ++i) {
-	const double complex sii = s[(columns + 1) * i];
-
-	zi[i] = (sii * z0[i] + conj(z0[i])) / (1.0 - sii);
-    }
-}
-
 /*
  * conversion_group: a bitwise OR of these values describes a group of
  * 	related conversions
@@ -352,7 +324,7 @@ static void (*group_NxN_yes_x2I[])(const double complex *in,
  */
 static void (*group_MxN_yes_x2I[])(const double complex *in,
 	double complex *out, const double complex *z0, int m, int n) = {
-    [GET_INDEX(M1S2I)] = _vnaconv_s2zimn,
+    [GET_INDEX(M1S2I)] = vnaconv_s2zimn,
 };
 
 /*
