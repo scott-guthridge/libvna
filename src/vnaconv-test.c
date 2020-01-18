@@ -143,7 +143,7 @@ static void cmatrix_print(const char *tag, double complex *a, int m, int n)
 	for (int j = 0; j < n; ++j) {
 	    double complex v = a[i * n + j];
 
-	    (void)printf(" %8.5f%+8.5fj", creal(v), cimag(v));
+	    (void)printf(" %9.5f%+9.5fj", creal(v), cimag(v));
 	}
 	(void)printf("\n");
     }
@@ -163,9 +163,9 @@ static int isequal(double complex x, double complex y, const char *label)
     }
     rv = cabs(x - y) / d < EPS;
     if (!rv) {
-	printf("%s: %f%+fi != %f%+fi\n",
+	printf("%s: %9.5f%+9.5fj != %9.5f%+%9.5fj\n",
 		label, creal(x), cimag(x), creal(y), cimag(y));
-	printf("|x-y| = %f\n", cabs(x - y));
+	printf("|x-y| = %9.5f\n", cabs(x - y));
     }
     return rv;
 }
@@ -220,7 +220,7 @@ static void report_test_result(const char *test_name, test_result_type result)
 	abort();
 	/*NOTREACHED*/
     }
-    (void)printf("Test %2d: %-58s %s\n", ++test_count, test_name, result_name);
+    (void)printf("Test %2d: %58s %s\n", ++test_count, test_name, result_name);
     (void)fflush(stdout);
     if (result == T_FAIL) {
 	++fail_count;
@@ -274,11 +274,11 @@ static void test_conversions_2x2()
 	if (opt_v) {
 	    (void)printf("Test conversions: trial %3d\n",
 		    trial);
-	    (void)printf("Z1 %f%+fi  Z2 %f%+fi\n",
+	    (void)printf("Z1 %9.5f%+9.5fj  Z2 %9.5f%+9.5fj\n",
 		creal(Z1), cimag(Z1), creal(Z2), cimag(Z2));
-	    (void)printf("v1 %f%+fi  i1 %f%+fi\n",
+	    (void)printf("v1 %9.5f%+9.5fj  i1 %9.5f%+9.5fj\n",
 		creal(v1), cimag(v1), creal(i1), cimag(i1));
-	    (void)printf("v2 %f%+fi  i2 %f%+fi\n",
+	    (void)printf("v2 %9.5f%+9.5fj  i2 %9.5f%+9.5fj\n",
 		creal(v2), cimag(v2), creal(i2), cimag(i2));
 	    (void)printf("\n");
 	    cmatrix_print("s", *s, 2, 2);
@@ -822,14 +822,14 @@ static void test_conversions_3x3()
 	if (opt_v) {
 	    (void)printf("Test conversions: trial %3d\n",
 		    trial);
-	    (void)printf("Z1 %f%+fi  Z2 %f%+fi  Z3 %f%+fi\n",
+	    (void)printf("Z1 %9.5f%+9.5fj  Z2 %9.5f%+9.5fj  Z3 %9.5f%+9.5fj\n",
 		creal(Z1), cimag(Z1), creal(Z2), cimag(Z2),
 		creal(Z3), cimag(Z3));
-	    (void)printf("v1 %f%+fi  i1 %f%+fi\n",
+	    (void)printf("v1 %9.5f%+9.5fj  i1 %9.5f%+9.5fj\n",
 		creal(v1), cimag(v1), creal(i1), cimag(i1));
-	    (void)printf("v2 %f%+fi  i2 %f%+fi\n",
+	    (void)printf("v2 %9.5f%+9.5fj  i2 %9.5f%+9.5fj\n",
 		creal(v2), cimag(v2), creal(i2), cimag(i2));
-	    (void)printf("v3 %f%+fi  i3 %f%+fi\n",
+	    (void)printf("v3 %9.5f%+9.5fj  i3 %9.5f%+9.5fj\n",
 		creal(v3), cimag(v3), creal(i3), cimag(i3));
 	    (void)printf("\n");
 	    cmatrix_print("s", *s, 3, 3);
@@ -906,6 +906,11 @@ static void test_conversions_3x3()
 	if (opt_v) {
 	    cmatrix_print("zi", zi, 3, 1);
 	}
+
+	(void)memset((void *)v, 0, sizeof(v));
+	vnaconv_s2zimn(*s, v, z0, 3, 3);
+	TEST_EQUAL(v[0], zi[0], "s2zimn: zi0");
+	TEST_EQUAL(v[1], zi[1], "s2zimn: zi1");
 
 	(void)memset((void *)v, 0, sizeof(v));
 	vnaconv_z2zin(*z, v, z0, 3);
