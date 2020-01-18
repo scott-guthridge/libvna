@@ -39,6 +39,5 @@ main(int argc, char **argv)
         creal(z[1][0]), cimag(z[1][0]), creal(z[1][1]), cimag(z[1][1]));
 
     exit(0);
-    /*NOTREACHED*/
 }
 
