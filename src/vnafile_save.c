@@ -840,9 +840,10 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
     case VNAFILE_TOUCHSTONE1:
     case VNAFILE_TOUCHSTONE2:
 	/*
-	 * Touchstone format supports only square matrices.
+	 * Touchstone format supports only square matrices with at
+	 * least one port.
 	 */
-	if (rows != columns) {
+	if (rows != columns || ports < 1) {
 	    _vnafile_error(vfp, "%s: error: cannot save %d x %d matrix in "
 		    "touchstone format", function, rows, columns);
 	    errno = EINVAL;
@@ -905,7 +906,7 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	 */
 	if (z0_vector == NULL) {
 	    _vnafile_error(vfp, "%s: error: cannot save frequency-dependent "
-		    "system mpedances in touchstone format", function);
+		    "system impedances in touchstone format", function);
 	    errno = EINVAL;
 	    goto out;
 	}
