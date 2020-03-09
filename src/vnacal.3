@@ -336,7 +336,7 @@ The \fIfrequencies\fP parameter gives the number of elements in
 both \fIfrequency_vector\fP and \fIgamma_vector\fP.
 These frequencies don't have to align with those given to
 \fBvnacal_calset_alloc\fP(); however, they must span the entire range.
-The the library uses rational function interpolation to interpolate
+The library uses rational function interpolation to interpolate
 between frequency points when the calibration frequences don't align
 with the reference frequencies.
 .PP
@@ -403,9 +403,9 @@ for a device under test to S-parameters.
 The typical flow is: use \fBvnacal_load\fP() to load a previously saved
 calibration; use \fBvnacal_input_alloc\fP() to create a \fBvnacal_input_t\fP
 object; make measurements from the device under test using parameters
-from the calibration such as the frequency range and VNA switch settings
-to guide the process, save the measurements to the \fBvnacal_input_t\fP;
-finally, use \fBvnacal_input_apply\fP() to produce S-parameters.
+from the calibration such as the frequency range and properties (see below)
+to guide the process; save the measurements to the \fBvnacal_input_t\fP;
+and finally, use \fBvnacal_input_apply\fP() to produce S-parameters.
 .PP
 \fBvnacal_load\fP() loads a previously saved calibration from a file and
 returns a pointer to an opaque \fBvnacal_t\fP object needed by most of
