@@ -53,7 +53,7 @@ static int _vnafile_load_common(vnafile_t *vfp,
     case VNAFILE_TOUCHSTONE2:
 	/*
 	 * Load touchstone formats.  Warn if filename_ports doesn't
-	 * match actual ports.	Accept s2p as wild.
+	 * match actual ports, except allow .s2p as wild.
 	 */
 	if (_vnafile_load_touchstone(vfp, fp, filename, vdp) == -1) {
 	    return -1;

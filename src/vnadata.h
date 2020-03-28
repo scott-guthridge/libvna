@@ -364,8 +364,6 @@ extern int vnadata_set_z0_vector(vnadata_t *vdp,
  *   @vdp:    vnadata object pointer
  *   @findex: frequency index
  *   @port:   port number (zero-based)
- *
- * Note: fails if vdp contains per-frequency z0 vectors.
  */
 extern double complex vnadata_get_fz0(const vnadata_t *vdp, int findex,
 	int port);
