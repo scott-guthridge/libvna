@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include "vnafile.h"
 
+
 static char *progname;
 
 /*

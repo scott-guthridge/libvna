@@ -27,13 +27,6 @@
 #include <string.h>
 #include "vnacal_internal.h"
 
-#ifndef MAX
-#define MAX(a, b)	((a) >= (b) ? (a) : (b))
-#endif /* MAX */
-
-#ifndef MIN
-#define MIN(a, b)	((a) <= (b) ? (a) : (b))
-#endif /* MIN */
 
 /*
  * _vnacal_interpolate: interpolate error terms for frequency

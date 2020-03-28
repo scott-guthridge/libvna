@@ -28,13 +28,6 @@
 #include <string.h>
 #include "vnafile_internal.h"
 
-#ifndef MIN
-#define MIN(a, b)	((a) <= (b) ? (a) : (b))
-#endif /* MIN */
-
-#ifndef MAX
-#define MAX(a, b)	((a) >= (b) ? (a) : (b))
-#endif /* MAX */
 
 /*
  * native_record_type_t: type of record returned from scan_line

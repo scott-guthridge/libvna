@@ -26,6 +26,7 @@
 #include <string.h>
 #include "vnacal_internal.h"
 
+
 /*
  * _get_property_root: return the address of the appropriate property root
  */
@@ -68,7 +69,7 @@ int vnacal_property_type(vnacal_t *vcp, int set, const char *format, ...)
 	return 's';
 
     case VNAPROPERTY_MAP:
-    	return 'm';
+	return 'm';
 
     case VNAPROPERTY_LIST:
 	return 'l';

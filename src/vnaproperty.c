@@ -29,13 +29,6 @@
 #include <string.h>
 #include "vnaproperty_internal.h"
 
-#ifndef MIN
-#define MIN(a, b)	((a) <= (b) ? (a) : (b))
-#endif /* MIN */
-
-#ifndef MAX
-#define MAX(a, b)	((a) >= (b) ? (a) : (b))
-#endif /* MAX */
 
 /*
  * Castagnoli CRC-32 Table
@@ -1016,11 +1009,11 @@ static int _vnaproperty_parse(vnaproperty_scanner_t *vsp,
 
     /*
      * expr    : T_DOT					     // root
-     * 	       | T_DOT T_ID tail_opt			     // absolute path
-     * 	       | T_DOT T_LBRACKET T_ID T_BRACKET tail_opt    // absolute path
-     * 	       | T_ID tail_opt				     // relative path
-     * 	       | T_LBRACKET T_ID T_BRACKET tail_opt	     // relative path
-     * 	       ;
+     *         | T_DOT T_ID tail_opt			     // absolute path
+     *         | T_DOT T_LBRACKET T_ID T_BRACKET tail_opt    // absolute path
+     *         | T_ID tail_opt				     // relative path
+     *         | T_LBRACKET T_ID T_BRACKET tail_opt	     // relative path
+     *         ;
      */
     switch (vsp->vs_token) {
     case T_DOT:

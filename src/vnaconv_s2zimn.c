@@ -21,9 +21,6 @@
 #include <math.h>
 #include "vnaconv_internal.h"
 
-#ifndef MIN
-#define MIN(x, y)	((x) <= (y) ? (x) : (y))
-#endif /* MIN */
 
 /*
  * vnaconv_s2zimn: calculate the n-port input port impedances

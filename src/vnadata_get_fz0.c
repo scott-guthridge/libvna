@@ -23,13 +23,6 @@
 #include <string.h>
 #include "vnadata_internal.h"
 
-#ifndef MIN
-#define MIN(x, y)	((x) <= (y) ? (x) : (y))
-#endif /* MIN */
-
-#ifndef MAX
-#define MAX(x, y)	((x) >= (y) ? (x) : (y))
-#endif /* MAX */
 
 /*
  * vnadata_get_fz0: return the z0 value for the given frequency and port

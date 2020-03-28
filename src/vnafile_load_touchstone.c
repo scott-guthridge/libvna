@@ -29,13 +29,6 @@
 #include <string.h>
 #include "vnafile_internal.h"
 
-#ifndef MIN
-#define MIN(a, b)	((a) <= (b) ? (a) : (b))
-#endif /* MIN */
-
-#ifndef MAX
-#define MAX(a, b)	((a) >= (b) ? (a) : (b))
-#endif /* MAX */
 
 /*
  * ts_token_t: touchstone tokens
@@ -219,8 +212,8 @@ static void start_text(ts_parser_state_t *tpsp)
  * add_char: add a character to the text buffer
  *
  * Return:
- * 	 0: success
- * 	-1: out of memory error
+ *	 0: success
+ *	-1: out of memory error
  */
 static int add_char(ts_parser_state_t *tpsp, char c)
 {
@@ -331,18 +324,18 @@ static int next_token(ts_parser_state_t *tpsp, uint32_t flags)
 	    } while (tpsp->tps_char != '\n' && tpsp->tps_char != EOF);
 	    continue;
 
-	case '+': 	/* things that start "words" */
+	case '+':	/* things that start "words" */
 	case '-':
 	case '.':
 	    goto word;
 
-	case '#': 	/* start of option line */
+	case '#':	/* start of option line */
 	    next_char(tpsp);
 	    tpsp->tps_in_option_line = true;
 	    tpsp->tps_token = T_OPTION;
 	    return 0;
 
-	case '[': 	/* start of keyword */
+	case '[':	/* start of keyword */
 	    next_char(tpsp);
 	    start_text(tpsp);
 	    while (tpsp->tps_char != ']') {
@@ -622,7 +615,7 @@ static int parse_data_line(ts_parser_state_t *tpsp)
 {
     vnafile_t *vfp = tpsp->tps_vfp;
     tpsp->tps_value_count = 0;
-    
+
     assert(tpsp->tps_token == T_DOUBLE);
     while (tpsp->tps_token == T_DOUBLE) {
 	if (tpsp->tps_value_count >= tpsp->tps_value_allocation) {
@@ -899,8 +892,8 @@ skip_noise_data:
  * Constants
  */
 #define PI		3.14159265358979323846264338327950288419716939937508
-#define LOG10 		2.30258509299404568401799145468436420760110148862877
-#define RAD_PER_DEG 	(PI / 180.0)
+#define LOG10		2.30258509299404568401799145468436420760110148862877
+#define RAD_PER_DEG	(PI / 180.0)
 
 /*
  * get_value_pair: parse two values and convert to complex
@@ -967,10 +960,10 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
      * Initialize the parser
      */
     (void)memset((void *)&tps, 0, sizeof(tps));
-    tps.tps_vfp      			= vfp;
-    tps.tps_fp       			= fp;
-    tps.tps_filename 			= filename;
-    tps.tps_line     			= 1;
+    tps.tps_vfp				= vfp;
+    tps.tps_fp				= fp;
+    tps.tps_filename			= filename;
+    tps.tps_line			= 1;
     tps.tps_char			= '\000';
     tps.tps_in_option_line		= false;
     tps.tps_token			= T_EOL;
@@ -980,7 +973,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
     tps.tps_frequency_multiplier	= 1.0e+9;
     tps.tps_parameter_type		= VPT_S;
     tps.tps_data_format			= 'M';
-    tps.tps_z0 				= 50.0;	/* Touchstone default */
+    tps.tps_z0				= 50.0;	/* Touchstone default */
     tps.tps_ports			= -1;
     if ((tps.tps_text = malloc(VNAFILE_LOAD_INITIAL_TEXT_ALLOCATION)) == NULL) {
 	_vnafile_error(vfp, "%s (line 1): malloc: %s",
@@ -1302,7 +1295,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 		    strcmp(tps.tps_text, "UPPER") == 0) {
 		matrix_format = 'U';
 	    } else if (tps.tps_token == T_WORD &&
-	    	    strcmp(tps.tps_text, "LOWER") == 0) {
+		    strcmp(tps.tps_text, "LOWER") == 0) {
 		matrix_format = 'L';
 	    } else {
 		_vnafile_error(vfp, "%s (line %d) error: expected "
@@ -1512,7 +1505,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 
 	case 'L':	/* Lower */
 	    for (int row = 0; row < tps.tps_ports; ++row) {
-		for (int column = 0; column <= row; ++column) { 
+		for (int column = 0; column <= row; ++column) {
 		    double complex x;
 
 		    if (get_value_pair(&tps, expected_pairs, &x) == -1) {

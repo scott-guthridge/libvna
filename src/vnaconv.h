@@ -27,7 +27,7 @@ extern "C" {
 
 /*
  * vnaconv_array2_t: array of two double complex
- *   This is used to work around a syntatic limitation of const
+ *   This is a work around a syntactic limitation of const
  *   in declarators.
  */
 typedef double complex vnaconv_array2_t[2];

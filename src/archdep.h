@@ -19,6 +19,14 @@
 
 #define _GNU_SOURCE	/* for declaration of vasprintf on Linux */
 
+#ifndef MAX
+#define MAX(a, b)       ((a) >= (b) ? (a) : (b))
+#endif /* MAX */
+
+#ifndef MIN
+#define MIN(a, b)       ((a) <= (b) ? (a) : (b))
+#endif /* MIN */
+
 #ifndef HAVE_ISASCII	/* C89, but not C99 */
 #define isascii(c)	((c) >= 0 && (c) <= 0x7f)
 #endif /* HAVE_ISASCII */

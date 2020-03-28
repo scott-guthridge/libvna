@@ -39,7 +39,7 @@ typedef enum vnaproperty_type {
 typedef struct vnaproperty vnaproperty_t;
 
 /*
- * vnaproperty_map_item_t: opaque 
+ * vnaproperty_map_item_t: opaque
  */
 typedef struct vnaproperty_map_item vnaproperty_map_item_t;
 

@@ -27,6 +27,7 @@
 #include <string.h>
 #include "vnafile_internal.h"
 
+
 /*
  * _vnafile_load_common: load network parameters from a file
  *   @vfp: pointer to the object returned from vnafile_alloc

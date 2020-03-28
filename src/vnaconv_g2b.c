@@ -21,6 +21,7 @@
 #include <math.h>
 #include "vnaconv_internal.h"
 
+
 /*
  * vnaconv_g2b: convert g-parameters to b-parameters
  */

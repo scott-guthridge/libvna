@@ -25,13 +25,6 @@
 #include <string.h>
 #include "vnadata_internal.h"
 
-#ifndef MIN
-#define MIN(x, y)	((x) <= (y) ? (x) : (y))
-#endif /* MIN */
-
-#ifndef MAX
-#define MAX(x, y)	((x) >= (y) ? (x) : (y))
-#endif /* MAX */
 
 /*
  * _vnadata_validate: validate the dimensions vs. type
@@ -251,7 +244,7 @@ vnadata_t *vnadata_alloc()
 
     return &vdip->vdi_vd;
 }
- 
+
 /*
  * vnadata_resize: redefine the dimensions and type
  *   @vdp: object pointer
@@ -309,7 +302,7 @@ int vnadata_resize(vnadata_t *vdp, int frequencies, int rows, int columns,
     if (_vnadata_extend_m(vdip, new_cells) == -1) {
 	return -1;
     }
-    
+
     /*
      * Extend the frequency allocation as needed.
      */
@@ -340,7 +333,7 @@ int vnadata_resize(vnadata_t *vdp, int frequencies, int rows, int columns,
     if (new_cells < old_cells) {
 	for (int findex = 0; findex < vdp->vd_frequencies; ++findex) {
 	    (void)memset((void *)&vdp->vd_data[findex][new_cells], 0,
-	    	(old_cells - new_cells) * sizeof(double complex));
+		(old_cells - new_cells) * sizeof(double complex));
 	}
     }
 
@@ -368,10 +361,10 @@ int vnadata_resize(vnadata_t *vdp, int frequencies, int rows, int columns,
     /*
      * Set the new type and dimensions.
      */
-    vdp->vd_type 	= type;
+    vdp->vd_type	= type;
     vdp->vd_frequencies = frequencies;
-    vdp->vd_rows 	= rows;
-    vdp->vd_columns 	= columns;
+    vdp->vd_rows	= rows;
+    vdp->vd_columns	= columns;
 
     return 0;
 }

@@ -27,6 +27,7 @@
 #include <string.h>
 #include "vnacommon_internal.h"
 
+
 /*
  * _vnacommon_mldivide: find X = A^-1
  *  @x: serialized result matrix (n x n)

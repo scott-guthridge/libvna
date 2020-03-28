@@ -82,18 +82,18 @@ int _vna_vasprintf(char **strp, const char *fmt, va_list ap)
 	errno = EINVAL;
 	return -1;
     }
-#define MAX	4095
-    if ((buf = malloc(MAX + 1)) == NULL) {
+#define MAX_BUF	4095
+    if ((buf = malloc(MAX_BUF + 1)) == NULL) {
 	return -1;
     }
-    (void)memset((void *)buf, '\000', MAX + 1);
-    if ((rv = vsnprintf(buf, MAX + 1, fmt, ap)) == -1) {
+    (void)memset((void *)buf, '\000', MAX_BUF + 1);
+    if ((rv = vsnprintf(buf, MAX_BUF + 1, fmt, ap)) == -1) {
 	free((void *)buf);
 	return -1;
     }
-    if (rv < (MAX + 1) / 2) {
+    if (rv < (MAX_BUF + 1) / 2) {
 	char *cp;
-	
+
 	if ((cp = realloc(buf, rv + 1)) != NULL) {
 	    buf = cp;
 	}

@@ -27,13 +27,6 @@
 #include <string.h>
 #include "vnafile_internal.h"
 
-#ifndef MIN
-#define MIN(a, b)	((a) <= (b) ? (a) : (b))
-#endif /* MIN */
-
-#ifndef MAX
-#define MAX(a, b)	((a) >= (b) ? (a) : (b))
-#endif /* MAX */
 
 /*
  * print_value: print a double in engineering form
@@ -42,7 +35,7 @@
  *   @plus:	 include the plus sign
  *   @pad:       pad to consistent width
  *   @value:     value to print
- * 
+ *
  * Return:
  *   The number of characters printed or -1 on error.
  */
@@ -966,7 +959,7 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	break;
 
     case VNAFILE_NATIVE:
-	/* 
+	/*
 	 * For native format, disallow nonsensical use of dB for values
 	 * that are neither power nor root power.  Unfortunately,
 	 * Touchstone allows this, defining dB as 20*log10(cabs(value)),

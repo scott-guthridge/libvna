@@ -25,6 +25,7 @@
 #include <string.h>
 #include "vnacal_internal.h"
 
+
 /*
  * _vnacal_etermset_alloc: alloc vnacal_etermset
  *   @vcp: a pointer to the vnacal_t object

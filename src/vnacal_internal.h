@@ -69,7 +69,7 @@ typedef struct vnacal_calset_reference {
  *     vcd_data_vectors[0]	reflected signal back to driving port
  *     vcd_data_vectors[1]	transmitted signal to receiving port
  *     vcd_data_vectors[2]	leakage from driving port to isolated
- *     					receiving port
+ *                              receiving port
  *
  *   Each member is a pointer to a vector of complex voltage ratios,
  *   one entry for each frequency.
@@ -135,7 +135,7 @@ struct vnacal_calset {
 
 /*
  * VNACAL_CALIBRATION_DATA: return a pointer to vnacal_cdata_t *
- * 	given row and column
+ *	given row and column
  */
 #define VNACAL_CALIBRATION_DATA(vcsp, row, column) \
 	(&(vcsp)->vcs_matrix[(row) * (vcsp)->vcs_columns + (column)])

@@ -28,20 +28,12 @@
 #include <unistd.h>
 #include "vnaconv_internal.h"
 #include "vnacal_internal.h"
-extern long int random(void);
+
 
 char *progname;
 
 #define PI	3.1415926535897932384626433832795
 #define EPS	1.0e-4
-
-#ifndef MAX
-#define MAX(a, b)	((a) >= (b) ? (a) : (b))
-#endif /* MAX */
-
-#ifndef MIN
-#define MIN(a, b)	((a) <= (b) ? (a) : (b))
-#endif /* MIN */
 
 #define NTRIALS		100
 
@@ -659,7 +651,7 @@ static test_result_type test_vnacal_apply_helper(int trial,
 
 		} else {
 		    int c_row;
-		    
+
 		    assert(c_nrows > 1);
 		    c_row = random() % (c_nrows - 1) + 1;
 

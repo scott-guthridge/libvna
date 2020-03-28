@@ -23,6 +23,7 @@
 #include <string.h>
 #include "vnadata_internal.h"
 
+
 /*
  * vnadata_get_z0_vector: return the z0 vector
  *   @vdp:  vnadata object pointer

@@ -105,7 +105,7 @@ extern int vnacal_calset_set_frequency_vector(vnacal_calset_t *vcsp,
  * vnacal_calset_set_z0: set the system impedance for all VNA ports
  *   @vcsp: pointer to vnacal_calset_t
  *   @z0:   nominal impedance looking into a VNA port
- * 
+ *
  * Note:
  *   We currently assume all VNA ports have the same system impedance.
  *   To change this, we'd probably first want to be able to set the

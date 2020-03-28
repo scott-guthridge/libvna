@@ -29,6 +29,7 @@
 #include <yaml.h>
 #include "vnacal_internal.h"
 
+
 /*
  * vnacal_load_t: parser state
  */
@@ -150,7 +151,7 @@ static int parse_complex(vnacal_load_t *vlp, yaml_node_t *node,
 	*result = value1;
 	break;
     case 3:	/* j */
-    	*result = I;
+	*result = I;
 	break;
     case 4:	/* number j */
 	*result = value1 * I;

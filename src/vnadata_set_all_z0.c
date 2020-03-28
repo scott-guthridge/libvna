@@ -23,13 +23,6 @@
 #include <string.h>
 #include "vnadata_internal.h"
 
-#ifndef MIN
-#define MIN(x, y)	((x) <= (y) ? (x) : (y))
-#endif /* MIN */
-
-#ifndef MAX
-#define MAX(x, y)	((x) >= (y) ? (x) : (y))
-#endif /* MAX */
 
 /*
  * vnadata_set_all_z0: set all z0's to the same value

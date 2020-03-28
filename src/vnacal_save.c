@@ -30,6 +30,7 @@
 #include <yaml.h>
 #include "vnacal_internal.h"
 
+
 /*
  * add_integer: add an integer scalar to the yaml_document_t
  *   @document: yaml document
@@ -177,7 +178,7 @@ static int add_properties(vnacal_t *vcp, yaml_document_t *document,
 		return -1;
 	    }
 	    for (vmprp = vnaproperty_map_begin(root); vmprp != NULL;
-	    	 vmprp = vnaproperty_map_next(vmprp)) {
+		 vmprp = vnaproperty_map_next(vmprp)) {
 		int value;
 
 		if ((value = add_properties(vcp, document,

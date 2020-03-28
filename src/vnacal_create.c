@@ -26,14 +26,6 @@
 #include <string.h>
 #include "vnacal_internal.h"
 
-#ifndef MAX
-#define MAX(a, b)	((a) >= (b) ? (a) : (b))
-#endif /* MAX */
-
-#ifndef MIN
-#define MIN(a, b)	((a) <= (b) ? (a) : (b))
-#endif /* MIN */
-
 
 /*
  * _vnacal_cal_diagonal_error_terms: calculate diagonal error terms

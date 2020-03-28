@@ -25,6 +25,7 @@
 #include <string.h>
 #include "vnacal_internal.h"
 
+
 /*
  * vnacal_error: report an error
  *   @vccp: configuration

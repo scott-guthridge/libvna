@@ -53,7 +53,7 @@ dist_man_MANS = vnacal.3 vnaconv.3 vnadata.3 vnafile.3
 # Tests
 #
 TESTS = vnacommon-test vnaproperty-test vnaconv-test vnacal-test
-check_PROGRAMS = vnacommon-test vnaproperty-test vnaconv-test vnacal-test 
+check_PROGRAMS = vnacommon-test vnaproperty-test vnaconv-test vnacal-test
 
 vnacommon_test_SOURCES = vnacommon-test.c
 vnacommon_test_LDADD = libvna.la -lm

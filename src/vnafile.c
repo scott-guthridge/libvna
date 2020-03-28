@@ -25,6 +25,7 @@
 #include <string.h>
 #include "vnafile_internal.h"
 
+
 /*
  * vnafile_error: report an error
  *   @vfp: pointer to vnafile_t

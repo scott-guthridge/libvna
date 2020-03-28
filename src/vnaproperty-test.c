@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include "vnaproperty_internal.h"
 
+
 /*
  * Options
  */
@@ -260,7 +261,7 @@ void test_vnaproperty_list()
 	}
 	if (strcmp(value, buf) != 0) {
 	    (void)printf("vnaproperty_list_get miscompare \"%s\" != \"%s\"\n",
-	    	value, buf);
+		value, buf);
 	    result = T_FAIL;
 	    goto out;
 	}
@@ -874,7 +875,7 @@ void test_vnaproperty_map()
 		(int)length, (int)N_WORDS);
 	result = T_FAIL;
 	goto out;
-    } 
+    }
 
     /*
      * Test get.
@@ -904,7 +905,7 @@ void test_vnaproperty_map()
 	}
 	if (strcmp(value, buf) != 0) {
 	    (void)printf("vnaproperty_list_get miscompare \"%s\" != \"%s\"\n",
-	    	value, buf);
+		value, buf);
 	    result = T_FAIL;
 	    goto out;
 	}
@@ -980,7 +981,7 @@ void test_vnaproperty_map()
 	}
 	if (strcmp(value, buf) != 0) {
 	    (void)printf("vnaproperty_list_get miscompare \"%s\" != \"%s\"\n",
-	    	value, buf);
+		value, buf);
 	    result = T_FAIL;
 	    goto out;
 	}
@@ -1053,7 +1054,7 @@ void test_vnaproperty_map()
 	(void)sprintf(buf, "%d", -i);
 	if (strcmp(value, buf) != 0) {
 	    (void)printf("vnaproperty_list_get miscompare \"%s\" != \"%s\"\n",
-	    	value, buf);
+		value, buf);
 	    result = T_FAIL;
 	    goto out;
 	}
@@ -1087,7 +1088,7 @@ void test_vnaproperty_map()
     {
 	const vnaproperty_map_pair_t *vmprp;
 	int count = 0;
-	
+
 	errno = 0;
 	if ((vmprp = vnaproperty_map_begin(map)) == NULL) {
 	    (void)printf("vnaproperty_map_begin: %s\n", strerror(errno));

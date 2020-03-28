@@ -27,9 +27,10 @@
 #include "vnaconv.h"
 #include "vnadata_internal.h"
 
+
 /*
  * conversion_group: a bitwise OR of these values describes a group of
- * 	related conversions
+ *		     related conversions
  */
 enum conversion_group {
     /*

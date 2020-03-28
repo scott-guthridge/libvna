@@ -234,7 +234,7 @@ static inline int vnadata_set_frequency_vector(vnadata_t *vdp,
 	const double *frequency_vector)
 {
     (void)memcpy((void *)vdp->vd_frequency_vector, (void *)frequency_vector,
-    	vdp->vd_frequencies * sizeof(double));
+	vdp->vd_frequencies * sizeof(double));
     return 0;
 }
 
@@ -315,7 +315,7 @@ static inline int vnadata_set_matrix(vnadata_t *vdp, int findex,
     }
 #endif /* VNADATA_NO_BOUNDS_CHECK */
     (void)memcpy((void *)vdp->vd_data[findex], (void *)matrix,
-    	vdp->vd_rows * vdp->vd_columns * sizeof(double complex));
+	vdp->vd_rows * vdp->vd_columns * sizeof(double complex));
     return 0;
 }
 
