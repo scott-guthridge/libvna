@@ -80,6 +80,14 @@ To build RPM files:
     and /usr/share/man instead of /usr/local/
 
 
+Creating a new release (for git developers only)
+    Update the version in the AC_INIT macro of configure.ac
+    Commit with a message in this format "version 0.0.3"
+    Create an annotated tag.  Example:
+	git tag -a v0.0.3 -m "v0.0.3"
+    Push to github
+
+
 The library is still undergoing some final development.  While the
 version remains at 0.0.x, there may be a few compatiblity breaks not
 reflected in the library .so version.
