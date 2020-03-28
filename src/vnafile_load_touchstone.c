@@ -719,8 +719,10 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
     if (tpsp->tps_ports == 2) {
 	for (;;) {
 	    findex = vdp->vd_frequencies;
-	    if (findex != 0 && tpsp->tps_value_vector[0] <=
-		    vnadata_get_frequency(vdp, findex - 1)) {
+	    if (findex != 0 &&
+		    tpsp->tps_frequency_multiplier *
+		    tpsp->tps_value_vector[0] <= vnadata_get_frequency(vdp,
+			findex - 1)) {
 		_vnafile_error(vfp, "%s (line %d) error: frequencies must be "
 			"in increasing order",
 			tpsp->tps_filename, tpsp->tps_line);
@@ -790,8 +792,10 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 	for (;;) {
 	    /* first row */
 	    findex = vdp->vd_frequencies;
-	    if (findex != 0 && tpsp->tps_value_vector[0] <=
-		    vnadata_get_frequency(vdp, findex - 1)) {
+	    if (findex != 0 &&
+		    tpsp->tps_frequency_multiplier *
+		    tpsp->tps_value_vector[0] <= vnadata_get_frequency(vdp,
+			findex - 1)) {
 		_vnafile_error(vfp, "%s (line %d) error: frequencies must be "
 			"in increasing order",
 			tpsp->tps_filename, tpsp->tps_line);
@@ -1370,8 +1374,9 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
      * If version 1, call the V1 parser.  We've seen examples of files
      * that begin with an illegal [Version] 1.0 keyword followed by
      * other V2 keywords.  We'll tolerate those and parse V1 using the
-     * V2 parser if all the required V2 keywords are present.  The only
-     * difference, then is that we unnormalize V1 data at the end.
+     * V2 parser if all the required V2 keywords are present.  The most
+     * significant difference between this hybrid format from V2 is that
+     * we unnormalize the data at the end.
      */
     if (version == 1 && tps.tps_ports == -1 && number_of_frequencies == -1
 	    && two_port_order == -1) {
