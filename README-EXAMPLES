@@ -67,6 +67,6 @@ vnafile-example:
     Convert the sample data file to insertion loss, return loss
     and VSWR, saving in native format.
 
-	./vnafile-example -f IL,RL,VSWR vnafile-example.ts out
+	./vnafile-example -f IL,RL,VSWR vnafile-example.ts out.npd
 
 

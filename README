@@ -35,9 +35,9 @@ Build, Test and Install:
 	/usr/local/share/doc/libvna/*
 	/usr/local/share/man/man3/*.3
 
-    And the example programs and README-EXAMPLES files are copied into
-    /usr/local/share/doc/libvna.  The README-EXAMPLES is really worded
-    for someone building the example programs by hand after the library
+    The example programs and README-EXAMPLES files are copied into
+    /usr/local/share/doc/libvna.  The README-EXAMPLES is worded for
+    someone building the example programs by hand after the library
     has been installed on the system.  After running a make all here,
     though the examples will already be built in the src/ directory.
 
@@ -86,6 +86,7 @@ Creating a new release (for git developers only)
     Create an annotated tag.  Example:
 	git tag -a v0.0.3 -m "v0.0.3"
     Push to github
+	git push --tags
 
 
 The library is still undergoing some final development.  While the

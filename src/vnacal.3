@@ -467,7 +467,7 @@ This function may be used when the calibration matrix is 2x1 or 1x2,
 or when the dimensions of \fBvnacal_input_t\fP object don't exceed those
 of the calibration matrix.
 If these conditions are not met, use the more general
-\fIvnacal_input_add_mapped_vector\fP() instead.
+\fBvnacal_input_add_mapped_vector\fP() instead.
 If this function is called more than once on the same matrix element,
 the vectors are averaged.
 .PP
@@ -477,8 +477,8 @@ to the matrix cell addressed by \fIdrow\fP and \fIdcolumn\fP, where
 port being measured, \fIvcolumn\fP is the VNA port driving signal and
 \fIvrow\fP is the VNA port detecting signal.
 The mapping of VNA row-column pair to DUT row-column pair must be
-consistent over multiple calls, or the later measurements will be
-discarded.
+consistent over multiple calls; otherwise, the later calls will fail
+with \s-2EINVAL\s+2.
 If called more than once on the same matrix element, the vectors are
 averaged.
 .PP
@@ -607,10 +607,11 @@ For example vnacal_property_delete(vcp, set, "detectorMatrix") deletes
 The \fBvnacal_property_type\fP() function returns 'm' if the key refers
 to a key-value map, 'l' if the key refers to a list, or 's' if the key
 refers to a scalar.
-Given the examples above, vnacal_property_type(vcp, set, ".")
-returns 'm', vnacal_property_type(vcp, set, "detectorMatrix") returns 'l',
-vnacal_property_type(vcp, set, "detectorMatrix[0]") returns 'l',
-and vnacal_property_type(vcp, set, "detectorMatrix[0][0]") returns 's'.
+Given the detectorMatrix example above, vnacal_property_type(vcp, set,
+".")  returns 'm', vnacal_property_type(vcp, set, "detectorMatrix")
+returns 'l', vnacal_property_type(vcp, set, "detectorMatrix[0]") returns
+'l', and vnacal_property_type(vcp, set, "detectorMatrix[0][0]") returns
+'s'.
 If the key doesn't exist or a component along the path isn't the specified
 type, \fBvnacal_property_type\fP() sets \fIerrno\fP and returns -1.
 .PP
@@ -1033,8 +1034,8 @@ int main(int argc, char **argv)
     /*
      * Allocate a vnadata_t object to hold the S parameters.
      */
-    if ((s_matrix = vnadata_alloc_empty()) == NULL) {
-        (void)fprintf(stderr, "example: vnadata_alloc_empty: %s\\n",
+    if ((s_matrix = vnadata_alloc()) == NULL) {
+        (void)fprintf(stderr, "example: vnadata_alloc: %s\\n",
                 strerror(errno));
         exit(7);
     }
@@ -1142,4 +1143,4 @@ int main(int argc, char **argv)
 .fi
 .\"
 .SH "SEE ALSO"
-.BR vnacal "(3)," vnadata "(3)," vnaformat "(3)"
+.BR vnaconv "(3)," vnadata "(3)," vnafile "(3)"

@@ -39,7 +39,7 @@ vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get
 .in -4n
 .\"
 .PP
-.BI "vnadata_t *vnadata_alloc_and_init(vnadata_t *" vdp ", int " frequencies ,
+.BI "vnadata_t *vnadata_alloc_and_init(int " frequencies ,
 .ie n \{\
 .in +4n
 .\}
@@ -289,7 +289,7 @@ are in-use.
 Calling \fBvnadata_set_z0\fP(), \fBvnadata_set_z0_vector\fP(), or
 \fBvnadata_set_all_z0\fP() when frequency-dependent frequency impedances
 are in-use discards all frequency-dependent z0 values and returns to
-ordinary system impedances, with all values initialized to 50 ohms.
+ordinary system impedances, with all unset values initialized to 50 ohms.
 .PP
 The \fBvnadata_get_fz0\fP() and \fBvnadata_set_fz0\fP() functions
 get and set the system impedance for the given port on a per-frequency
@@ -301,10 +301,9 @@ maximum of \fIrows\fP and \fIcolumns\fP.
 The \fBvnadata_get_fz0\fP() and \fBvnadata_get_fz0_vector\fP() functions
 work both when frequency-dependent system impedances are in-effect and
 when they're not; in the later case, they ignore the \fIfindex\fP argument.
-If not already done, the \fBvnadata_set_fz0\fP() and
-\fBvnadata_set_fz0_vector\fP() functions establish frequency-dependent
-system impedances, preserving the ordinary system impedances for all
-other entries.
+The \fBvnadata_set_fz0\fP() and \fBvnadata_set_fz0_vector\fP() functions
+establish frequency-dependent system impedances, preserving the ordinary
+system impedances for all other entries.
 .PP
 The \fBvnadata_convert\fP() function converts from one parameter type
 to another, writing the result into \fIvdp_out\fP.

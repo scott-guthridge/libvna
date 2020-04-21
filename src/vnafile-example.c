@@ -20,8 +20,8 @@
  * Network parameter converter: converts between network parameter
  * types and between Touchstone 1, Touchstone 2 and native file format.
  * The file type is based on filename extension using ".s1p", ".s2p",
- * ".s3p", etc.  for Touchstone 1, ".ts" for Touchstone 2 and anything
- * else for native format.
+ * ".s3p", etc.  for Touchstone 1, ".ts" for Touchstone 2, ".npd" or
+ * other for native format.
  *
  * Example:
  *     Convert 4x4 network data from a Touchstone 1 file to Z parameters

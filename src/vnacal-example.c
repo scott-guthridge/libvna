@@ -321,7 +321,7 @@ int main(int argc, char **argv)
      */
     if ((vip = vnacal_input_alloc(vcp, /*set=*/0,
 		    M_ROWS, M_COLUMNS, M_FREQUENCIES)) == NULL) {
-	(void)fprintf(stderr, "example: vnadata_alloc_and_init: %s\n",
+	(void)fprintf(stderr, "example: vnadata_input_alloc: %s\n",
 		strerror(errno));
 	exit(6);
     }

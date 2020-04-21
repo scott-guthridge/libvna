@@ -20,7 +20,7 @@ Group:		Development/Libraries
 
 %description devel
 The %{name}-devel package contains libraries, header files and documentation
-for developing applicatinos that use %{name}.
+for developing applications that use %{name}.
 
 %prep
 %setup -q

@@ -125,11 +125,16 @@ typedef enum vnafile_type {
 .fi
 .in -4n
 .sp
-The default is \s-2VNAFILE_AUTO\s+2 which causes the load and save functions
-to try to automatically intuit the type based on the file extension.
+The default is \s-2VNAFILE_AUTO\s+2 which causes the load and save
+functions to try to automatically intuit the type based on the file
+extension.
 If the file ends with ".s<digit>p", the library assumes Touchstone 1
 format; if it ends in ".ts", the library assumes Touchstone 2 format;
-otherwise, it assumes native format.
+if it ends in ".npd" (network parameter data), or anything else,
+the library assumes native format.
+When loading Touchstone files, the parser internally uses the presence
+of the [Version] keyword to determine the version \- either Touchstone
+file extension is acceptable.
 .PP
 The \fBvnafile_get_format\fP() and \fBvnafile_set_format\fP() functions
 get and set the way VNA parameter data is represented in the file.
@@ -168,11 +173,11 @@ dB	decibels, angle
 .TE
 .in -4n
 .sp
-In the Touchstone file formats, only one specifier can be given and it must
-be restricted to one of the s, z, y, h or g variants.
-If \fBvnafile_set_format\fP() isn't called, the default format
-is \(lqri\(rq, with the parameter type determined by the given
-\fBvnadata_t\fP object.
+In the Touchstone file formats, only one specifier can be given and it
+must be restricted to one of the s, z, y, h or g variants.
+If \fBvnafile_set_format\fP() isn't called, the default format takes
+the parameter type from the \fBvnadata_t\fP object with coordinates
+\(lqri\(rq.
 .\"
 .PP
 The \fBvnafile_get_fprecision\fP(), \fBvnafile_set_fprecision\fP(),
@@ -183,10 +188,10 @@ If not set, \fIfprecision\fP defaults to 7 digits and \fIdprecision\fP
 defaults to 6 digits.
 .PP
 The \fBvnafile_load\fP() function loads VNA parameter data from
-\fIfilename\fP, placing the resulting parameter data into the
+\fIfilename\fP, places the resulting parameter data into the
 \fBvnadata_t\fP object pointed to by \fIvdp\fP (see \fBvnadata\fP(3)),
-and updating the parameters in the \fBvnafile_t\fP object to match
-what was read from the file.
+and updates the parameters in the \fBvnafile_t\fP object to match what
+was read from the file.
 The \fBvnafile_loadf\fP() function does the same, but uses the
 caller-supplied open file pointer \fIfp\fP.
 The \fIfilename\fP parameter to \fBvnafile_loadf\fP() is used only for
@@ -195,8 +200,8 @@ really refer to a file.
 .PP
 The \fBvnafile_check\fP() tests if the given combination of options and
 parameter data are valid for \fBvnafile_save\fP().
-In other words, it performs a dry run of save to catch errors before
-anything is actually written.
+That is, it performs a dry run of save to catch errors before anything
+is actually written.
 Some examples of things it checks are: that the format string is compatible
 with Touchstone formats, that a parameter matrix with dimensions other
 than 2x2 isn't being converted to one of the two-port formats
@@ -227,8 +232,8 @@ return -1 on error.
  * Network parameter converter: converts between network parameter
  * types and between Touchstone 1, Touchstone 2 and native file format.
  * The file type is based on filename extension using ".s1p", ".s2p",
- * ".s3p", etc.  for Touchstone 1, ".ts" for Touchstone 2 and anything
- * else for native format.
+ * ".s3p", etc.  for Touchstone 1, ".ts" for Touchstone 2, ".npd" or
+ * other for native format.
  */
 #include <stdio.h>
 #include <stdlib.h>
