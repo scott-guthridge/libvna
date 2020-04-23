@@ -9,7 +9,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A11 PARTICULAR PURPOSE.  See the GNU
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -22,85 +22,100 @@
 #include <stdlib.h>
 #include <vnadata.h>
 
-
-/* system impedances */
-#define Z1	75.0
-#define Z2	50.0
-
-/* values for impedance matching L pad */
-#define R1	(sqrt(Z1) * sqrt(Z1 - Z2))
-#define R2	(sqrt(Z1) * Z2 / sqrt(Z1 - Z2))
-
-/* system impedance vector */
-static const double complex z0_vector[] = { Z1, Z2 };
+#define PI      3.14159265
+#define FMIN	100e+3		/* Hz */
+#define FMAX	1e+9		/* Hz */
+#define N	9		/* number of frequencies */
+#define L	796e-9		/* Henries */
+#define C	318e-12		/* Farads */
 
 int main(int argc, char **argv)
 {
-    /* Z-parameters of the L-pad */
-    const double complex z[2][2] = {
-	{ R1+R2, R2 },
-	{ R2,    R2 }
-    };
     vnadata_t *vdp;
+    const double fstep = log(FMAX / FMIN) / (double)(N - 1);
 
     /*
-     * Set up Z-parameter matrix.
+     * Set up Z-parameter matrix for an L-C divider.
      */
-    if ((vdp = vnadata_alloc_and_init(1, 2, 2, VPT_Z)) == NULL) {
+    if ((vdp = vnadata_alloc_and_init(N, 2, 2, VPT_Z)) == NULL) {
 	(void)fprintf(stderr, "%s: vnadata_alloc_and_init: %s\n",
 		argv[0], strerror(errno));
 	exit(1);
     }
-    if (vnadata_set_frequency(vdp, 0, 1.0e+6) == -1) {
-	(void)fprintf(stderr, "%s: vnadata_set_frequency: %s\n",
-		argv[0], strerror(errno));
-	exit(2);
-    }
-    if (vnadata_set_matrix(vdp, 0, &z[0][0]) == -1) {
-	(void)fprintf(stderr, "%s: vnadata_set_matrix: %s\n",
-		argv[0], strerror(errno));
-	exit(3);
-    }
-    if (vnadata_set_z0_vector(vdp, z0_vector) == -1) {
-	(void)fprintf(stderr, "%s: vnadata_set_z0_vector: %s\n",
-		argv[0], strerror(errno));
-	exit(4);
+    for (int findex = 0; findex < N; ++findex) {
+	double f = FMIN * exp((double)findex * fstep);
+	double complex s = 2 * PI * I * f;
+	double complex z[2][2];
+
+	if (vnadata_set_frequency(vdp, findex, f) == -1) {
+	    (void)fprintf(stderr, "%s: vnadata_set_frequency: %s\n",
+		    argv[0], strerror(errno));
+	    exit(2);
+	}
+	z[0][0] = 1.0 / (C * s) + L * s;
+	z[0][1] = 1.0 / (C * s);
+	z[1][0] = z[0][1];
+	z[1][1] = z[0][1];
+	if (vnadata_set_matrix(vdp, findex, &z[0][0]) == -1) {
+	    (void)fprintf(stderr, "%s: vnadata_set_matrix: %s\n",
+		    argv[0], strerror(errno));
+	    exit(3);
+	}
     }
 
     /*
-     * Convert to S-parameters and print.
+     * Convert to S-parameters.
      */
     if (vnadata_convert(vdp, vdp, VPT_S) == -1) {
 	(void)fprintf(stderr, "%s: vnadata_convert: %s\n",
 		argv[0], strerror(errno));
-	exit(5);
+	exit(4);
     }
-    (void)printf("s-parameters:\n");
-    for (int row = 0; row < 2; ++row) {
-	for (int column = 0; column < 2; ++column) {
-	    double complex value = vnadata_get_cell(vdp, 0, row, column);
+    (void)printf("s-parameters (dB-degrees)\n");
+    (void)printf("-------------------------\n");
+    for (int findex = 0; findex < N; ++findex) {
+	double f = vnadata_get_frequency(vdp, findex);
 
-	    (void)printf("  %7.4f%+7.4fj", creal(value), cimag(value));
+	(void)printf("f %7.2f MHz\n", f / 1.0e+6);
+	for (int row = 0; row < 2; ++row) {
+	    for (int column = 0; column < 2; ++column) {
+		double complex value;
+
+		value = vnadata_get_cell(vdp, findex, row, column);
+		(void)printf("  %5.1f %6.1f%s",
+			20 * log10(cabs(value)), 180 / PI * carg(value),
+			column < 1 ? "," : "");
+	    }
+	    (void)printf("\n");
 	}
 	(void)printf("\n");
     }
     (void)printf("\n");
 
     /*
-     * Convert to input impedance at each port and print.
+     * Convert to impedance into each port.
      */
     if (vnadata_convert(vdp, vdp, VPT_ZIN) == -1) {
 	(void)fprintf(stderr, "%s: vnadata_convert: %s\n",
 		argv[0], strerror(errno));
-	exit(6);
+	exit(5);
     }
-    (void)printf("input-impedances:\n");
-    for (int port = 0; port < 2; ++port) {
-	double complex value = vnadata_get_cell(vdp, 0, 0, port);
+    (void)printf("input-impedances (ohms-degrees)\n");
+    (void)printf("------------------------------\n");
+    for (int findex = 0; findex < N; ++findex) {
+	double f = vnadata_get_frequency(vdp, findex);
 
-	(void)printf("  %7.4f%+7.4fj", creal(value), cimag(value));
+	(void)printf("f %7.2f MHz\n", f / 1.0e+6);
+	for (int port = 0; port < 2; ++port) {
+	    double complex value;
+
+	    value = vnadata_get_cell(vdp, findex, 0, port);
+	    (void)printf("  %9.3e %6.1f%s",
+		    cabs(value), 180 / PI * carg(value),
+		    port < 1 ? "," : "");
+	}
+	(void)printf("\n");
     }
     (void)printf("\n");
-
     exit(0);
 }

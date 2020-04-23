@@ -16,29 +16,54 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
+#include <complex.h>
+#include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <vnaconv.h>
 
 
-static double complex s[2][2] = {
-    {  0.000000 + 0.000000 * I,  0.000000 + 0.000000 * I },
-    {  10.00000 + 0.000000 * I,  0.000000 + 0.000000 * I }
+/* system impedances */
+#define Z1	75.0
+#define Z2	50.0
+
+/* resistor values for impedance matching L pad */
+#define R1	(sqrt(Z1) * sqrt(Z1 - Z2))
+#define R2	(sqrt(Z1) * Z2 / sqrt(Z1 - Z2))
+
+/* Z-parameters of the L pad */
+static const double complex z[2][2] = {
+    { R1+R2, R2 },
+    { R2,    R2 }
 };
 
-static double complex z0[2] = { 50.0, 50.0 };
+/* system impedance vector */
+static const double complex z0[] = { Z1, Z2 };
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
-    double complex z[2][2];
+    double complex s[2][2];
+    double complex zi[2];
 
-    vnaconv_s2z(s, z, z0);
-    (void)printf("%7.1f%+7.1fi    %7.1f%+7.1fi\n",
-        creal(z[0][0]), cimag(z[0][0]), creal(z[0][1]), cimag(z[0][1]));
-    (void)printf("%7.1f%+7.1fi    %7.1f%+7.1fi\n",
-        creal(z[1][0]), cimag(z[1][0]), creal(z[1][1]), cimag(z[1][1]));
+    /*
+     * Convert to S-parameters.
+     */
+    vnaconv_z2s(z, s, z0);
+    (void)printf("s-parameters:\n");
+    (void)printf("  %7.4f%+7.4fi    %7.4f%+7.4fi\n",
+        creal(s[0][0]), cimag(s[0][0]), creal(s[0][1]), cimag(s[0][1]));
+    (void)printf("  %7.4f%+7.4fi    %7.4f%+7.4fi\n",
+        creal(s[1][0]), cimag(s[1][0]), creal(s[1][1]), cimag(s[1][1]));
+    (void)printf("\n");
+
+    /*
+     * Convert to input impedance at each port.
+     */
+    vnaconv_s2zi(s, zi, z0);
+    (void)printf("input-impedances:\n");
+    (void)printf("  %7.4f%+7.4fi    %7.4f%+7.4fi\n",
+        creal(zi[0]), cimag(zi[0]), creal(zi[1]), cimag(zi[1]));
+    (void)printf("\n");
 
     exit(0);
 }
-
