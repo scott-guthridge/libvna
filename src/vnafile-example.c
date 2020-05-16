@@ -39,7 +39,7 @@
 static char *progname;
 
 /*
- * usage: usage format
+ * usage: usage text
  */
 static const char usage[] =
     "%s [-f format] input-file output-file\n"
