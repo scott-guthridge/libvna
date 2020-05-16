@@ -219,22 +219,21 @@ static void error_fn(vnaerr_category_t category, const char *message,
 }
 
 /*
- * main
+ * make_calibration: make a calibration file for the simulated VNA
  */
-int main(int argc, char **argv)
+static void make_calibration()
 {
     vnacal_calset_t *vcsp;
-    double frequency_vector[MAX(C_FREQUENCIES, M_FREQUENCIES)];
-    double complex vector0[MAX(C_FREQUENCIES, M_FREQUENCIES)];
-    double complex vector1[MAX(C_FREQUENCIES, M_FREQUENCIES)];
-    vnacal_input_t *vip;
-    vnadata_t *s_matrix;
+    double frequency_vector[C_FREQUENCIES];
+    double complex m_vector0[C_FREQUENCIES];
+    double complex m_vector1[C_FREQUENCIES];
     vnacal_t *vcp;
 
     /*
      * Allocate the structure to hold the calibration measurements.
      */
-    if ((vcsp = vnacal_calset_alloc(/*setname=*/"default",
+    if ((vcsp = vnacal_calset_alloc(VNACAL_E12,
+		    /*setname=*/"default",
 		    C_ROWS, C_COLUMNS, C_FREQUENCIES,
 		    error_fn, /*error_arg=*/NULL)) == NULL) {
 	(void)fprintf(stderr, "vnacal_calset_alloc: %s\n",
@@ -247,7 +246,7 @@ int main(int argc, char **argv)
      * through standards.  Normally, we would interact with the
      * user between each of these steps to get the user to connect
      * each standard in sequence.  In our simulated environment,
-     * we can skip that part.  The frequency vector is filled
+     * we can skip that part.  The frequency m_vector is filled
      * from the first measurement only -- the frequencies for the
      * other calibration steps have to be the same as the first.
      * The three leakage measurements are averaged.
@@ -257,31 +256,34 @@ int main(int argc, char **argv)
      * Short calibration
      */
     vna_measure(SHORT_CALIBRATION, C_FREQUENCIES,
-	    frequency_vector, vector0, vector1);
+	    frequency_vector, m_vector0, m_vector1);
     vnacal_calset_set_frequency_vector(vcsp, frequency_vector);
-    vnacal_calset_add_vector(vcsp, 0, 0, VNACAL_Sii_REF0, vector0);
-    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_LEAKAGE, vector1);
+    vnacal_calset_add_vector(vcsp, 0, 0, VNACAL_Sii_REF0, m_vector0);
+    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_LEAKAGE, m_vector1);
 
     /*
      * Open calibration
      */
-    vna_measure(OPEN_CALIBRATION, C_FREQUENCIES, NULL, vector0, vector1);
-    vnacal_calset_add_vector(vcsp, 0, 0, VNACAL_Sii_REF1, vector0);
-    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_LEAKAGE, vector1);
+    vna_measure(OPEN_CALIBRATION, C_FREQUENCIES,
+        NULL, m_vector0, m_vector1);
+    vnacal_calset_add_vector(vcsp, 0, 0, VNACAL_Sii_REF1, m_vector0);
+    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_LEAKAGE, m_vector1);
 
     /*
      * Load calibration
      */
-    vna_measure(LOAD_CALIBRATION, C_FREQUENCIES, NULL, vector0, vector1);
-    vnacal_calset_add_vector(vcsp, 0, 0, VNACAL_Sii_REF2, vector0);
-    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_LEAKAGE, vector1);
+    vna_measure(LOAD_CALIBRATION, C_FREQUENCIES,
+        NULL, m_vector0, m_vector1);
+    vnacal_calset_add_vector(vcsp, 0, 0, VNACAL_Sii_REF2, m_vector0);
+    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_LEAKAGE, m_vector1);
 
     /*
      * Through calibration.
      */
-    vna_measure(THROUGH_CALIBRATION, C_FREQUENCIES, NULL, vector0, vector1);
-    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sjj_THROUGH, vector0);
-    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_THROUGH, vector1);
+    vna_measure(THROUGH_CALIBRATION, C_FREQUENCIES,
+        NULL, m_vector0, m_vector1);
+    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sjj_THROUGH, m_vector0);
+    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_THROUGH, m_vector1);
 
     /*
      * Create the calibration from the measurements and save it to
@@ -301,14 +303,38 @@ int main(int argc, char **argv)
     vnacal_calset_free(vcsp);
     vnacal_free(vcp);
     vcp = NULL;
+}
+
+/*
+ * apply_calibration: apply the calibration to the simulated device
+ *
+ *   Normally, make_calibration and apply_calibration would be in
+ *   separate programs, but to keep the example simple, we've just made
+ *   them separate functions.
+ */
+static void apply_calibration()
+{
+    vnacal_t *vcp;
+    vnacal_apply_t *vap;
+    double frequency_vector[M_FREQUENCIES];
+    double complex m_vector00[M_FREQUENCIES];
+    double complex m_vector01[M_FREQUENCIES];
+    double complex m_vector10[M_FREQUENCIES];
+    double complex m_vector11[M_FREQUENCIES];
+    const double complex *m_matrix0[2][1] = {
+	{ m_vector00 },
+	{ m_vector10 }
+    };
+    const double complex *m_matrix1[2][1] = {
+	{ m_vector01 },
+	{ m_vector11 }
+    };
+    static const int forward_map[] = { 0, 1 };
+    static const int reverse_map[] = { 1, 0 };
+    vnadata_t *s_matrix;
 
     /*
-     * Now, use the calibration we made above to correct imperfect
-     * measurements of the device under test.  Starting here, we
-     * would normally be in a different program, but to keep the
-     * example shorter we've combined them.
-     *
-     * Begin by loading the saved calibration.
+     * Load the calibration file.
      */
     if ((vcp = vnacal_load("example.vnacal", ".excal", error_fn,
 		    /*error_arg=*/NULL)) == NULL) {
@@ -318,18 +344,18 @@ int main(int argc, char **argv)
     }
 
     /*
-     * Allocate a vnacal_input_t structure to apply the calibration
+     * Allocate a vnacal_apply_t structure to apply the calibration
      * to measured values.
      */
-    if ((vip = vnacal_input_alloc(vcp, /*set=*/0,
+    if ((vap = vnacal_apply_alloc(vcp, /*set=*/0,
 		    M_ROWS, M_COLUMNS, M_FREQUENCIES)) == NULL) {
-	(void)fprintf(stderr, "example: vnadata_input_alloc: %s\n",
+	(void)fprintf(stderr, "example: vnacal_apply_alloc: %s\n",
 		strerror(errno));
 	exit(6);
     }
 
     /*
-     * Allocate a vnadata_t structure to hold the S parameters.
+     * Allocate a vnadata_t structure to receive the computed S parameters.
      */
     if ((s_matrix = vnadata_alloc()) == NULL) {
 	(void)fprintf(stderr, "example: vnadata_alloc: %s\n",
@@ -349,21 +375,28 @@ int main(int argc, char **argv)
      */
 
     /*
-     * Forward measurement
+     * Forward measurement: make the forward measurement and apply the
+     * frequency vector and measured voltages to the vnacal_apply_t
+     * structure.  Note that we have to apply measurements in the same
+     * dimensions as the calibration matrix, which is why m_matrix0 is
+     * 2x1 instead of 2x2.  The forward map indicates that VNA ports 0
+     * and 1 are connected to DUT ports 0 and 1, respectively.
      */
     vna_measure(FORWARD_MEASUREMENT, M_FREQUENCIES, frequency_vector,
-	    vector0, vector1);
-    vnacal_input_set_frequency_vector(vip, frequency_vector);
-    vnacal_input_add_vector(vip, 0, 0, vector0);
-    vnacal_input_add_vector(vip, 1, 0, vector1);
+	    m_vector00, m_vector10);
+    vnacal_apply_set_frequency_vector(vap, frequency_vector);
+    vnacal_apply_add_matrix(vap, &m_matrix0[0][0], forward_map);
 
     /*
-     * Reverse measurement
+     * Reverse measurement: make the reverse measurement and apply to
+     * the vnacal_apply_t structure.  The measured matrix given to this
+     * function must again match the dimensions of the calibration matrix.
+     * The reverse map indicates that VNA ports 0 and 1 are connected
+     * to DUT ports 1 and 0, respectively.
      */
     vna_measure(REVERSE_MEASUREMENT, M_FREQUENCIES, NULL,
-	    vector0, vector1);
-    vnacal_input_add_vector(vip, 1, 1, vector0);
-    vnacal_input_add_vector(vip, 0, 1, vector1);
+	    m_vector01, m_vector11);
+    vnacal_apply_add_matrix(vap, &m_matrix1[0][0], reverse_map);
 
     /*
      * First, calculate and print the S-parameters we would expect
@@ -389,14 +422,14 @@ int main(int argc, char **argv)
     (void)printf("\n\n");
 
     /*
-     * Now print the values as measured from the imperfect VNA.
+     * Next, print the values as measured from the imperfect VNA.
      */
     (void)printf("# measured\n");
     for (int i = 0; i < M_FREQUENCIES; ++i) {
-	double complex m00 = vnacal_input_get_value(vip, 0, 0, i);
-	double complex m01 = vnacal_input_get_value(vip, 0, 1, i);
-	double complex m10 = vnacal_input_get_value(vip, 1, 0, i);
-	double complex m11 = vnacal_input_get_value(vip, 1, 1, i);
+	double complex m00 = m_vector00[i];
+	double complex m01 = m_vector01[i];
+	double complex m10 = m_vector10[i];
+	double complex m11 = m_vector11[i];
 
 	(void)printf("%e %+e %+e %+e %+e %+e %+e %+e %+e\n",
 		frequency_vector[i],
@@ -408,11 +441,10 @@ int main(int argc, char **argv)
     (void)printf("\n\n");
 
     /*
-     * Apply the calibration to the measured data and print the
-     * corrected s_matrix values.
+     * Finally, compute and report the corrected values.
      */
-    if (vnacal_input_apply(vip, s_matrix) == -1) {
-	(void)fprintf(stderr, "vnacal_input_apply: %s\n",
+    if (vnacal_apply_get_data(vap, s_matrix) == -1) {
+	(void)fprintf(stderr, "vnacal_apply_get_data: %s\n",
 		strerror(errno));
 	exit(8);
     }
@@ -431,8 +463,18 @@ int main(int argc, char **argv)
 		creal(s10), cimag(s10),
 		creal(s11), cimag(s11));
     }
-    vnacal_input_free(vip);
+    vnadata_free(s_matrix);
+    vnacal_apply_free(vap);
     vnacal_free(vcp);
+}
+
+/*
+ * main
+ */
+int main(int argc, char **argv)
+{
+    make_calibration();
+    apply_calibration();
 
     exit(0);
 }

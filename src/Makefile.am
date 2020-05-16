@@ -13,10 +13,11 @@ SUFFIXES= .3 .pdf
 include_HEADERS = vnacal.h vnaconv.h vnadata.h vnaerr.h vnafile.h
 lib_LTLIBRARIES = libvna.la
 libvna_la_SOURCES = archdep.h archdep.c \
-	vnacal_internal.h vnacal_calset.c vnacal_create.c vnacal_error.c \
-	vnacal_etermset.c vnacal_free.c vnacal_get.c vnacal_input.c \
-	vnacal_load.c vnacal_open.c vnacal_property.c vnacal_rfi.c \
-	vnacal_save.c vnacal_set_dprecision.c vnacal_set_fprecision.c \
+	vnacal_internal.h vnacal_apply.c vnacal_apply_alloc.c \
+	vnacal_calset.c vnacal_create.c vnacal_error.c \
+	vnacal_etermset.c vnacal_free.c vnacal_get.c vnacal_load.c \
+	vnacal_open.c vnacal_property.c vnacal_rfi.c vnacal_save.c \
+	vnacal_set_dprecision.c vnacal_set_fprecision.c \
 	vnacommon_internal.h vnacommon_lu.c vnacommon_minverse.c \
 	vnacommon_mldivide.c vnacommon_mrdivide.c \
 	vnaerr_internal.h vnaerr_verror.c \

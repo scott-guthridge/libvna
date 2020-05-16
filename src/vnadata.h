@@ -294,7 +294,7 @@ static inline int vnadata_set_cell(vnadata_t *vdp, int findex, int row,
  *   @vdp:    a pointer to the vnadata_t structure
  *   @findex: frequency index
  */
-static inline const double complex *vnadata_get_matrix(const vnadata_t *vdp,
+static inline double complex *vnadata_get_matrix(const vnadata_t *vdp,
 	int findex)
 {
 #ifndef VNADATA_NO_BOUNDS_CHECK

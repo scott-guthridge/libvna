@@ -122,11 +122,11 @@ vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get
 .\"
 .SS "Data Elements"
 .PP
-.BI "complex vnadata_get_cell(vnadata_t *" vdp ", int " findex ", int " row ,
+.BI "double complex vnadata_get_cell(vnadata_t *" vdp ", int " findex " ,
 .if n \{\
 .in +4n
 .\}
-.BI "int " column );
+.BI "int " row ", int " column );
 .if n \{\
 .in -4n
 .\}
@@ -142,7 +142,7 @@ vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get
 .\}
 .\"
 .PP
-.BI "const double complex *vnadata_get_matrix(const vnadata_t *" vdp ,
+.BI "double complex *vnadata_get_matrix(const vnadata_t *" vdp ,
 .if n \{\
 .in +4n
 .\}
@@ -260,7 +260,7 @@ b (inverse ABCD) or zin (input impedance) parameters.
 The \fBvnadata_alloc\fP() function allocates an empty \fBvnadata_t\fP
 structure of type VPT_UNDEF.
 This is useful for creating the empty output container for other functions
-such as \fBvnadata_convert\fP(), or \fBvnacal_input_apply\fP(3).
+such as \fBvnadata_convert\fP(), or \fBvnacal_apply\fP(3).
 .PP
 The \fBvnadata_init\fP() function sets the dimensions and type of the
 \fBvnadata_t\fP structure, initializes all frequency and data cells to
@@ -280,10 +280,10 @@ The \fBvnadata_set_type\fP() function changes the parameter type without
 doing conversions.
 The \fItype\fP parameter must be consistent with the matrix dimensions.
 .PP
-The \fBvnadata_resize\fP() function changes the dimensions and/or type
+The \fBvnadata_resize\fP() function changes the dimensions and type
 of the matrix.
 Note that this function is value-preserving when changing the number of
-frequencies, the number of rows or the type, but it doesn't reform the
+frequencies, the number of rows, or the type, but it doesn't reform the
 matrix when changing the number of columns.
 Changing the type doesn't convert existing data.
 .PP
@@ -327,16 +327,15 @@ The \fBvnadata_set_all_z0\fP() function sets the system impedances of
 all ports to \fIz0\fP.
 .PP
 If not set, all system impedances default to 50 ohms.
-Note that if frequency-dependent frequency impedances are in-use (see
-below), \fBvnadata_get_z0\fP() sets \fIerrno\fP to \s-2EINVAL\s+2
-and returns \s-2HUGE_VAL\s+2 and \fBvnadata_get_z0_vector\fP() sets
-\fIerrno\fP to \s-2EINVAL\s+2 and returns \s-2NULL\s+2, thus these
-functions are useful to test if frequency-dependent system impedances
-are in-use.
+Note that if frequency-dependent impedances are in-use (see below),
+\fBvnadata_get_z0\fP() sets \fIerrno\fP to \s-2EINVAL\s+2 and returns
+\s-2HUGE_VAL\s+2 and \fBvnadata_get_z0_vector\fP() sets \fIerrno\fP to
+\s-2EINVAL\s+2 and returns \s-2NULL\s+2, thus these functions are useful
+to test if the structure contains frequency-dependent system impedances.
 Calling \fBvnadata_set_z0\fP(), \fBvnadata_set_z0_vector\fP(), or
-\fBvnadata_set_all_z0\fP() when frequency-dependent frequency impedances
-are in-use discards all frequency-dependent z0 values and returns to
-ordinary system impedances with all unset values initialized to 50 ohms.
+\fBvnadata_set_all_z0\fP() when frequency-dependent impedances are in-use
+discards all frequency-dependent z0 values and returns to ordinary system
+impedances with all other impedance values initialized to 50 ohms.
 .PP
 The \fBvnadata_get_fz0\fP() and \fBvnadata_set_fz0\fP() functions
 get and set the system impedance for the given port on a per-frequency
@@ -359,15 +358,13 @@ in-place conversion is done.
 If \fIvdp_out\fP is not the same as \fIvdp_in\fP and \fInewtype\fP
 is the same type as the input matrix, the data are simply copied.
 \fBvnadata_convert\fP() supports all 56 parameter conversions plus 8
-conversions from parameter data to input impedance vector, a row vector
-representing the impedances looking into each port of the network when
-all other ports are terminated in the given system impedances.
+conversions from parameter data to input impedances at each port.
 .\"
 .SH "RETURN VALUE"
 On success, the get functions return the requested value and set functions
 return zero.
 On error, the integer valued functions return -1; the pointer valued
-functions return NULL, and the double and double complex functions return
+functions return NULL; and the double and double complex functions return
 HUGE_VAL.
 .SH EXAMPLES
 .nf

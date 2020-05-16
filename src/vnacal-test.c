@@ -309,8 +309,8 @@ static double complex *(*gen_error_terms(vnacal_calset_t *vcsp))[3]
 		/*
 		 * If this column has a diagonal entry, generate e22 and use
 		 * the diagonal terms to calculate vcd_sii_through_vector and
-		 * vcd_sji_through_vector for full 6 error terms.  Otherwise,
-		 * the VNA cannot calculate e22 and we can only supply 5 terms.
+		 * vcd_sji_through_vector for full error terms.  Otherwise,
+		 * the VNA cannot calculate e22 and assume it's zero.
 		 */
 		if (column < rows) {
 		    double complex **temp =
@@ -449,8 +449,8 @@ static test_result_type test_vnacal_new_helper(int trial, int rows,
     /*
      * Generate the error terms and calibration measurements.
      */
-    if ((vcsp = vnacal_calset_alloc("test", rows, columns,
-		    frequencies, error_fn, NULL)) == NULL) {
+    if ((vcsp = vnacal_calset_alloc(VNACAL_E12, "test",
+		    rows, columns, frequencies, error_fn, NULL)) == NULL) {
 	(void)fprintf(stderr, "%s: vnacal_calset_alloc: "
 		"%s\n", progname, strerror(errno));
 	result = T_FAIL;
@@ -556,6 +556,1627 @@ out:
 }
 
 /*
+ * map_type: calibration and DUT matrix dimensions and port maps
+ */
+typedef struct apply_test_case {
+    int atc_vrows;		/* calibration matrix rows */
+    int atc_vcolumns;		/* the calibration matrix columns */
+    int atc_drows;		/* DUT matrix rows */
+    int atc_dcolumns;		/* DUT matrix columns */
+    const int *const *atc_maps;	/* optional vector of maps */
+} apply_test_case_type;
+
+/*
+ * apply_test_cases: VNA dimensions, DUT dimensions and port maps to test
+ */
+static const apply_test_case_type apply_test_cases[] = {
+    { 1, 1, 1, 1, NULL },
+    { 1, 2, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1 },
+	    NULL
+	}
+    },
+    { 1, 2, 1, 2, NULL },
+    { 1, 2, 1, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    NULL
+	}
+    },
+    { 1, 2, 1, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    NULL
+	}
+    },
+    { 1, 2, 2, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 1, 0 },
+	    NULL
+	}
+    },
+    { 1, 2, 2, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 1, 0 },
+	    NULL
+	}
+    },
+    { 1, 2, 2, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 1, 2 },
+	    NULL
+	}
+    },
+    { 1, 2, 2, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 1, 3 },
+	    NULL
+	}
+    },
+    { 1, 2, 3, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 2, 0 },
+	    NULL
+	}
+    },
+    { 1, 2, 3, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 2, 0 },
+	    (const int []){ 2, 1 },
+	    NULL
+	}
+    },
+    { 1, 2, 3, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 2, 0 },
+	    (const int []){ 2, 1 },
+	    NULL
+	}
+    },
+    { 1, 2, 3, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 1, 3 },
+	    (const int []){ 2, 0 },
+	    (const int []){ 2, 1 },
+	    (const int []){ 2, 3 },
+	    NULL
+	}
+    },
+    { 1, 2, 4, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 2, 0 },
+	    (const int []){ 3, 0 },
+	    NULL
+	}
+    },
+    { 1, 2, 4, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 2, 0 },
+	    (const int []){ 2, 1 },
+	    (const int []){ 3, 0 },
+	    (const int []){ 3, 1 },
+	    NULL
+	}
+    },
+    { 1, 2, 4, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 2, 0 },
+	    (const int []){ 2, 1 },
+	    (const int []){ 3, 0 },
+	    (const int []){ 3, 1 },
+	    (const int []){ 3, 2 },
+	    NULL
+	}
+    },
+    { 1, 2, 4, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 1, 3 },
+	    (const int []){ 2, 0 },
+	    (const int []){ 2, 1 },
+	    (const int []){ 2, 3 },
+	    (const int []){ 3, 0 },
+	    (const int []){ 3, 1 },
+	    (const int []){ 3, 2 },
+	    NULL
+	}
+    },
+    { 1, 3, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1, -1 },
+	    NULL
+	}
+    },
+    { 1, 3, 1, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 1, 3, 1, 3, NULL },
+    { 1, 3, 1, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    NULL
+	}
+    },
+    { 1, 3, 2, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    (const int []){ 1, 0, -1 },
+	    NULL
+	}
+    },
+    { 1, 3, 2, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    (const int []){ 1, 0, -1 },
+	    NULL
+	}
+    },
+    { 1, 3, 2, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 1, 0, 2 },
+	    NULL
+	}
+    },
+    { 1, 3, 2, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 1, 0, 3 },
+	    NULL
+	}
+    },
+    { 1, 3, 3, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 2, 0, 1 },
+	    NULL
+	}
+    },
+    { 1, 3, 3, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 2, 0, 1 },
+	    NULL
+	}
+    },
+    { 1, 3, 3, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 2, 0, 1 },
+	    NULL
+	}
+    },
+    { 1, 3, 3, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 1, 0, 3 },
+	    (const int []){ 2, 0, 1 },
+	    (const int []){ 2, 0, 3 },
+	    NULL
+	}
+    },
+    { 1, 3, 4, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 2, 0, 1 },
+	    (const int []){ 3, 0, 1 },
+	    NULL
+	}
+    },
+    { 1, 3, 4, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 2, 0, 1 },
+	    (const int []){ 3, 0, 1 },
+	    NULL
+	}
+    },
+    { 1, 3, 4, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 2, 0, 1 },
+	    (const int []){ 3, 0, 1 },
+	    (const int []){ 3, 0, 2 },
+	    NULL
+	}
+    },
+    { 1, 3, 4, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 1, 0, 3 },
+	    (const int []){ 2, 0, 1 },
+	    (const int []){ 2, 0, 3 },
+	    (const int []){ 3, 0, 1 },
+	    (const int []){ 3, 0, 2 },
+	    NULL
+	}
+    },
+    { 1, 4, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1, -1, -1 },
+	    NULL
+	}
+    },
+    { 1, 4, 1, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 1, 4, 1, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 1, 4, 1, 4, NULL },
+    { 1, 4, 2, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    (const int []){ 1, 0, -1, -1 },
+	    NULL
+	}
+    },
+    { 1, 4, 2, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    (const int []){ 1, 0, -1, -1 },
+	    NULL
+	}
+    },
+    { 1, 4, 2, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    (const int []){ 1, 0, 2, -1 },
+	    NULL
+	}
+    },
+    { 1, 4, 2, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 1, 0, 2, 3 },
+	    NULL
+	}
+    },
+    { 1, 4, 3, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    (const int []){ 1, 0, 2, -1 },
+	    (const int []){ 2, 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 1, 4, 3, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    (const int []){ 1, 0, 2, -1 },
+	    (const int []){ 2, 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 1, 4, 3, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    (const int []){ 1, 0, 2, -1 },
+	    (const int []){ 2, 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 1, 4, 3, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 1, 0, 2, 3 },
+	    (const int []){ 2, 0, 1, 3 },
+	    NULL
+	}
+    },
+    { 1, 4, 4, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 1, 0, 2, 3 },
+	    (const int []){ 2, 0, 1, 3 },
+	    (const int []){ 3, 0, 1, 2 },
+	    NULL
+	}
+    },
+    { 1, 4, 4, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 1, 0, 2, 3 },
+	    (const int []){ 2, 0, 1, 3 },
+	    (const int []){ 3, 0, 1, 2 },
+	    NULL
+	}
+    },
+    { 1, 4, 4, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 1, 0, 2, 3 },
+	    (const int []){ 2, 0, 1, 3 },
+	    (const int []){ 3, 0, 1, 2 },
+	    NULL
+	}
+    },
+    { 1, 4, 4, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 1, 0, 2, 3 },
+	    (const int []){ 2, 0, 1, 3 },
+	    (const int []){ 3, 0, 1, 2 },
+	    NULL
+	}
+    },
+    { 2, 1, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1 },
+	    NULL
+	}
+    },
+    { 2, 1, 1, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 1, 0 },
+	    NULL
+	}
+    },
+    { 2, 1, 1, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 2, 0 },
+	    NULL
+	}
+    },
+    { 2, 1, 1, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 2, 0 },
+	    (const int []){ 3, 0 },
+	    NULL
+	}
+    },
+    { 2, 1, 2, 1, NULL },
+    { 2, 1, 2, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 1, 0 },
+	    NULL
+	}
+    },
+    { 2, 1, 2, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 2, 0 },
+	    (const int []){ 2, 1 },
+	    NULL
+	}
+    },
+    { 2, 1, 2, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 2, 0 },
+	    (const int []){ 2, 1 },
+	    (const int []){ 3, 0 },
+	    (const int []){ 3, 1 },
+	    NULL
+	}
+    },
+    { 2, 1, 3, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    NULL
+	}
+    },
+    { 2, 1, 3, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 1, 2 },
+	    NULL
+	}
+    },
+    { 2, 1, 3, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 2, 0 },
+	    (const int []){ 2, 1 },
+	    NULL
+	}
+    },
+    { 2, 1, 3, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 2, 0 },
+	    (const int []){ 2, 1 },
+	    (const int []){ 3, 0 },
+	    (const int []){ 3, 1 },
+	    (const int []){ 3, 2 },
+	    NULL
+	}
+    },
+    { 2, 1, 4, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    NULL
+	}
+    },
+    { 2, 1, 4, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 1, 3 },
+	    NULL
+	}
+    },
+    { 2, 1, 4, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 1, 3 },
+	    (const int []){ 2, 0 },
+	    (const int []){ 2, 1 },
+	    (const int []){ 2, 3 },
+	    NULL
+	}
+    },
+    { 2, 1, 4, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    (const int []){ 1, 0 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 1, 3 },
+	    (const int []){ 2, 0 },
+	    (const int []){ 2, 1 },
+	    (const int []){ 2, 3 },
+	    (const int []){ 3, 0 },
+	    (const int []){ 3, 1 },
+	    (const int []){ 3, 2 },
+	    NULL
+	}
+    },
+    { 2, 2, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1 },
+	    NULL
+	}
+    },
+    { 2, 2, 1, 2, NULL },
+    { 2, 2, 1, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    NULL
+	}
+    },
+    { 2, 2, 1, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    NULL
+	}
+    },
+    { 2, 2, 2, 1, NULL },
+    { 2, 2, 2, 2, NULL },
+    { 2, 2, 2, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 1, 2 },
+	    NULL
+	}
+    },
+    { 2, 2, 2, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 1, 3 },
+	    NULL
+	}
+    },
+    { 2, 2, 3, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    NULL
+	}
+    },
+    { 2, 2, 3, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 1, 2 },
+	    NULL
+	}
+    },
+    { 2, 2, 3, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 1, 2 },
+	    NULL
+	}
+    },
+    { 2, 2, 3, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 1, 3 },
+	    (const int []){ 2, 3 },
+	    NULL
+	}
+    },
+    { 2, 2, 4, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    NULL
+	}
+    },
+    { 2, 2, 4, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 1, 3 },
+	    NULL
+	}
+    },
+    { 2, 2, 4, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 1, 3 },
+	    (const int []){ 2, 3 },
+	    NULL
+	}
+    },
+    { 2, 2, 4, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1 },
+	    (const int []){ 0, 2 },
+	    (const int []){ 0, 3 },
+	    (const int []){ 1, 2 },
+	    (const int []){ 1, 3 },
+	    (const int []){ 2, 3 },
+	    NULL
+	}
+    },
+    { 2, 3, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1, -1 },
+	    NULL
+	}
+    },
+    { 2, 3, 1, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 2, 3, 1, 3, NULL },
+    { 2, 3, 1, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    NULL
+	}
+    },
+    { 2, 3, 2, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 2, 3, 2, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 2, 3, 2, 3, NULL },
+    { 2, 3, 2, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    NULL
+	}
+    },
+    { 2, 3, 3, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 2, 1 },
+	    NULL
+	}
+    },
+    { 2, 3, 3, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 2, 1 },
+	    NULL
+	}
+    },
+    { 2, 3, 3, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 2, 1 },
+	    NULL
+	}
+    },
+    { 2, 3, 3, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 2, 3 },
+	    (const int []){ 1, 2, 3 },
+	    NULL
+	}
+    },
+    { 2, 3, 4, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 2, 3, 0 },
+	    NULL
+	}
+    },
+    { 2, 3, 4, 2,
+	(const int *const[]){
+	    (const int []){ 0, 2, 1 },
+	    (const int []){ 1, 3, 0 },
+	    NULL
+	}
+    },
+    { 2, 3, 4, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 2, 3, 0 },
+	    (const int []){ 2, 3, 1 },
+	    NULL
+	}
+    },
+    { 2, 3, 4, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    (const int []){ 2, 3, 0 },
+	    (const int []){ 2, 3, 1 },
+	    NULL
+	}
+    },
+    { 2, 4, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1, -1, -1 },
+	    NULL
+	}
+    },
+    { 2, 4, 1, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 2, 4, 1, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 2, 4, 1, 4, NULL },
+    { 2, 4, 2, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 2, 4, 2, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 2, 4, 2, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 2, 4, 2, 4, NULL },
+    { 2, 4, 3, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    (const int []){ 0, 2, 1, -1 },
+	    NULL
+	}
+    },
+    { 2, 4, 3, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    (const int []){ 0, 2, 1, -1 },
+	    NULL
+	}
+    },
+    { 2, 4, 3, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    (const int []){ 0, 2, 1, -1 },
+	    NULL
+	}
+    },
+    { 2, 4, 3, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 0, 2, 1, 3 },
+	    NULL
+	}
+    },
+    { 2, 4, 4, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 2, 3, 0, 1 },
+	    NULL
+	}
+    },
+    { 2, 4, 4, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 2, 3, 0, 1 },
+	    NULL
+	}
+    },
+    { 2, 4, 4, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 2, 3, 0, 1 },
+	    NULL
+	}
+    },
+    { 2, 4, 4, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 2, 3, 0, 1 },
+	    NULL
+	}
+    },
+    { 3, 1, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1, -1 },
+	    NULL
+	}
+    },
+    { 3, 1, 1, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    (const int []){ 1, 0, -1 },
+	    NULL
+	}
+    },
+    { 3, 1, 1, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 2, 0, 1 },
+	    NULL
+	}
+    },
+    { 3, 1, 1, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 2, 0, 1 },
+	    (const int []){ 3, 0, 1 },
+	    NULL
+	}
+    },
+    { 3, 1, 2, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 3, 1, 2, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    (const int []){ 1, 0, -1 },
+	    NULL
+	}
+    },
+    { 3, 1, 2, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 2, 0, 1 },
+	    NULL
+	}
+    },
+    { 3, 1, 2, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 2, 0, 1 },
+	    (const int []){ 3, 0, 1 },
+	    NULL
+	}
+    },
+    { 3, 1, 3, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    NULL
+	}
+    },
+    { 3, 1, 3, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 1, 0, 2 },
+	    NULL
+	}
+    },
+    { 3, 1, 3, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 2, 0, 1 },
+	    NULL
+	}
+    },
+    { 3, 1, 3, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 2, 0, 1 },
+	    (const int []){ 3, 0, 1 },
+	    (const int []){ 3, 0, 2 },
+	    NULL
+	}
+    },
+    { 3, 1, 4, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    NULL
+	}
+    },
+    { 3, 1, 4, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 1, 0, 3 },
+	    NULL
+	}
+    },
+    { 3, 1, 4, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 1, 0, 3 },
+	    (const int []){ 2, 0, 1 },
+	    (const int []){ 2, 0, 3 },
+	    NULL
+	}
+    },
+   { 3, 1, 4, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    (const int []){ 1, 0, 2 },
+	    (const int []){ 1, 0, 3 },
+	    (const int []){ 2, 0, 1 },
+	    (const int []){ 2, 0, 3 },
+	    (const int []){ 3, 0, 1 },
+	    (const int []){ 3, 0, 2 },
+	    NULL
+	}
+    },
+    { 3, 2, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1, -1 },
+	    NULL
+	}
+    },
+    { 3, 2, 1, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 3, 2, 1, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 2, 1 },
+	    NULL
+	}
+    },
+    { 3, 2, 1, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 2, 3, 0 },
+	    NULL
+	}
+    },
+    { 3, 2, 2, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 3, 2, 2, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 3, 2, 2, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 2, 1 },
+	    NULL
+	}
+    },
+    { 3, 2, 2, 4,
+	(const int *const[]){
+	    (const int []){ 0, 2, 1 },
+	    (const int []){ 1, 3, 0 },
+	    NULL
+	}
+    },
+    { 3, 2, 3, 1, NULL },
+    { 3, 2, 3, 2, NULL },
+    { 3, 2, 3, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 2, 1 },
+	    NULL
+	}
+    },
+    { 3, 2, 3, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 2, 3, 0 },
+	    (const int []){ 2, 3, 1 },
+	    NULL
+	}
+    },
+    { 3, 2, 4, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    NULL
+	}
+    },
+    { 3, 2, 4, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    NULL
+	}
+    },
+    { 3, 2, 4, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 2, 3 },
+	    (const int []){ 1, 2, 3 },
+	    NULL
+	}
+    },
+    { 3, 2, 4, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    (const int []){ 2, 3, 0 },
+	    (const int []){ 2, 3, 1 },
+	    NULL
+	}
+    },
+    { 3, 3, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1, -1 },
+	    NULL
+	}
+    },
+    { 3, 3, 1, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 3, 3, 1, 3, NULL },
+    { 3, 3, 1, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    NULL
+	}
+    },
+    { 3, 3, 2, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 3, 3, 2, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 3, 3, 2, 3, NULL },
+    { 3, 3, 2, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    NULL
+	}
+    },
+    { 3, 3, 3, 1, NULL },
+    { 3, 3, 3, 2, NULL },
+    { 3, 3, 3, 3, NULL },
+    { 3, 3, 3, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    (const int []){ 0, 2, 3 },
+	    NULL
+	}
+    },
+    { 3, 3, 4, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    NULL
+	}
+    },
+    { 3, 3, 4, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    NULL
+	}
+    },
+    { 3, 3, 4, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    (const int []){ 0, 2, 3 },
+	    NULL
+	}
+    },
+    { 3, 3, 4, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2 },
+	    (const int []){ 0, 1, 3 },
+	    (const int []){ 0, 2, 3 },
+	    NULL
+	}
+    },
+    { 3, 4, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1, -1, -1 },
+	    NULL
+	}
+    },
+    { 3, 4, 1, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 3, 4, 1, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 3, 4, 1, 4, NULL },
+    { 3, 4, 2, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 3, 4, 2, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 3, 4, 2, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 3, 4, 2, 4, NULL },
+    { 3, 4, 3, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 3, 4, 3, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 3, 4, 3, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 3, 4, 3, 4, NULL },
+    { 3, 4, 4, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 0, 1, 3, 2 },
+	    NULL
+	}
+    },
+    { 3, 4, 4, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 0, 1, 3, 2 },
+	    NULL
+	}
+    },
+    { 3, 4, 4, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 0, 1, 3, 2 },
+	    NULL
+	}
+    },
+    { 3, 4, 4, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 0, 1, 3, 2 },
+	    NULL
+	}
+    },
+    { 4, 1, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 1, 1, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    (const int []){ 1, 0, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 1, 1, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    (const int []){ 1, 0, 2, -1 },
+	    (const int []){ 2, 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 4, 1, 1, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 1, 0, 2, 3 },
+	    (const int []){ 2, 0, 1, 3 },
+	    (const int []){ 3, 0, 1, 2 },
+	    NULL
+	}
+    },
+    { 4, 1, 2, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 1, 2, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    (const int []){ 1, 0, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 1, 2, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    (const int []){ 1, 0, 2, -1 },
+	    (const int []){ 2, 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 4, 1, 2, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 1, 0, 2, 3 },
+	    (const int []){ 2, 0, 1, 3 },
+	    (const int []){ 3, 0, 1, 2 },
+	    NULL
+	}
+    },
+    { 4, 1, 3, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 4, 1, 3, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    (const int []){ 1, 0, 2, -1 },
+	    NULL
+	}
+    },
+    { 4, 1, 3, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    (const int []){ 1, 0, 2, -1 },
+	    (const int []){ 2, 0, 1, -1 },
+	    NULL
+	}
+    },
+    { 4, 1, 3, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 1, 0, 2, 3 },
+	    (const int []){ 2, 0, 1, 3 },
+	    (const int []){ 3, 0, 1, 2 },
+	    NULL
+	}
+    },
+    { 4, 1, 4, 1, NULL },
+    { 4, 1, 4, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 1, 0, 2, 3 },
+	    NULL
+	}
+    },
+    { 4, 1, 4, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 1, 0, 2, 3 },
+	    (const int []){ 2, 0, 1, 3 },
+	    NULL
+	}
+    },
+    { 4, 1, 4, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 1, 0, 2, 3 },
+	    (const int []){ 2, 0, 1, 3 },
+	    (const int []){ 3, 0, 1, 2 },
+	    NULL
+	}
+    },
+    { 4, 2, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 2, 1, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 2, 1, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    (const int []){ 0, 2, 1, -1 },
+	    NULL
+	}
+    },
+    { 4, 2, 1, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 2, 3, 0, 1 },
+	    NULL
+	}
+    },
+    { 4, 2, 2, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 2, 2, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 2, 2, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    (const int []){ 0, 2, 1, -1 },
+	    NULL
+	}
+    },
+    { 4, 2, 2, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 2, 3, 0, 1 },
+	    NULL
+	}
+    },
+    { 4, 2, 3, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 4, 2, 3, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 4, 2, 3, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    (const int []){ 0, 2, 1, -1 },
+	    NULL
+	}
+    },
+    { 4, 2, 3, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 2, 3, 0, 1 },
+	    NULL
+	}
+    },
+    { 4, 2, 4, 1, NULL },
+    { 4, 2, 4, 2, NULL },
+    { 4, 2, 4, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 0, 2, 1, 3 },
+	    NULL
+	}
+    },
+    { 4, 2, 4, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 2, 3, 0, 1 },
+	    NULL
+	}
+    },
+    { 4, 3, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 3, 1, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 3, 1, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 4, 3, 1, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 0, 1, 3, 2 },
+	    NULL
+	}
+    },
+    { 4, 3, 2, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 3, 2, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 3, 2, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 4, 3, 2, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 0, 1, 3, 2 },
+	    NULL
+	}
+    },
+    { 4, 3, 3, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 4, 3, 3, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 4, 3, 3, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 4, 3, 3, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 0, 1, 3, 2 },
+	    NULL
+	}
+    },
+    { 4, 3, 4, 1, NULL },
+    { 4, 3, 4, 2, NULL },
+    { 4, 3, 4, 3, NULL },
+    { 4, 3, 4, 4,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, 3 },
+	    (const int []){ 0, 1, 3, 2 },
+	    NULL
+	}
+    },
+    { 4, 4, 1, 1,
+	(const int *const[]){
+	    (const int []){ 0, -1, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 4, 1, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 4, 1, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 4, 4, 1, 4, NULL },
+    { 4, 4, 2, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 4, 2, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, -1, -1 },
+	    NULL
+	}
+    },
+    { 4, 4, 2, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 4, 4, 2, 4, NULL },
+    { 4, 4, 3, 1,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 4, 4, 3, 2,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 4, 4, 3, 3,
+	(const int *const[]){
+	    (const int []){ 0, 1, 2, -1 },
+	    NULL
+	}
+    },
+    { 4, 4, 3, 4, NULL },
+    { 4, 4, 4, 1, NULL },
+    { 4, 4, 4, 2, NULL },
+    { 4, 4, 4, 3, NULL },
+    { 4, 4, 4, 4, NULL },
+};
+#define N_APPLY_CASES	\
+	(sizeof(apply_test_cases) / sizeof(apply_test_case_type))
+
+/*
  * test_vnacal_apply_helper
  *   @trial: trial number
  *   @vrows: rows in calibration matrix
@@ -565,34 +2186,45 @@ out:
  *   @frequencies: number of frequency points
  *   @map_flag: map DUT ports to VNA ports (required if DUT larger than cal)
  */
-static test_result_type test_vnacal_apply_helper(int trial,
-	int vrows, int vcolumns, int drows, int dcolumns,
-	int frequencies, bool map_flag)
+static test_result_type test_vnacal_apply_helper(int trial, int frequencies,
+	const apply_test_case_type *atcp)
 {
+    int vrows    = atcp->atc_vrows;
+    int vcolumns = atcp->atc_vcolumns;
+    int drows    = atcp->atc_drows;
+    int dcolumns = atcp->atc_dcolumns;
+    int vports = MAX(vrows, vcolumns);
     vnacal_calset_t *vcsp = NULL;
-    vnacal_input_t *vip = NULL;
+    vnacal_apply_t *vap = NULL;
     double complex *(*error_terms)[3] = NULL;
     vnacal_t *vcp = NULL;
-    int map[drows * dcolumns];
     double complex **actual_matrix   = NULL;
     double complex **measured_matrix = NULL;
+    const int *const *map;
     vnadata_t *output_matrix = NULL;
     test_result_type result = T_SKIPPED;
+#define S(i, j)	\
+	(actual_matrix[(i) * dcolumns + (j)])	/* drows x dcolumns */
+#define E(i, j, t) \
+	(error_terms[(i) * vcolumns + (j)][t])	/* vrows x vcolumns */
+#define M(i, j)	\
+	(measured_matrix[(i) * vcolumns + (j)])	/* vrows x vcolumns */
 
     /*
      * If -v, print the test header.
      */
     if (opt_v) {
-	(void)printf("Test vnacal_input_apply: trial %3d cal size (%d x %d) "
-		"S size (%d x %d) map %d\n", trial, vrows, vcolumns,
-		drows, dcolumns, (int)map_flag);
+	(void)printf("Test vnacal_apply: trial %3d cal size (%d x %d) "
+		"S size (%d x %d) map %d\n", trial,
+		vrows, vcolumns, drows, dcolumns,
+		atcp->atc_maps != NULL);
     }
 
     /*
      * Generate the error terms and calibration measurements.
      */
-    if ((vcsp = vnacal_calset_alloc("test", vrows, vcolumns,
-		    frequencies, error_fn, NULL)) == NULL) {
+    if ((vcsp = vnacal_calset_alloc(VNACAL_E12, "test",
+		    vrows, vcolumns, frequencies, error_fn, NULL)) == NULL) {
 	(void)fprintf(stderr, "%s: vnacal_calset_alloc: "
 		"%s\n", progname, strerror(errno));
 	result = T_FAIL;
@@ -640,70 +2272,13 @@ static test_result_type test_vnacal_apply_helper(int trial,
     }
 
     /*
-     * If map_flag, generate a random map between S parameter
-     * ports and VNA ports.
+     * Generate the "actual" S-parameters.
      */
-    if (map_flag) {
-	int c_ndiagonal = MIN(vrows, vcolumns);
-
-	for (int row = 0; row < drows; ++row) {
-	    for (int column = 0; column < dcolumns; ++column) {
-		int cell = row * dcolumns + column;
-
-		if (row == column) {
-		    int c_diagonal = random() % c_ndiagonal;
-
-		    map[cell] = c_diagonal * vcolumns + c_diagonal;
-
-		} else if (vcolumns > 1) {
-		    int vrow = random() % vrows;
-		    int vcolumn = random() % (vcolumns - 1);
-
-		    if (vcolumn >= vrow) {
-			++vcolumn;
-		    }
-		    assert(vrow != vcolumn);
-		    map[cell] = vrow * vcolumns + vcolumn;
-
-		} else {
-		    int vrow;
-
-		    assert(vrows > 1);
-		    vrow = random() % (vrows - 1) + 1;
-
-		    map[cell] = vrow * vcolumns;
-		}
-	    }
-	}
-	if (opt_v) {
-	    (void)printf("map:\n");
-	    for (int i = 0; i < drows; ++i) {
-		for (int j = 0; j < dcolumns; ++j) {
-		    int cell = map[i * dcolumns + j];
-		    int mrow = cell / dcolumns;
-		    int mcol = cell % dcolumns;
-
-		    (void)printf("   %2d %2d", mrow, mcol);
-		}
-		(void)printf("\n");
-	    }
-	    (void)printf("\n");
-	}
-    }
-
-    /*
-     * Allocate S parameter matrices.
-     */
-    actual_matrix   = alloc_matrix_of_vectors(drows * dcolumns, frequencies);
-    measured_matrix = alloc_matrix_of_vectors(drows * dcolumns, frequencies);
-    if (actual_matrix == NULL || measured_matrix == NULL) {
+    actual_matrix = alloc_matrix_of_vectors(drows * dcolumns, frequencies);
+    if (actual_matrix == NULL) {
 	result = T_FAIL;
 	goto out;
     }
-
-    /*
-     * Generate the "actual" S-parameters.
-     */
     for (int row = 0; row < drows; ++row) {
 	for (int column = 0; column < dcolumns; ++column) {
 	    for (int findex = 0; findex < vcsp->vcs_frequencies; ++findex) {
@@ -729,183 +2304,240 @@ static test_result_type test_vnacal_apply_helper(int trial,
     }
 
     /*
-     * Generate the "measured" S-parameters given actual and error terms.
+     * Create the vnacal_apply_t.
      */
-    for (int findex = 0; findex < vcsp->vcs_frequencies; ++findex) {
-
-	/*
-	 * Init measured to zero.
-	 */
-	for (int i = 0; i < drows * dcolumns; ++i) {
-	    measured_matrix[i][findex] = 0.0;
-	}
-
-	/*
-	 * For each column, (each driven port) find the corresponding
-	 * column in the measured_matrix.
-	 */
-	for (int dcolumn = 0; dcolumn < dcolumns; ++dcolumn) {
-	    double complex a[drows * drows];
-	    double complex x[drows];
-	    double complex b[drows];
-	    double complex d;
-#define A(i, j) (a[(i) * drows + (j)])
-
-	    /*
-	     * We start by forming a (drows x drows) matrix A and column
-	     * vector b which we'll use to solve for column vector x.
-	     * The A matrix corresponds to the square portion of the
-	     * S parameter matrix.  The columns of A correspond to the
-	     * elements of the b and x vectors and to the elements of the
-	     * current column of the "measured" matrix.  Column vector
-	     * x that we're solving for represents the voltage out of
-	     * each DUT port, taking into account the reflections due to
-	     * errors at each of the other ports.  It's easy to calculate
-	     * the column of the "measured" matrix once we know x.
-	     *
-	     * Initialize A to the identity matrix and b to the current
-	     * column in the actual_matrix.
-	     */
-	    for (int i = 0; i < drows; ++i) {
-		for (int j = 0; j < drows; ++j) {
-		    A(i, j) = (i == j) ? 1.0 : 0.0;
-		}
-		b[i] = actual_matrix[i * dcolumns + dcolumn][findex];
-	    }
-	    /*
-	     * Make A = I - S E, where E is a diagonal matrix made of
-	     * the e11/e22 error terms for this column.
-	     */
-	    for (int j = 0; j < drows; ++j) {	/* column in A */
-		double complex e11;
-
-		if (j < dcolumns) {
-		    int cell;
-
-		    /*
-		     * Find the error parameters for row j in this
-		     * DUT column.  Note that j is the index of a row in
-		     * the S matrix and in the X column vector, but it's
-		     * the index of a column in the A matrix.  We start
-		     * with the assumption that cells of the DUT matrix
-		     * are 1:1 with cells in the calibration matrix,
-		     * then if mapping is enabled, we apply the map.
-		     */
-		    cell = j * dcolumns + dcolumn;
-		    if (map_flag) {
-			cell = map[cell];
-		    }
-		    assert(cell < vrows * vcolumns);
-		    e11 = error_terms[cell][2][findex];
-		    for (int i = 0; i < drows; ++i) {
-			A(i, j) -= actual_matrix[i*dcolumns + j][findex] * e11;
-		    }
-		}
-	    }
-	    if (opt_v) {
-		(void)printf("findex %d column %d:\n", findex, dcolumn);
-		(void)printf("a:\n");
-		cmatrix_print(a, drows, drows);
-		(void)printf("b:\n");
-		cmatrix_print(b, drows, 1);
-	    }
-	    /*
-	     * Find x = A^-1 b.
-	     */
-	    d = _vnacommon_mldivide(x, a, b, drows, 1);
-	    if (cabs(d) <= EPS)	 {
-		(void)fprintf(stderr, "%s: test_vnacal_mrdivide: warning: "
-			"skipping nearly singular test matrix\n",
-			progname);
-		result = T_SKIPPED;
-		goto out;
-	    }
-	    if (opt_v) {
-		(void)printf("x:\n");
-		cmatrix_print(x, drows, 1);
-	    }
-	    /*
-	     * From x, calculate the "measured" S-parameters for this
-	     * column
-	     */
-	    for (int drow = 0; drow < drows; ++drow) {
-		int cell = drow * dcolumns + dcolumn;
-		double complex e00;
-		double complex e10e01;
-
-		if (map_flag) {
-		    cell = map[cell];
-		}
-		assert(cell < vrows * vcolumns);
-		e00    = error_terms[cell][0][findex];
-		e10e01 = error_terms[cell][1][findex];
-		measured_matrix[drow * dcolumns + dcolumn][findex] =
-		    e00 + e10e01 * x[drow];
-	    }
-	}
-    }
-    if (opt_v) {
-	(void)printf("measured_matrix:\n");
-	(void)printf("R C F\n");
-	for (int findex = 0; findex < vcsp->vcs_frequencies; ++findex) {
-	    for (int row = 0; row < drows; ++row) {
-		for (int column = 0; column < dcolumns; ++column) {
-		    double complex v = measured_matrix[row * dcolumns +
-			column][findex];
-
-		    (void)printf("%d %d %d %+e%+ei\n",
-			row, column, findex, creal(v), cimag(v));
-		}
-	    }
-	}
-	(void)printf("\n");
-    }
-
-    /*
-     * Create the vnacal_input_t.
-     */
-    vip = vnacal_input_alloc(vcp, /*set=*/0, drows, dcolumns, frequencies);
-    if (vip == NULL) {
-	(void)fprintf(stderr, "%s: vnacal_input_alloc: %s\n",
+    vap = vnacal_apply_alloc(vcp, /*set=*/0, drows, dcolumns, frequencies);
+    if (vap == NULL) {
+	(void)fprintf(stderr, "%s: vnacal_apply_alloc: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
-    if (vnacal_input_set_frequency_vector(vip,
+    if (vnacal_apply_set_frequency_vector(vap,
 		vcsp->vcs_frequency_vector) == -1) {
-	(void)fprintf(stderr, "%s: vnacal_input_set_frequency_vector: "
+	(void)fprintf(stderr, "%s: vnacal_apply_set_frequency_vector: "
 		"%s\n", progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
-    for (int drow = 0; drow < drows; ++drow) {
-	for (int dcolumn = 0; dcolumn < dcolumns; ++dcolumn) {
-	    int cell = dcolumns * drow + dcolumn;
 
-	    if (!map_flag) {
-		if (vnacal_input_add_vector(vip, drow, dcolumn,
-			    measured_matrix[cell]) == -1) {
-		    (void)fprintf(stderr, "%s: vnacal_input_add_vector: "
-			    "drow %d dcolumn %d: %s\n",
-			    progname, drow, dcolumn, strerror(errno));
-		    result = T_FAIL;
+    /*
+     * Allocate the vrows x vcolumns measured matrix.
+     */
+    measured_matrix = alloc_matrix_of_vectors(vrows * vcolumns, frequencies);
+    if (measured_matrix == NULL) {
+	result = T_FAIL;
+	goto out;
+    }
+
+    /*
+     * For each port map...
+     */
+    map = atcp->atc_maps;
+    do {
+	/*
+	 * If opt_v, show the map.
+	 */
+	if (opt_v && map != NULL) {
+	    (void)printf("map:\n");
+	    for (int i = 0; i < vports; ++i) {
+		(void)printf(" %d", (*map)[i]);
+	    }
+	    (void)printf("\n\n");
+	}
+
+	/*
+	 * For each frequency...
+	 */
+	for (int findex = 0; findex < vcsp->vcs_frequencies; ++findex) {
+
+	    if (opt_v) {
+		(void)printf("findex %d:\n", findex);
+	    }
+
+	    /*
+	     * Init measured to zero.
+	     */
+	    for (int i = 0; i < vrows * vcolumns; ++i) {
+		measured_matrix[i][findex] = 0.0;
+	    }
+
+	    /*
+	     * For each vcolumn (each driven port) find the corresponding
+	     * column in the measured_matrix.
+	     */
+	    for (int vcolumn = 0; vcolumn < vcolumns; ++vcolumn) {
+		double complex a[vrows * vrows];
+		double complex x[vrows];
+		double complex b[vrows];
+		double complex d;
+		int dcolumn = (map != NULL) ? (*map)[vcolumn] : vcolumn;
+#define A(i, j) (a[(i) * vrows + (j)])
+
+		/*
+		 * We start by forming a (drows x drows) matrix A and column
+		 * vector b which we'll use to solve for column vector x.
+		 * From x, we can easily calculate the VNA measurements for
+		 * the current port mapping.
+		 *
+		 * Initialize A to the identity matrix and b to the
+		 * mapped row and column of the actual S matrix.
+		 */
+		for (int i = 0; i < vrows; ++i) {
+		    for (int j = 0; j < vrows; ++j) {
+			A(i, j) = (i == j) ? 1.0 : 0.0;
+		    }
+		}
+		for (int vrow = 0; vrow < vrows; ++vrow) {
+		    int drow = (map != NULL) ? (*map)[vrow] : vrow;
+
+		    if (drow >= 0 && drow < drows &&
+			    dcolumn >= 0 && dcolumn < dcolumns) {
+			b[vrow] = S(drow, dcolumn)[findex];
+		    } else {
+			b[vrow] = 0.0;
+		    }
+		}
+		/*
+		 * Make A = I - S E, where E is a diagonal matrix made of
+		 * the e11/e22 error terms for this column.
+		 */
+		for (int i = 0; i < vrows; ++i) {	/* row in A */
+		    int ii = (map != NULL) ? (*map)[i] : i;
+
+		    if (ii < 0 || ii >= drows) {
+			continue;
+		    }
+		    for (int j = 0; j < vrows; ++j) {	/* each vrow */
+			int jj = (map != NULL) ? (*map)[j] : j;
+
+			if (jj < 0 || jj >= dcolumns) {
+			    continue;
+			}
+			A(i, j) -= S(ii, jj)[findex] * E(j, vcolumn, 2)[findex];
+		    }
+		}
+		if (opt_v) {
+		    (void)printf("vcolumn %d dcolumn %d:\n", vcolumn, dcolumn);
+		    (void)printf("a:\n");
+		    cmatrix_print(a, vrows, vrows);
+		    (void)printf("b:\n");
+		    cmatrix_print(b, vrows, 1);
+		}
+		/*
+		 * Find x = A^-1 b.
+		 */
+		d = _vnacommon_mldivide(x, a, b, vrows, 1);
+		if (cabs(d) <= EPS)	 {
+		    (void)fprintf(stderr, "%s: test_vnacal_mrdivide: warning: "
+			    "skipping nearly singular test matrix\n",
+			    progname);
+		    result = T_SKIPPED;
 		    goto out;
 		}
-	    } else {
-		int vrow    = map[cell] / vcsp->vcs_columns;
-		int vcolumn = map[cell] % vcsp->vcs_columns;
-
-		if (vnacal_input_add_mapped_vector(vip, vrow, vcolumn,
-			    drow, dcolumn, measured_matrix[cell]) == -1) {
-		    (void)fprintf(stderr, "%s: vnacal_input_add_vector: "
-			    "drow %d dcolumn %d: %s\n",
-			    progname, drow, dcolumn, strerror(errno));
-		    result = T_FAIL;
-		    goto out;
+		if (opt_v) {
+		    (void)printf("x:\n");
+		    cmatrix_print(x, vrows, 1);
 		}
+		/*
+		 * From x, calculate the "measured" S-parameters for this
+		 * column.
+		 */
+		for (int vrow = 0; vrow < vrows; ++vrow) {
+		    double complex e00    = E(vrow, vcolumn, 0)[findex];
+		    double complex e10e01 = E(vrow, vcolumn, 1)[findex];
+
+		    M(vrow, vcolumn)[findex] = e00 + e10e01 * x[vrow];
+		}
+#undef A
 	    }
 	}
-    }
+	if (opt_v) {
+	    (void)printf("measured_matrix:\n");
+	    (void)printf("R C F\n");
+	    for (int findex = 0; findex < vcsp->vcs_frequencies; ++findex) {
+		for (int vrow = 0; vrow < vrows; ++vrow) {
+		    for (int vcolumn = 0; vcolumn < vcolumns; ++vcolumn) {
+			double complex v = M(vrow, vcolumn)[findex];
+
+			(void)printf("%d %d %d %+e%+ei\n",
+				vrow, vcolumn, findex, creal(v), cimag(v));
+		    }
+		}
+	    }
+	    (void)printf("\n");
+	}
+	if (vnacal_apply_add_matrix(vap,
+		    (const double complex *const *)&M(0, 0),
+		    map != NULL ? *map : NULL) == -1) {
+	    (void)fprintf(stderr, "%s: vnacal_apply_add_matrix: "
+		    "%s\n", progname, strerror(errno));
+	    result = T_FAIL;
+	    goto out;
+	}
+	/*
+	 * If there's no port map and the DUT matrix has the same
+	 * dimension as the calibration matrix, test using the simple
+	 * vnacal_apply function.
+	 */
+	if (map == NULL && vrows == drows && vcolumns == dcolumns) {
+	    if ((output_matrix = vnadata_alloc()) == NULL)  {
+		(void)fprintf(stderr, "%s: vnadata_alloc: %s\n",
+			progname, strerror(errno));
+		result = T_FAIL;
+		goto out;
+	    }
+	    if (vnacal_apply(vcp, /*set*/0, frequencies,
+			vcsp->vcs_frequency_vector,
+			(const double complex *const *)&M(0, 0),
+			output_matrix) == -1) {
+		(void)fprintf(stderr, "%s: vnacal_apply: "
+			"%s\n", progname, strerror(errno));
+		result = T_FAIL;
+		goto out;
+	    }
+	    if (opt_v) {
+		(void)printf("computed_vector (vnacal_apply):\n");
+		(void)printf("R C F\n");
+		for (int findex = 0; findex < vcsp->vcs_frequencies;
+			++findex) {
+		    for (int row = 0; row < drows; ++row) {
+			for (int column = 0; column < dcolumns; ++column) {
+			    double complex v;
+
+			    v = vnadata_get_cell(output_matrix, findex,
+				    row, column);
+			    (void)printf("%d %d %d %+e%+ei\n",
+				    row, column, findex,
+				    creal(v), cimag(v));
+			}
+		    }
+		}
+		(void)printf("\n");
+	    }
+	    for (int i = 0; i < drows; ++i) {
+		for (int j = 0; j < dcolumns; ++j) {
+		    for (int findex = 0; findex < vcsp->vcs_frequencies;
+			    ++findex) {
+			double complex v;
+			double dy;
+
+			v = vnadata_get_cell(output_matrix, findex, i, j);
+			dy = cabs(v - actual_matrix[i * dcolumns + j][findex]);
+			if (dy >= EPS) {
+			    if (opt_a) {
+				assert(!"data miscompare");
+			    }
+			    result = T_FAIL;
+			    goto out;
+			}
+		    }
+		}
+	    }
+	    (void)vnadata_free(output_matrix);
+	    output_matrix = NULL;
+	}
+    } while (map != NULL && *++map != NULL);
 
     /*
      * Get the computed S-parameters.
@@ -916,15 +2548,15 @@ static test_result_type test_vnacal_apply_helper(int trial,
 	result = T_FAIL;
 	goto out;
     }
-    if (vnacal_input_apply(vip, output_matrix) == -1) {
-	(void)fprintf(stderr, "%s: vnacal_input_apply: "
+    if (vnacal_apply_get_data(vap, output_matrix) == -1) {
+	(void)fprintf(stderr, "%s: vnacal_apply_get_data: "
 		"%s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
     if (opt_v) {
-	(void)printf("computed_vector:\n");
+	(void)printf("computed_vector (vancal_apply_get_data):\n");
 	(void)printf("R C F\n");
 	for (int findex = 0; findex < vcsp->vcs_frequencies; ++findex) {
 	    for (int row = 0; row < drows; ++row) {
@@ -964,11 +2596,11 @@ static test_result_type test_vnacal_apply_helper(int trial,
     result = T_PASS;
 
 out:
-    if (vip != NULL) {
-	vnacal_input_free(vip);
-	vip = NULL;
+    if (vap != NULL) {
+	vnacal_apply_free(vap);
+	vap = NULL;
     }
-    free_matrix_of_vectors(measured_matrix, drows * dcolumns);
+    free_matrix_of_vectors(measured_matrix, vrows * vcolumns);
     free_matrix_of_vectors(actual_matrix,   drows * dcolumns);
     if (vcp != NULL) {
 	if (error_terms != NULL) {
@@ -984,28 +2616,23 @@ out:
     }
     return result;
 }
-#undef B
+#undef M
+#undef E
 #undef S
-#undef U
 
 /*
- * test_vnacal_input_apply: test vnacal_input_apply and vnacal_apply_with_map
+ * test_vnacal_apply: test vnacal_apply
  */
 static void test_vnacal_input_apply()
 {
-    static const int sizes[] = { 1, 2, 3, 4 };
     test_result_type result = T_SKIPPED;
     bool pass = false;
 
     for (int trial = 1; trial <= NTRIALS; ++trial) {
-	for (int si = 0; si < sizeof(sizes) / sizeof(int); ++si) {
-	    for (int sj = 0; sj < sizeof(sizes) / sizeof(int); ++sj) {
-		int drows = sizes[si];
-		int dcolumns = sizes[sj];
-
-		result = test_vnacal_apply_helper(trial,
-			drows, dcolumns, drows, dcolumns, 2, false);
-		switch (result) {
+	for (const apply_test_case_type *atcp = apply_test_cases;
+		atcp < &apply_test_cases[N_APPLY_CASES]; ++atcp) {
+	    result = test_vnacal_apply_helper(trial,2, atcp);
+	    switch (result) {
 		case T_PASS:
 		    pass = true;
 		    break;
@@ -1014,50 +2641,13 @@ static void test_vnacal_input_apply()
 		case T_FAIL:
 		default:
 		    goto out;
-		}
-		result = test_vnacal_apply_helper(trial,
-			2, 1, drows, dcolumns, 2, true);
-		switch (result) {
-		case T_PASS:
-		    pass = true;
-		    break;
-		case T_SKIPPED:
-		    break;
-		case T_FAIL:
-		default:
-		    goto out;
-		}
-		result = test_vnacal_apply_helper(trial,
-			1, 2, drows, dcolumns, 2, true);
-		switch (result) {
-		case T_PASS:
-		    pass = true;
-		    break;
-		case T_SKIPPED:
-		    break;
-		case T_FAIL:
-		default:
-		    goto out;
-		}
-		result = test_vnacal_apply_helper(trial,
-			2, 2, drows, dcolumns, 2, true);
-		switch (result) {
-		case T_PASS:
-		    pass = true;
-		    break;
-		case T_SKIPPED:
-		    break;
-		case T_FAIL:
-		default:
-		    goto out;
-		}
 	    }
 	}
     }
     result = pass ? T_PASS : T_SKIPPED;
 
 out:
-    report_test_result("vnacal_input_apply", result);
+    report_test_result("vnacal_apply", result);
 }
 
 /*
@@ -1089,8 +2679,8 @@ static void test_vnacal_save()
     /*
      * Generate the first calibration set.
      */
-    if ((cal_sets[0] = vnacal_calset_alloc("first-set", 2, 1, 20,
-		    error_fn, NULL)) == NULL) {
+    if ((cal_sets[0] = vnacal_calset_alloc(VNACAL_E12, "first-set",
+		    2, 1, 20, error_fn, NULL)) == NULL) {
 	(void)fprintf(stderr, "%s: vnacal_calset_alloc: "
 		"%s\n", progname, strerror(errno));
 	result = T_FAIL;
@@ -1104,8 +2694,8 @@ static void test_vnacal_save()
     /*
      * Generate the second calibration set.
      */
-    if ((cal_sets[1] = vnacal_calset_alloc("second-set", 3, 5, 10,
-		    error_fn, NULL)) == NULL) {
+    if ((cal_sets[1] = vnacal_calset_alloc(VNACAL_E12, "second-set",
+		    3, 5, 10, error_fn, NULL)) == NULL) {
 	(void)fprintf(stderr, "%s: vnacal_calset_alloc: "
 		"%s\n", progname, strerror(errno));
 	result = T_FAIL;

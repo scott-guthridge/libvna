@@ -36,6 +36,13 @@ extern "C" {
 #define VNACAL_MAX_PRECISION	1000
 
 /*
+ * vnacal_type_t: calibration type
+ */
+typedef enum vnacal_type {
+    VNACAL_E12	= 1,	/* traditional "12" error term model */
+} vnacal_type_t;
+
+/*
  * vnacal_calset_t: opaque type containing calibration measurements
  */
 typedef struct vnacal_calset vnacal_calset_t;
@@ -46,9 +53,9 @@ typedef struct vnacal_calset vnacal_calset_t;
 typedef struct vnacal vnacal_t;
 
 /*
- * vnacal_input_t: opaque type returned from vnacal_input_alloc
+ * vnacal_apply_t: opaque type returned from vnacal_apply_alloc
  */
-typedef struct vnacal_input vnacal_input_t;
+typedef struct vnacal_apply vnacal_apply_t;
 
 /*
  * Optional parameter tag used to sanity check that diagnonal and
@@ -70,6 +77,7 @@ typedef struct vnacal_input vnacal_input_t;
 
 /*
  * vnacal_calset_alloc: allocate a vnacal_calset
+ *   @type: calibration type
  *   @setname: name of this set
  *   @rows: number of VNA ports where signal is detected
  *   @columns: number of VNA ports where signal is generated
@@ -83,7 +91,7 @@ typedef struct vnacal_input vnacal_input_t;
  *
  *   Set errno and return NULL on error.
  */
-extern vnacal_calset_t *vnacal_calset_alloc(
+extern vnacal_calset_t *vnacal_calset_alloc(vnacal_type_t type,
 	const char *setname, int rows, int columns, int frequencies,
 	vnaerr_error_fn_t *error_fn, void *error_arg);
 
@@ -159,7 +167,7 @@ extern void vnacal_calset_free(vnacal_calset_t *vcsp);
 /*
  * vnacal_create: construct a calibration structure from measured data
  *   @sets: number of calibration sets
- *   @vcspp: vector of pointers to vnacal_calset structures (sets long)
+ *   @vcspp: vector of pointers to vnacal_calset_t structures (sets long)
  *   @error_fn: optional error reporting function (NULL if not used)
  *   @error_arg: user data passed through to the error function (or NULL)
  */
@@ -362,81 +370,81 @@ extern int vnacal_property_delete(vnacal_t *vcp, int set,
 extern void vnacal_free(vnacal_t *vcp);
 
 /*
- * vnacal_input_alloc: allocate a vnacal input data structure
+ * vnacal_apply: apply the calibration to measured values (simple form)
  *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
  *   @set: set index (beginning with zero)
- *   @rows: number of rows in the S-parameter matrix
- *   @columns: number of columns in the S-parameter matrix
- *   @frequencies: number of measured frequencies
- *
- * The frequencies given in the input don't have to be the same as
- * those in the calibration; however, they may not extend outside of
- * the calibration range.  In other words, the library will interpolate,
- * but it will not extrapolate.
+ *   @frequencies: number of frequencies in matrix and s_parameters
+ *   @frequency_vector: vector of increasing frequency points
+ *   @matrix: vrows x vcolumns matrix of measured voltage ratios
+ *   @s_parameters: caller-allocated vnadata_t structure
  */
-extern vnacal_input_t *vnacal_input_alloc(vnacal_t *vcp, int set,
-	int rows, int columns, int frequencies);
+extern int vnacal_apply(vnacal_t *vcp, int set, int frequencies,
+        const double *frequency_vector, const double complex *const *matrix,
+        vnadata_t *s_parameters);
 
 /*
- * vnacal_input_set_frequency_vector: set the frequency vector
- *   @vip: pointer to opaque structure returned from vnacal_input_alloc
- *   @frequency_vector: vector of measured frequencies
+ * vnacal_apply_alloc: allocate a vnacal_apply_t structure
+ *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
+ *   @set: set index (beginning with zero)
+ *   @drows: number of rows in the DUT S-parameter matrix
+ *   @dcolumns: number of columns in the DUT S-parameter matrix
+ *   @dfrequencies: number of measured frequencies
  */
-extern int vnacal_input_set_frequency_vector(vnacal_input_t *vip,
+extern vnacal_apply_t *vnacal_apply_alloc(vnacal_t *vcp, int set,
+	int drows, int dcolumns, int dfrequencies);
+
+/*
+ * vnacal_apply_set_frequency_vector: set the frequency vector
+ *   @vap: pointer to the structure returned from vnacal_apply_alloc
+ *   @frequency_vector: vector of dfrequencies measured frequencies
+ *
+ * The frequencies don't have to be the same as those in the calibration;
+ * however, they may not extend outside of the calibration range -- the
+ * the library will interpolate, but won't extrapolate.
+ */
+extern int vnacal_apply_set_frequency_vector(vnacal_apply_t *vap,
 	const double *frequency_vector);
 
 /*
- * vnacal_input_add_vector: add a vector of measurements to the input
- *   @vip: pointer to opaque structure returned from vnacal_input_alloc
- *   @row: measured DUT port (zero-based)
- *   @column: driven DUT port (zero-based)
- *   @vector: vector of voltage measurements, one per frequency
+ * vnacal_apply_add_column: add a column of measurements with map
+ *   @vap: pointer to the structure returned from vnacal_apply_alloc
+ *   @vcolumn: column of the calibration matrix being added
+ *   @column_vector: pointer to vector, vrows long, of pointers
+ *      to vectors of voltage measurements, dfrequencies long
+ *   @map: map of VNA port to DUT port, MAX(vrows, vcolumns) long
  *
- * Repeated calls to this function on the same row and column average
- * the vectors given.
+ * When the DUT has more ports than the VNA, this function gives the
+ * mapping for this set of measurements.  The map must be the greater
+ * dimension of the calibration matrix.  DUT port indices start at zero.
+ * The special value -1 indicates that the VNA port and any unused DUT
+ * ports are connected to terminators.
  */
-extern int vnacal_input_add_vector(vnacal_input_t *vip,
-	int row, int column, const double complex *vector);
+extern int vnacal_apply_add_column(vnacal_apply_t *vap,
+	int vcolumn, const double complex *const *column_vector,
+	const int *map);
 
 /*
- * vnacal_input_add_mapped_vector: add a vector of measurements to the input
- *   @vip: pointer to opaque structure returned from vnacal_input_alloc
- *   @vrow: VNA detector port (zero-based)
- *   @vcolumn: VNA driving port (zero-based)
- *   @drow: measured DUT port (zero-based)
- *   @dcolumn: driven DUT port (zero-based)
- *   @vector: vector of voltage measurements, one per frequency
- *
- * Repeated calls to this function on the same row and column average
- * the vectors given.
+ * vnacal_apply_add_matrix: add matrix of vector with port map
+ *   @vap: pointer to the structure returned from vnacal_apply_alloc
+ *   @matrix: vrows x vcolumns matrix of dfrequencies long vectors of voltages
+ *   @map: map of VNA port to DUT port, MAX(vrows, vcolumns) long
  */
-extern int vnacal_input_add_mapped_vector(vnacal_input_t *vip,
-	int vrow, int vcolumn, int drow, int dcolumn,
-	const double complex *vector);
+extern int vnacal_apply_add_matrix(vnacal_apply_t *vap,
+	const double complex *const *matrix, const int *map);
 
 /*
- * vnacal_input_get_value: get the given uncalibrated value
- *   @vip: pointer to opaque structure returned from vnacal_input_alloc
- *   @row: measured DUT port (zero-based)
- *   @column: driven DUT port (zero-based)
- *   @findex: frequency index
+ * vnacal_apply_get_data: create the s-parameter matrix
+ *   @vap: pointer to the structure returned from vnacal_apply_alloc
+ *   @s_parameters: caller-allocated vnadata_t structure
  */
-extern double complex vnacal_input_get_value(vnacal_input_t *vip,
-	int row, int column, int findex);
-
-/*
- * vnacal_input_apply: apply the calibration and generate S-parameters
- *   @vip: pointer to opaque structure returned from vnacal_input_alloc
- *   @s_parameters: pointer to caller-allocated vnadata_t structure
- */
-extern int vnacal_input_apply(const vnacal_input_t *vip,
+extern int vnacal_apply_get_data(const vnacal_apply_t *vap,
 	vnadata_t *s_parameters);
 
 /*
- * vnacal_input_free: free the input structure
- *   @vip: pointer to opaque structure returned from vnacal_input_alloc
+ * vnacal_apply_free: free the apply structure
+ *   @vap: pointer to the structure returned from vnacal_apply_alloc
  */
-extern void vnacal_input_free(vnacal_input_t *vip);
+extern void vnacal_apply_free(vnacal_apply_t *vap);
 
 #ifdef __cplusplus
 } /* extern "C" */

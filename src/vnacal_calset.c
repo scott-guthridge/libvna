@@ -30,7 +30,7 @@
 
 /*
  * vnacal_calset_error: report an error
- *   @vcsp: pointer to vnacal_calset_t
+ *   @vcms: pointer to vnacal_calset_t
  *   @category: category of error
  *   @format: printf format string
  */
@@ -47,20 +47,21 @@ static void _vnacal_calset_error(const vnacal_calset_t *vcsp,
 
 /*
  * vnacal_calset_alloc: alloc vnacal_calset
+ *   @type: calibration type
  *   @rows: number of VNA ports where signal is detected
  *   @columns: number of VNA ports where signal is generated
  *   @frequencies: number of frequency points
  *   @error_fn: optional error reporting function (NULL if not used)
  *   @error_arg: user data passed through to the error function (or NULL)
  *
- *   Initialize the caller-supplied vnacal_calset_t structure
- *   and allocate and init the contained vcs_frequency_vector,
- *   vcs_matrix, vdc_sii_reference, vdc_sii_through, vdc_sji_through
- *   and vdc_sdj_leakage vectors.
+ *   Initialize the caller-supplied vnacal_calset structure  and allocate
+ *   and init the contained vcs_frequency_vector, vcs_matrix,
+ *   vdc_sii_reference, vdc_sii_through, vdc_sji_through and
+ *   vdc_sdj_leakage vectors.
  *
  *   Set errno and return NULL on error.
  */
-vnacal_calset_t *vnacal_calset_alloc(const char *setname,
+vnacal_calset_t *vnacal_calset_alloc(vnacal_type_t type, const char *setname,
 	int rows, int columns, int frequencies,
 	vnaerr_error_fn_t *error_fn, void *error_arg)
 {
@@ -89,8 +90,15 @@ vnacal_calset_t *vnacal_calset_alloc(const char *setname,
     vcsp->vcs_error_fn  = error_fn;
     vcsp->vcs_error_arg = error_arg;
 
+    if (type != VNACAL_E12) {
+	_vnacal_calset_error(vcsp, VNAERR_USAGE, "vmacal_calset_alloc: "
+		"invalid calibration type");
+	vnacal_calset_free(vcsp);
+	return NULL;
+    }
     if (setname == NULL) {
-	_vnacal_calset_error(vcsp, VNAERR_USAGE, "invalid NULL setname");
+	_vnacal_calset_error(vcsp, VNAERR_USAGE, "vmacal_calset_alloc: "
+		"invalid NULL setname");
 	vnacal_calset_free(vcsp);
 	return NULL;
     }
@@ -113,9 +121,9 @@ vnacal_calset_t *vnacal_calset_alloc(const char *setname,
     vcsp->vcs_rows = rows;
     vcsp->vcs_columns = columns;
     vcsp->vcs_frequencies = frequencies;
-    vcsp->vcs_references[0].u.vcdsr_gamma = -1.0;
-    vcsp->vcs_references[1].u.vcdsr_gamma =  1.0;
-    vcsp->vcs_references[2].u.vcdsr_gamma =  0.0;
+    vcsp->vcs_references[0].u.vcmr_gamma = -1.0;
+    vcsp->vcs_references[1].u.vcmr_gamma =  1.0;
+    vcsp->vcs_references[2].u.vcmr_gamma =  0.0;
     if ((vcsp->vcs_frequency_vector = calloc(frequencies,
 		    sizeof(double))) == NULL) {
 	_vnacal_calset_error(vcsp, VNAERR_SYSTEM,
@@ -247,13 +255,13 @@ int vnacal_calset_add_vector(vnacal_calset_t *vcsp, int row, int column,
     if ((term & _VNACAL_DIAGONAL) && row != column) {
 	_vnacal_calset_error(vcsp, VNAERR_USAGE,
 		"vnacal_calset_add_vector: "
-		"diagonal term given on off-diagonal cell");
+		"error: diagonal term given on off-diagonal cell");
 	return -1;
     }
     if ((term & _VNACAL_OFF_DIAGONAL) && row == column) {
 	_vnacal_calset_error(vcsp, VNAERR_USAGE,
 		"vnacal_calset_add_vector: "
-		"off-diagonal term given on diagonal cell");
+		"error: off-diagonal term given on diagonal cell");
 	return -1;
     }
     term &= ~(_VNACAL_DIAGONAL | _VNACAL_OFF_DIAGONAL);
@@ -280,27 +288,26 @@ int vnacal_calset_add_vector(vnacal_calset_t *vcsp, int row, int column,
 int vnacal_calset_set_reference(vnacal_calset_t *vcsp, int reference,
 	double complex gamma)
 {
-    vnacal_calset_reference_t *vcdsrp;
+    vnacal_calset_reference_t *vcmrp;
 
     if (vcsp == NULL) {
 	errno = EINVAL;
 	return -1;
     }
     if (reference < 0 || reference > 2) {
-	_vnacal_calset_error(vcsp, VNAERR_USAGE,
-		"vnacal_calset_set_reference: "
+	_vnacal_calset_error(vcsp, VNAERR_USAGE, "vnacal_calset_set_reference: "
 		"error: reference index %d not in 0..2", reference);
 	return -1;
     }
-    vcdsrp = &vcsp->vcs_references[reference];
-    if (vcdsrp->vcdsr_is_vector) {
-	free((void *)vcdsrp->u.v.vcdsr_frequency_vector);
-	free((void *)vcdsrp->u.v.vcdsr_gamma_vector);
-	vcdsrp->u.v.vcdsr_frequency_vector = NULL;
-	vcdsrp->u.v.vcdsr_gamma_vector = NULL;
+    vcmrp = &vcsp->vcs_references[reference];
+    if (vcmrp->vcmr_is_vector) {
+	free((void *)vcmrp->u.v.vcmr_frequency_vector);
+	free((void *)vcmrp->u.v.vcmr_gamma_vector);
+	vcmrp->u.v.vcmr_frequency_vector = NULL;
+	vcmrp->u.v.vcmr_gamma_vector = NULL;
     }
-    vcdsrp->vcdsr_is_vector = false;
-    vcdsrp->u.vcdsr_gamma = gamma;
+    vcmrp->vcmr_is_vector = false;
+    vcmrp->u.vcmr_gamma = gamma;
     return 0;
 }
 
@@ -322,7 +329,7 @@ int vnacal_calset_set_reference_vector(vnacal_calset_t *vcsp,
 {
     double *new_frequency_vector = NULL;
     double complex *new_gamma_vector = NULL;
-    vnacal_calset_reference_t *vcdsrp;
+    vnacal_calset_reference_t *vcmrp;
 
     /*
      * Validate parameters.
@@ -379,19 +386,19 @@ int vnacal_calset_set_reference_vector(vnacal_calset_t *vcsp,
     /*
      * If we there are existing vectors, free them.
      */
-    vcdsrp = &vcsp->vcs_references[reference];
-    if (vcdsrp->vcdsr_is_vector) {
-	free((void *)vcdsrp->u.v.vcdsr_frequency_vector);
-	free((void *)vcdsrp->u.v.vcdsr_gamma_vector);
+    vcmrp = &vcsp->vcs_references[reference];
+    if (vcmrp->vcmr_is_vector) {
+	free((void *)vcmrp->u.v.vcmr_frequency_vector);
+	free((void *)vcmrp->u.v.vcmr_gamma_vector);
     }
 
     /*
      * Install the new vectors.
      */
-    vcdsrp->u.v.vcdsr_frequencies = frequencies;
-    vcdsrp->u.v.vcdsr_frequency_vector = new_frequency_vector;
-    vcdsrp->u.v.vcdsr_gamma_vector = new_gamma_vector;
-    vcdsrp->vcdsr_is_vector = true;
+    vcmrp->u.v.vcmr_frequencies = frequencies;
+    vcmrp->u.v.vcmr_frequency_vector = new_frequency_vector;
+    vcmrp->u.v.vcmr_gamma_vector = new_gamma_vector;
+    vcmrp->vcmr_is_vector = true;
     return 0;
 }
 
@@ -420,36 +427,35 @@ double complex _vnacal_calset_get_value(const vnacal_cdata_t *vcdp,
  *   @reference: reference index 0-3
  *   @findex: index into frequency vector
  *
- *   If the frequencies given to vnaset_calset_set_reference_vector and
- *   vnacal_calset_set_findex don't align, this function uses rational
- *   function interpolation to find the desired value.
+ *   If the frequencies given to vnacal_calset_set_reference_vector and
+ *   vnacal_calset_set_frequency_vector don't align, this function uses
+ *   rational function interpolation to find the desired value.
  */
 double complex _vnacal_calset_get_reference(const vnacal_calset_t *vcsp,
 	int reference, int findex)
 {
-    const vnacal_calset_reference_t *vcdsrp;
+    const vnacal_calset_reference_t *vcmrp;
     int segment = 0;
 
     assert(reference >= 0 && reference <= 2);
     assert(findex >= 0 && findex < vcsp->vcs_frequencies);
-    vcdsrp = &vcsp->vcs_references[reference];
+    vcmrp = &vcsp->vcs_references[reference];
 
-    if (!vcdsrp->vcdsr_is_vector) {
-	return vcdsrp->u.vcdsr_gamma;
+    if (!vcmrp->vcmr_is_vector) {
+	return vcmrp->u.vcmr_gamma;
     }
-    return _vnacal_rfi(vcdsrp->u.v.vcdsr_frequency_vector,
-	    vcdsrp->u.v.vcdsr_gamma_vector, vcdsrp->u.v.vcdsr_frequencies,
-	    MIN(vcdsrp->u.v.vcdsr_frequencies, VNACAL_MAX_M), &segment,
+    return _vnacal_rfi(vcmrp->u.v.vcmr_frequency_vector,
+	    vcmrp->u.v.vcmr_gamma_vector, vcmrp->u.v.vcmr_frequencies,
+	    MIN(vcmrp->u.v.vcmr_frequencies, VNACAL_MAX_M), &segment,
 	    vcsp->vcs_frequency_vector[findex]);
 }
 
 /*
- * vnacal_calset_free: free buffers allocated by
- *      vnacal_calset_alloc
+ * vnacal_calset_free: free buffers allocated by vnacal_calset_alloc
  *   @vcsp: pointer to vnacal_calset_t
  *
- *   Free vcs_frequency_vector, vcs_matrix, vdc_sii_reference, vdc_sii_through,
- *   vdc_sji_through and vdc_sdj_leakage.
+ *   Free vcs_frequency_vector, vcs_matrix, vdc_sii_reference,
+ *   vdc_sii_through, vdc_sji_through and vdc_sdj_leakage.
  */
 void vnacal_calset_free(vnacal_calset_t *vcsp)
 {
@@ -457,11 +463,11 @@ void vnacal_calset_free(vnacal_calset_t *vcsp)
 
     if (vcsp != NULL) {
 	for (int i = 0; i < 3; ++i) {
-	    vnacal_calset_reference_t *vcdsrp = &vcsp->vcs_references[i];
+	    vnacal_calset_reference_t *vcmrp = &vcsp->vcs_references[i];
 
-	    if (vcdsrp->vcdsr_is_vector) {
-		free((void *)vcdsrp->u.v.vcdsr_gamma_vector);
-		free((void *)vcdsrp->u.v.vcdsr_frequency_vector);
+	    if (vcmrp->vcmr_is_vector) {
+		free((void *)vcmrp->u.v.vcmr_gamma_vector);
+		free((void *)vcmrp->u.v.vcmr_frequency_vector);
 	    }
 	}
 	if (vcsp->vcs_matrix != NULL) {

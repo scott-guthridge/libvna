@@ -195,7 +195,7 @@ vnacal_t *vnacal_create(int sets, vnacal_calset_t **vcspp,
 	 */
 	if (!vcsp->vcs_frequencies_valid) {
 	    _vnacal_error(vcp, VNAERR_USAGE, "vnacal_create: set %d: "
-		    "no calibration frequency vector given", set);
+	       "no calibration frequency vector given", set);
 	    return NULL;
 	}
 
@@ -205,25 +205,25 @@ vnacal_t *vnacal_create(int sets, vnacal_calset_t **vcspp,
 	cfmin = vcsp->vcs_frequency_vector[0];
 	cfmax = vcsp->vcs_frequency_vector[vcsp->vcs_frequencies - 1];
 	for (int i = 0; i < 3; ++i) {
-	    vnacal_calset_reference_t *vcdsrp = &vcsp->vcs_references[i];
+	    vnacal_calset_reference_t *vcmrp = &vcsp->vcs_references[i];
 	    int n;
 	    double lower, upper;
 
-	    if (!vcdsrp->vcdsr_is_vector) {
+	    if (!vcmrp->vcmr_is_vector) {
 		continue;
 	    }
-	    n = vcdsrp->u.v.vcdsr_frequencies;
+	    n = vcmrp->u.v.vcmr_frequencies;
 	    lower = (1.0 - VNACAL_F_EXTRAPOLATION) *
-		vcdsrp->u.v.vcdsr_frequency_vector[0];
+		vcmrp->u.v.vcmr_frequency_vector[0];
 	    upper = (1.0 + VNACAL_F_EXTRAPOLATION) *
-		vcdsrp->u.v.vcdsr_frequency_vector[n - 1];
+		vcmrp->u.v.vcmr_frequency_vector[n - 1];
 	    if (cfmin < lower || cfmax > upper) {
 		_vnacal_error(vcp, VNAERR_USAGE, "vnacal_create: set %d: "
 		   "error: frequency range %.3e..%.3e is outside of "
 		   "reference %d range %.3e..%.3e",
 		   set, cfmin, cfmax, i,
-		   vcdsrp->u.v.vcdsr_frequency_vector[0],
-		   vcdsrp->u.v.vcdsr_frequency_vector[n - 1]);
+		   vcmrp->u.v.vcmr_frequency_vector[0],
+		   vcmrp->u.v.vcmr_frequency_vector[n - 1]);
 		return NULL;
 	    }
 	}

@@ -45,13 +45,13 @@ extern "C" {
  * vnacal_calset_reference: a reference value or reference vector
  */
 typedef struct vnacal_calset_reference {
-    bool vcdsr_is_vector;
+    bool vcmr_is_vector;
     union {
-	double complex vcdsr_gamma;
+	double complex vcmr_gamma;
 	struct {
-	    int vcdsr_frequencies;
-	    double *vcdsr_frequency_vector;
-	    double complex *vcdsr_gamma_vector;
+	    int vcmr_frequencies;
+	    double *vcmr_frequency_vector;
+	    double complex *vcmr_gamma_vector;
 	} v;
     } u ;
 } vnacal_calset_reference_t;
@@ -249,38 +249,38 @@ struct vnacal {
 };
 
 /*
- * vnacal_input_t: measured data from the device under test
+ * vnacal_apply_t: measured data from the device under test
  */
-struct vnacal_input {
+struct vnacal_apply {
     /* associated vnacal_t structure */
-    vnacal_t *vi_vcp;
+    vnacal_t *va_vcp;
 
     /* associated calibration set */
-    int vi_set;
+    int va_set;
 
-    /* number of rows */
-    int vi_rows;
+    /* number of rows in the calibration matrix */
+    int va_vrows;
 
-    /* number of columns */
-    int vi_columns;
+    /* number of columns in the calibration matrix */
+    int va_vcolumns;
 
-    /* number of frequencies */
-    int vi_frequencies;
+    /* number of rows in the DUT matrix */
+    int va_drows;
 
-    /* vector of frequencies, ascending */
-    double *vi_frequency_vector;
+    /* number of columns in the DUT matrix */
+    int va_dcolumns;
+
+    /* number of equations so far collected, next row in va_data */
+    int va_equations;
 
     /* true if the frequency vector has been set */
-    bool vi_frequencies_valid;
+    bool va_frequencies_valid;
 
-    /* serialized matrix of pointer to vector of values (sum of all adds) */
-    double complex **vi_matrix;
+    /* bitmap showing which S parameters have equations */
+    uint32_t *va_bitmap;
 
-    /* serialized matrix of number of vectors added to each cell */
-    int *vi_counts;
-
-    /* serialized matrix of VNA matrix cell used to measure each DUT cell */
-    int *vi_map;
+    /* internal storage for the frequency vector and A and B matrices */
+    vnadata_t *va_data;
 };
 
 /* report an error */
