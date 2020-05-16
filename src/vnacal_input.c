@@ -431,11 +431,10 @@ int vnacal_input_apply(const vnacal_input_t *vip,
 	int rows = vip->vi_rows;
 	int columns = vip->vi_columns;
 	int frequencies = vip->vi_frequencies;
-	int max_dimension = MAX(rows, columns);
 	int segment = 0;
 	double *frequency_vector = vip->vi_frequency_vector;
 	vnacal_etermset_t *etsp = vcp->vc_set_vector[vip->vi_set];
-	double complex a[max_dimension * max_dimension];
+	double complex a[columns * columns];
 	double complex b[rows * columns];
 	double complex s[rows * columns];
 #define A(i, j)	(a[(i) * columns + (j)])
@@ -461,20 +460,29 @@ int vnacal_input_apply(const vnacal_input_t *vip,
 	    /*
 	     * Initialize A to the identity matrix.
 	     */
-	    for (int i = 0; i < max_dimension; ++i) {
-		for (int j = 0; j < max_dimension; ++j) {
+	    for (int i = 0; i < columns; ++i) {
+		for (int j = 0; j < columns; ++j) {
 		    A(i, j) = (i == j) ? 1.0 : 0.0;
 		}
 	    }
 
 	    /*
-	     * Fill in the A and B matrices.
+	     * Form a (columns x columns) matrix A and (rows x columns)
+	     * matrix B what we'll use to solve for the S parameter matrix.
+	     *
+	     * B represents the voltages emanating from each DUT port.
+	     * We set A = I + E*B, where I is the (columns x columns)
+	     * identity matrix, E is the matrix of e11(or e22) error
+	     * terms, expanded out with zeros to be of dimension (columns
+	     * x columns), B is the B matrix above, but also expanded
+	     * out with zeros to match the dimensions, and operator '*'
+	     * is element-by-element multiplication.  The matrix division
+	     * S = B / A then produces S.
 	     */
 	    for (int row = 0; row < rows; ++row) {
 		for (int column = 0; column < columns; ++column) {
 		    int s_cell = row * columns + column;/* cell of S matrix */
 		    int c_cell;				/* cell of cal matrix */
-		    int c_row, c_column;
 		    vnacal_error_terms_t *etp;
 		    double complex u, v;
 
@@ -487,40 +495,28 @@ int vnacal_input_apply(const vnacal_input_t *vip,
 		    if ((c_cell = vip->vi_map[s_cell]) == -1) {
 			c_cell = (row == column) ? 0 : 1;
 		    }
-		    c_row    = c_cell / etsp->ets_columns;
-		    c_column = c_cell % etsp->ets_columns;
 
 		    /*
 		     * Find the error terms and calculate a and b matrices.
 		     */
 		    etp = &etsp->ets_error_term_matrix[c_cell];
-		    if (c_row == c_column) {
-			double complex e00 = interpolate(etsp, etp,
+		    {
+			double complex e00_e30 = interpolate(etsp, etp,
 				&segment, 0, frequency_vector[findex]);
-			double complex e10e01 = interpolate(etsp, etp,
+			double complex e10e01_e10e32 = interpolate(etsp, etp,
 				&segment, 1, frequency_vector[findex]);
-			double complex e11 = interpolate(etsp, etp,
+			double complex e11_e22 = interpolate(etsp, etp,
 				&segment, 2, frequency_vector[findex]);
 			double complex measured;
 
 			measured = GET_VALUE(vip, s_cell, findex);
-			v = (measured - e00) / e10e01;
-			u = 1.0 + e11 * v;
+			v = (measured - e00_e30) / e10e01_e10e32;
+			u = e11_e22 * v;
 
-		    } else {
-			double complex e30 = interpolate(etsp, etp,
-				&segment, 0, frequency_vector[findex]);
-			double complex e10e32 = interpolate(etsp, etp,
-				&segment, 1, frequency_vector[findex]);
-			double complex e22 = interpolate(etsp, etp,
-				&segment, 2, frequency_vector[findex]);
-			double complex measured;
-
-			measured = GET_VALUE(vip, s_cell, findex);
-			v = (measured - e30) / e10e32;
-			u = e22 * v;
 		    }
-		    A(row, column) = u;
+		    if (row < columns) {
+			A(row, column) += u;
+		    }
 		    B(row, column) = v;
 		}
 	    }
