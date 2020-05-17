@@ -422,7 +422,11 @@ static void error_fn(const char *msg, void *arg)
 }
 
 /*
- * tset_vnacal_new_helper
+ * test_vnacal_new_helper
+ *   @trial: trial number
+ *   @rows: rows in calibration matrix
+ *   @columns: columns in calibration matrix
+ *   @frequencies: number of frequency points
  */
 static test_result_type test_vnacal_new_helper(int trial, int rows,
 	int columns, int frequencies)
@@ -470,6 +474,9 @@ static test_result_type test_vnacal_new_helper(int trial, int rows,
     /*
      * Verify the error terms.
      */
+    if (opt_v) {
+	(void)printf("R C F ET\n");
+    }
     etsp = vcp->vc_set_vector[0];
     for (int findex = 0; findex < vcsp->vcs_frequencies;
 	    ++findex) {
@@ -549,16 +556,23 @@ out:
 
 /*
  * test_vnacal_apply_helper
+ *   @trial: trial number
+ *   @vrows: rows in calibration matrix
+ *   @vcolumns: columns in calibration matrix
+ *   @drows: rows in DUT matrix
+ *   @dcolumns: columns in DUT matrix
+ *   @frequencies: number of frequency points
+ *   @map_flag: map DUT ports to VNA ports (required if DUT larger than cal)
  */
 static test_result_type test_vnacal_apply_helper(int trial,
-	int c_nrows, int c_ncolumns, int rows, int columns,
+	int vrows, int vcolumns, int drows, int dcolumns,
 	int frequencies, bool map_flag)
 {
     vnacal_calset_t *vcsp = NULL;
     vnacal_input_t *vip = NULL;
     double complex *(*error_terms)[3] = NULL;
     vnacal_t *vcp = NULL;
-    int map[rows * columns];
+    int map[drows * dcolumns];
     double complex **actual_matrix   = NULL;
     double complex **measured_matrix = NULL;
     vnadata_t *output_matrix = NULL;
@@ -568,15 +582,15 @@ static test_result_type test_vnacal_apply_helper(int trial,
      * If -v, print the test header.
      */
     if (opt_v) {
-	(void)printf("Test vnacal_input: trial %3d cal size (%d x %d) "
-		"S size (%d x %d) map %d\n", trial, c_nrows, c_ncolumns,
-		rows, columns, (int)map_flag);
+	(void)printf("Test vnacal_input_apply: trial %3d cal size (%d x %d) "
+		"S size (%d x %d) map %d\n", trial, vrows, vcolumns,
+		drows, dcolumns, (int)map_flag);
     }
 
     /*
      * Generate the error terms and calibration measurements.
      */
-    if ((vcsp = vnacal_calset_alloc("test", c_nrows, c_ncolumns,
+    if ((vcsp = vnacal_calset_alloc("test", vrows, vcolumns,
 		    frequencies, error_fn, NULL)) == NULL) {
 	(void)fprintf(stderr, "%s: vnacal_calset_alloc: "
 		"%s\n", progname, strerror(errno));
@@ -601,10 +615,11 @@ static test_result_type test_vnacal_apply_helper(int trial,
 	vnacal_etermset_t *etsp = vcp->vc_set_vector[0];
 
 	(void)printf("error terms:\n");
+	(void)printf("R C F ET\n");
 	for (int findex = 0; findex < frequencies; ++findex) {
-	    for (int ci = 0; ci < c_nrows; ++ci) {
-		for (int cj = 0; cj < c_ncolumns; ++cj) {
-		    int c_cell = ci * c_ncolumns + cj;
+	    for (int ci = 0; ci < vrows; ++ci) {
+		for (int cj = 0; cj < vcolumns; ++cj) {
+		    int c_cell = ci * vcolumns + cj;
 		    double complex **epp = error_terms[c_cell];
 		    vnacal_error_terms_t *etp;
 
@@ -628,44 +643,44 @@ static test_result_type test_vnacal_apply_helper(int trial,
      * ports and VNA ports.
      */
     if (map_flag) {
-	int c_ndiagonal = MIN(c_nrows, c_ncolumns);
+	int c_ndiagonal = MIN(vrows, vcolumns);
 
-	for (int row = 0; row < rows; ++row) {
-	    for (int column = 0; column < columns; ++column) {
-		int cell = row * columns + column;
+	for (int row = 0; row < drows; ++row) {
+	    for (int column = 0; column < dcolumns; ++column) {
+		int cell = row * dcolumns + column;
 
 		if (row == column) {
 		    int c_diagonal = random() % c_ndiagonal;
 
-		    map[cell] = c_diagonal * c_ncolumns + c_diagonal;
+		    map[cell] = c_diagonal * vcolumns + c_diagonal;
 
-		} else if (c_ncolumns > 1) {
-		    int c_row = random() % c_nrows;
-		    int c_column = random() % (c_ncolumns - 1);
+		} else if (vcolumns > 1) {
+		    int vrow = random() % vrows;
+		    int vcolumn = random() % (vcolumns - 1);
 
-		    if (c_column >= c_row) {
-			++c_column;
+		    if (vcolumn >= vrow) {
+			++vcolumn;
 		    }
-		    assert(c_row != c_column);
-		    map[cell] = c_row * c_ncolumns + c_column;
+		    assert(vrow != vcolumn);
+		    map[cell] = vrow * vcolumns + vcolumn;
 
 		} else {
-		    int c_row;
+		    int vrow;
 
-		    assert(c_nrows > 1);
-		    c_row = random() % (c_nrows - 1) + 1;
+		    assert(vrows > 1);
+		    vrow = random() % (vrows - 1) + 1;
 
-		    map[cell] = c_row * c_ncolumns;
+		    map[cell] = vrow * vcolumns;
 		}
 	    }
 	}
 	if (opt_v) {
 	    (void)printf("map:\n");
-	    for (int i = 0; i < rows; ++i) {
-		for (int j = 0; j < columns; ++j) {
-		    int cell = map[i * columns + j];
-		    int mrow = cell / columns;
-		    int mcol = cell % columns;
+	    for (int i = 0; i < drows; ++i) {
+		for (int j = 0; j < dcolumns; ++j) {
+		    int cell = map[i * dcolumns + j];
+		    int mrow = cell / dcolumns;
+		    int mcol = cell % dcolumns;
 
 		    (void)printf("   %2d %2d", mrow, mcol);
 		}
@@ -678,8 +693,8 @@ static test_result_type test_vnacal_apply_helper(int trial,
     /*
      * Allocate S parameter matrices.
      */
-    actual_matrix   = alloc_matrix_of_vectors(rows * columns, frequencies);
-    measured_matrix = alloc_matrix_of_vectors(rows * columns, frequencies);
+    actual_matrix   = alloc_matrix_of_vectors(drows * dcolumns, frequencies);
+    measured_matrix = alloc_matrix_of_vectors(drows * dcolumns, frequencies);
     if (actual_matrix == NULL || measured_matrix == NULL) {
 	result = T_FAIL;
 	goto out;
@@ -688,21 +703,22 @@ static test_result_type test_vnacal_apply_helper(int trial,
     /*
      * Generate the "actual" S-parameters.
      */
-    for (int row = 0; row < rows; ++row) {
-	for (int column = 0; column < columns; ++column) {
+    for (int row = 0; row < drows; ++row) {
+	for (int column = 0; column < dcolumns; ++column) {
 	    for (int findex = 0; findex < vcsp->vcs_frequencies; ++findex) {
-		actual_matrix[row * columns + column][findex] = crandn();
+		actual_matrix[row * dcolumns + column][findex] = crandn();
 	    }
 	}
     }
     if (opt_v) {
 	(void)printf("actual_matrix:\n");
+	(void)printf("R C F\n");
 	for (int findex = 0; findex < vcsp->vcs_frequencies; ++findex) {
-	    for (int row = 0; row < rows; ++row) {
-		for (int column = 0; column < columns; ++column) {
+	    for (int row = 0; row < drows; ++row) {
+		for (int column = 0; column < dcolumns; ++column) {
 		    double complex v;
 
-		    v = actual_matrix[row * columns + column][findex];
+		    v = actual_matrix[row * dcolumns + column][findex];
 		    (void)printf("%d %d %d %+e%+ei\n",
 			row, column, findex, creal(v), cimag(v));
 		}
@@ -715,81 +731,87 @@ static test_result_type test_vnacal_apply_helper(int trial,
      * Generate the "measured" S-parameters given actual and error terms.
      */
     for (int findex = 0; findex < vcsp->vcs_frequencies; ++findex) {
-	int max_dim = MAX(rows, columns);
-	double complex b[max_dim * max_dim];
-	double complex s[max_dim * max_dim];
-#define B(i, j) (b[(i) * max_dim + (j)])
-#define S(i, j) (s[(i) * max_dim + (j)])
 
 	/*
-	 * Set S to the "actual" parameters expanded with zeros as needed
-	 * to make the matrix square.  Init B to zero.
+	 * Init measured to zero.
 	 */
-	for (int i = 0; i < max_dim; ++i) {
-	    for (int j = 0; j < max_dim; ++j) {
-		S(i, j) = 0.0;
-		B(i, j) = 0.0;
-	    }
-	}
-	for (int i = 0; i < rows; ++i) {
-	    for (int j = 0; j < columns; ++j) {
-		S(i, j) = actual_matrix[i * columns + j][findex];
-	    }
+	for (int i = 0; i < drows * dcolumns; ++i) {
+	    measured_matrix[i][findex] = 0.0;
 	}
 
 	/*
-	 * For each driven port, k, (each column in S), find the k'th
-	 * column in B, the response out of the device under test.
+	 * For each column, (each driven port) find the corresponding
+	 * column in the measured_matrix.
 	 */
-	for (int k = 0; k < columns; ++k) {
-	    double complex u[max_dim * max_dim];
-	    double complex x[max_dim];
-	    double complex v[max_dim];
+	for (int dcolumn = 0; dcolumn < dcolumns; ++dcolumn) {
+	    double complex a[drows * drows];
+	    double complex x[drows];
+	    double complex b[drows];
 	    double complex d;
-#define U(i, j) (u[(i) * max_dim + (j)])
+#define A(i, j) (a[(i) * drows + (j)])
 
 	    /*
-	     * Initialize U to the identity matrix and v to the k'th
-	     * column in S.
+	     * We start by forming a (drows x drows) matrix A and column
+	     * vector b which we'll use to solve for column vector x.
+	     * The A matrix corresponds to the square portion of the
+	     * S parameter matrix.  The columns of A correspond to the
+	     * elements of the b and x vectors and to the elements of the
+	     * current column of the "measured" matrix.  Column vector
+	     * x that we're solving for represents the voltage out of
+	     * each DUT port, taking into account the reflections due to
+	     * errors at each of the other ports.  It's easy to calculate
+	     * the column of the "measured" matrix once we know x.
+	     *
+	     * Initialize A to the identity matrix and b to the current
+	     * column in the actual_matrix.
 	     */
-	    for (int i = 0; i < max_dim; ++i) {
-		for (int j = 0; j < max_dim; ++j) {
-		    U(i, j) = (i == j) ? 1.0 : 0.0;
+	    for (int i = 0; i < drows; ++i) {
+		for (int j = 0; j < drows; ++j) {
+		    A(i, j) = (i == j) ? 1.0 : 0.0;
 		}
-		v[i] = S(i, k);
+		b[i] = actual_matrix[i * dcolumns + dcolumn][findex];
 	    }
 	    /*
-	     * Make U = (I - S E), where E is a diagonal matrix
-	     * made of the column k, e11 error terms.
+	     * Make A = I - S E, where E is a diagonal matrix made of
+	     * the e11/e22 error terms for this column.
 	     */
-	    for (int j = 0; j < columns; ++j) {
-		int c_cell = j * columns + k;
+	    for (int j = 0; j < drows; ++j) {	/* column in A */
 		double complex e11;
 
-		if (j < rows) {
-		    if (map_flag) {
-			c_cell = map[c_cell];
-		    }
-		    if (c_cell < c_nrows * c_ncolumns) {
-			e11 = error_terms[c_cell][2][findex];
+		if (j < dcolumns) {
+		    int cell;
 
-			for (int i = 0; i < rows; ++i) {
-			    U(i, j) -= S(i, j) * e11;
-			}
+		    /*
+		     * Find the error parameters for row j in this
+		     * DUT column.  Note that j is the index of a row in
+		     * the S matrix and in the X column vector, but it's
+		     * the index of a column in the A matrix.  We start
+		     * with the assumption that cells of the DUT matrix
+		     * are 1:1 with cells in the calibration matrix,
+		     * then if mapping is enabled, we apply the map.
+		     */
+		    cell = j * dcolumns + dcolumn;
+		    if (map_flag) {
+			cell = map[cell];
+		    }
+		    assert(cell < vrows * vcolumns);
+		    e11 = error_terms[cell][2][findex];
+		    for (int i = 0; i < drows; ++i) {
+			A(i, j) -= actual_matrix[i*dcolumns + j][findex] * e11;
 		    }
 		}
 	    }
 	    if (opt_v) {
-		(void)printf("findex %d column %d:\n", findex, k);
-		(void)printf("u:\n");
-		cmatrix_print(u, max_dim, max_dim);
-		(void)printf("v:\n");
-		cmatrix_print(v, max_dim, 1);
+		(void)printf("findex %d column %d:\n", findex, dcolumn);
+		(void)printf("a:\n");
+		cmatrix_print(a, drows, drows);
+		(void)printf("b:\n");
+		cmatrix_print(b, drows, 1);
 	    }
 	    /*
-	     * Find X = U^-1 V.	 X is the k'th column of B.
+	     * Find x = A^-1 b.
 	     */
-	    d = _vnacommon_mldivide(x, u, v, max_dim, 1);
+	    d = _vnacommon_mldivide(x, a, b, drows, 1);
 	    if (cabs(d) <= EPS)	 {
 		(void)fprintf(stderr, "%s: test_vnacal_mrdivide: warning: "
 			"skipping nearly singular test matrix\n",
@@ -797,39 +819,37 @@ static test_result_type test_vnacal_apply_helper(int trial,
 		result = T_SKIPPED;
 		goto out;
 	    }
-	    for (int i = 0; i < max_dim; ++i) {
-		B(i, k) = x[i];
-	    }
 	    if (opt_v) {
 		(void)printf("x:\n");
-		cmatrix_print(x, max_dim, 1);
+		cmatrix_print(x, drows, 1);
 	    }
-	}
-	/*
-	 * From B, calculate the "measured" S-parameters.
-	 */
-	for (int i = 0; i < rows; ++i) {
-	    for (int j = 0; j < columns; ++j) {
-		int c_cell = i * columns + j;
+	    /*
+	     * From x, calculate the "measured" S-parameters for this
+	     * column
+	     */
+	    for (int drow = 0; drow < drows; ++drow) {
+		int cell = drow * dcolumns + dcolumn;
 		double complex e00;
 		double complex e10e01;
 
 		if (map_flag) {
-		    c_cell = map[c_cell];
+		    cell = map[cell];
 		}
-		assert(c_cell < c_nrows * c_ncolumns);
-		e00    = error_terms[c_cell][0][findex];
-		e10e01 = error_terms[c_cell][1][findex];
-		measured_matrix[i*columns + j][findex] = e00 + e10e01 * B(i, j);
+		assert(cell < vrows * vcolumns);
+		e00    = error_terms[cell][0][findex];
+		e10e01 = error_terms[cell][1][findex];
+		measured_matrix[drow * dcolumns + dcolumn][findex] =
+		    e00 + e10e01 * x[drow];
 	    }
 	}
     }
     if (opt_v) {
 	(void)printf("measured_matrix:\n");
+	(void)printf("R C F\n");
 	for (int findex = 0; findex < vcsp->vcs_frequencies; ++findex) {
-	    for (int row = 0; row < rows; ++row) {
-		for (int column = 0; column < columns; ++column) {
-		    double complex v = measured_matrix[row * columns +
+	    for (int row = 0; row < drows; ++row) {
+		for (int column = 0; column < dcolumns; ++column) {
+		    double complex v = measured_matrix[row * dcolumns +
 			column][findex];
 
 		    (void)printf("%d %d %d %+e%+ei\n",
@@ -843,7 +863,7 @@ static test_result_type test_vnacal_apply_helper(int trial,
     /*
      * Create the vnacal_input_t.
      */
-    vip = vnacal_input_alloc(vcp, /*set=*/0, rows, columns, frequencies);
+    vip = vnacal_input_alloc(vcp, /*set=*/0, drows, dcolumns, frequencies);
     if (vip == NULL) {
 	(void)fprintf(stderr, "%s: vnacal_input_alloc: %s\n",
 		progname, strerror(errno));
@@ -857,28 +877,28 @@ static test_result_type test_vnacal_apply_helper(int trial,
 	result = T_FAIL;
 	goto out;
     }
-    for (int row = 0; row < rows; ++row) {
-	for (int column = 0; column < columns; ++column) {
-	    int cell = columns * row + column;
+    for (int drow = 0; drow < drows; ++drow) {
+	for (int dcolumn = 0; dcolumn < dcolumns; ++dcolumn) {
+	    int cell = dcolumns * drow + dcolumn;
 
-	if (!map_flag) {
-		if (vnacal_input_add_vector(vip, row, column,
+	    if (!map_flag) {
+		if (vnacal_input_add_vector(vip, drow, dcolumn,
 			    measured_matrix[cell]) == -1) {
 		    (void)fprintf(stderr, "%s: vnacal_input_add_vector: "
-			    "row %d column %d: %s\n",
-			    progname, row, column, strerror(errno));
+			    "drow %d dcolumn %d: %s\n",
+			    progname, drow, dcolumn, strerror(errno));
 		    result = T_FAIL;
 		    goto out;
 		}
 	    } else {
-		int c_row    = map[cell] / vcsp->vcs_columns;
-		int c_column = map[cell] % vcsp->vcs_columns;
+		int vrow    = map[cell] / vcsp->vcs_columns;
+		int vcolumn = map[cell] % vcsp->vcs_columns;
 
-		if (vnacal_input_add_mapped_vector(vip, c_row, c_column,
-			    row, column, measured_matrix[cell]) == -1) {
+		if (vnacal_input_add_mapped_vector(vip, vrow, vcolumn,
+			    drow, dcolumn, measured_matrix[cell]) == -1) {
 		    (void)fprintf(stderr, "%s: vnacal_input_add_vector: "
-			    "row %d column %d: %s\n",
-			    progname, row, column, strerror(errno));
+			    "drow %d dcolumn %d: %s\n",
+			    progname, drow, dcolumn, strerror(errno));
 		    result = T_FAIL;
 		    goto out;
 		}
@@ -904,9 +924,10 @@ static test_result_type test_vnacal_apply_helper(int trial,
     }
     if (opt_v) {
 	(void)printf("computed_vector:\n");
+	(void)printf("R C F\n");
 	for (int findex = 0; findex < vcsp->vcs_frequencies; ++findex) {
-	    for (int row = 0; row < rows; ++row) {
-		for (int column = 0; column < columns; ++column) {
+	    for (int row = 0; row < drows; ++row) {
+		for (int column = 0; column < dcolumns; ++column) {
 		    double complex v;
 
 		    v = vnadata_get_cell(output_matrix, findex, row, column);
@@ -921,14 +942,14 @@ static test_result_type test_vnacal_apply_helper(int trial,
     /*
      * Check the result.
      */
-    for (int i = 0; i < rows; ++i) {
-	for (int j = 0; j < columns; ++j) {
+    for (int i = 0; i < drows; ++i) {
+	for (int j = 0; j < dcolumns; ++j) {
 	    for (int findex = 0; findex < vcsp->vcs_frequencies; ++findex) {
 		double complex v;
 		double dy;
 
 		v = vnadata_get_cell(output_matrix, findex, i, j);
-		dy = cabs(v - actual_matrix[i * columns + j][findex]);
+		dy = cabs(v - actual_matrix[i * dcolumns + j][findex]);
 		if (dy >= EPS) {
 		    if (opt_a) {
 			assert(!"data miscompare");
@@ -946,8 +967,8 @@ out:
 	vnacal_input_free(vip);
 	vip = NULL;
     }
-    free_matrix_of_vectors(measured_matrix, rows * columns);
-    free_matrix_of_vectors(actual_matrix,   rows * columns);
+    free_matrix_of_vectors(measured_matrix, drows * dcolumns);
+    free_matrix_of_vectors(actual_matrix,   drows * dcolumns);
     if (vcp != NULL) {
 	if (error_terms != NULL) {
 	    free_error_terms(error_terms, vcsp);
@@ -967,9 +988,9 @@ out:
 #undef U
 
 /*
- * test_vnacal_apply: test vnacal_input and vnacal_apply_with_map
+ * test_vnacal_input_apply: test vnacal_input_apply and vnacal_apply_with_map
  */
-static void test_vnacal_apply()
+static void test_vnacal_input_apply()
 {
     static const int sizes[] = { 1, 2, 3, 4 };
     test_result_type result = T_SKIPPED;
@@ -978,29 +999,55 @@ static void test_vnacal_apply()
     for (int trial = 1; trial <= NTRIALS; ++trial) {
 	for (int si = 0; si < sizeof(sizes) / sizeof(int); ++si) {
 	    for (int sj = 0; sj < sizeof(sizes) / sizeof(int); ++sj) {
-		int rows = sizes[si];
-		int columns = sizes[sj];
+		int drows = sizes[si];
+		int dcolumns = sizes[sj];
 
 		result = test_vnacal_apply_helper(trial,
-			rows, columns, rows, columns, 2, false);
+			drows, dcolumns, drows, dcolumns, 2, false);
 		switch (result) {
 		case T_PASS:
 		    pass = true;
 		    break;
 		case T_SKIPPED:
-		    continue;
+		    break;
 		case T_FAIL:
 		default:
 		    goto out;
 		}
 		result = test_vnacal_apply_helper(trial,
-			2, 1, rows, columns, 2, true);
-		if (result != T_PASS) {
+			2, 1, drows, dcolumns, 2, true);
+		switch (result) {
+		case T_PASS:
+		    pass = true;
+		    break;
+		case T_SKIPPED:
+		    break;
+		case T_FAIL:
+		default:
 		    goto out;
 		}
 		result = test_vnacal_apply_helper(trial,
-			1, 2, rows, columns, 2, true);
-		if (result != T_PASS) {
+			1, 2, drows, dcolumns, 2, true);
+		switch (result) {
+		case T_PASS:
+		    pass = true;
+		    break;
+		case T_SKIPPED:
+		    break;
+		case T_FAIL:
+		default:
+		    goto out;
+		}
+		result = test_vnacal_apply_helper(trial,
+			2, 2, drows, dcolumns, 2, true);
+		switch (result) {
+		case T_PASS:
+		    pass = true;
+		    break;
+		case T_SKIPPED:
+		    break;
+		case T_FAIL:
+		default:
 		    goto out;
 		}
 	    }
@@ -1009,7 +1056,7 @@ static void test_vnacal_apply()
     result = pass ? T_PASS : T_SKIPPED;
 
 out:
-    report_test_result("vnacal_input", result);
+    report_test_result("vnacal_input_apply", result);
 }
 
 /*
@@ -1340,7 +1387,7 @@ main(int argc, char **argv)
 	break;
     }
     test_vnacal_new();
-    test_vnacal_apply();
+    test_vnacal_input_apply();
     test_vnacal_save();
 
     exit(fail_count != 0);
