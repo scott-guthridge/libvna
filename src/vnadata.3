@@ -18,7 +18,7 @@
 .TH VNADATA 3 "JULY 2017" GNU
 .nh
 .SH NAME
-vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get_rows, vnadata_get_columns, vnadata_get_frequencies, vnadata_get_type, vnadata_get_typename, vnadata_free, vnadata_get_frequency, vnadata_set_frequency, vnadata_get_frequency_vector, vnadata_set_frequency_vector, vnadata_add_frequency, vnadata_get_cell, vnadata_set_cell, vnadata_get_matrix, vnadata_set_matrix, vnadata_get_to_vector, vnadata_set_to_vector, vnadata_get_z0, vnadata_set_z0, vnadata_get_z0_vector, vnadata_set_z0_vector, vnadata_set_all_z0, vnadata_get_fz0, vnadata_set_fz0, vnadata_get_fz0_vector, vnadata_set_fz0_vector, vnadata_convert \- Network Parameter Data
+vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get_rows, vnadata_get_columns, vnadata_get_frequencies, vnadata_get_type, vnadata_set_type, vnadata_get_typename, vnadata_free, vnadata_get_frequency, vnadata_set_frequency, vnadata_get_frequency_vector, vnadata_set_frequency_vector, vnadata_add_frequency, vnadata_get_cell, vnadata_set_cell, vnadata_get_matrix, vnadata_set_matrix, vnadata_get_to_vector, vnadata_set_to_vector, vnadata_get_z0, vnadata_set_z0, vnadata_get_z0_vector, vnadata_set_z0_vector, vnadata_set_all_z0, vnadata_get_fz0, vnadata_set_fz0, vnadata_get_fz0_vector, vnadata_set_fz0_vector, vnadata_convert \- Network Parameter Data
 .\"
 .SH SYNOPSIS
 .B #include <vnadata.h>
@@ -73,6 +73,16 @@ vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get
 .\"
 .PP
 .BI "vnadata_parameter_type_t vnadata_get_type(const vnadata_t *" vdp );
+.\"
+.PP
+.BI "int vnadata_set_type(const vnadata_t *" vdp ,
+.ie n \{\
+.in +4n
+.\}
+.BI "vnadata_parameter_type_t " type );
+.if n \{\
+.in -4n
+.\}
 .\"
 .PP
 .BI "const char *vnadata_get_typename(vnadata_parameter_type_t " type );
@@ -262,18 +272,21 @@ be consistent with the type.
 The \fBvnadata_alloc_and_init\fP() function is a combination
 of \fBvnadata_alloc\fP() and \fBvnadata_init\fP().
 .PP
-The \fBvnadata_get_type\fP(), \fBvnadata_get_frequencies\fP(),
-\fBvnadata_get_rows\fP() and \fBvnadata_get_columns\fP() functions
+The \fBvnadata_get_frequencies\fP(), \fBvnadata_get_rows\fP() and
+\fBvnadata_get_columns\fP(), and \fBvnadata_get_type\fP() functions
 query the dimensions and type of the object, and \fBvna_get_typename\fP()
 returns \fItype\fP as a string.
+The \fBvnadata_set_type\fP() function changes the parameter type without
+doing conversions.
+The \fItype\fP parameter must be consistent with the matrix dimensions.
 .PP
 The \fBvnadata_rezize\fP() function changes the dimensions and/or type
 of the matrix.
-Note that this function is value-preserving when changing the number
-of frequencies, number of rows or the type, but it makes no effort to
-reform the matrix when changing the number of columns.
+Note that this function is value-preserving when changing the number of
+frequencies, the number of rows or the type, but it doesn't reform the
+matrix when changing the number of columns.
 .PP
-The \fBvnadata_free\fP() function frees the container and all of its contents.
+The \fBvnadata_free\fP() function frees the object and its contents.
 .PP
 The \fBvnadata_get_frequency\fP() and \fBvnadata_set_frequency\fP()
 functions get and set the frequency at index \fIfindex\fP, respectively.
