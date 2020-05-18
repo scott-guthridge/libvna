@@ -18,7 +18,7 @@
 .TH VNADATA 3 "JULY 2017" GNU
 .nh
 .SH NAME
-vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get_rows, vnadata_get_columns, vnadata_get_frequencies, vnadata_get_type, vnadata_get_typename, vnadata_free, vnadata_get_frequency, vnadata_set_frequency, vnadata_get_frequency_vector, vnadata_set_frequency_vector, vnadata_add_frequency, vnadata_get_cell, vnadata_set_cell, vnadata_get_matrix, vnadata_set_matrix, vnadata_get_z0, vnadata_set_z0, vnadata_get_z0_vector, vnadata_set_z0_vector, vnadata_set_all_z0, vnadata_get_fz0, vnadata_set_fz0, vnadata_get_fz0_vector, vnadata_set_fz0_vector, vnadata_convert \- Network Parameter Data
+vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get_rows, vnadata_get_columns, vnadata_get_frequencies, vnadata_get_type, vnadata_get_typename, vnadata_free, vnadata_get_frequency, vnadata_set_frequency, vnadata_get_frequency_vector, vnadata_set_frequency_vector, vnadata_add_frequency, vnadata_get_cell, vnadata_set_cell, vnadata_get_matrix, vnadata_set_matrix, vnadata_get_to_vector, vnadata_set_to_vector, vnadata_get_z0, vnadata_set_z0, vnadata_get_z0_vector, vnadata_set_z0_vector, vnadata_set_all_z0, vnadata_get_fz0, vnadata_set_fz0, vnadata_get_fz0_vector, vnadata_set_fz0_vector, vnadata_convert \- Network Parameter Data
 .\"
 .SH SYNOPSIS
 .B #include <vnadata.h>
@@ -147,7 +147,31 @@ vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get
 .in +4n
 .\}
 .BI "const double complex *" matrix );
+.if n \{\
 .in -4n
+.\}
+.\"
+.PP
+.BI "int vnadata_get_to_vector(const vnadata_t *" vdp ", int " row ,
+.BI "int " column ,
+.if n \{\
+.in +4n
+.\}
+.BI "double complex *" vector );
+.if n \{\
+.in -4n
+.\}
+.\"
+.PP
+.BI "int vnadata_set_from_vector(vnadata_t *" vdp ", int " row ,
+.BI "int " column ,
+.if n \{\
+.in +4n
+.\}
+.BI "const double complex *" vector );
+.if n \{\
+.in -4n
+.\}
 .\"
 .SS "Ordinary System Impedances"
 .PP
@@ -269,6 +293,15 @@ The \fBvnadata_get_matrix\fP() and \fBvnadata_set_matrix\fP() functions
 get and set the whole parameter data matrix for the given frequency.
 The \fImatrix\fP parameter is a pointer to a vector of double complex
 containing all matrix elements in row-major order.
+.PP
+The \fBvnadata_set_from_vector\fP() and \fBvnadata_get_to_vector\fP()
+functions copy a vector of data values, one entry per frequency, into
+a \fBvnadata_t\fP matrix cell, and vice versa.
+The \fIvector\fP argument must point to a vector with length at least
+the number of frequencies in the \fBvnadata_t\fP object.
+These functions are useful for translating between the matrix of vectors
+form frequently returned from VNA measurements and the vector of matrices
+form used internally by vnadata.
 .PP
 The \fBvnadata_get_z0\fP() and \fBvnadata_set_z0\fP() functions
 get and set the system impedance for the given \fIport\fP.
