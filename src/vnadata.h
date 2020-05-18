@@ -320,6 +320,56 @@ static inline int vnadata_set_matrix(vnadata_t *vdp, int findex,
 }
 
 /*
+ * vnadata_get_from_vector: copy a matrix cell into a by-frequency vector
+ *   @vdp:    vnadata object pointer
+ *   @row:    matrix row
+ *   @column: matrix column
+ *   @vector: vector of data values by frequency
+ * 
+ * Vector must by frequencies entries long.
+ */
+static inline int vnadata_get_to_vector(const vnadata_t *vdp,
+	int row, int column, double complex *vector)
+{   
+#ifndef VNADATA_NO_BOUNDS_CHECK
+    if (row    < 0 || row    >= vdp->vd_rows ||
+	column < 0 || column >= vdp->vd_columns) {
+	errno = EINVAL;
+	return -1;
+    }
+#endif /* VNADATA_NO_BOUNDS_CHECK */
+    for (int findex = 0; findex < vdp->vd_frequencies; ++findex) {
+	vector[findex] = vdp->vd_data[findex][row * vdp->vd_columns + column];
+    }
+    return 0;
+}
+
+/*
+ * vnadata_set_from_vector: set a matrix cell from by-frequency vector
+ *   @vdp:    vnadata object pointer
+ *   @row:    matrix row
+ *   @column: matrix column
+ *   @vector: vector of data values by frequency
+ * 
+ * Vector must by frequencies entries long.
+ */
+static inline int vnadata_set_from_vector(vnadata_t *vdp, int row, int column,
+	const double complex *vector)
+{   
+#ifndef VNADATA_NO_BOUNDS_CHECK
+    if (row    < 0 || row    >= vdp->vd_rows ||
+	column < 0 || column >= vdp->vd_columns) {
+	errno = EINVAL;
+	return -1;
+    }
+#endif /* VNADATA_NO_BOUNDS_CHECK */
+    for (int findex = 0; findex < vdp->vd_frequencies; ++findex) {
+        vdp->vd_data[findex][row * vdp->vd_columns + column] = vector[findex];
+    }
+    return 0;
+}
+
+/*
  * vnadata_get_z0: return the z0 value for the given port
  *   @vdp:  vnadata object pointer
  *   @port: port number (zero-based)
