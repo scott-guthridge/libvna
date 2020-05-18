@@ -379,13 +379,34 @@ int vnadata_resize(vnadata_t *vdp, int frequencies, int rows, int columns,
 int vnadata_init(vnadata_t *vdp, int frequencies, int rows,
 	int columns, vnadata_parameter_type_t type)
 {
-    //ZZ: Keep for now, since this will test more code paths.  But this
-    // would be more robust if it manually initialized everything up to
-    // the existing allocations, then called vnadata_resize for additional
-    // allocation.
     (void)vnadata_resize(vdp, 0, 0, 0, VPT_UNDEF);
     (void)vnadata_set_all_z0(vdp, VNADATA_DEFAULT_Z0);
     return vnadata_resize(vdp, frequencies, rows, columns, type);
+}
+
+/*
+ * vnadata_set_type: change the parameter type without conversion
+ *   @vdp: vnadata object pointer
+ *   @type: new parameter type
+ */
+int vnadata_set_type(vnadata_t *vdp, vnadata_parameter_type_t type)
+{
+    vnadata_internal_t *vdip;
+
+    if (vdp == NULL) {
+	errno = EINVAL;
+	return -1;
+    }
+    vdip = VDP_TO_VDIP(vdp);
+    if (vdip->vdi_magic != VDI_MAGIC) {
+	errno = EINVAL;
+	return -1;
+    }
+    if (_vnadata_validate(vdp->vd_rows, vdp->vd_columns, type) == -1) {
+	return -1;
+    }
+    vdp->vd_type = type;
+    return 0;
 }
 
 /*

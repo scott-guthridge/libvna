@@ -139,15 +139,6 @@ extern int vnadata_resize(vnadata_t *vdp, int frequencies,
 	int rows, int columns, vnadata_parameter_type_t type);
 
 /*
- * vnadata_get_type: return the type of data in the vnadata_t object
- *   @vdp: vnadata object pointer
- */
-static inline vnadata_parameter_type_t vnadata_get_type(const vnadata_t *vdp)
-{
-    return vdp->vd_type;
-}
-
-/*
  * vnadata_get_frequencies: return the number of frequencies
  *   @vdp: vnadata object pointer
  */
@@ -173,6 +164,22 @@ static inline int vnadata_get_columns(const vnadata_t *vdp)
 {
     return vdp->vd_columns;
 }
+
+/*
+ * vnadata_get_type: return the type of data in the vnadata_t object
+ *   @vdp: vnadata object pointer
+ */
+static inline vnadata_parameter_type_t vnadata_get_type(const vnadata_t *vdp)
+{
+    return vdp->vd_type;
+}
+
+/*
+ * vnadata_set_type: change the parameter type without conversion
+ *   @vdp: vnadata object pointer
+ *   @type: new parameter type
+ */
+extern int vnadata_set_type(vnadata_t *vdp, vnadata_parameter_type_t type);
 
 /*
  * vnadata_get_frequency: get the indexed frequency
@@ -325,12 +332,12 @@ static inline int vnadata_set_matrix(vnadata_t *vdp, int findex,
  *   @row:    matrix row
  *   @column: matrix column
  *   @vector: vector of data values by frequency
- * 
+ *
  * Vector must by frequencies entries long.
  */
 static inline int vnadata_get_to_vector(const vnadata_t *vdp,
 	int row, int column, double complex *vector)
-{   
+{
 #ifndef VNADATA_NO_BOUNDS_CHECK
     if (row    < 0 || row    >= vdp->vd_rows ||
 	column < 0 || column >= vdp->vd_columns) {
@@ -350,12 +357,12 @@ static inline int vnadata_get_to_vector(const vnadata_t *vdp,
  *   @row:    matrix row
  *   @column: matrix column
  *   @vector: vector of data values by frequency
- * 
+ *
  * Vector must by frequencies entries long.
  */
 static inline int vnadata_set_from_vector(vnadata_t *vdp, int row, int column,
 	const double complex *vector)
-{   
+{
 #ifndef VNADATA_NO_BOUNDS_CHECK
     if (row    < 0 || row    >= vdp->vd_rows ||
 	column < 0 || column >= vdp->vd_columns) {

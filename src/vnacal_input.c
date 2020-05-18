@@ -53,7 +53,6 @@ static double complex interpolate(vnacal_etermset_t *etsp,
  *   @rows: number of rows in the S-parameter matrix
  *   @columns: number of columns in the S-parameter matrix
  *   @frequencies: number of measured frequencies
- *   @frequency_vector: vector of measured frequencies
  *
  * The frequencies given in the input don't have to be the same as
  * those in the calibration; however, they may not extend outside of
