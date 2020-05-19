@@ -20,8 +20,9 @@
 #define _VNACAL_INTERNAL_H
 
 #include <stdio.h>
-#include "vnaproperty.h"
 #include "vnacal.h"
+#include "vnacommon_internal.h"
+#include "vnaproperty.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -287,17 +288,6 @@ extern void _vnacal_error(const vnacal_t *vcp, const char *format, ...)
 __attribute__ ((__format__ (__printf__, 2, 3)))
 #endif /* __GNUC__ */
 ;
-
-/* _vnacommon_lu: find replace A with its LU decomposition */
-extern double complex _vnacommon_lu(complex double *a, int *row_index, int n);
-
-/* _vnacommon_mldivide: find X = A^-1 * B, X mxn, A mxm, B mxn */
-double complex _vnacommon_mldivide(complex double *x, complex double *a,
-	const double complex *b, int m, int n);
-
-/* _vnacommon_mrdivide: find X = B * A^-1, X mxn, B mxn, A nxn */
-extern double complex _vnacommon_mrdivide(double complex *x,
-	const double complex *b, double complex *a, int m, int n);
 
 /* _vnacal_calset_get_value: return the requested calibration value */
 extern double complex _vnacal_calset_get_value(const vnacal_cdata_t *vcdp,
