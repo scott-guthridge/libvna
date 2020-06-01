@@ -39,6 +39,13 @@ extern double complex _vnacommon_mrdivide(double complex *x,
 /* _vnacommon_minverse: find X = A^-1, X nxn, A nxn (A destroyed) */
 extern double complex _vnacommon_minverse(complex double *x, complex double *a,
 	int n);
+/* _vnacommon_qrd: find the QR decomposition of A, destroying A */
+extern void _vnacommon_qrd(complex double *a, complex double *d,
+	int rows, int columns);
+
+/* _vnacommon_qrsolve: solve the system A X = B, destroying A and B */
+extern void _vnacommon_qrsolve(complex double *a, complex double *b,
+	complex double *x, int m, int n, int o);
 
 #ifdef __cplusplus
 } /* extern "C" */

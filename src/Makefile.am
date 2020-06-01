@@ -20,6 +20,7 @@ libvna_la_SOURCES = archdep.h archdep.c \
 	vnacommon_internal.h vnacommon_lu.c vnacommon_minverse.c \
 	vnacommon_mldivide.c vnacommon_mrdivide.c \
 	vnaerr_internal.h vnaerr_verror.c \
+	vnacommon_qrd.c vnacommon_qrsolve.c \
 	vnaconv_internal.h vnaconv_a2b.c vnaconv_a2g.c vnaconv_a2h.c \
 	vnaconv_a2s.c vnaconv_a2t.c vnaconv_a2y.c vnaconv_a2z.c \
 	vnaconv_a2zi.c vnaconv_b2a.c vnaconv_b2g.c vnaconv_b2h.c \

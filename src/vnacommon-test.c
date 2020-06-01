@@ -523,6 +523,372 @@ out:
 #undef A
 
 /*
+ * test_qrd: test QRd decomposition
+ */
+static void test_vnacommon_qrd()
+{
+    test_result_type result = T_SKIPPED;
+
+    for (int trial = 1; trial <= N_MATRIX_TRIALS; ++trial) {
+	for (int m = 1; m <= 5; ++m) {
+	    for (int n = 1; n <= 5; ++n) {
+		int diagonals = MIN(m, n);
+		double complex a[m][n];
+		double complex t[m][n];
+		double complex d[diagonals];
+		double complex q[m][m];
+		double complex r[m][n];
+
+		/*
+		 * If -v, print the test header.
+		 */
+		if (opt_v) {
+		    (void)printf("Test vnacommon_qrd: trial %3d "
+			    "size %d x %d\n", trial, m, n);
+		}
+
+		/*
+		 * Fill A with random numbers and copy to R.
+		 * Decompose into factored Q_n and R components.
+		 */
+		for (int i = 0; i < m; ++i) {
+		    for (int j = 0; j < n; ++j) {
+			r[i][j] = a[i][j] = crandn();
+		    }
+		}
+		_vnacommon_qrd(*r, d, m, n);
+		if (opt_v) {
+		    cmatrix_print("a",  *a, m, n);
+		    cmatrix_print("qr", *r, m, n);
+		    cmatrix_print("d",  d, 1, diagonals);
+		}
+
+		/*
+		 * Initialize q to the identity matrix.
+		 */
+		for (int i = 0; i < m; ++i) {
+		    for (int j = 0; j < m; ++j) {
+			q[i][j] = (i == j) ? 1.0 : 0.0;
+		    }
+		}
+
+		/*
+		 * Form Q.
+		 */
+		for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
+		    for (int i = 0; i < m; ++i) {
+			double complex s = 0.0;
+
+			for (int j = diagonal; j < m; ++j) {
+			    s += q[i][j] * r[j][diagonal];
+			}
+			for (int j = diagonal; j < m; ++j) {
+			    q[i][j] -= 2.0 * s * conj(r[j][diagonal]);
+			}
+		    }
+		}
+		if (opt_v) {
+		    cmatrix_print("q", *q, m, m);
+		}
+
+		/*
+		 * Form R.
+		 */
+		for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
+		    r[diagonal][diagonal] = d[diagonal];
+		}
+		for (int i = 0; i < diagonals; ++i) {
+		    for (int j = 0; j < i; ++j) {
+			r[i][j] = 0.0;
+		    }
+		}
+		for (int i = n; i < m; ++i) {
+		    for (int j = 0; j < n; ++j) {
+			r[i][j] = 0.0;
+		    }
+		}
+		if (opt_v) {
+		    cmatrix_print("r", *r, m, n);
+		}
+
+		/*
+		 * Test that Q Q' is the identity matrix.
+		 */
+		for (int i = 0; i < m; ++i) {
+		    for (int j = 0; j < m; ++j) {
+			double complex s = 0.0;
+
+			for (int k = 0; k < m; ++k) {
+			    s += q[i][k] * conj(q[j][k]);
+			}
+			s -= (i == j) ? 1.0 : 0.0;
+			if (cabs(s) > EPS) {
+			    if (opt_a) {
+				assert(!"data miscompare");
+			    }
+			    result = T_FAIL;
+			    goto out;
+			}
+		    }
+		}
+
+		/*
+		 * Test that Q R == A
+		 */
+		cmatrix_multiply(*t, *q, *r, m, m, n);
+		for (int i = 0; i < m; ++i) {
+		    for (int j = 0; j < n; ++j) {
+			double dy;
+
+			dy = cabs(t[i][j] - a[i][j]);
+			if (dy > EPS) {
+			    if (opt_a) {
+				assert(!"data miscompare");
+			    }
+			    result = T_FAIL;
+			    goto out;
+			}
+		    }
+		}
+	    }
+	}
+    }
+    result = T_PASS;
+
+out:
+    report_test_result("QR Decomposition", result);
+}
+
+/*
+ * qrsolve_helper: generate a random system of equations and solve
+ */
+static void qrsolve_helper(double complex *a, double complex *b,
+	double complex *x, int m, int n, int o)
+{
+    double complex u[m][n];
+    double complex v[m][o];
+
+    /*
+     * Generate random matrices A and B, and make copies
+     * in U and V, respectively.
+     */
+    for (int i = 0; i < m; ++i) {
+	for (int j = 0; j < n; ++j) {
+	    a[i * n + j] = u[i][j] = crandn();
+	}
+	for (int k = 0; k < o; ++k) {
+	    b[i * o + k] = v[i][k] = crandn();
+	}
+    }
+
+    /*
+     * Solve the system.  This call destroys both u and v.
+     */
+    _vnacommon_qrsolve(&u[0][0], &v[0][0], x, m, n, o);
+}
+
+/*
+ * find_axb_error: find the squared error in A * X = B
+ */
+static double find_axb_error(const double complex *a, const double complex *x,
+	const double complex *b, int m, int n, int o)
+{
+    double squared_error = 0.0;
+
+    for (int k = 0; k < o; ++k) {
+	for (int i = 0; i < m; ++i) {
+	    double complex s = 0.0;
+	    double e;
+
+	    for (int j = 0; j < n; ++j) {
+		s += a[i * n + j] * x[j * o + k];
+	    }
+	    e = cabs(s - b[i * o + k]);
+	    squared_error += e * e;
+	}
+    }
+    return squared_error;
+}
+
+/*
+ * Test vnacommon_qrsolve.
+ */
+static void test_vnacommon_qrsolve()
+{
+    test_result_type result = T_SKIPPED;
+
+    for (int trial = 1; trial <= N_MATRIX_TRIALS; ++trial) {
+	/*
+	 * Test square coefficient matrices.
+	 */
+	for (int n = 1; n <= 10; ++n) {
+	    const int o = 3;
+	    double complex a[n][n];
+	    double complex b[n][o];
+	    double complex x[n][o];
+
+	    /*
+	     * If -v, print the test header.
+	     */
+	    if (opt_v) {
+		(void)printf("Test vnacommon_qrsolve: trial %3d "
+			"size %d x %d\n", trial, n, n);
+	    }
+
+	    /*
+	     * Generate random matrices A and B, and solve for X.
+	     */
+	    qrsolve_helper(&a[0][0], &b[0][0], &x[0][0], n, n, o);
+	    if (opt_v) {
+		cmatrix_print("a", *a, n, n);
+		cmatrix_print("b", *b, n, o);
+		cmatrix_print("x", *x, n, o);
+	    }
+
+	    /*
+	     * Verify A X == B.
+	     */
+	    for (int k = 0; k < o; ++k) {
+		for (int i = 0; i < n; ++i) {
+		    double complex s = 0.0;
+
+		    for (int j = 0; j < n; ++j) {
+			s += a[i][j] * x[j][k];
+		    }
+		    if (cabs(s - b[i][k]) > EPS) {
+			if (opt_a) {
+			    assert(!"data miscompare");
+			}
+			result = T_FAIL;
+			goto out;
+		    }
+		}
+	    }
+	}
+
+	/*
+	 * Test more columns than rows (underdetermined case).
+	 */
+	for (int m = 1; m <= 4; ++m) {
+	    for (int n = m + 1; n <= 5; ++n) {
+		for (int o = 1; o <= 2; ++o) {
+		    double complex a[m][n];
+		    double complex b[m][o];
+		    double complex x[n][o];
+
+		    /*
+		     * If -v, print the test header.
+		     */
+		    if (opt_v) {
+			(void)printf("Test vnacommon_qrsolve: trial %3d "
+				"A size %d x %d, B size %d x %d\n",
+				trial, m, n, n, o);
+		    }
+
+		    /*
+		     * Generate random matrices A and B, and solve for X.
+		     */
+		    qrsolve_helper(&a[0][0], &b[0][0], &x[0][0], m, n, o);
+		    if (opt_v) {
+			cmatrix_print("a", *a, m, n);
+			cmatrix_print("b", *b, n, o);
+			cmatrix_print("x", *x, n, o);
+		    }
+
+		    /*
+		     * Verify A X == B.
+		     */
+		    for (int k = 0; k < o; ++k) {
+			for (int i = 0; i < m; ++i) {
+			    double complex s = 0.0;
+
+			    for (int j = 0; j < n; ++j) {
+				s += a[i][j] * x[j][k];
+			    }
+			    if (cabs(s - b[i][k]) > EPS) {
+				if (opt_a) {
+				    assert(!"data miscompare");
+				}
+				result = T_FAIL;
+				goto out;
+			    }
+			}
+		    }
+		}
+	    }
+	}
+
+	/*
+	 * Test more rows than columns (overdetermined case).
+	 */
+	for (int n = 1; n <= 4; ++n) {
+	    for (int m = n + 1; m <= 5; ++m) {
+		for (int o = 1; o <= 2; ++o) {
+		    double complex a[m][n];
+		    double complex b[m][o];
+		    double complex x[n][o];
+		    double error0;
+
+		    /*
+		     * If -v, print the test header.
+		     */
+		    if (opt_v) {
+			(void)printf("Test vnacommon_qrsolve: trial %3d "
+				"A size %d x %d, B size %d x %d\n",
+				trial, m, n, n, o);
+		    }
+
+		    /*
+		     * Generate random matrices A and B, and solve for X.
+		     */
+		    qrsolve_helper(&a[0][0], &b[0][0], &x[0][0], m, n, o);
+		    if (opt_v) {
+			cmatrix_print("a", *a, m, n);
+			cmatrix_print("b", *b, m, o);
+			cmatrix_print("x", *x, n, o);
+		    }
+
+		    /*
+		     * Get the squared error of the result, then perturb
+		     * each X_{j,k} value and verify that the error
+		     * doesn't decrease when moving away from the result.
+		     */
+		    error0 = find_axb_error(&a[0][0], &x[0][0], &b[0][0],
+			    m, n, o);
+		    for (int k = 0; k < o; ++k) {
+			for (int j = 0; j < n; ++j) {
+			    static const double complex deltas[] =
+				{ 0.001, 0.001 * I, -0.001, -0.001 * I };
+			    double complex x0 = x[j][k];
+
+			    for (int i = 0; i < 4; ++i) {
+				double e;
+
+				x[j][k] = x0 + deltas[i];
+				e = find_axb_error(&a[0][0], &x[0][0], &b[0][0],
+					m, n, o);
+				if (e < error0) {
+				    if (opt_a) {
+					assert(!"bad result");
+				    }
+				    result = T_FAIL;
+				    goto out;
+				}
+			    }
+			    x[j][k] = x0;	/* restore x[j][k] */
+			}
+		    }
+		}
+	    }
+	}
+    }
+    result = T_PASS;
+
+out:
+    report_test_result("QR Solve", result);
+}
+
+/*
  * print_usage: print a usage message and exit
  */
 static void print_usage()
@@ -580,6 +946,8 @@ main(int argc, char **argv)
     test_vnacommon_mldivide();
     test_vnacommon_mrdivide();
     test_vnacommon_minverse();
+    test_vnacommon_qrd();
+    test_vnacommon_qrsolve();
 
     exit(fail_count != 0);
     /*NOTREACHED*/
