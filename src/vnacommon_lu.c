@@ -29,14 +29,14 @@
 
 
 /*
- * _vnacommon_lu: find replace A with its LU decomposition
+ * _vnacommon_lu: replace A with its LU decomposition
  *  @a:         serialized input and output matrix
  *  @row_index: vector of n ints; on return maps original row to current row
  *  @n:         dimensions of A (which must be square)
  *
- *   L is placed below the major diagonal; its major diagonal, which
- *   is not stored in the result matrix is all ones.  U is placed in
- *   the upper diagonal and above.
+ *   L is placed below the major diagonal.  Its own major diagonal,
+ *   which is not stored in the result matrix, is all ones.  U is placed
+ *   in the upper diagonal and above.
  *
  * Returns the determinant of the matrix.
  */
@@ -45,7 +45,7 @@ double complex _vnacommon_lu(complex double *a, int *row_index, int n)
     double complex d = 1.0;	/* determinant */
     double row_scale[n];	/* 1 / largest magitude in each row */
 
-#define A(i, j)		((a)[i * n + j])
+#define A(i, j)		((a)[(i) * n + (j)])
 
     /*
      * Find row_scale.  Initialize row_index.
@@ -65,7 +65,7 @@ double complex _vnacommon_lu(complex double *a, int *row_index, int n)
     }
 
     /*
-     * Compute LU decomposition using Crout's method, working column
+     * Compute LU decomposition using Crout's method working column
      * by column.
      */
     for (int j = 0; j < n; ++j) {
