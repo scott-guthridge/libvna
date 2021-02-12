@@ -137,9 +137,9 @@ double complex _vnacal_rfi(const double *xp, double complex *yp,
 
     /*
      * Compute the rational function interpolation of x using the
-     * Burlirch-Stoer algorithm.  This code is based on that given in
-     * "Numerical Recipes in C", Press, Teukolsky, Vetterling, Flannery -
-     * Cambridge Univ. Press - 1992 - pp. 112-113.
+     * Burlirch-Stoer algorithm.  This code is based on the example
+     * given in "Numerical Recipes in C", Press, Teukolsky, Vetterling,
+     * Flannery - Cambridge Univ. Press - 1992 - pp. 112-113.
      */
     cur = nearest - base;
     assert(base >= 0 && base <= n - m);
@@ -158,6 +158,9 @@ double complex _vnacal_rfi(const double *xp, double complex *yp,
 	    double complex dx2 = x - xp[base + i + j + 1];
 	    double complex den = dx1 * d[j] - dx2 * c[j + 1];
 
+	    if (cabs(den) < 10.0 * EPS) {
+		goto done;
+	    }
 	    c[j] = c_d * dx1 * d[j]     / den;
 	    d[j] = c_d * dx2 * c[j + 1] / den;
 	}
@@ -169,5 +172,6 @@ double complex _vnacal_rfi(const double *xp, double complex *yp,
 	    y += d[cur--];
 	}
     }
+done:
     return y;
 }
