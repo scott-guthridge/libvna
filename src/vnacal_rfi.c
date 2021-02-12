@@ -64,39 +64,34 @@ double complex _vnacal_rfi(const double *xp, double complex *yp,
     assert(m <= n);
 
     /*
-     * Special-case extrapolation on the left.
+     * Special-case one point.
      */
-    if (x <= xp[0]) {
+    if (n < 2) {
 	return yp[0];
     }
 
     /*
-     * Special-case extrapolation on the right.
-     */
-    if (x >= xp[n - 1]) {
-	return yp[n - 1];
-    }
-
-    /*
-     * Bound *segment to 0 .. n-1.
+     * Bound *segment to 0 .. n-2 to establish the invariant that
+     * both *segment and *segment + 1 are in-bounds.
      */
     if (*segment < 0) {
 	*segment = 0;
-    } else if (*segment > n - 1) {
-	*segment = n - 1;
+    } else if (*segment > n - 2) {
+	*segment = n - 2;
     }
 
     /*
-     * Using *segment as a hint, find the segment that bounds x.
+     * Using *segment as a hint, find the segment that bounds x
+     * if any segment does.
      */
     if (x < xp[*segment]) {
-	do {
+	while (*segment > 0 && x < xp[*segment]) {
 	    --*segment;
-	} while (x < xp[*segment]);
-    } else if (x > xp[*segment + 1]) {
-	do {
+	}
+    } else {
+	while (*segment < n - 2 && x > xp[*segment + 1]) {
 	    ++*segment;
-	} while (x > xp[*segment + 1]);
+	}
     }
 
     /*
