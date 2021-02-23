@@ -375,7 +375,7 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 	    (void)fputc(' ', fp);
 	    print_value(fp, vfp->vf_dprecision, /*plus=*/true, /*pad=*/false,
 		    cimag(z0));
-	    //(void)fputc('j', fp); ZZ
+	    (void)fputc('j', fp);
 	}
 	(void)fputc('\n', fp);
     }
