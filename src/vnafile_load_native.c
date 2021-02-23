@@ -595,6 +595,7 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	    }
 	    for (int port = 0; port < ports; ++port) {
 		double re = 0.0, im = 0.0;
+		char *cp;
 
 		if (!convert_double(FIELD(&nss, 1 + 2 * port), &re)) {
 		    _vnafile_error(vfp, "%s (line %d) error: "
@@ -603,6 +604,11 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 			    FIELD(&nss, 1 + 2 * port));
 		    errno = EBADMSG;
 		    goto out;
+		}
+		if ((cp = strrchr(FIELD(&nss, 2 + 2 * port), 'j')) != NULL) {
+		    if (cp[1] == '\000') {
+			*cp = '\000';
+		    }
 		}
 		if (!convert_double(FIELD(&nss, 2 + 2 * port), &im)) {
 		    _vnafile_error(vfp, "%s (line %d) error: "
