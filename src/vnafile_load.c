@@ -93,6 +93,10 @@ int vnafile_load(vnafile_t *vfp, const char *filename, vnadata_t *vdp)
     FILE *fp;
     int rv;
 
+    if (vfp == NULL || vfp->vf_magic != VF_MAGIC) {
+	errno = EINVAL;
+	return -1;
+    }
     if ((fp = fopen(filename, "r")) == NULL) {
 	_vnafile_error(vfp, "fopen: %s: %s", filename, strerror(errno));
 	return -1;
@@ -113,5 +117,9 @@ int vnafile_load(vnafile_t *vfp, const char *filename, vnadata_t *vdp)
 int vnafile_fload(vnafile_t *vfp, FILE *fp, const char *filename,
 	vnadata_t *vdp)
 {
+    if (vfp == NULL || vfp->vf_magic != VF_MAGIC) {
+	errno = EINVAL;
+	return -1;
+    }
     return _vnafile_load_common(vfp, fp, filename, vdp);
 }

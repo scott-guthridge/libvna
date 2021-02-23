@@ -442,6 +442,7 @@ vnafile_t *vnafile_alloc(vnafile_error_fn_t *error_fn, void *error_arg)
 	return NULL;
     }
     (void)memset((void *)vfp, 0, sizeof(vnafile_t));
+    vfp->vf_magic      = VF_MAGIC;
     vfp->vf_error_fn   = error_fn;
     vfp->vf_error_arg  = error_arg;
     vfp->vf_type       = VNAFILE_AUTO;
@@ -469,6 +470,10 @@ vnafile_t *vnafile_alloc(vnafile_error_fn_t *error_fn, void *error_arg)
  */
 vnafile_type_t vnafile_get_file_type(const vnafile_t *vfp)
 {
+    if (vfp == NULL || vfp->vf_magic != VF_MAGIC) {
+	errno = EINVAL;
+	return (vnafile_type_t)-1;
+    }
     return vfp->vf_type;
 }
 
@@ -482,6 +487,10 @@ vnafile_type_t vnafile_get_file_type(const vnafile_t *vfp)
  */
 int vnafile_set_file_type(vnafile_t *vfp, vnafile_type_t type)
 {
+    if (vfp == NULL || vfp->vf_magic != VF_MAGIC) {
+	errno = EINVAL;
+	return -1;
+    }
     switch (type) {
     case VNAFILE_AUTO:
     case VNAFILE_NATIVE:
@@ -504,6 +513,10 @@ int vnafile_set_file_type(vnafile_t *vfp, vnafile_type_t type)
  */
 const char *vnafile_get_format(const vnafile_t *vfp)
 {
+    if (vfp == NULL || vfp->vf_magic != VF_MAGIC) {
+	errno = EINVAL;
+	return NULL;
+    }
     return vfp->vf_format_string;
 }
 
@@ -527,6 +540,14 @@ int vnafile_set_format(vnafile_t *vfp, const char *format)
     char *cur;
     int nfields = 1;
     int rc = -1;
+
+    /*
+     * Validate pointer.
+     */
+    if (vfp == NULL || vfp->vf_magic != VF_MAGIC) {
+	errno = EINVAL;
+	return -1;
+    }
 
     /*
      * If format is NULL, default it to "ri".
@@ -657,6 +678,10 @@ out:
  */
 int vnafile_get_fprecision(const vnafile_t *vfp)
 {
+    if (vfp == NULL || vfp->vf_magic != VF_MAGIC) {
+	errno = EINVAL;
+	return -1;
+    }
     return vfp->vf_fprecision;
 }
 
@@ -667,6 +692,10 @@ int vnafile_get_fprecision(const vnafile_t *vfp)
  */
 int vnafile_set_fprecision(vnafile_t *vfp, int precision)
 {
+    if (vfp == NULL || vfp->vf_magic != VF_MAGIC) {
+	errno = EINVAL;
+	return -1;
+    }
     if (precision < 1) {
 	_vnafile_error(vfp, "vnafile_set_fprecision: invalid precision: %s",
 		precision);
@@ -683,6 +712,10 @@ int vnafile_set_fprecision(vnafile_t *vfp, int precision)
  */
 int vnafile_get_dprecision(const vnafile_t *vfp)
 {
+    if (vfp == NULL || vfp->vf_magic != VF_MAGIC) {
+	errno = EINVAL;
+	return -1;
+    }
     return vfp->vf_dprecision;
 }
 
@@ -693,6 +726,10 @@ int vnafile_get_dprecision(const vnafile_t *vfp)
  */
 int vnafile_set_dprecision(vnafile_t *vfp, int precision)
 {
+    if (vfp == NULL || vfp->vf_magic != VF_MAGIC) {
+	errno = EINVAL;
+	return -1;
+    }
     if (precision < 1) {
 	_vnafile_error(vfp, "vnafile_set_fprecision: invalid precision: %s",
 		precision);
@@ -709,7 +746,8 @@ int vnafile_set_dprecision(vnafile_t *vfp, int precision)
  */
 void vnafile_free(vnafile_t *vfp)
 {
-    if (vfp != NULL) {
+    if (vfp != NULL && vfp->vf_magic == VF_MAGIC) {
+	vfp->vf_magic = -1;
 	free((void *)vfp->vf_format_vector);
 	free((void *)vfp->vf_format_string);
 	free((void *)vfp);

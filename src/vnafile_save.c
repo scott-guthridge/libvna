@@ -356,6 +356,7 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
     /*
      * Print the preamble.
      */
+    (void)fprintf(fp, "# NPD\n");
     (void)fprintf(fp, "#:version 1.0\n");
     (void)fprintf(fp, "#:rows %d\n", rows);
     (void)fprintf(fp, "#:columns %d\n", columns);
@@ -765,13 +766,22 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	const vnadata_t *vdp, const char *function)
 {
     int rows, columns, ports, diagonals, frequencies;
-    int aprecision = MAX(vfp->vf_dprecision, 3);
+    int aprecision;
     int rc = -1;
     bool auto_type = false;
     const double *frequency_vector;
     const double complex *z0_vector;
     double z0_touchstone;
     vnadata_t *conversions[VPT_NTYPES];
+
+    /*
+     * Validate pointer.
+     */
+    if (vfp == NULL || vfp->vf_magic != VF_MAGIC) {
+	errno = EINVAL;
+	return -1;
+    }
+    aprecision = MAX(vfp->vf_dprecision, 3);
 
     /*
      * Init conversions to NULL.
