@@ -35,6 +35,11 @@ extern "C" {
 #endif
 
 /*
+ * VF_MAGIC: magic number to protect against invalid pointer from user
+ */
+#define VF_MAGIC	0x5646494C	/* "VFIL" */
+
+/*
  * vnafile_format_t: describes whether result is real or complex, and
  *      whether it should be printed as scalar, decibels, rectangular,
  *      polar, RC, RL, or VSWR
@@ -64,6 +69,7 @@ typedef struct vnafile_format {
  * vnafile_t: format information for loading/saving network parameters
  */
 struct vnafile {
+    uint32_t vf_magic;
     vnafile_error_fn_t *vf_error_fn;
     void *vf_error_arg;
     vnafile_type_t vf_type;
