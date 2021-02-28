@@ -72,7 +72,7 @@ static double complex crandn()
  *   @b: serialized B matrix, n x o
  *   @m: first dimension of C and A
  *   @n: second dimension of A, first dimension of B
- *   @o: second dimension of C an B
+ *   @o: second dimension of C and B
  */
 static void cmatrix_multiply(double complex *c, const double complex *a,
 	const double complex *b, int m, int n, int o)
@@ -304,8 +304,8 @@ static void test_vnacommon_mldivide()
 		    (void)printf("\n");
 		}
 		if (cabs(d) < EPS) {
-		    (void)fprintf(stderr, "%s: test_vnacommon_mldivide: warning: "
-			    "skipping nearly singular test matrix\n",
+		    (void)fprintf(stderr, "%s: test_vnacommon_mldivide: "
+			    "warning: skipping nearly singular test matrix\n",
 			    progname);
 		    continue;
 		}
@@ -401,8 +401,8 @@ static void test_vnacommon_mrdivide()
 		    (void)printf("\n");
 		}
 		if (cabs(d) < EPS) {
-		    (void)fprintf(stderr, "%s: test_vnacommon_mrdivide: warning: "
-			    "skipping nearly singular test matrix\n",
+		    (void)fprintf(stderr, "%s: test_vnacommon_mrdivide: "
+			    "warning: skipping nearly singular test matrix\n",
 			    progname);
 		    continue;
 		}
@@ -662,8 +662,8 @@ out:
 /*
  * qrsolve_helper: generate a random system of equations and solve
  */
-static void qrsolve_helper(double complex *a, double complex *b,
-	double complex *x, int m, int n, int o)
+static void qrsolve_helper(double complex *x, double complex *a,
+	double complex *b, int m, int n, int o)
 {
     double complex u[m][n];
     double complex v[m][o];
@@ -684,7 +684,7 @@ static void qrsolve_helper(double complex *a, double complex *b,
     /*
      * Solve the system.  This call destroys both u and v.
      */
-    _vnacommon_qrsolve(&u[0][0], &v[0][0], x, m, n, o);
+    _vnacommon_qrsolve(x, &u[0][0], &v[0][0], m, n, o);
 }
 
 /*
@@ -738,7 +738,7 @@ static void test_vnacommon_qrsolve()
 	    /*
 	     * Generate random matrices A and B, and solve for X.
 	     */
-	    qrsolve_helper(&a[0][0], &b[0][0], &x[0][0], n, n, o);
+	    qrsolve_helper(&x[0][0], &a[0][0], &b[0][0], n, n, o);
 	    if (opt_v) {
 		cmatrix_print("a", *a, n, n);
 		cmatrix_print("b", *b, n, o);
@@ -788,7 +788,7 @@ static void test_vnacommon_qrsolve()
 		    /*
 		     * Generate random matrices A and B, and solve for X.
 		     */
-		    qrsolve_helper(&a[0][0], &b[0][0], &x[0][0], m, n, o);
+		    qrsolve_helper(&x[0][0], &a[0][0], &b[0][0], m, n, o);
 		    if (opt_v) {
 			cmatrix_print("a", *a, m, n);
 			cmatrix_print("b", *b, n, o);
@@ -841,7 +841,7 @@ static void test_vnacommon_qrsolve()
 		    /*
 		     * Generate random matrices A and B, and solve for X.
 		     */
-		    qrsolve_helper(&a[0][0], &b[0][0], &x[0][0], m, n, o);
+		    qrsolve_helper(&x[0][0], &a[0][0], &b[0][0], m, n, o);
 		    if (opt_v) {
 			cmatrix_print("a", *a, m, n);
 			cmatrix_print("b", *b, m, o);

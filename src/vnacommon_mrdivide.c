@@ -33,8 +33,8 @@
  *  @x: serialized result matrix (m x n)
  *  @b: serialized B matrix (m x n)
  *  @a: serialized A matrix (n x n), destroyed on return
- *  @m: dimensions of A, number of rows in X and B
- *  @n: number of columns in X and B
+ *  @m: number of rows in X and B
+ *  @n: number of columns in X and B, dimensions of A which must be square
  *
  * Divide matrix B by A from the right, storing the result in X.
  * Matrix A is destroyed.

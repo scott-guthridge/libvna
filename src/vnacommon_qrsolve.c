@@ -29,9 +29,9 @@
 
 /*
  * _vnacommon_qrsolve: solve the system A X = B
+ *  @x:	      nxo result matrix
  *  @a:       mxn serialized coefficient matrix (destroyed)
  *  @b:       mxo constant term matrix (destroyed)
- *  @x:	      nxo result matrix
  *  @m: number of rows in A and B
  *  @n: number of columns in A, and rows in X
  *  @o: number of columns in B and X
@@ -40,15 +40,18 @@
  * have to be square.  If A has more columns than rows (underdetermined
  * case), the function finds a solution with excess variables set to zero.
  * If A has more rows than columns, (overdetermined case), the function
- * returns a solution that that minimizes error in a least-squares sense.
+ * finds a solution that that minimizes error in a least-squares sense.
  *
  * Note: both a and b are destroyed!
+ *
+ * Returns the rank.
  */
-void _vnacommon_qrsolve(complex double *a, complex double *b,
-	complex double *x, int m, int n, int o)
+int _vnacommon_qrsolve(complex double *x, complex double *a,
+	complex double *b, int m, int n, int o)
 {
     int diagonals = MIN(m, n);
     complex double d[diagonals];
+    int rank = 0;
 
 #define A(i, j)		((a)[(i) * n + (j)])
 #define X(i, j)		((x)[(i) * o + (j)])
@@ -57,8 +60,9 @@ void _vnacommon_qrsolve(complex double *a, complex double *b,
     /*
      * Find the QR decomposition of A.  On return the lower triangle
      * of A is replaced with the v_i vectors used to construct Q, the
-     * upper triangle (above the diagonal) contains R, and d contains
-     * the diagonal terms of R.
+     * upper triangle (above the diagonal) contains the portion of R
+     * above the major diagonal, and d contains the major diagonal
+     * of R.
      */
     _vnacommon_qrd(a, d, m, n);
 
@@ -99,8 +103,12 @@ void _vnacommon_qrsolve(complex double *a, complex double *b,
 		s += A(i, j) * X(j, k);
 	    }
 	    X(i, k) = (B(i, k) - s) / d[i];
+	    if (isfinite(cabs(d[i])) && d[i] != 0.0) {
+		++rank;
+	    }
 	}
     }
+    return rank;
 }
 #undef B
 #undef X
