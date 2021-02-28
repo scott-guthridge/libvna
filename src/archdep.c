@@ -22,6 +22,45 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef HAVE_INSQUE
+
+/*
+ * _vna_insque: insert an element into a circular list
+ *   @elem: element to insert
+ *   @prev: element to insert after
+ */
+void _vna_insque(void *elem, void *prev)
+{
+    list_t *lp_elem = elem;
+    list_t *lp_prev = prev;
+    list_t *lp_next = lp_prev->l_forw;
+
+    lp_elem->l_forw = lp_next;
+    lp_elem->l_back = lp_prev;
+    lp_prev->l_forw = lp_elem;
+    lp_next->l_back = lp_elem;
+}
+
+#endif /* HAVE_INSQUE */
+#ifndef HAVE_REMQUE
+
+/*
+ * _vna_remque: remove an element from a circular list
+ *   @elem: element to remove
+ */
+void _vna_remque(void *elem)
+{
+    list_t *lp_elem = elem;
+    list_t *lp_prev = lp_elem->l_back;
+    list_t *lp_next = lp_elem->l_forw;
+
+    lp_prev->l_forw = lp_next;
+    lp_next->l_back = lp_prev;
+    lp_elem->l_forw = NULL;
+    lp_elem->l_back = NULL;
+}
+
+#endif /* HAVE_REMQUE */
 #ifndef HAVE_STRCASECMP
 
 /*

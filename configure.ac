@@ -18,7 +18,7 @@ AC_CHECK_LIB([m], [sqrt])
 AC_CHECK_LIB([yaml], [yaml_document_initialize])
 
 # Checks for header files.
-AC_CHECK_HEADERS([unistd.h])
+AC_CHECK_HEADERS([search.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
@@ -31,7 +31,7 @@ AC_TYPE_UINT8_T
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_FUNC_STRTOD
-AC_CHECK_FUNCS([isascii mkdir random strcasecmp strdup vasprintf])
+AC_CHECK_FUNCS([insque isascii mkdir random remque strcasecmp strdup vasprintf])
 
 # Init libtool
 AM_PROG_AR

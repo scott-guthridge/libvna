@@ -36,6 +36,31 @@
 #define srandom srand
 #endif
 
+#ifdef HAVE_SEARCH_H
+#include <search.h>	/* for POSIX insque; sometimes in string.h */
+#endif /* HAVE_SEARCH_H */
+
+/*
+ * list_t: list object for insque and remque
+ *	We use this in place of the old struct qelem with its
+ *	unwanted baggage of q_data[1].  If it conflicts with
+ *	something, we can rename it.
+ */
+typedef struct list {
+    struct list *l_forw;
+    struct list *l_back;
+} list_t;
+
+#ifndef HAVE_INSQUE	/* POSIX.1-2001, POSIX.1-2008 */
+void _vna_insque(void *elem, void *prev);
+#define insque _vna_insque
+#endif /* HAVE_INSQUE */
+
+#ifndef HAVE_REMQUE	/* POSIX.1-2001, POSIX.1-2008 */
+void _vna_remque(void *elem);
+#define remque _vna_remque
+#endif /* HAVE_REMQUE */
+
 #ifndef HAVE_STRCASECMP /* 4.4BSD, POSIX.1-2001, POSIX.1-2008 */
 extern int _vna_strcasecmp(const char *s1, const char *s2);
 #define strcasecmp _vna_strcasecmp
