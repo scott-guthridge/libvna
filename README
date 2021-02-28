@@ -1,5 +1,5 @@
 LIBVNA: Vector Network Analyzer Library
-Copyright © 2020 D Scott Guthridge <scott-guthridge@rompromity.net>
+Copyright © 2020, 2021 D Scott Guthridge <scott-guthridge@rompromity.net>
 
 Library for electrical vector network analyzers.  The library provides
 functions for 12-error parameter (and other) VNA calibration, generalized
@@ -57,7 +57,7 @@ Fixing library path problems:
 
     Add /usr/local/lib to the default library search path:
 
-    	sudo echo "/usr/local/lib" > /etc/ld.so.conf.d/local.conf
+    	sudo sh -c 'echo "/usr/local/lib" >> /etc/ld.so.conf.d/local.conf'
 	sudo chmod 644 /etc/ld.so.conf.d/local.conf
 	sudo ldconfig
 
