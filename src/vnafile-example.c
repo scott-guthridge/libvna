@@ -1,6 +1,6 @@
 /*
- * Electrical Network Parameter Formatting Library
- * Copyright © 2020 D Scott Guthridge <scott_guthridge@rompromity.net>
+ * Vector Network Analyzer Library
+ * Copyright © 2020, 2021 D Scott Guthridge <scott_guthridge@rompromity.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
