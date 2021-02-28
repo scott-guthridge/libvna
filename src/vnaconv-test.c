@@ -164,7 +164,7 @@ static int isequal(double complex x, double complex y, const char *label)
     }
     rv = cabs(x - y) / d < EPS;
     if (!rv) {
-	printf("%s: %9.5f%+9.5fj != %9.5f%+%9.5fj\n",
+	printf("%s: %9.5f%+9.5fj != %9.5f%+9.5fj\n",
 		label, creal(x), cimag(x), creal(y), cimag(y));
 	printf("|x-y| = %9.5f\n", cabs(x - y));
     }
