@@ -26,26 +26,26 @@ set logscale x
 plot 'vnacal-example.out' \
     index 0 using 1:2 title 'expected   S11_r' lt 1 with points, \
     '' index 1 using 1:2 title 'measured   S11_r' lt 1 dt 2 with lines, \
-    '' index 2 using 1:2 title 'calibrated S11_r' lt 1 dt solid with lines, \
+    '' index 2 using 1:2 title 'corrected  S11_r' lt 1 dt solid with lines, \
     '' index 0 using 1:3 title 'expected   S11_i' lt 2 with points, \
     '' index 1 using 1:3 title 'measured   S11_i' lt 2 dt 2 with lines, \
-    '' index 2 using 1:3 title 'calibrated S11_i' lt 2 dt solid with lines, \
+    '' index 2 using 1:3 title 'corrected  S11_i' lt 2 dt solid with lines, \
     '' index 0 using 1:4 title 'expected   S12_r' lt 3 with points, \
     '' index 1 using 1:4 title 'measured   S12_r' lt 3 dt 2 with lines, \
-    '' index 2 using 1:4 title 'calibrated S12_r' lt 3 dt solid with lines, \
+    '' index 2 using 1:4 title 'corrected  S12_r' lt 3 dt solid with lines, \
     '' index 0 using 1:5 title 'expected   S12_i' lt 4 with points, \
     '' index 1 using 1:5 title 'measured   S12_i' lt 4 dt 2 with lines, \
-    '' index 2 using 1:5 title 'calibrated S12_i' lt 4 dt solid with lines, \
+    '' index 2 using 1:5 title 'corrected  S12_i' lt 4 dt solid with lines, \
     '' index 0 using 1:6 title 'expected   S21_r' lt 5 with points, \
     '' index 1 using 1:6 title 'measured   S21_r' lt 5 dt 2 with lines, \
-    '' index 2 using 1:6 title 'calibrated S21_r' lt 5 dt solid with lines, \
+    '' index 2 using 1:6 title 'corrected  S21_r' lt 5 dt solid with lines, \
     '' index 0 using 1:7 title 'expected   S21_i' lt 6 with points, \
     '' index 1 using 1:7 title 'measured   S21_i' lt 6 dt 2 with lines, \
-    '' index 2 using 1:7 title 'calibrated S21_i' lt 6 dt solid with lines, \
+    '' index 2 using 1:7 title 'corrected  S21_i' lt 6 dt solid with lines, \
     '' index 0 using 1:8 title 'expected   S22_r' lt 7 with points, \
     '' index 1 using 1:8 title 'measured   S22_r' lt 7 dt 2 with lines, \
-    '' index 2 using 1:8 title 'calibrated S22_r' lt 7 dt solid with lines, \
+    '' index 2 using 1:8 title 'corrected  S22_r' lt 7 dt solid with lines, \
     '' index 0 using 1:9 title 'expected   S22_i' lt 8 with points, \
     '' index 1 using 1:9 title 'measured   S22_i' lt 8 dt 2 with lines, \
-    '' index 2 using 1:9 title 'calibrated S22_i' lt 8 dt solid with lines
+    '' index 2 using 1:9 title 'corrected  S22_i' lt 8 dt solid with lines
 pause -1
