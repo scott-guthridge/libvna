@@ -63,7 +63,7 @@ static int _make_dirs(vnacal_t *vcp, char *filename, int offset)
 
 /*
  * _vnacal_open: open a calibration file with given fopen mode
- *   @vcp: a pointer to the object returned by vnacal_create or vnacal_load
+ *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
  *   @pathname: calibration file name
  *   @dotdir: directory under $HOME or NULL
  *   @mode: mode (see fopen(3))

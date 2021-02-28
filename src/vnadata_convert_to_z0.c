@@ -26,7 +26,7 @@
 
 /*
  * _vnadata_convert_to_z0: convert from frequency-dependent z0 to simple z0
- *   @vdip: internal object pointer
+ *   @vdip: pointer to vnadata_internal_t structure
  *
  * Note: If a conversion is done, any existing z0 data are discarded
  *       and replaced with a vector of default values.

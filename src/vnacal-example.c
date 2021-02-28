@@ -316,7 +316,7 @@ int main(int argc, char **argv)
     }
 
     /*
-     * Allocate a vnacal_input_t object to apply the calibration
+     * Allocate a vnacal_input_t structure to apply the calibration
      * to measured values.
      */
     if ((vip = vnacal_input_alloc(vcp, /*set=*/0,
@@ -327,7 +327,7 @@ int main(int argc, char **argv)
     }
 
     /*
-     * Allocate a vnadata_t object to hold the S parameters.
+     * Allocate a vnadata_t structure to hold the S parameters.
      */
     if ((s_matrix = vnadata_alloc()) == NULL) {
 	(void)fprintf(stderr, "example: vnadata_alloc: %s\n",

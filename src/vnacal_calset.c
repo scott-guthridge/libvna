@@ -63,8 +63,8 @@ out:
  *   @error_fn: optional error reporting function (NULL if not used)
  *   @error_arg: user data passed through to the error function (or NULL)
  *
- *   Initialize the caller-supplied vnacal_calset
- *   object and allocate and init the contained vcs_frequency_vector,
+ *   Initialize the caller-supplied vnacal_calset_t structure
+ *   and allocate and init the contained vcs_frequency_vector,
  *   vcs_matrix, vdc_sii_reference, vdc_sii_through, vdc_sji_through
  *   and vdc_sdj_leakage vectors.
  *
@@ -78,7 +78,7 @@ vnacal_calset_t *vnacal_calset_alloc(const char *setname,
     int ncells = rows *columns;
 
     /*
-     * Allocate the vnacal_calset_t object.
+     * Allocate the vnacal_calset_t structure.
      */
     vcsp = (vnacal_calset_t *)malloc(sizeof(vnacal_calset_t));
     if (vcsp == NULL) {

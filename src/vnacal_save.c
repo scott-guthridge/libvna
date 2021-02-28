@@ -103,7 +103,7 @@ static int add_complex(yaml_document_t *document, double complex value,
 
 /*
  * add_mapping_entry: add a simple scalar tag to value mapping entry
- *   @vcp:      a pointer to the object returned by vnacal_create or vnacal_load
+ *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
  *   @document: yaml document
  *   @t_map:    map into which we're adding
  *   @key:      string valued key
@@ -132,7 +132,7 @@ static int add_mapping_entry(vnacal_t *vcp, yaml_document_t *document,
 
 /*
  * add_properties: add a property list to the document
- *   @vcp:      a pointer to the object returned by vnacal_create or vnacal_load
+ *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
  *   @document: yaml document
  *   @root:     property list root
  */
@@ -234,7 +234,7 @@ static int add_properties(vnacal_t *vcp, yaml_document_t *document,
 
 /*
  * vnacal_save: create or overwrite a calibration file with new data
- *   @vcp: a pointer to the object returned by vnacal_create or vnacal_load
+ *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
  *   @pathname: calibration file name
  *   @dotdir: directory under $HOME or NULL
  *

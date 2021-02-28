@@ -391,7 +391,7 @@ const char *_vnafile_format_to_name(const vnafile_format_t *vffp)
 
 /*
  * _vnafile_update_format_string: regenerate vfp_format_string
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  */
 int _vnafile_update_format_string(vnafile_t *vfp)
 {
@@ -465,7 +465,7 @@ vnafile_t *vnafile_alloc(vnafile_error_fn_t *error_fn, void *error_arg)
 
 /*
  * vnafile_get_file_type: return the file type
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  */
 vnafile_type_t vnafile_get_file_type(const vnafile_t *vfp)
 {
@@ -474,7 +474,7 @@ vnafile_type_t vnafile_get_file_type(const vnafile_t *vfp)
 
 /*
  * vnafile_set_file_type: set the file type
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @type: file type
  *
  *   The default type is VNAFILE_AUTO where the library tries to intuit
@@ -500,7 +500,7 @@ int vnafile_set_file_type(vnafile_t *vfp, vnafile_type_t type)
 
 /*
  * vnafile_get_format: current the format string
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  */
 const char *vnafile_get_format(const vnafile_t *vfp)
 {
@@ -509,7 +509,7 @@ const char *vnafile_get_format(const vnafile_t *vfp)
 
 /*
  * vnafile_set_format: set the format string
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @format: a comma-separated case-insensitive list of the following:
  *     [{S,Z,Y,T,H,G,A,B}][{ri,ma,dB}]
  *     {il,rl}
@@ -611,7 +611,7 @@ out:
 
 /*
  * _vnafile_set_simple_format: set the format string (1 parameter)
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @parameter: parameter type
  *   @format: coordinate system
  */
@@ -653,7 +653,7 @@ out:
 
 /*
  * vnafile_get_fprecision: get the frequency value precision
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  */
 int vnafile_get_fprecision(const vnafile_t *vfp)
 {
@@ -662,7 +662,7 @@ int vnafile_get_fprecision(const vnafile_t *vfp)
 
 /*
  * vnafile_set_fprecision: set the frequency value precision
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @precision: precision in decimal places (1..n) or VNAFILE_MAX_PRECISION
  */
 int vnafile_set_fprecision(vnafile_t *vfp, int precision)
@@ -679,7 +679,7 @@ int vnafile_set_fprecision(vnafile_t *vfp, int precision)
 
 /*
  * vnafile_get_dprecision: set the data value precision
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  */
 int vnafile_get_dprecision(const vnafile_t *vfp)
 {
@@ -688,7 +688,7 @@ int vnafile_get_dprecision(const vnafile_t *vfp)
 
 /*
  * vnafile_set_dprecision: set the data value precision for vnafile_save
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @precision: precision in decimal places (1..n) or VNAFILE_MAX_PRECISION
  */
 int vnafile_set_dprecision(vnafile_t *vfp, int precision)
@@ -704,8 +704,8 @@ int vnafile_set_dprecision(vnafile_t *vfp, int precision)
 }
 
 /*
- * vnafile_free: free the object obtained from vnafile_alloc
- *   @vfp: object to free
+ * vnafile_free: free the structure obtained from vnafile_alloc
+ *   @vfp: pointer to structure to free
  */
 void vnafile_free(vnafile_t *vfp)
 {

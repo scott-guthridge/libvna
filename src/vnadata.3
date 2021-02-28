@@ -258,13 +258,13 @@ z (impedance), y (admittance), h (hybrid), g (inverse-hybrid), a (ABCD),
 b (inverse ABCD) or zin (input impedance) parameters.
 .PP
 The \fBvnadata_alloc\fP() function allocates an empty \fBvnadata_t\fP
-object of type VPT_UNDEF.
+structure of type VPT_UNDEF.
 This is useful for creating the empty output container for other functions
 such as \fBvnadata_convert\fP(), or \fBvnacal_input_apply\fP(3).
 .PP
 The \fBvnadata_init\fP() function sets the dimensions and type of the
-\fBvnadata_t\fP object, initializes all frequency and data cells to zero
-and all z0 entries to the default of 50 ohms.
+\fBvnadata_t\fP structure, initializes all frequency and data cells to
+zero and all z0 entries to the default of 50 ohms.
 The \fItype\fP argument must be one of: VPT_UNDEF, VPT_S, VPT_Z, VPT_Y,
 VPT_T, VPT_H, VPT_G, VPT_A, VPT_B, or VPT_ZIN, and the dimensions must
 be consistent with the type.
@@ -273,8 +273,8 @@ The \fBvnadata_alloc_and_init\fP() function is a combination
 of \fBvnadata_alloc\fP() and \fBvnadata_init\fP().
 .PP
 The \fBvnadata_get_frequencies\fP(), \fBvnadata_get_rows\fP() and
-\fBvnadata_get_columns\fP(), and \fBvnadata_get_type\fP() functions
-query the dimensions and type of the object, and \fBvna_get_typename\fP()
+\fBvnadata_get_columns\fP(), and \fBvnadata_get_type\fP() functions query
+the dimensions and type of the structure, and \fBvna_get_typename\fP()
 returns \fItype\fP as a string.
 The \fBvnadata_set_type\fP() function changes the parameter type without
 doing conversions.
@@ -287,7 +287,7 @@ frequencies, the number of rows or the type, but it doesn't reform the
 matrix when changing the number of columns.
 Changing the type doesn't convert existing data.
 .PP
-The \fBvnadata_free\fP() function frees the object and its contents.
+The \fBvnadata_free\fP() function frees the structure and its contents.
 .PP
 The \fBvnadata_get_frequency\fP() and \fBvnadata_set_frequency\fP()
 functions get and set the frequency at index \fIfindex\fP, respectively.
@@ -312,7 +312,7 @@ The \fBvnadata_set_from_vector\fP() and \fBvnadata_get_to_vector\fP()
 functions copy a vector of data values, one entry per frequency, into
 a \fBvnadata_t\fP matrix cell, and vice versa.
 The \fIvector\fP argument must point to a vector with length at least
-the number of frequencies in the \fBvnadata_t\fP object.
+the number of frequencies in the \fBvnadata_t\fP structure.
 These functions are useful for translating between the matrix of vectors
 form used for VNA measurements, and the vector of matrices form used
 internally by vnadata.
@@ -354,7 +354,7 @@ system impedances for all other entries.
 .PP
 The \fBvnadata_convert\fP() function converts from one parameter type
 to another, writing the result into \fIvdp_out\fP.
-If \fIvdp_out\fP refers to the same object as \fIvdp_in\fP, then an
+If \fIvdp_out\fP refers to the same structure as \fIvdp_in\fP, then an
 in-place conversion is done.
 If \fIvdp_out\fP is not the same as \fIvdp_in\fP and \fInewtype\fP
 is the same type as the input matrix, the data are simply copied.

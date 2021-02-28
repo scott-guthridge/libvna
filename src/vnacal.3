@@ -69,7 +69,7 @@ vnacal_error_fn_t, vnacal_calset_alloc, vnacal_calset_set_frequency_vector, vnac
 .PP
 .BI "void vnacal_calset_free(vnacal_calset_t *" vcsp );
 .\"
-.SS "Calibration Object"
+.SS "Calibration Structure"
 .PP
 .BI "vnacal_t *vnacal_create(int " sets ", vnacal_calset_t **" vcspp ,
 .in +4n
@@ -164,7 +164,7 @@ vnacal_error_fn_t, vnacal_calset_alloc, vnacal_calset_set_frequency_vector, vnac
 .BI "const char *" format ", ...);"
 .in -4n
 .\"
-.SS "Calibration Input Object"
+.SS "Calibration Input Structure"
 .PP
 .BI "vnacal_input_t *vnacal_input_alloc(vnacal_t *" vcp ,
 .BI "int " set ,
@@ -214,22 +214,23 @@ from a device under test (DUT) to an S-parameter matrix.
 .PP
 The library is used in two phases: calibration and application.
 In the calibration phase, VNA measurements of known reference standards
-are made and stored into a \fBvnacal_calset_t\fP object.
-This object is then given to the \fBvnacal_create\fP() function which uses
-it to create a \fBvnacal_t\fP object containing error terms for the VNA.
-The \fBvnacal_t\fP object is saved to a file using \fBvnacal_save\fP().
+are made and stored into a \fBvnacal_calset_t\fP structure.
+This structure is then given to the \fBvnacal_create\fP() function which
+uses it to create a \fBvnacal_t\fP structure containing error terms for
+the VNA.
+The \fBvnacal_t\fP structure is saved to a file using \fBvnacal_save\fP().
 In the application phase, \fBvnacal_load\fP() loads the error terms back
 from the file.
 VNA measurements are made for a device under test and stored into a
-\fBvnacal_input_t\fP object.
-Finally, the \fBvnacal_input_apply\fP() function applies the error
-terms to the measured values and generates the S-parameter matrix.
+\fBvnacal_input_t\fP structure.
+Finally, the \fBvnacal_input_apply\fP() function applies the error terms
+to the measured values and generates the S-parameter matrix.
 The next sections go through this process in detail.
 .SS "Calibration"
 .PP
 The first step in creating a new calibration is to use
 \fBvnacal_calset_alloc\fP() to create an opaque \fBvnacal_calset_t\fP
-object with name \fIsetname\fP.
+structure with name \fIsetname\fP.
 The \fIrows\fP and \fIcolumns\fP parameters give the dimensions of the
 calibration matrix: \fIrows\fP is the number of VNA ports that detect
 signal and \fIcolumns\fP is the number of VNA ports that drive signal.
@@ -247,12 +248,12 @@ return failure but do not print messages; \fIerror_arg\fP is a pointer
 to arbitrary user data passed through to the error function.
 .PP
 \fBvnacal_calset_set_frequency_vector\fP() loads a vector of
-calibration frequency points into the \fBvnacal_calset_t\fP object;
+calibration frequency points into the \fBvnacal_calset_t\fP structure;
 \fIfrequency_vector\fP must be non-negative and ascending with length
 equal to \fIfrequencies\fP above.
 .PP
 The next step is to make VNA calibration measurements using known
-standards and add them to the \fBvnacal_calset_t\fP object.
+standards and add them to the \fBvnacal_calset_t\fP structure.
 Each element of the calibration matrix contains three calibration
 terms.
 The diagonal elements, i,i, contain the reflected values from each of
@@ -356,13 +357,12 @@ When saving more than one calibration set together, each must be given
 a unique name.
 .PP
 \fBvnacal_calset_free\fP() frees the memory used by the
-\fBvnacal_calset_t\fP object.
+\fBvnacal_calset_t\fP structure.
 This can be done safely after calling \fBvnacal_create\fP().
 .PP
 \fBvnacal_create\fP() generates error terms from the calibration
-measurements and
-returns a pointer to an opaque \fBvnacal_t\fP object needed by most of
-the other library functions.
+measurements and returns a pointer to an opaque \fBvnacal_t\fP structure
+needed by most of the other library functions.
 The \fIvcspp\fP parameter is a vector of pointers of length \fIsets\fP to
 \fBvnacal_calset_t\fP, allowing multiple calibration sets to be included.
 \fIerror_fn\fP is an optional pointer to a function the library calls
@@ -372,10 +372,10 @@ of terms in the calibration matrix, that is, 3 * rows * columns, e.g. a
 2x2 calibration matrix produces 12 error terms.
 .PP
 \fBvnacal_save\fP() saves the calibration to a file.
-The \fIvcp\fP parameter is a pointer to the \fBvnacal_t\fP object returned
-from \fBvnacal_create\fP() or \fBvnacal_load\fP(); \fIpathname\fP is the
-calibration file name; \fIdotdir\fP is an optional directory relative
-to \s-2$HOME\s+2.
+The \fIvcp\fP parameter is a pointer to the \fBvnacal_t\fP structure
+returned from \fBvnacal_create\fP() or \fBvnacal_load\fP(); \fIpathname\fP
+is the calibration file name; \fIdotdir\fP is an optional directory
+relative to \s-2$HOME\s+2.
 If \fIpathname\fP is absolute or if it ends with a \fB.vnacal\fP
 extension, the library saves the calibration to \fIpathname\fP.
 Otherwise, if the \s-2HOME\s+2 environment variable is set and
@@ -398,16 +398,17 @@ saving and loading the calibration data.
 Once a calibration model has been created or an existing calibration
 has been loaded from a file, it can be used to convert voltages measured
 for a device under test to S-parameters.
-The typical flow is: use \fBvnacal_load\fP() to load a previously saved
-calibration; use \fBvnacal_input_alloc\fP() to create a \fBvnacal_input_t\fP
-object; make measurements from the device under test using parameters
-from the calibration such as the frequency range and properties (see below)
-to guide the process; save the measurements to the \fBvnacal_input_t\fP;
-and finally, use \fBvnacal_input_apply\fP() to produce S-parameters.
+The typical flow is: use \fBvnacal_load\fP() to load a previously
+saved calibration; use \fBvnacal_input_alloc\fP() to create a
+\fBvnacal_input_t\fP structure; make measurements from the device under
+test using parameters from the calibration such as the frequency range
+and properties (see below) to guide the process; save the measurements
+to the \fBvnacal_input_t\fP; and finally, use \fBvnacal_input_apply\fP()
+to produce S-parameters.
 .PP
-\fBvnacal_load\fP() loads a previously saved calibration from a file and
-returns a pointer to an opaque \fBvnacal_t\fP object needed by most of
-the other library functions.
+\fBvnacal_load\fP() loads a previously saved calibration from a file
+and returns a pointer to an opaque \fBvnacal_t\fP structure needed by
+most of the other library functions.
 If the file specified by \fIpathname\fP exists, the library loads from
 \fIpathname\fP.
 Otherwise, if \fIpathname\fP does not end in a \fB.vnacal\fP
@@ -421,7 +422,7 @@ The \fIerror_fn\fP and \fIerror_arg\fP parameters are the same as in
 .PP
 \fBvnacal_get_filename\fP() returns the file name of the calibration
 file.
-This function returns \s-2NULL\s+2 if the \fBvnacal_t\fP object came
+This function returns \s-2NULL\s+2 if the \fBvnacal_t\fP structure came
 from \fBvnacal_create\fP and \fBvnacal_save\fP() hasn't been called.
 .PP
 \fBvnacal_get_sets\fP() returns the number of calibration sets.
@@ -443,13 +444,13 @@ frequencies in the calibration set.
 \fBvnacal_create\fP() or \fBvnacal_load\fP().
 .PP
 \fBvnacal_input_alloc\fP() returns an opaque \fBvnacal_input_t\fP
-object into which measurements from a device under test can be stored.
+structure into which measurements from a device under test can be stored.
 The \fIvcp\fP and \fIset\fP parameters specify the associated calibration
 set; \fIrows\fP, \fIcolumns\fP and \fIfrequencies\fP give the dimensions
 of the S-parameter matrix and number of frequency points.
 .PP
 \fBvnacal_input_set_frequency_vector\fP() loads a vector of
-measured frequency points into the \fBvnacal_input_t\fP object;
+measured frequency points into the \fBvnacal_input_t\fP structure;
 \fIfrequency_vector\fP must be non-negative and ascending with length
 equal to \fIfrequencies\fP given to \fBvnacal_input_alloc\fP().
 The frequency points given to this function don't have to match those
@@ -462,8 +463,8 @@ to interpolate.
 The \fBvnacal_input_add_vector\fP() function adds a measurement to the
 matrix cell addressed by \fIrow\fP and \fIcolumn\fP.
 This function may be used when the calibration matrix is 2x1 or 1x2,
-or when the dimensions of \fBvnacal_input_t\fP object don't exceed those
-of the calibration matrix.
+or when the dimensions of \fBvnacal_input_t\fP structure don't exceed
+those of the calibration matrix.
 If these conditions are not met, use the more general
 \fBvnacal_input_add_mapped_vector\fP() instead.
 If this function is called more than once on the same matrix element,
@@ -482,14 +483,14 @@ averaged.
 .PP
 The \fBvnacal_input_get_value\fP() function returns the current input
 value for the specified \fIrow\fP, \fIcolumn\fP and frequency index
-(\fIfindex\fP), in the \fBvnacal_input_t\fP object.
+(\fIfindex\fP), in the \fBvnacal_input_t\fP structure.
 .PP
 The \fBvnacal_input_apply\fP() function applies error corrections to
 the accumulated measurements and stores the S-parameter matrix into
-the user-allocated \fBvnadata_t\fP object.
+the user-allocated \fBvnadata_t\fP structure.
 .PP
 The \fBvnacal_input_free\fP() function frees the \fBvnacal_input_t\fP
-object.
+structure.
 .\"
 .SS "User-Defined Properties"
 The library provides methods for storing user-defined structures and
@@ -498,8 +499,8 @@ This is useful for describing the vector network analyzer, conditions
 under which the calibration was made, which detector measures which
 signal, switch settings needed for each measurement and other information.
 All property functions take similar arguments: \fIvcp\fP is a pointer
-to the \fBvnacal_t\fP object returned from \fBvnacal_create\fP() or
-\fBvnacal_load\fP(); \fIset\fP is the index of the calibration set,
+to the \fBvnacal_t\fP structure returned from \fBvnacal_create\fP()
+or \fBvnacal_load\fP(); \fIset\fP is the index of the calibration set,
 or -1 to indicate a global property; \fIformat\fP is a format string as
 in \fBsprintf\fP(); and \fB...\fP is a list of additional arguments as
 appropriate for \fIformat\fP.
@@ -626,15 +627,15 @@ sets \fIerrno\fP and returns \s-2NULL\s+2.
 .\"
 .SH "RETURN VALUE"
 The \fBvnacal_calset_alloc\fP() function returns a pointer to a
-\fBvnacal_calset_t\fP object.
+\fBvnacal_calset_t\fP structure.
 On error, it sets \fIerrno\fP and returns \s-2NULL\s+2.
 .PP
 The \fBvnacal_create\fP() and \fBvnacal_load\fP() functions return a
-pointer to an opaque \fBvnacal_t\fP object.
+pointer to an opaque \fBvnacal_t\fP structure.
 On error, these functions set \fIerrno\fP and return \s-2NULL\s+2.
 .PP
 The \fBvnacal_input_alloc\fP() function returns a pointer to an opaque
-\fBvnacal_input_t\fP object.
+\fBvnacal_input_t\fP structure.
 On error, it sets \fIerrno\fP and returns \s-2NULL\s+2.
 .PP
 The \fBvnacal_calset_add_vector\fP(),
@@ -654,7 +655,7 @@ The \fBvnacal_calset_add_vector\fP(),
 \fIerrno\fP and return -1 on failure.
 .PP
 The \fBvnacal_get_filename\fP() function returns the calibration
-file name, or \s-2NULL\s+2 if the \fBvnacal_t\fP object came from
+file name, or \s-2NULL\s+2 if the \fBvnacal_t\fP structure came from
 \fBvnacal_create\fP() and \fBvnacal_save\fP() hasn't yet been called.
 .PP
 The \fBvnacal_get_fmin\fP() and \fBvnacal_get_fmax\fP() functions
@@ -687,7 +688,7 @@ in a map or list, or if the key doesn't exist or isn't a map or list,
 sets \fIerrno\fP and returns -1.
 .PP
 The \fBvnacal_property_keys\fP() function function returns a vector of
-pointers to the keys of a map object.
+pointers to the keys of a map structure.
 Caller is responsible for freeing the returned vector (but not the strings).
 If the key doesn't exist or if the key refers to something that's not
 a map, it sets \fIerrno\fP and returns \s-2NULL\s+2.
@@ -1019,7 +1020,7 @@ int main(int argc, char **argv)
     }
 
     /*
-     * Allocate a vnacal_input_t object to apply the calibration
+     * Allocate a vnacal_input_t structure to apply the calibration
      * to measured values.
      */
     if ((vip = vnacal_input_alloc(vcp, /*set=*/0,
@@ -1030,7 +1031,7 @@ int main(int argc, char **argv)
     }
 
     /*
-     * Allocate a vnadata_t object to hold the S parameters.
+     * Allocate a vnadata_t structure to hold the S parameters.
      */
     if ((s_matrix = vnadata_alloc()) == NULL) {
         (void)fprintf(stderr, "example: vnadata_alloc: %s\\n",

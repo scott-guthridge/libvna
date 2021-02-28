@@ -69,18 +69,18 @@ typedef struct vnadata {
 } vnadata_t;
 
 /*
- * vnadata_alloc: allocate an empty vnadata_t object
+ * vnadata_alloc: allocate an empty vnadata_t structure
  */
 extern vnadata_t *vnadata_alloc();
 
 /*
- * vnadata_free: free a vnadata_t object
- *   @vdp: object to free
+ * vnadata_free: free a vnadata_t structure
+ *   @vdp: pointer to vnacal_data_t structure to free
  */
 extern void vnadata_free(vnadata_t *vdp);
 
 /*
- * vnadata_init: resize and initialize a vnadata_t object
+ * vnadata_init: resize and initialize a vnadata_t structure
  *   @frequencies: number of frequency points
  *   @rows: number of matrix rows
  *   @columns: number of matrix columns
@@ -90,7 +90,7 @@ extern int vnadata_init(vnadata_t *vdp, int frequencies, int rows,
 	int columns, vnadata_parameter_type_t type);
 
 /*
- * vnadata_alloc_and_init: allocate a vnadata_t object and initialize to zero
+ * vnadata_alloc_and_init: allocate a vnadata_t structure and initialize to zero
  *   @frequencies: number of frequency points
  *   @rows: number of matrix rows
  *   @columns: number of matrix columns
@@ -112,8 +112,8 @@ static inline vnadata_t *vnadata_alloc_and_init(int frequencies, int rows,
 }
 
 /*
- * vnadata_resize: resize a vnadata_t object without clearing values
- *   @vdp: object pointer
+ * vnadata_resize: resize a vnadata_t structure without clearing values
+ *   @vdp: pointer to vnacal_data_t structure
  *   @frequencies: new number of frequencies
  *   @rows: new number of rows
  *   @columns: new number of columns
@@ -140,7 +140,7 @@ extern int vnadata_resize(vnadata_t *vdp, int frequencies,
 
 /*
  * vnadata_get_frequencies: return the number of frequencies
- *   @vdp: vnadata object pointer
+ *   @vdp: a pointer to the vnadata_t structure
  */
 static inline int vnadata_get_frequencies(const vnadata_t *vdp)
 {
@@ -149,7 +149,7 @@ static inline int vnadata_get_frequencies(const vnadata_t *vdp)
 
 /*
  * vnadata_get_rows: return the number of rows
- *   @vdp: vnadata object pointer
+ *   @vdp: a pointer to the vnadata_t structure
  */
 static inline int vnadata_get_rows(const vnadata_t *vdp)
 {
@@ -158,7 +158,7 @@ static inline int vnadata_get_rows(const vnadata_t *vdp)
 
 /*
  * vnadata_get_columns: return the number of columns
- *   @vdp: vnadata object pointer
+ *   @vdp: a pointer to the vnadata_t structure
  */
 static inline int vnadata_get_columns(const vnadata_t *vdp)
 {
@@ -166,8 +166,8 @@ static inline int vnadata_get_columns(const vnadata_t *vdp)
 }
 
 /*
- * vnadata_get_type: return the type of data in the vnadata_t object
- *   @vdp: vnadata object pointer
+ * vnadata_get_type: return the type of data in the vnadata_t structure
+ *   @vdp: a pointer to the vnadata_t structure
  */
 static inline vnadata_parameter_type_t vnadata_get_type(const vnadata_t *vdp)
 {
@@ -176,14 +176,14 @@ static inline vnadata_parameter_type_t vnadata_get_type(const vnadata_t *vdp)
 
 /*
  * vnadata_set_type: change the parameter type without conversion
- *   @vdp: vnadata object pointer
+ *   @vdp: a pointer to the vnadata_t structure
  *   @type: new parameter type
  */
 extern int vnadata_set_type(vnadata_t *vdp, vnadata_parameter_type_t type);
 
 /*
  * vnadata_get_frequency: get the indexed frequency
- *   @vdp:    vnadata object pointer
+ *   @vdp:    a pointer to the vnadata_t structure
  *   @findex: frequency index
  */
 static inline double vnadata_get_frequency(const vnadata_t *vdp, int findex)
@@ -199,7 +199,7 @@ static inline double vnadata_get_frequency(const vnadata_t *vdp, int findex)
 
 /*
  * vnadata_set_frequency: get the indexed frequency
- *   @vdp:       vnadata object pointer
+ *   @vdp:       a pointer to the vnadata_t structure
  *   @findex:    frequency index
  *   @frequency: new frequency value
  */
@@ -218,7 +218,7 @@ static inline int vnadata_set_frequency(vnadata_t *vdp, int findex,
 
 /*
  * vnadata_get_frequency_vector: get the frequency vector
- *   @vdp: vnadata object pointer
+ *   @vdp: a pointer to the vnadata_t structure
  */
 static inline const double *vnadata_get_frequency_vector(const vnadata_t *vdp)
 {
@@ -233,7 +233,7 @@ static inline const double *vnadata_get_frequency_vector(const vnadata_t *vdp)
 
 /*
  * vnadata_set_frequency_vector: set the frequency vector
- *   @vdp: vnadata object pointer
+ *   @vdp: a pointer to the vnadata_t structure
  *   @findex: frequency index
  *   @frequency_vector: new frequency value
  */
@@ -247,7 +247,7 @@ static inline int vnadata_set_frequency_vector(vnadata_t *vdp,
 
 /*
  * vnadata_get_cell: get a value from the matrix
- *   @vdp:    vnadata object pointer
+ *   @vdp:    a pointer to the vnadata_t structure
  *   @findex: frequency index
  *   @row:    matrix row
  *   @column: matrix column
@@ -268,7 +268,7 @@ static inline double complex vnadata_get_cell(const vnadata_t *vdp,
 
 /*
  * vnadata_set_cell: set a matrix value
- *   @vdp:    vnadata object pointer
+ *   @vdp:    a pointer to the vnadata_t structure
  *   @findex: frequency index
  *   @row:    matrix row
  *   @column: matrix column
@@ -291,7 +291,7 @@ static inline int vnadata_set_cell(vnadata_t *vdp, int findex, int row,
 
 /*
  * vnadata_get_matrix: return the serialized matrix at the given freq. index
- *   @vdp:    vnadata object pointer
+ *   @vdp:    a pointer to the vnadata_t structure
  *   @findex: frequency index
  */
 static inline const double complex *vnadata_get_matrix(const vnadata_t *vdp,
@@ -308,7 +308,7 @@ static inline const double complex *vnadata_get_matrix(const vnadata_t *vdp,
 
 /*
  * vnadata_set_matrix: set the matrix at the given frequency index
- *   @vdp:    vnadata object pointer
+ *   @vdp:    a pointer to the vnadata_t structure
  *   @findex: frequency index
  *   @matrix: serialized matrix (concatenation of rows)
  */
@@ -328,7 +328,7 @@ static inline int vnadata_set_matrix(vnadata_t *vdp, int findex,
 
 /*
  * vnadata_get_from_vector: copy a matrix cell into a by-frequency vector
- *   @vdp:    vnadata object pointer
+ *   @vdp:    a pointer to the vnadata_t structure
  *   @row:    matrix row
  *   @column: matrix column
  *   @vector: vector of data values by frequency
@@ -353,7 +353,7 @@ static inline int vnadata_get_to_vector(const vnadata_t *vdp,
 
 /*
  * vnadata_set_from_vector: set a matrix cell from by-frequency vector
- *   @vdp:    vnadata object pointer
+ *   @vdp:    a pointer to the vnadata_t structure
  *   @row:    matrix row
  *   @column: matrix column
  *   @vector: vector of data values by frequency
@@ -378,7 +378,7 @@ static inline int vnadata_set_from_vector(vnadata_t *vdp, int row, int column,
 
 /*
  * vnadata_get_z0: return the z0 value for the given port
- *   @vdp:  vnadata object pointer
+ *   @vdp:  a pointer to the vnadata_t structure
  *   @port: port number (zero-based)
  *
  * Note: fails if vdp contains per-frequency z0 vectors.
@@ -387,7 +387,7 @@ extern double complex vnadata_get_z0(const vnadata_t *vdp, int port);
 
 /*
  * vnadata_set_z0: set the z0 value for the given port
- *   @vdp:  vnadata object pointer
+ *   @vdp:  a pointer to the vnadata_t structure
  *   @port: port number (zero-based)
  *   @z0:   new value
  */
@@ -395,14 +395,14 @@ extern int vnadata_set_z0(vnadata_t *vdp, int port, double complex z0);
 
 /*
  * vnadata_set_all_z0: set all z0's to the same value
- *   @vdp:  vnadata object pointer
+ *   @vdp:  a pointer to the vnadata_t structure
  *   @z0:   new value
  */
 extern int vnadata_set_all_z0(vnadata_t *vdp, double complex z0);
 
 /*
  * vnadata_get_z0_vector: return the z0 vector
- *   @vdp:  vnadata object pointer
+ *   @vdp:  a pointer to the vnadata_t structure
  *
  * Note: fails if vdp contains per-frequency z0 vectors.
  */
@@ -410,7 +410,7 @@ extern const double complex *vnadata_get_z0_vector(const vnadata_t *vdp);
 
 /*
  * vnadata_set_z0_vector: set the z0 vector
- *   @vdp:       vnadata object pointer
+ *   @vdp:       a pointer to the vnadata_t structure
  *   @z0_vector: new values (length is max of rows and columns)
  */
 extern int vnadata_set_z0_vector(vnadata_t *vdp,
@@ -418,7 +418,7 @@ extern int vnadata_set_z0_vector(vnadata_t *vdp,
 
 /*
  * vnadata_get_fz0: return the z0 value for the given frequency and port
- *   @vdp:    vnadata object pointer
+ *   @vdp:    a pointer to the vnadata_t structure
  *   @findex: frequency index
  *   @port:   port number (zero-based)
  */
@@ -427,7 +427,7 @@ extern double complex vnadata_get_fz0(const vnadata_t *vdp, int findex,
 
 /*
  * vnadata_set_fz0: set the z0 value for the given frequency and port
- *   @vdp:    vnadata object pointer
+ *   @vdp:    a pointer to the vnadata_t structure
  *   @findex: frequency index
  *   @port:   port number (zero-based)
  *   @z0:     new value
@@ -437,7 +437,7 @@ extern int vnadata_set_fz0(vnadata_t *vdp, int findex, int port,
 
 /*
  * vnadata_get_fz0_vector: return the z0 vector for the given frequency
- *   @vdp:    vnadata object pointer
+ *   @vdp:    a pointer to the vnadata_t structure
  *   @findex: frequency index
  */
 extern const double complex *vnadata_get_fz0_vector(const vnadata_t *vdp,
@@ -445,7 +445,7 @@ extern const double complex *vnadata_get_fz0_vector(const vnadata_t *vdp,
 
 /*
  * vnadata_set_fz0_vector: set the z0 vector for the given frequency
- *   @vdp:       vnadata object pointer
+ *   @vdp:       a pointer to the vnadata_t structure
  *   @findex:    frequency index
  *   @z0_vector: new values (length is max of rows and columns)
  */
@@ -454,8 +454,8 @@ extern int vnadata_set_fz0_vector(vnadata_t *vdp, int findex,
 
 /*
  * vnadata_convert: convert the matrix from one parameter type to another
- *   @vdp_in:  input vnadata object
- *   @vdp_out: output vnadata object (may be same as vdp_in)
+ *   @vdp_in:  pointer to input vnadata_t structure
+ *   @vdp_out: pointer to output vnadata_t structure (may be same as vdp_in)
  *   @newtype: new type
  */
 extern int vnadata_convert(const vnadata_t *vdp_in,
@@ -463,7 +463,7 @@ extern int vnadata_convert(const vnadata_t *vdp_in,
 
 /*
  * vnadata_add_frequency: add a new frequency entry
- *   @vdp: object pointer
+ *   @vdp: a pointer to the vnadata_t structure
  *   @frequency: new frequency value
  *
  *   Increase the number of frequencies in the data set by one creating

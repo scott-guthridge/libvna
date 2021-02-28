@@ -154,7 +154,7 @@ finished:
 
 /*
  * _vnafile_convert: convert the input matrix to the given type
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @conversions: cached conversions
  *   @vdp: input data
  *   @type: desired type
@@ -250,7 +250,7 @@ vnafile_type_t _vnafile_find_type(const char *filename, int *ports)
 
 /*
  * print_native_header: print header for native file format
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @fp: file pointer
  *   @vdp: input data
  */
@@ -648,7 +648,7 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 
 /*
  * print_touchstone_header: print header for touchstone formats
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @fp: file pointer
  *   @vdp: input data
  *   @z0_touchstone: the first system impedance (before normalization)
@@ -743,7 +743,7 @@ static const char vnafile_save_name[] = "vnafile_save";
 
 /*
  * vnafile_save_common: common save routine
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @fp: file pointer
  *   @filename: filename used in error messages and to intuit the file type
  *   @vdp: input data
@@ -1500,7 +1500,7 @@ out:
 
 /*
  * vnafile_check: check that parameters are valid for save
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @filename: file to save
  *   @vdp: input data
  */
@@ -1512,7 +1512,7 @@ int vnafile_check(vnafile_t *vfp, const char *filename,
 
 /*
  * vnafile_fsave: save network parameters to a file pointer
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @fp: file pointer
  *   @filename: filename used in error messages and to intuit the file type
  *   @vdp: input data
@@ -1525,7 +1525,7 @@ int vnafile_fsave(vnafile_t *vfp, FILE *fp, const char *filename,
 
 /*
  * vnafile_save: save network parameters to filename
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @filename: file to save
  *   @vdp: input data
  */

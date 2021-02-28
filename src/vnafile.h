@@ -67,13 +67,13 @@ extern vnafile_t *vnafile_alloc(vnafile_error_fn_t *error_fn, void *error_arg);
 
 /*
  * vnafile_get_file_type: return the file type
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  */
 extern vnafile_type_t vnafile_get_file_type(const vnafile_t *vfp);
 
 /*
  * vnafile_set_file_type: set the file type
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @type: file type
  *
  *   The default type is VNAFILE_AUTO where the library tries to intuit
@@ -83,13 +83,13 @@ extern int vnafile_set_file_type(vnafile_t *vfp, vnafile_type_t type);
 
 /*
  * vnafile_get_format: current the format string
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  */
 extern const char *vnafile_get_format(const vnafile_t *vfp);
 
 /*
  * vnafile_set_format: set the format string
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @format: a comma-separated case-insensitive list of the following:
  *     {S,Z,Y,T,H,G,A,B}[{ri,ma,dB}]
  *     {il,rl}
@@ -103,33 +103,33 @@ extern int vnafile_set_format(vnafile_t *vfp, const char *format);
 
 /*
  * vnafile_get_fprecision: get the frequency value precision
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  */
 extern int vnafile_get_fprecision(const vnafile_t *vcp);
 
 /*
  * vnafile_set_fprecision: set the frequency value precision
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @precision: precision in decimal places (1..n) or VNAFILE_MAX_PRECISION
  */
 extern int vnafile_set_fprecision(vnafile_t *vcp, int precision);
 
 /*
  * vnafile_get_dprecision: set the data value precision
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  */
 extern int vnafile_get_dprecision(const vnafile_t *vcp);
 
 /*
  * vnafile_set_dprecision: set the data value precision for vnafile_save
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @precision: precision in decimal places (1..n) or VNAFILE_MAX_PRECISION
  */
 extern int vnafile_set_dprecision(vnafile_t *vcp, int precision);
 
 /*
  * vnafile_load: load network parameters from filename
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @filename: file to load
  *   @vdp: output data (reshaped as needed)
  */
@@ -137,7 +137,7 @@ extern int vnafile_load(vnafile_t *vfp, const char *filename, vnadata_t *vdp);
 
 /*
  * vnafile_load: load network parameters from a file pointer
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @fp: file pointer
  *   @filename: filename used in error messages and to intuit the file type
  *   @vdp: output data (reshaped as needed)
@@ -147,7 +147,7 @@ extern int vnafile_fload(vnafile_t *vfp, FILE *fp, const char *filename,
 
 /*
  * vnafile_check: test if parameters are valid for save
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @filename: file to save
  *   @vdp: input data
  */
@@ -156,7 +156,7 @@ extern int vnafile_check(vnafile_t *vfp, const char *filename,
 
 /*
  * vnafile_save: save network parameters to filename
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @filename: file to save
  *   @vdp: input data
  */
@@ -165,7 +165,7 @@ extern int vnafile_save(vnafile_t *vfp, const char *filename,
 
 /*
  * vnafile_fsave: save network parameters to a file pointer
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @fp: file pointer
  *   @filename: filename used in error messages and to intuit the file type
  *   @vdp: input data
@@ -174,8 +174,8 @@ extern int vnafile_fsave(vnafile_t *vfp, FILE *fp, const char *filename,
 	const vnadata_t *vdp);
 
 /*
- * vnafile_free: free the object obtained from vnafile_alloc
- *   @vfp: object to free
+ * vnafile_free: free the structure obtained from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  */
 extern void vnafile_free(vnafile_t *vfp);
 

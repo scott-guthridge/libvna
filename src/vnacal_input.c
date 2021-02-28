@@ -48,7 +48,7 @@ static double complex interpolate(vnacal_etermset_t *etsp,
 
 /*
  * vnacal_input_alloc: allocate an application of libvnacal
- *   @vcp: a pointer to the object returned by vnacal_create or vnacal_load
+ *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
  *   @set: set index (beginning with zero)
  *   @rows: number of rows in the S-parameter matrix
  *   @columns: number of columns in the S-parameter matrix
@@ -135,7 +135,7 @@ vnacal_input_t *vnacal_input_alloc(vnacal_t *vcp, int set,
 
 /*
  * vnacal_input_set_frequency_vector: set the frequency vector
- *   @vip: pointer to opaque object returned from vnacal_input_alloc
+ *   @vip: pointer to opaque structure returned from vnacal_input_alloc
  *   @frequency_vector: vector of measured frequencies
  */
 int vnacal_input_set_frequency_vector(vnacal_input_t *vip,
@@ -188,7 +188,7 @@ int vnacal_input_set_frequency_vector(vnacal_input_t *vip,
 
 /*
  * vnacal_input_add_vector: add a vector of measurements to the input
- *   @vip: pointer to opaque object returned from vnacal_input_alloc
+ *   @vip: pointer to opaque structure returned from vnacal_input_alloc
  *   @row: measured DUT port (zero-based)
  *   @column: driven DUT port (zero-based)
  *   @vector: vector of voltage measurements, one per frequency
@@ -261,7 +261,7 @@ int vnacal_input_add_vector(vnacal_input_t *vip,
 
 /*
  * vnacal_input_add_mapped_vector: add a vector of measurements to the input
- *   @vip: pointer to opaque object returned from vnacal_input_alloc
+ *   @vip: pointer to opaque structure returned from vnacal_input_alloc
  *   @vrow: VNA detector port (zero-based)
  *   @vcolumn: VNA driving port (zero-based)
  *   @drow: measured DUT port (zero-based)
@@ -347,7 +347,7 @@ int vnacal_input_add_mapped_vector(vnacal_input_t *vip,
 
 /*
  * vnacal_input_get_value: get the given uncalibrated value
- *   @vip: pointer to opaque object returned from vnacal_input_alloc
+ *   @vip: pointer to opaque structure returned from vnacal_input_alloc
  *   @row: measured DUT port (zero-based)
  *   @column: driven DUT port (zero-based)
  *   @findex: frequency index
@@ -394,8 +394,8 @@ double complex vnacal_input_get_value(vnacal_input_t *vip,
 
 /*
  * vnacal_input_apply: apply the calibration and generate S-parameters
- *   @vip: pointer to opaque object returned from vnacal_input_alloc
- *   @s_parameters: caller-allocated vnadata_t object
+ *   @vip: pointer to opaque structure returned from vnacal_input_alloc
+ *   @s_parameters: pointer to caller-allocated vnadata_t structure
  */
 int vnacal_input_apply(const vnacal_input_t *vip,
 	vnadata_t *s_parameters)
@@ -548,8 +548,8 @@ error:
 #undef F
 
 /*
- * vnacal_input_free: free the input object
- *   @vip: pointer to opaque object returned from vnacal_input_alloc
+ * vnacal_input_free: free the input structure
+ *   @vip: pointer to opaque structure returned from vnacal_input_alloc
  */
 void vnacal_input_free(vnacal_input_t *vip)
 {

@@ -26,7 +26,7 @@
 
 /*
  * vnadata_set_all_z0: set all z0's to the same value
- *   @vdp:  vnadata object pointer
+ *   @vdp:  a pointer to the vnadata_t structure
  *   @z0:   new value
  */
 int vnadata_set_all_z0(vnadata_t *vdp, double complex z0)

@@ -26,7 +26,7 @@
 
 /*
  * vnadata_get_fz0_vector: return the z0 vector for the given frequency
- *   @vdp:    vnadata object pointer
+ *   @vdp:    a pointer to the vnadata_t structure
  *   @findex: frequency index
  */
 const double complex *vnadata_get_fz0_vector(const vnadata_t *vdp, int findex)
