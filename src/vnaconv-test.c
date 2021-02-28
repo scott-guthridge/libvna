@@ -235,7 +235,7 @@ static void test_conversions_2x2()
 {
     test_result_type result = T_SKIPPED;
 
-    for (int trial = 0; trial < 100000; ++trial) {
+    for (int trial = 0; trial < 10000; ++trial) {
 	double k1i, k2i;
 	double complex z0[2];
 	double complex z1c, z2c;
@@ -776,7 +776,7 @@ static void test_conversions_3x3()
 {
     test_result_type result = T_SKIPPED;
 
-    for (int trial = 0; trial < 100000; ++trial) {
+    for (int trial = 0; trial < 10000; ++trial) {
 	double k1i, k2i, k3i;
 	double complex z0[3];
 	double complex z1c, z2c, z3c;
@@ -966,6 +966,10 @@ main(int argc, char **argv)
     }
     for (;;) {
 	switch (getopt(argc, argv, options)) {
+	case 'a':
+	    opt_a = 1;
+	    continue;
+
 	case 'v':
 	    opt_v = 1;
 	    continue;
