@@ -44,8 +44,8 @@ extern void _vnacommon_qrd(complex double *a, complex double *d,
 	int rows, int columns);
 
 /* _vnacommon_qrsolve: solve the system A X = B, destroying A and B */
-extern void _vnacommon_qrsolve(complex double *a, complex double *b,
-	complex double *x, int m, int n, int o);
+extern int _vnacommon_qrsolve(complex double *x, complex double *a,
+	complex double *b, int m, int n, int o);
 
 #ifdef __cplusplus
 } /* extern "C" */
