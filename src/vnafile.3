@@ -176,7 +176,7 @@ dB	decibels, angle
 In the Touchstone file formats, only one specifier can be given and it
 must be restricted to one of the s, z, y, h or g variants.
 If \fBvnafile_set_format\fP() isn't called, the default format takes
-the parameter type from the \fBvnadata_t\fP object with coordinates
+the parameter type from the \fBvnadata_t\fP structure with coordinates
 \(lqri\(rq.
 .\"
 .PP
@@ -216,7 +216,7 @@ In the later case, \fIvnafile\fP is used for error messages only \-
 it doesn't have to refer to an actual file.
 .SH "RETURN VALUE"
 The \fBvnafile_alloc\fP() function returns a pointer to a \fBvnadata_t\fP
-object used by the rest of the functions.
+structure used by the rest of the functions.
 The various get functions return the requested data; they don't return
 errors.
 The integer-valued functions \fBvnafile_set_file_type\fP(),

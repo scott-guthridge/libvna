@@ -26,7 +26,7 @@
 
 /*
  * vnadata_get_fz0: return the z0 value for the given frequency and port
- *   @vdp:    vnadata object pointer
+ *   @vdp:    a pointer to the vnadata_t structure
  *   @findex: frequency index
  *   @port:   port number (zero-based)
  */

@@ -26,7 +26,7 @@
 
 /*
  * vnadata_set_z0: set the z0 value for the given port
- *   @vdp:  vnadata object pointer
+ *   @vdp:  a pointer to the vnadata_t structure
  *   @port: port number (zero-based)
  *   @z0:   new value
  */

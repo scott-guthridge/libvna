@@ -26,7 +26,7 @@
 
 /*
  * vnadata_set_fz0_vector: set the z0 vector for the given frequency
- *   @vdp:       vnadata object pointer
+ *   @vdp:       a pointer to the vnadata_t structure
  *   @findex:    frequency index
  *   @z0_vector: new values (length is max of rows and columns)
  */

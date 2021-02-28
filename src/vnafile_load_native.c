@@ -394,7 +394,7 @@ static int expect_nnint_arg(native_scan_state_t *nssp, int *value)
 
 /*
  * _vnafile_load_native: load matrix data in libvna native format
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @fp: file pointer
  *   @filename: filename used in error messages and to intuit the file type
  *   @vdp: output data (reshaped as needed)

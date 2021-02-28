@@ -34,7 +34,7 @@ typedef enum vnaproperty_type {
 } vnaproperty_type_t;
 
 /*
- * vnaproperty_t: opaque scalar, map or list object
+ * vnaproperty_t: opaque scalar, map or list structure
  */
 typedef struct vnaproperty vnaproperty_t;
 
@@ -53,56 +53,56 @@ typedef struct vnaproperty_map_pair {
 
 /*
  * vnaproperty_type: return the type of the given element
- *   @element: object to test
+ *   @element: property element to test
  */
 extern vnaproperty_type_t vnaproperty_type(const vnaproperty_t *element);
 
 /*
  * vnaproperty_hold: increment the reference count on element
- *   @element: object to reference
+ *   @element: property element to reference
  */
 void vnaproperty_hold(vnaproperty_t *element);
 
 /*
  * vnaproperty_free: decrement the reference count on element and free if zero
- *   @element: object to release
+ *   @element: property element to release
  */
 void vnaproperty_free(vnaproperty_t *element);
 
 /*
- * vnaproperty_alloc_scalar: allocate a scalar object
+ * vnaproperty_alloc_scalar: allocate a scalar property element
  *   @value: value of the scalar (string)
  */
 extern vnaproperty_t *vnaproperty_scalar_alloc(const char *value);
 
 /*
  * vnaproperty_scalar_get: return the value of a scalar
- *   @scalar: scalar object
+ *   @scalar: pointer to a scalar element
  */
 extern const char *vnaproperty_scalar_get(const vnaproperty_t *scalar);
 
 /*
- * vmaproperty_scalar_set: change the value of a scalar object
- *   @scalar: scalar object
+ * vmaproperty_scalar_set: change the value of a scalar element
+ *   @scalar: pointer to a scalar element
  *   @value: new value
  */
 extern int vmaproperty_scalar_set(vnaproperty_t *scalar,
 	const char *value);
 
 /*
- * vnaproperty_alloc_list: allocate a new list object
+ * vnaproperty_alloc_list: allocate a new list element
  */
 extern vnaproperty_t *vnaproperty_list_alloc();
 
 /*
  * vnaproperty_list_count: return the number of items in the list
- *   @list: list object
+ *   @list: pointer to a list element
  */
 extern int vnaproperty_list_count(const vnaproperty_t *list);
 
 /*
  * vnaproperty_list_get: get the element at the given index
- *   @list: list object
+ *   @list: pointer to a list element
  *   @index: index of element to get
  *
  * Note: this function doesn't increment the reference count on the
@@ -113,7 +113,7 @@ extern vnaproperty_t *vnaproperty_list_get(const vnaproperty_t *list,
 
 /*
  * vnaproperty_list_set: replace the element at the given index
- *   @list: list object
+ *   @list: pointer to a list element
  *   @index: index where element should be placed
  *   @element: element to insert (reference is transferred to list)
  *
@@ -124,14 +124,14 @@ extern int vnaproperty_list_set(vnaproperty_t *list, int index,
 
 /*
  * vnaproperty_list_append: append element to the list
- *   @list: list object
- *   @element: object to append (reference is transferred to list)
+ *   @list: pointer to a list element
+ *   @element: pointer to element to append (reference is transferred to list)
  */
 extern int vnaproperty_list_append(vnaproperty_t *list, vnaproperty_t *element);
 
 /*
  * vnaproperty_list_insert: insert element at the given index
- *   @list: list object
+ *   @list: pointer to a list element
  *   @index: index where element should be inserted
  *   @element: element to insert (reference is transferred to list)
  *
@@ -142,19 +142,19 @@ extern int vnaproperty_list_insert(vnaproperty_t *list, int index,
 
 /*
  * vnaproperty_list_delete: delete the element at the given index
- *   @list: list object
+ *   @list: pointer to a list element
  *   @index: index of element to delete
  */
 extern int vnaproperty_list_delete(vnaproperty_t *list, int index);
 
 /*
- * vnaproperty_alloc_map: allocate a new map object
+ * vnaproperty_alloc_map: allocate a new map element
  */
 extern vnaproperty_t *vnaproperty_map_alloc();
 
 /*
  * vnaproperty_map_count: return the number of items in the map
- *   @map: map object
+ *   @map: pointer to a map element
  */
 extern int vnaproperty_map_count(const vnaproperty_t *map);
 
@@ -166,7 +166,7 @@ extern vnaproperty_t *vnaproperty_map_get(const vnaproperty_t *map,
 
 /*
  * vnaproperty_map_set: add an element to the map (replacing if key exists)
- *   @map: map object
+ *   @map: pointer to a map element
  *   @key: search key
  *   @element: element to add (reference is transferred to list)
  */
@@ -175,14 +175,14 @@ extern int vnaproperty_map_set(vnaproperty_t *map, const char *key,
 
 /*
  * vnaproperty_map_delete: delete the element with given key
- *   @map: map object
+ *   @map: pointer to a map element
  *   @key: search key
  */
 extern int vnaproperty_map_delete(vnaproperty_t *map, const char *key);
 
 /*
  * vnaproperty_map_begin: begin iteration
- *   @map: map object
+ *   @map: pointer to a map element
  */
 extern const vnaproperty_map_pair_t *
 vnaproperty_map_begin(const vnaproperty_t *map);
@@ -221,7 +221,7 @@ extern vnaproperty_type_t vnaproperty_expr_type(const vnaproperty_t *root,
 	const char *format, ...);
 
 /*
- * vnaproperty_expr_count: return count of objects in given collection
+ * vnaproperty_expr_count: return count of elements in given collection
  *   @root:   property data root (can be NULL)
  *   @format: printf-like format string forming the property expression
  *   @...:    optional variable arguments

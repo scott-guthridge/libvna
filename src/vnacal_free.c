@@ -28,8 +28,8 @@
 
 
 /*
- * vnacal_free: free a vnacal_t object
- *   @vcp: a pointer to the object returned by vnacal_create or vnacal_load
+ * vnacal_free: free a vnacal_t structure
+ *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
  */
 void vnacal_free(vnacal_t *vcp)
 {

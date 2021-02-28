@@ -117,9 +117,9 @@ static void _vnacal_calc_off_diagonal_error_terms(vnacal_etermset_t *etsp,
 }
 
 /*
- * vnacal_create: construct a calibration object from measured data
+ * vnacal_create: construct a calibration structure from measured data
  *   @sets: number of calibration sets
- *   @vcspp: vector of vnacal_calset objects (sets long)
+ *   @vcspp: vector of pointers to vnacal_calset structures (sets long)
  *   @error_fn: optional error reporting function (NULL if not used)
  *   @error_arg: user data passed through to the error function (or NULL)
  */

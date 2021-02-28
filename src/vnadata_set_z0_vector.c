@@ -26,7 +26,7 @@
 
 /*
  * vnadata_set_z0_vector: set the z0 vector
- *   @vdp:       vnadata object pointer
+ *   @vdp:       a pointer to the vnadata_t structure
  *   @z0_vector: new values (length is max of rows and columns)
  */
 int vnadata_set_z0_vector(vnadata_t *vdp,

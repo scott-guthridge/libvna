@@ -119,7 +119,7 @@ static uint32_t crc32c(uint32_t value, const void *data, size_t length)
 
 /*
  * vnaproperty_type: return the type of the given element
- *   @element: object to test
+ *   @element: pointer to element to test
  */
 vnaproperty_type_t vnaproperty_type(const vnaproperty_t *element)
 {
@@ -128,7 +128,7 @@ vnaproperty_type_t vnaproperty_type(const vnaproperty_t *element)
 
 /*
  * vnaproperty_hold: increment the reference count on element
- *   @element: object to reference
+ *   @element: pointer to element to reference
  */
 void vnaproperty_hold(vnaproperty_t *element)
 {
@@ -140,7 +140,7 @@ void vnaproperty_hold(vnaproperty_t *element)
 
 /*
  * vnaproperty_free: decrement the reference count on element and free if zero
- *   @element: object to release
+ *   @element: pointer to element to release
  */
 void vnaproperty_free(vnaproperty_t *element)
 {
@@ -196,7 +196,7 @@ void vnaproperty_free(vnaproperty_t *element)
 }
 
 /*
- * vnaproperty_alloc_scalar: allocate a scalar object
+ * vnaproperty_alloc_scalar: allocate a new scalar element
  *   @value: value of the scalar (string)
  */
 vnaproperty_t *vnaproperty_scalar_alloc(const char *value)
@@ -224,7 +224,7 @@ vnaproperty_t *vnaproperty_scalar_alloc(const char *value)
 
 /*
  * vnaproperty_scalar_get: return the value of a scalar
- *   @scalar: scalar object
+ *   @scalar: pointer to scalar element
  */
 const char *vnaproperty_scalar_get(const vnaproperty_t *scalar)
 {
@@ -239,8 +239,8 @@ const char *vnaproperty_scalar_get(const vnaproperty_t *scalar)
 }
 
 /*
- * vmaproperty_scalar_set: change the value of a scalar object
- *   @scalar: scalar object
+ * vmaproperty_scalar_set: change the value of a scalar element
+ *   @scalar: pointer to scalar element
  *   @value: new value
  */
 int vmaproperty_scalar_set(vnaproperty_t *scalar, const char *value)
@@ -267,7 +267,7 @@ int vmaproperty_scalar_set(vnaproperty_t *scalar, const char *value)
 
 /*
  * _vnaproperty_list_check_allocation: extend allocation to >= size
- *   @vplp: list object
+ *   @vplp: pointer to property list structure
  *   @size: needed size
  */
 int _vnaproperty_list_check_allocation(vnaproperty_list_t *vplp, size_t size)
@@ -305,7 +305,7 @@ int _vnaproperty_list_check_allocation(vnaproperty_list_t *vplp, size_t size)
 }
 
 /*
- * vnaproperty_alloc_list: allocate a new list object
+ * vnaproperty_alloc_list: allocate a new list element
  */
 vnaproperty_t *vnaproperty_list_alloc()
 {
@@ -323,7 +323,7 @@ vnaproperty_t *vnaproperty_list_alloc()
 
 /*
  * vnaproperty_list_count: return the number of items in the list
- *   @list: list object
+ *   @list: pointer to list element
  */
 int vnaproperty_list_count(const vnaproperty_t *list)
 {
@@ -339,7 +339,7 @@ int vnaproperty_list_count(const vnaproperty_t *list)
 
 /*
  * vnaproperty_list_get: get the element at the given index
- *   @list: list object
+ *   @list: pointer to list element
  *   @index: index of element to get
  *
  * Note: this function doesn't increment the reference count on the
@@ -363,7 +363,7 @@ vnaproperty_t *vnaproperty_list_get(const vnaproperty_t *list, int index)
 
 /*
  * vnaproperty_list_set: replace the element at the given index
- *   @list: list object
+ *   @list: pointer to list element
  *   @index: index where element should be placed
  *   @element: element to insert (reference is transferred to list)
  */
@@ -403,8 +403,8 @@ int vnaproperty_list_set(vnaproperty_t *list, int index,
 
 /*
  * vnaproperty_list_append: append element to the list
- *   @list: list object
- *   @element: object to append (reference is transferred to list)
+ *   @list: pointer to list element
+ *   @element: pointer to element to append (reference is transferred to list)
  */
 int vnaproperty_list_append(vnaproperty_t *list, vnaproperty_t *element)
 {
@@ -424,7 +424,7 @@ int vnaproperty_list_append(vnaproperty_t *list, vnaproperty_t *element)
 
 /*
  * vnaproperty_list_insert: insert element at the given index
- *   @list: list object
+ *   @list: pointer to list element
  *   @index: index where element should be inserted
  *   @element: element to insert (reference is transferred to list)
  *
@@ -460,7 +460,7 @@ int vnaproperty_list_insert(vnaproperty_t *list, int index,
 
 /*
  * vnaproperty_list_delete: delete the element at the given index
- *   @list: list object
+ *   @list: pointer to list element
  *   @index: index of element to delete
  */
 int vnaproperty_list_delete(vnaproperty_t *list, int index)
@@ -505,7 +505,7 @@ static int _vnaproperty_map_compare_keys(const char *key, uint32_t hashval,
 
 /*
  * _vnaproperty_map_find_anchor: find insertion point
- *   @vpmp: map object
+ *   @vplp: pointer to property map structure
  *   @anchor:  address of address of the insertion point
  *   @key: search key
  *   @hashval: full 32 bit hash value
@@ -605,7 +605,7 @@ static int _vnaproperty_map_expand(vnaproperty_map_t *vpmp)
 
 /*
  * _vnaproperty_map_append_order_element: append to order list
- *   @vpmp: map object
+ *   @vplp: pointer to property map structure
  *   @vmep: element to append
  */
 void _vnaproperty_map_append_order_element(vnaproperty_map_t *vpmp,
@@ -628,7 +628,7 @@ void _vnaproperty_map_append_order_element(vnaproperty_map_t *vpmp,
 
 /*
  * _vnaproperty_map_delete_order_element: delete from order list
- *   @vpmp: map object
+ *   @vplp: pointer to property map structure
  *   @vmep: element to delete
  */
 void _vnaproperty_map_delete_order_element(vnaproperty_map_t *vpmp,
@@ -650,7 +650,7 @@ void _vnaproperty_map_delete_order_element(vnaproperty_map_t *vpmp,
 }
 
 /*
- * vnaproperty_alloc_map: allocate a new map object
+ * vnaproperty_alloc_map: allocate a new map element
  */
 vnaproperty_t *vnaproperty_map_alloc()
 {
@@ -667,7 +667,7 @@ vnaproperty_t *vnaproperty_map_alloc()
 
 /*
  * vnaproperty_map_count: return the number of items in the map
- *   @map: map object
+ *   @list: pointer to map element
  */
 int vnaproperty_map_count(const vnaproperty_t *map)
 {
@@ -709,7 +709,7 @@ vnaproperty_t *vnaproperty_map_get(const vnaproperty_t *map, const char *key)
 
 /*
  * vnaproperty_map_set: add an element to the map (replacing if key exists)
- *   @map: map object
+ *   @list: pointer to map element
  *   @key: search key
  *   @element: element to add (reference is transferred to list)
  */
@@ -757,7 +757,7 @@ int vnaproperty_map_set(vnaproperty_t *map, const char *key,
 
 /*
  * vnaproperty_map_delete: delete the element with given key
- *   @map: map object
+ *   @list: pointer to map element
  *   @key: search key
  */
 int vnaproperty_map_delete(vnaproperty_t *map, const char *key)
@@ -801,7 +801,7 @@ int vnaproperty_map_delete(vnaproperty_t *map, const char *key)
 
 /*
  * vnaproperty_map_begin: return the first key-value pair
- *   @map: map object
+ *   @list: pointer to map element
  */
 const vnaproperty_map_pair_t *vnaproperty_map_begin(const vnaproperty_t *map)
 {
@@ -979,8 +979,8 @@ static void _vnaproperty_expr_free(vnaproperty_expr_t *head)
  *   For example, given "foo.bar[5]", the returned list would
  *   be T_LIST/index=5, T_MAP/name="bar", T_MAP/name="foo".
  *   If the indicated collections exist (starting from root), the
- *   vex_collection member points to the existing object; otherwise
- *   if the object doesn't exist or is not the requested type,
+ *   vex_collection member points to the existing element; otherwise
+ *   if the element doesn't exist or is not the requested type,
  *   vex_collection is NULL.  For get operations, the first
  *   element in the returned list is the bottom most collection
  *   containing the requested element, if one exists.  For set
@@ -1185,7 +1185,7 @@ const vnaproperty_t *_vnaproperty_expr_getobj(const vnaproperty_t *root,
 
     /*
      * If vex_collection is NULL, it means the path leading down to
-     * the property either doesn't exist or the object types don't
+     * the property either doesn't exist or the element types don't
      * match; errno will already be set.
      */
     if (head->vex_collection == NULL) {
@@ -1234,7 +1234,7 @@ vnaproperty_type_t vnaproperty_expr_vtype(const vnaproperty_t *root,
 }
 
 /*
- * vnaproperty_expr_vcount: return count of objects in given collection
+ * vnaproperty_expr_vcount: return count of elements in given collection
  *   @root:   property data root (can be NULL)
  *   @format: printf-like format string forming the property expression
  *   @ap:     variable argument pointer
@@ -1519,7 +1519,7 @@ vnaproperty_type_t vnaproperty_expr_type(const vnaproperty_t *root,
 }
 
 /*
- * vnaproperty_expr_count: return count of objects in given collection
+ * vnaproperty_expr_count: return count of elements in given collection
  *   @root:   property data root (can be NULL)
  *   @format: printf-like format string forming the property expression
  *   @...:    optional variable arguments

@@ -26,7 +26,7 @@
 
 /*
  * vnadata_get_z0_vector: return the z0 vector
- *   @vdp:  vnadata object pointer
+ *   @vdp:  a pointer to the vnadata_t structure
  */
 const double complex *vnadata_get_z0_vector(const vnadata_t *vdp)
 {

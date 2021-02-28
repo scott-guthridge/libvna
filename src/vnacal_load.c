@@ -34,7 +34,7 @@
  * vnacal_load_t: parser state
  */
 typedef struct vnacal_load {
-    vnacal_t *vl_vcp;			/* back pointer to vnacal_t object */
+    vnacal_t *vl_vcp;			/* back pointer to vnacal_t structure */
     yaml_document_t vl_document;	/* yaml document */
 } vnacal_load_t;
 
@@ -734,7 +734,7 @@ static int parse_document(vnacal_load_t *vlp, yaml_node_t *node)
 }
 
 /*
- * vnacal_load: construct a calibration object from a saved calibration file
+ * vnacal_load: load the calibration from a file
  *   @pathname: calibration file name
  *   @dotdir: directory under $HOME or NULL
  *   @error_fn: error reporting callback or NULL
@@ -755,7 +755,7 @@ vnacal_t *vnacal_load(const char *pathname, const char *dotdir,
     bool delete_document = false;
 
     /*
-     * Allocate the vnaset_t object and initialize the error reporting function.
+     * Allocate the vnaset_t structure and initialize the error reporting function.
      */
     if ((vcp = (vnacal_t *)malloc(sizeof(vnacal_t))) == NULL) {
 	if (error_fn != NULL) {

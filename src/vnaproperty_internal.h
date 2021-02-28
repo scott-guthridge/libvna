@@ -40,7 +40,7 @@ struct vnaproperty {
 };
 
 /*
- * vnaproperty_scalar_t: scalar (string) object
+ * vnaproperty_scalar_t: scalar (string) structure
  */
 typedef struct vnaproperty_scalar {
     vnaproperty_t vps_base;
@@ -48,7 +48,7 @@ typedef struct vnaproperty_scalar {
 } vnaproperty_scalar_t;
 
 /*
- * vnaproperty_list_t: list object
+ * vnaproperty_list_t: property list structure
  */
 typedef struct vnaproperty_list {
     vnaproperty_t vpl_base;
@@ -58,7 +58,7 @@ typedef struct vnaproperty_list {
 } vnaproperty_list_t;
 
 /*
- * vnaproperty_map_element_t: internal element of a map object
+ * vnaproperty_map_element_t: internal element of a map structure
  */
 typedef struct vnaproperty_map_element {
     vnaproperty_map_pair_t vme_pair;
@@ -70,7 +70,7 @@ typedef struct vnaproperty_map_element {
 } vnaproperty_map_element_t;
 
 /*
- * vnaproperty_map_t: map object
+ * vnaproperty_map_t: property map structure
  *
  * Note:
  *   For cosmetic reasons, we remember the insertion order, and the

@@ -80,7 +80,7 @@ int vnacal_property_type(vnacal_t *vcp, int set, const char *format, ...)
 }
 
 /*
- * vnacal_property_count: return count of objects in given collection
+ * vnacal_property_count: return count of elements in given collection
  *   @root:   property data root (can be NULL)
  *   @format: printf-like format string forming the property expression
  *   @...:    optional variable arguments

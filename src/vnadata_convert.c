@@ -347,7 +347,7 @@ static double complex *get_fz0_vector(vnadata_internal_t *vdip, int findex)
  *   @vdp_out: output parameter matrix
  *   @newtype: new type (can be the same as old)
  *
- * Note: vdp_out and vdp_in may point to the same object.
+ * Note: vdp_out and vdp_in may be the same.
  */
 int vnadata_convert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
 	vnadata_parameter_type_t newtype)
@@ -416,7 +416,7 @@ int vnadata_convert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
     }
 
     /*
-     * Set up the destination object if it's not the same as the source.
+     * Set up the destination structure if it's not the same as the source.
      * Initially set the type to VPT_UNDEF.
      */
     if (vdp_out != vdp_in) {
@@ -464,7 +464,7 @@ int vnadata_convert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
 
     /*
      * Handle the case of old and new types already the same.  If the
-     * output matrix is a different object, copy the values and type over.
+     * output matrix is a different structure, copy the values and type over.
      */
     if (newtype == vdp_in->vd_type) {
 	if (vdp_out != vdp_in) {

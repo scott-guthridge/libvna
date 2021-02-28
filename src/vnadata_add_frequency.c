@@ -27,7 +27,7 @@
 
 /*
  * vnadata_add_frequency: add a new frequency entry
- *   @vdp: object pointer
+ *   @vdp: pointer to vnacal_data_t structure
  *   @frequency: new frequency value
  */
 int vnadata_add_frequency(vnadata_t *vdp, double frequency)

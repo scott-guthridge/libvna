@@ -78,7 +78,7 @@ static int _vnadata_validate(int rows, int columns,
 
 /*
  * _vnadata_extend_p: extend the port allocation for Z0
- *   @vdip: internal object pointer
+ *   @vdip: pointer to vnadata_internal_t structure
  *   @new_p_allocation: new allocation
  */
 int _vnadata_extend_p(vnadata_internal_t *vdip, int new_p_allocation)
@@ -120,7 +120,7 @@ int _vnadata_extend_p(vnadata_internal_t *vdip, int new_p_allocation)
 
 /*
  * _vnadata_extend_m: extend the matrix allocation
- *   @vdip: internal object pointer
+ *   @vdip: pointer to vnadata_internal_t structure
  *   @new_m_allocation: new allocation
  */
 int _vnadata_extend_m(vnadata_internal_t *vdip, int new_m_allocation)
@@ -148,7 +148,7 @@ int _vnadata_extend_m(vnadata_internal_t *vdip, int new_m_allocation)
 
 /*
  * _vnadata_extend_f: extend the frequency allocation
- *   @vdip: internal object pointer
+ *   @vdip: pointer to vnadata_internal_t structure
  *   @new_f_allocation: new allocation
  */
 int _vnadata_extend_f(vnadata_internal_t *vdip, int new_f_allocation)
@@ -230,7 +230,7 @@ int _vnadata_extend_f(vnadata_internal_t *vdip, int new_f_allocation)
 }
 
 /*
- * vnadata_alloc: allocate an empty vnadata_t object
+ * vnadata_alloc: allocate an empty vnadata_t structure
  */
 vnadata_t *vnadata_alloc()
 {
@@ -247,7 +247,7 @@ vnadata_t *vnadata_alloc()
 
 /*
  * vnadata_resize: redefine the dimensions and type
- *   @vdp: object pointer
+ *   @vdp: pointer to vnacal_data_t structure
  *   @frequencies: new number of frequencies
  *   @rows: new number of rows
  *   @columns: new number of columns
@@ -370,7 +370,7 @@ int vnadata_resize(vnadata_t *vdp, int frequencies, int rows, int columns,
 }
 
 /*
- * vnadata_init: resize and initialize a vnadata_t object
+ * vnadata_init: resize and initialize a vnadata_t structure
  *   @frequencies: number of frequency points
  *   @rows: number of matrix rows
  *   @columns: number of matrix columns
@@ -386,7 +386,7 @@ int vnadata_init(vnadata_t *vdp, int frequencies, int rows,
 
 /*
  * vnadata_set_type: change the parameter type without conversion
- *   @vdp: vnadata object pointer
+ *   @vdp: a pointer to the vnadata_t structure
  *   @type: new parameter type
  */
 int vnadata_set_type(vnadata_t *vdp, vnadata_parameter_type_t type)
@@ -410,8 +410,8 @@ int vnadata_set_type(vnadata_t *vdp, vnadata_parameter_type_t type)
 }
 
 /*
- * vnadata_free: free a vnadata_t object
- *   @vdp: object to free
+ * vnadata_free: free a vnadata_t structure
+ *   @vdp: pointer to vnacal_data_t structure to free
  */
 void vnadata_free(vnadata_t *vdp)
 {

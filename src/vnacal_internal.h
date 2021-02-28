@@ -123,7 +123,7 @@ struct vnacal_calset {
        the same) */
     double complex vcs_z0;
 
-    /* serialized matrix of vnacal_cdata_t objects */
+    /* serialized matrix of vnacal_cdata_t structures */
     vnacal_cdata_t *vcs_matrix;
 
     /* user-supplied error callback or NULL */
@@ -181,7 +181,7 @@ typedef struct vnacal_error_terms {
  *   reflected signal and forward+reflected / forward-reflected signal.
  */
 typedef struct vnacal_etermset {
-    /* back pointer to vnacal_t object */
+    /* back pointer to vnacal_t structure */
     vnacal_t *ets_vcp;
 
     /* name of this set */
@@ -251,7 +251,7 @@ struct vnacal {
  * vnacal_input_t: measured data from the device under test
  */
 struct vnacal_input {
-    /* associated vnacal_t object */
+    /* associated vnacal_t structure */
     vnacal_t *vi_vcp;
 
     /* associated calibration set */

@@ -26,7 +26,7 @@
 
 /*
  * vnadata_get_z0: return the z0 value for the given port
- *   @vdp:  vnadata object pointer
+ *   @vdp:  a pointer to the vnadata_t structure
  *   @port: port number (zero-based)
  */
 double complex vnadata_get_z0(const vnadata_t *vdp, int port)

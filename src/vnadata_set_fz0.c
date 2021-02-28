@@ -26,7 +26,7 @@
 
 /*
  * vnadata_set_fz0: set the z0 value for the given frequency and port
- *   @vdp:    vnadata object pointer
+ *   @vdp:    a pointer to the vnadata_t structure
  *   @findex: frequency index
  *   @port:   port number (zero-based)
  *   @z0:     new value

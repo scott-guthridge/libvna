@@ -998,7 +998,7 @@ static int parse_value_pair(ts_parser_state_t *tpsp, int nexpected,
 
 /*
  * _vnafile_load_touchstone
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @fp: file pointer
  *   @filename: filename used in error messages and to intuit the file type
  *   @vdp: output data (reshaped as needed)
@@ -1395,7 +1395,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
     }
 
     /*
-     * Update the vnafile object.
+     * Update the vnafile structure.
      */
     {
 	vnafile_format_type_t format_type;

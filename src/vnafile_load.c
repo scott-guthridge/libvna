@@ -30,7 +30,7 @@
 
 /*
  * _vnafile_load_common: load network parameters from a file
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @fp: file pointer
  *   @filename: filename used in error messages and to intuit the file type
  *   @vdp: output data (reshaped as needed)
@@ -84,7 +84,7 @@ static int _vnafile_load_common(vnafile_t *vfp,
 
 /*
  * vnafile_load: load network parameters from filename
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @filename: file to load
  *   @vdp: output data (reshaped as needed)
  */
@@ -105,7 +105,7 @@ int vnafile_load(vnafile_t *vfp, const char *filename, vnadata_t *vdp)
 
 /*
  * vnafile_load: load network parameters from a file pointer
- *   @vfp: pointer to the object returned from vnafile_alloc
+ *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @fp: file pointer
  *   @filename: filename used in error messages and to intuit the file type
  *   @vdp: output data (reshaped as needed)

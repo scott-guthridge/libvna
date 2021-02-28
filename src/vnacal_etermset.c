@@ -28,7 +28,7 @@
 
 /*
  * _vnacal_etermset_alloc: alloc vnacal_etermset
- *   @vcp: a pointer to the vnacal_t object
+ *   @vcp: a pointer to the vnacal_t structure
  *   @setname: set setname
  *   @rows: number of VNA ports where signal is detected
  *   @columns: number of VNA ports where signal is generated
