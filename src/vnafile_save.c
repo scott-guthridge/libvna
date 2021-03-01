@@ -391,9 +391,11 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 	for (int port = 0; port < ports; ++port) {
 	    (void)sprintf(parameter_buf, "Z%d", port + 1);
 	    (void)fprintf(fp, "# field %*d: %-*s real      (ohms)\n",
-		    field_width, ++current_field, parameter_width, parameter_buf);
+		    field_width, ++current_field, parameter_width,
+		    parameter_buf);
 	    (void)fprintf(fp, "# field %*d: %-*s imaginary (ohms)\n",
-		    field_width, ++current_field, parameter_width, parameter_buf);
+		    field_width, ++current_field, parameter_width,
+		    parameter_buf);
 	}
     }
     for (int format = 0; format < vfp->vf_format_count; ++format) {
@@ -560,9 +562,11 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
                 (void)sprintf(parameter_buf, "PRC%d", diagonal + 1);
                 (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
-                    field_width, ++current_field, parameter_width, parameter_buf);
+                    field_width, ++current_field, parameter_width,
+		    parameter_buf);
                 (void)fprintf(fp, "# field %*d: %-*s C         (farads)\n",
-                    field_width, ++current_field, parameter_width, parameter_buf);
+                    field_width, ++current_field, parameter_width,
+		    parameter_buf);
             }
             break;
 
@@ -571,9 +575,11 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
                 (void)sprintf(parameter_buf, "PRL%d", diagonal + 1);
                 (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
-                    field_width, ++current_field, parameter_width, parameter_buf);
+                    field_width, ++current_field, parameter_width,
+		    parameter_buf);
                 (void)fprintf(fp, "# field %*d: %-*s L         (henries)\n",
-                    field_width, ++current_field, parameter_width, parameter_buf);
+                    field_width, ++current_field, parameter_width,
+		    parameter_buf);
             }
             break;
 
@@ -582,9 +588,11 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
                 (void)sprintf(parameter_buf, "SRC%d", diagonal + 1);
                 (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
-                    field_width, ++current_field, parameter_width, parameter_buf);
+                    field_width, ++current_field, parameter_width,
+		    parameter_buf);
                 (void)fprintf(fp, "# field %*d: %-*s C         (farads)\n",
-                    field_width, ++current_field, parameter_width, parameter_buf);
+                    field_width, ++current_field, parameter_width,
+		    parameter_buf);
             }
             break;
 
@@ -593,9 +601,11 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
                 (void)sprintf(parameter_buf, "SRL%d", diagonal + 1);
                 (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
-                    field_width, ++current_field, parameter_width, parameter_buf);
+                    field_width, ++current_field, parameter_width,
+		    parameter_buf);
                 (void)fprintf(fp, "# field %*d: %-*s L         (henries)\n",
-                    field_width, ++current_field, parameter_width, parameter_buf);
+                    field_width, ++current_field, parameter_width,
+		    parameter_buf);
             }
             break;
 
@@ -625,7 +635,8 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
                 (void)sprintf(parameter_buf, "RL%d", diagonal + 1);
                 (void)fprintf(fp, "# field %*d: %-*s magnitude (dB)\n",
-                    field_width, ++current_field, parameter_width, parameter_buf);
+                    field_width, ++current_field, parameter_width,
+		    parameter_buf);
             }
             break;
 
@@ -634,7 +645,8 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
                 (void)sprintf(parameter_buf, "VSWR%d", diagonal + 1);
                 (void)fprintf(fp, "# field %*d: %-*s\n",
-                    field_width, ++current_field, parameter_width, parameter_buf);
+                    field_width, ++current_field, parameter_width,
+		    parameter_buf);
             }
             break;
 
@@ -1186,7 +1198,8 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    if (row == column) {
 				continue;
 			    }
-			    value = vnadata_get_cell(matrix, findex, row, column);
+			    value = vnadata_get_cell(matrix, findex, row,
+				    column);
 			    (void)fputc(' ', fp);
 			    last_arg = format == vfp->vf_format_count - 1 &&
 				row == rows - 1 && column == columns - 1;
@@ -1374,7 +1387,8 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    zi = cimag(z);
 			    r = (zr*zr + zi*zi) / zr;
 			    x = (zr*zr + zi*zi) / zi;
-			    c = -1.0 / (2.0 * PI * frequency_vector[findex] * x);
+			    c = -1.0 /
+				(2.0 * PI * frequency_vector[findex] * x);
 			    (void)fputc(' ', fp);
 			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
 				    /*pad=*/true, r);
@@ -1418,7 +1432,8 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    z = data[diagonal];
 			    zr = creal(z);
 			    zi = cimag(z);
-			    c = -1.0 / (2.0 * PI * frequency_vector[findex] * zi);
+			    c = -1.0 /
+				(2.0 * PI * frequency_vector[findex] * zi);
 			    (void)fputc(' ', fp);
 			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
 				    /*pad=*/true, zr);
