@@ -110,7 +110,7 @@ int main(int argc, char **argv)
 	    double complex value;
 
 	    value = vnadata_get_cell(vdp, findex, 0, port);
-	    (void)printf("  %9.3e %6.1f%s",
+	    (void)printf("  %9.2f %6.1f%s",
 		    cabs(value), 180 / PI * carg(value),
 		    port < 1 ? "," : "");
 	}
