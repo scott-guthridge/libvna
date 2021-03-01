@@ -284,7 +284,7 @@ void test_vnaproperty_list()
 	    goto out;
 	}
 	errno = 0;
-	if (vnaproperty_list_set(list, -1, scalar) != -1 || errno != EDOM) {
+	if (vnaproperty_list_set(list, -1, scalar) != -1 || errno != EINVAL) {
 	    (void)printf("vnaproperty_list_set: %s (bounds -1)\n",
 		    strerror(errno));
 	    result = T_FAIL;
@@ -433,7 +433,8 @@ void test_vnaproperty_list()
 	    goto out;
 	}
 	errno = 0;
-	if (vnaproperty_list_insert(list, -1, scalar) != -1 || errno != EDOM) {
+	if (vnaproperty_list_insert(list, -1, scalar) != -1 ||
+		errno != EINVAL) {
 	    (void)printf("vnaproperty_list_insert: %s (bounds -1)\n",
 		    strerror(errno));
 	    result = T_FAIL;
@@ -579,14 +580,14 @@ void test_vnaproperty_list()
 	 * Test bounds check.
 	 */
 	errno = 0;
-	if (vnaproperty_list_delete(list, -1) != -1 || errno != EDOM) {
+	if (vnaproperty_list_delete(list, -1) != -1 || errno != EINVAL) {
 	    (void)printf("vnaproperty_list_delete: %s (bounds -1)\n",
 		    strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
 	errno = 0;
-	if (vnaproperty_list_delete(list, 105) != -1 || errno != EDOM) {
+	if (vnaproperty_list_delete(list, 105) != -1 || errno != ENOENT) {
 	    (void)printf("vnaproperty_list_delete: %s (bounds 103)\n",
 		    strerror(errno));
 	    result = T_FAIL;
