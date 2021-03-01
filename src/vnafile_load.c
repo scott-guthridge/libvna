@@ -110,7 +110,8 @@ int vnafile_load(vnafile_t *vfp, const char *filename, vnadata_t *vdp)
  *   @filename: filename used in error messages and to intuit the file type
  *   @vdp: output data (reshaped as needed)
  */
-int vnafile_fload(vnafile_t *vfp, FILE *fp, const char *filename, vnadata_t *vdp)
+int vnafile_fload(vnafile_t *vfp, FILE *fp, const char *filename,
+	vnadata_t *vdp)
 {
     return _vnafile_load_common(vfp, fp, filename, vdp);
 }

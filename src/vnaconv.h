@@ -51,7 +51,8 @@ extern void vnaconv_b2g(const vnaconv_array2_t *b, double complex (*g)[2]);
 extern void vnaconv_b2h(const vnaconv_array2_t *b, double complex (*h)[2]);
 extern void vnaconv_b2s(const vnaconv_array2_t *b, double complex (*s)[2],
 	const double complex *z0);
-extern void vnaconv_b2t(const vnaconv_array2_t *b, double complex (*t)[2], const double complex *z0);
+extern void vnaconv_b2t(const vnaconv_array2_t *b, double complex (*t)[2],
+	const double complex *z0);
 extern void vnaconv_b2y(const vnaconv_array2_t *b, double complex (*y)[2]);
 extern void vnaconv_b2z(const vnaconv_array2_t *b, double complex (*z)[2]);
 extern void vnaconv_b2zi(const vnaconv_array2_t *b, double complex *zi,
