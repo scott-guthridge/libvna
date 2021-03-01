@@ -280,11 +280,12 @@ The \fBvnadata_set_type\fP() function changes the parameter type without
 doing conversions.
 The \fItype\fP parameter must be consistent with the matrix dimensions.
 .PP
-The \fBvnadata_rezize\fP() function changes the dimensions and/or type
+The \fBvnadata_resize\fP() function changes the dimensions and/or type
 of the matrix.
 Note that this function is value-preserving when changing the number of
 frequencies, the number of rows or the type, but it doesn't reform the
 matrix when changing the number of columns.
+Changing the type doesn't convert existing data.
 .PP
 The \fBvnadata_free\fP() function frees the object and its contents.
 .PP
@@ -301,11 +302,11 @@ This function is useful, for example, when parsing a Touchstone V1 file,
 where you don't know the number of frequencies up-front.
 .PP
 The \fBvnadata_get_cell\fP() and \fBvnadata_set_cell\fP() functions
-get and set, respectively, the cells of the parameter data matrix.
+get and set indivdual data elements.
 The \fBvnadata_get_matrix\fP() and \fBvnadata_set_matrix\fP() functions
-get and set the whole parameter data matrix for the given frequency.
+get and set the full parameter data matrix for the given frequency.
 The \fImatrix\fP parameter is a pointer to a vector of double complex
-containing all matrix elements in row-major order.
+containing the flattened matrix elements in row-major order.
 .PP
 The \fBvnadata_set_from_vector\fP() and \fBvnadata_get_to_vector\fP()
 functions copy a vector of data values, one entry per frequency, into
@@ -313,8 +314,8 @@ a \fBvnadata_t\fP matrix cell, and vice versa.
 The \fIvector\fP argument must point to a vector with length at least
 the number of frequencies in the \fBvnadata_t\fP object.
 These functions are useful for translating between the matrix of vectors
-form frequently returned from VNA measurements and the vector of matrices
-form used internally by vnadata.
+form used for VNA measurements, and the vector of matrices form used
+internally by vnadata.
 .PP
 The \fBvnadata_get_z0\fP() and \fBvnadata_set_z0\fP() functions
 get and set the system impedance for the given \fIport\fP.
@@ -335,7 +336,7 @@ are in-use.
 Calling \fBvnadata_set_z0\fP(), \fBvnadata_set_z0_vector\fP(), or
 \fBvnadata_set_all_z0\fP() when frequency-dependent frequency impedances
 are in-use discards all frequency-dependent z0 values and returns to
-ordinary system impedances, with all unset values initialized to 50 ohms.
+ordinary system impedances with all unset values initialized to 50 ohms.
 .PP
 The \fBvnadata_get_fz0\fP() and \fBvnadata_set_fz0\fP() functions
 get and set the system impedance for the given port on a per-frequency
@@ -359,8 +360,8 @@ If \fIvdp_out\fP is not the same as \fIvdp_in\fP and \fInewtype\fP
 is the same type as the input matrix, the data are simply copied.
 \fBvnadata_convert\fP() supports all 56 parameter conversions plus 8
 conversions from parameter data to input impedance vector, a row vector
-representing the impedances looking into each port of the electrical
-network when all other ports are terminated in the given system impedances.
+representing the impedances looking into each port of the network when
+all other ports are terminated in the given system impedances.
 .\"
 .SH "RETURN VALUE"
 On success, the get functions return the requested value and set functions
