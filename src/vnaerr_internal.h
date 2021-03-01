@@ -16,27 +16,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "archdep.h"
+#ifndef VNAERR_INTERNAL_H
+#define VNAERR_INTERNAL_H
 
-#include <errno.h>
 #include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "vnacal_internal.h"
+#include "vnaerr.h"
 
-/*
- * _vnacal_error: report an error
- *   @vcp: pointer to vnacal_t
- *   @category: category of error
- *   @format: printf format string
- */
-void _vnacal_error(const vnacal_t *vcp, vnaerr_category_t category,
-	const char *format, ...)
-{
-    va_list ap;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-    va_start(ap, format);
-    _vnaerr_verror(vcp->vc_error_fn, vcp->vc_error_arg, category, format, ap);
-    va_end(ap);
-}
+/* _vnaerr_error: report an error */
+extern void _vnaerr_verror(vnaerr_error_fn_t *error_fn, void *error_arg,
+	vnaerr_category_t category, const char *format, va_list ap);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+#endif /* VNAERR_INTERNAL_H */

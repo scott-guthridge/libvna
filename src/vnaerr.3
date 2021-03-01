@@ -1,0 +1,147 @@
+.\"
+.\" Vector Network Analyzer Library
+.\" Copyright © 2020, 2021 D Scott Guthridge <scott_guthridge@rompromity.net>
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published
+.\" by the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.\"
+.TH VNAERR 3 "2021-03-07" GNU
+.nh
+.SH NAME
+vnaerr_error_fn_t \- vector network analyzer library error reporting
+.\"
+.SH SYNOPSIS
+.B #include <vnaerr.h>
+.\"
+.PP
+.nf
+.B "typedef enum vnaerr_category {"
+.in +4n
+.nf
+.B "\s-2VNAERR_SYSTEM\s+2,"
+.B "\s-2VNAERR_USAGE\s+2,"
+.B "\s-2VNAERR_VERSION\s+2,"
+.B "\s-2VNAERR_SYNTAX\s+2,"
+.B "\s-2VNAERR_WARNING\s+2,"
+.B "\s-2VNAERR_MATH\s+2,"
+.B "\s-2VNAERR_INTERNAL\s+2"
+.fi
+.in -4n
+.B "} vnaerr_category_t;"
+.fi
+.\"
+.PP
+.BI "typedef void vnaerr_error_fn_t(vnaerr_category_t " category ,
+.if n \{\
+.in +4
+.\}
+.BI "const char *" message ", void *" error_arg );
+.if n \{\
+.in -4
+.\}
+.\"
+.SH DESCRIPTION
+The \fBvnacal_calset_alloc\fP(), \fBvnacal_create\fP(),
+\fBvnacal_load\fP(), and \fBvnafile_alloc\fP functions take an optional
+function pointer, \fIerror_fn\fP, which the library calls to report
+detailed error messages.
+.PP
+The \fIcategory\fP argument to \fIerror_fn\fP() broadly classifies
+the error.
+Error categories are described in more detail below.
+The \fImessage\fP argument is a one-line error message without a newline
+character.
+Messages have some structure depending on the category, e.g.
+\s-2VNAERR_USAGE\s+2 messages always begin with the name of the libvna
+function that failed followed by a colon, and \s-2VNAERR_SYNTAX\s+2
+messages always begin with the filename and line number where the error
+was found, but in general, messages are meant to be human readable rather
+than easily machine parsible.
+The \fBerror_arg\fP argument is a pointer to arbitrary user data passed
+through to the error function.
+It's useful to pass context information without having to use global
+variables.
+.PP
+Error category can be any of the following:
+.IP "\s-2VNAERR_SYSTEM\s+2"
+A library function such as \fBmalloc\fP() or \fBfopen\fP() failed.
+The message begins with the name of the function that failed, any
+necessary context information such as a filename, and the system error
+message.  Example:
+.sp
+\(lqfopen: testdata.s2p: No such file or directory\(rq
+.IP "\s-2VNAERR_USAGE\s+2"
+A libvna function was called with an invalid argument or invalid
+combination of arguments.  The message begins with the name of the
+libvna function that followed by a description of the problem.
+Example:
+.sp
+\(lqvnafile_set_file_type: -7: invalid type\(rq
+.IP "\s-2VNAERR_VERSION\s+2"
+A file given to \fBvnacal_load\fP() or \fBvnafile_load\fP() has a
+version number unknown to the library.  Example:
+.sp
+mycalfile.vnacal (line 1) error: unsupported version 9.0
+.IP "\s-2VNAERR_SYNTAX\s+2"
+A file given to \fBvnacal_load\fP() or \fBvnafile_load\fP() contains
+a syntax error, has missing or conflicting information, or is otherwise
+not well-formed.  Example:
+.sp
+\(lqdata.s2p (line 70) error: expected 9 fields; found 10\(rq
+.IP "\s-2VNAERR_WARNING\s+2"
+The library detected something unexpected but not serious enough to
+report failure.
+Example:
+.sp
+\(lqmyfile.ts (line 1) warning: file contains dubious [Version] 1.0 line\(rq
+.IP "\s-2VNAERR_MATH\s+2"
+The library detected a singular matrix or a numerical solution did not
+converge.
+Example:
+.sp
+\(lqvnacal_create: set 0: system is singular\(rq
+.IP "\s-2VNAERR_INTERNAL\s+2"
+The library detected an internal inconsistency.  The message starts
+with the internal function that failed followed by details useful to a
+developer to find and fix the problem.
+Example:
+\(lq_add_properties: vnaproperty_list_get: mycal.vnacal: Invalid argument\(rq
+.PP
+Whether or not a non-\s-2NULL\s+2 \fIerror_fn\fP argument was supplied, the
+library functions set \fBerrno\fP before returning failure as shown in the
+following table:
+.sp
+.TS
+tab(;) allbox;
+cc
+ll.
+\fBCategory\fP;\fBerrno\fP
+\s-2VNAERR_SYSTEM\s+2;system errno
+\s-2VNAERR_USAGE\s+2;\s-2EINVAL\s+2
+\s-2VNAERR_VERSION\s+2;\s-2ENOPROTOOPT\s+2
+\s-2VNAERR_SYNTAX\s+2;\s-2EBADMSG\s+2
+\s-2VNAERR_WARNING\s+2;0
+\s-2VNAERR_MATH\s+2;\s-2EDOM\s+2
+\s-2VNAERR_INTERNAL\s+2;\s-2ENOSYS\s+2
+.TE
+.PP
+The library sets \fBerrno\fP before calling \fIerror_fn\fP and also before
+returning failure from a library function.
+.\"
+.\" .SH "RETURN VALUE"
+.\" .SH ERRORS
+.\" .SH BUGS
+.\" .SH EXAMPLES
+.\"
+.SH "SEE ALSO"
+.BR vnacal "(3)," vnafile "(3)"

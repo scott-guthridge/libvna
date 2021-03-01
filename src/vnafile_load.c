@@ -60,8 +60,8 @@ static int _vnafile_load_common(vnafile_t *vfp,
 	}
 	if (filename_ports != -1 && filename_ports != 2 &&
 		filename_ports != vdp->vd_columns) {
-	    _vnafile_error(vfp, "%s: warning: filename suggests %d port(s) "
-		    "but %d found",
+	    _vnafile_error(vfp, VNAERR_WARNING,
+		    "%s: warning: filename suggests %d port(s) but %d found",
 		    filename, filename_ports, vdp->vd_columns);
 	}
 	break;
@@ -98,7 +98,8 @@ int vnafile_load(vnafile_t *vfp, const char *filename, vnadata_t *vdp)
 	return -1;
     }
     if ((fp = fopen(filename, "r")) == NULL) {
-	_vnafile_error(vfp, "fopen: %s: %s", filename, strerror(errno));
+	_vnafile_error(vfp, VNAERR_SYSTEM,
+		"fopen: %s: %s", filename, strerror(errno));
 	return -1;
     }
     rv = _vnafile_load_common(vfp, fp, filename, vdp);

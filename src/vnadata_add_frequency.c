@@ -37,7 +37,11 @@ int vnadata_add_frequency(vnadata_t *vdp, double frequency)
     /*
      * Check parameters
      */
-    if (vdp == NULL || frequency < 0.0) {
+    if (vdp == NULL) {
+	errno = EINVAL;
+	return -1;
+    }
+    if (frequency < 0.0) {
 	errno = EINVAL;
 	return -1;
     }

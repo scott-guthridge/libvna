@@ -173,19 +173,21 @@ static int _vnafile_convert(vnafile_t *vfp,
 	return 0;
     }
     if ((target = vnadata_alloc()) == NULL) {
-	_vnafile_error(vfp, "%s: %s", function, strerror(errno));
+	_vnafile_error(vfp, VNAERR_SYSTEM,
+		"vnadata_alloc: %s", strerror(errno));
 	return -1;
     }
     if (vnadata_convert(vdp, target, type) == -1) {
 	if (errno == EINVAL) {
-	    _vnafile_error(vfp, "%s: cannot convert from %s to %s",
+	    _vnafile_error(vfp, VNAERR_USAGE,
+		    "%s: cannot convert from %s to %s",
 		function, vnadata_get_typename(vnadata_get_type(vdp)),
 		vnadata_get_typename(type));
 	    vnadata_free(target);
 	    return -1;
 	}
-	_vnafile_error(vfp, "%s: vnadata_convert: %s",
-		function, strerror(errno));
+	_vnafile_error(vfp, VNAERR_SYSTEM,
+		"vnadata_convert: %s", strerror(errno));
 	vnadata_free(target);
 	return -1;
     }
@@ -792,23 +794,19 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
      * Validate parameters.  These errors are for the application
      * developer, not the end user, so show the function name.
      */
-    if (vfp == NULL) {
-	errno = EINVAL;
-	goto out;
-    }
     if (function == vnafile_fsave_name && fp == NULL) {
-	_vnafile_error(vfp, "%s: error: NULL file pointer", function);
-	errno = EINVAL;
+	_vnafile_error(vfp, VNAERR_USAGE,
+		"%s: error: NULL file pointer", function);
 	goto out;
     }
     if (filename == NULL) {
-	_vnafile_error(vfp, "%s: error: NULL filename", function);
-	errno = EINVAL;
+	_vnafile_error(vfp, VNAERR_USAGE,
+		"%s: error: NULL filename", function);
 	goto out;
     }
     if (vdp == NULL) {
-	_vnafile_error(vfp, "%s: error: NULL vdp", function);
-	errno = EINVAL;
+	_vnafile_error(vfp, VNAERR_USAGE,
+		"%s: error: NULL vdp", function);
 	goto out;
     }
 
@@ -842,9 +840,8 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	break;
 
     default:
-	_vnafile_error(vfp, "%s: error: invalid type (%d)",
+	_vnafile_error(vfp, VNAERR_USAGE, "%s: error: invalid type (%d)",
 		function, vfp->vf_type);
-	errno = EINVAL;
 	goto out;
     }
 
@@ -859,9 +856,9 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	 * least one port.
 	 */
 	if (rows != columns || ports < 1) {
-	    _vnafile_error(vfp, "%s: error: cannot save %d x %d matrix in "
-		    "touchstone format", function, rows, columns);
-	    errno = EINVAL;
+	    _vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
+		    "cannot save %d x %d matrix in touchstone format",
+		    function, rows, columns);
 	    goto out;
 	}
 
@@ -869,9 +866,9 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	 * Touchstone format supports only one parameter type.
 	 */
 	if (vfp->vf_format_count > 1) {
-	    _vnafile_error(vfp, "%s: error: only a single parameter type "
-		    "may be used in touchstone format", function);
-	    errno = EINVAL;
+	    _vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
+		    "only a single parameter type may be used in "
+		    "touchstone format", function);
 	    goto out;
 	}
 
@@ -908,10 +905,9 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 		bad = true;
 	    }
 	    if (bad) {
-		_vnafile_error(vfp, "%s: error: cannot save parameter %s in "
-			"touchstone format", function,
-			_vnafile_format_to_name(vffp));
-		errno = EINVAL;
+		_vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
+			"cannot save parameter %s in touchstone format",
+			function, _vnafile_format_to_name(vffp));
 		goto out;
 	    }
 	}
@@ -920,9 +916,9 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	 * Touchstone doesn't support frequency-dependent system impedances.
 	 */
 	if (z0_vector == NULL) {
-	    _vnafile_error(vfp, "%s: error: cannot save frequency-dependent "
-		    "system impedances in touchstone format", function);
-	    errno = EINVAL;
+	    _vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
+		    "cannot save frequency-dependent system impedances in "
+		    "touchstone format", function);
 	    goto out;
 	}
 
@@ -931,9 +927,9 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	 */
 	for (int i = 0; i < ports; ++i) {
 	    if (cimag(z0_vector[i]) != 0.0) {
-		_vnafile_error(vfp, "%s: error: cannot save complex system "
-			"impedances in touchstone format", function);
-		errno = EINVAL;
+		_vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
+			"cannot save complex system impedances in "
+			"touchstone format", function);
 		goto out;
 	    }
 	}
@@ -954,10 +950,9 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 		vfp->vf_type = VNAFILE_TOUCHSTONE2;
 		break;
 	    }
-	    _vnafile_error(vfp, "%s: error: cannot save a system "
-		    "with more than four ports in touchstone 1 "
-		    "format", function);
-	    errno = EINVAL;
+	    _vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
+		    "cannot save a system with more than four ports in "
+		    "touchstone 1 format", function);
 	    goto out;
 	}
 
@@ -971,10 +966,9 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 		    vfp->vf_type = VNAFILE_TOUCHSTONE2;
 		    break;
 		}
-		_vnafile_error(vfp, "%s: error: cannot save ports with "
-			"different system impedances in touchstone 1 "
-			"format", function);
-		errno = EINVAL;
+		_vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
+			"cannot save ports with different system impedances "
+			"in touchstone 1 format", function);
 		goto out;
 	    }
 	}
@@ -996,11 +990,10 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	    }
 	    if (vffp->vff_format == VNAFILE_FORMAT_DB_ANGLE &&
 		    parameter != VPT_S && parameter != VPT_T) {
-		_vnafile_error(vfp, "%s: error: %s: in native format, "
-			"only power or root-power parameters can be "
-			"displayed in dB",
+		_vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
+			"%s: in native format, only power or root-power "
+			"parameters can be displayed in dB",
 			function, _vnafile_format_to_name(vffp));
-		errno = EINVAL;
 		goto out;
 	    }
 	}
@@ -1020,8 +1013,9 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	    vnafile_format_t *vffp = &vfp->vf_format_vector[i];
 
 	    if (vffp->vff_format == VNAFILE_FORMAT_RL) {
-		_vnafile_error(vfp, "%s: error: return loss requires at "
-			"least one off-diagonal element", function);
+		_vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
+			"return loss requires at least one "
+			"off-diagonal element", function);
 		goto out;
 	    }
 	}
@@ -1039,13 +1033,21 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	 * convert to S using the existing z0.
 	 */
 	if ((vdp_copy = vnadata_alloc()) == NULL) {
-	    _vnafile_error(vfp, "%s: %s", function, strerror(errno));
+	    _vnafile_error(vfp, VNAERR_SYSTEM,
+		    "vnadata_alloc: %s", strerror(errno));
 	    goto out;
 	}
 	target_type = vnadata_get_type(vdp) == VPT_T ? VPT_T : VPT_S;
 	if (vnadata_convert(vdp, vdp_copy, target_type) == -1) {
-	    _vnafile_error(vfp, "%s: vnadata_convert: %s",
-		    function, strerror(errno));
+	    if (errno == EINVAL) {
+		_vnafile_error(vfp, VNAERR_USAGE,
+			"%s: cannot convert type to %s",
+			function, target_type == VPT_T ? "T" : "S");
+	    } else {
+		;
+		_vnafile_error(vfp, VNAERR_SYSTEM,
+			"vnadata_convert: %s", strerror(errno));
+	    }
 	    vnadata_free(vdp_copy);
 	    goto out;
 
@@ -1055,8 +1057,8 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	 * Set all z0's to 1.
 	 */
 	if (vnadata_set_all_z0(vdp_copy, 1.0) == -1) {
-	    _vnafile_error(vfp, "%s: vnadata_set_all_z0: %s",
-		    function, strerror(errno));
+	    _vnafile_error(vfp, VNAERR_SYSTEM,
+		    "vnadata_set_all_z0: %s", strerror(errno));
 	    vnadata_free(vdp_copy);
 	    goto out;
 	}
@@ -1121,7 +1123,8 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
      */
     if (function == vnafile_save_name) {
 	if ((fp = fopen(filename, "w")) == NULL) {
-	    _vnafile_error(vfp, "fopen: %s: %s", filename, strerror(errno));
+	    _vnafile_error(vfp, VNAERR_SYSTEM, "fopen: %s: %s",
+		    filename, strerror(errno));
 	    goto out;
 	}
     }
@@ -1503,7 +1506,8 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
      */
     if (function == vnafile_save_name) {
 	if (fclose(fp) == -1) {
-	    _vnafile_error(vfp, "fclose: %s: %s", filename, strerror(errno));
+	    _vnafile_error(vfp, VNAERR_SYSTEM, "fclose: %s: %s",
+		    filename, strerror(errno));
 	    fp = NULL;
 	    goto out;
 	}

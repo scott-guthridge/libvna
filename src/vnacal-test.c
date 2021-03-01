@@ -413,10 +413,11 @@ static void free_matrix_of_vectors(double complex **matrix, int ncells)
 
 /*
  * error_fn: error reporting function
+ *   @category: category of error (ignored here)
  *   @msg: error message
  *   @arg: (unused)
  */
-static void error_fn(const char *msg, void *arg)
+static void error_fn(vnaerr_category_t category, const char *msg, void *arg)
 {
     (void)fprintf(stderr, "%s: %s\n", progname, msg);
 }

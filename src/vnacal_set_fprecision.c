@@ -38,7 +38,8 @@
 int vnacal_set_fprecision(vnacal_t *vcp, int precision)
 {
     if (precision < 1) {
-	errno = EINVAL;
+	_vnacal_error(vcp, VNAERR_USAGE,
+		"vnacal_set_fprecision: precision must be at least 1");
 	return -1;
     }
     vcp->vc_fprecision = precision;

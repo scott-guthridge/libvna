@@ -70,10 +70,12 @@ static const char usage[] =
 
 /*
  * error_fn: error printing function for the library
+ *   @category: category of error (ignored here)
  *   @message: single line error message without a newline
  *   @error_arg: passed through to the error function (unused here)
  */
-static void error_fn(const char *message, void *error_arg)
+static void error_fn(vnaerr_category_t category, const char *message,
+	void *error_arg)
 {
     (void)fprintf(stderr, "%s: %s\n", progname, message);
 }
@@ -116,8 +118,6 @@ int main(int argc, char **argv)
     vdp = vnadata_alloc();
     vfp = vnafile_alloc(error_fn, NULL);
     if (vnafile_load(vfp, argv[0], vdp)) {
-	(void)fprintf(stderr, "%s: vnafile_load: %s\n",
-		progname, strerror(errno));
 	exit(3);
     }
     vnafile_set_file_type(vfp, VNAFILE_AUTO);
@@ -127,8 +127,6 @@ int main(int argc, char **argv)
 	}
     }
     if (vnafile_save(vfp, argv[1], vdp) == -1) {
-	(void)fprintf(stderr, "%s: vnafile_save: %s\n",
-		progname, strerror(errno));
 	exit(5);
     }
     vnadata_free(vdp);

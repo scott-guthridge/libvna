@@ -27,29 +27,19 @@
 
 
 /*
- * vnafile_error: report an error
+ * _vnafile_error report an error
  *   @vfp: pointer to vnafile_t
+ *   @category: category of error
  *   @format: printf format string
  */
-void _vnafile_error(const vnafile_t *vfp, const char *format, ...)
+void _vnafile_error(const vnafile_t *vfp, vnaerr_category_t category,
+	const char *format, ...)
 {
     va_list ap;
-    char *msg = NULL;
-    int rv;
 
-    if (vfp->vf_error_fn != NULL) {
-	va_start(ap, format);
-	rv = vasprintf(&msg, format, ap);
-	va_end(ap);
-	if (rv == -1) {
-	    (*vfp->vf_error_fn)(strerror(errno), vfp->vf_error_arg);
-	    goto out;
-	}
-	(*vfp->vf_error_fn)(msg, vfp->vf_error_arg);
-    }
-
-out:
-    free((void *)msg);
+    va_start(ap, format);
+    _vnaerr_verror(vfp->vf_error_fn, vfp->vf_error_arg, category, format, ap);
+    va_end(ap);
 }
 
 /*
@@ -402,7 +392,7 @@ int _vnafile_update_format_string(vnafile_t *vfp)
     vfp->vf_format_string = NULL;
     if ((new_string = malloc(vfp->vf_format_count *
 		    (MAX_FORMAT + 1))) == NULL) {
-	_vnafile_error(vfp, "malloc: %s", strerror(errno));
+	_vnafile_error(vfp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
 	return -1;
     }
     cur = new_string;
@@ -426,18 +416,22 @@ int _vnafile_update_format_string(vnafile_t *vfp)
  *   @error_fn:  optional error reporting function
  *   @error_arg: optional opaque argument passed through to the error function
  */
-vnafile_t *vnafile_alloc(vnafile_error_fn_t *error_fn, void *error_arg)
+vnafile_t *vnafile_alloc(vnaerr_error_fn_t *error_fn, void *error_arg)
 {
     vnafile_t *vfp;
 
     vfp = (vnafile_t *)malloc(sizeof(vnafile_t));
     if (vfp == NULL) {
 	if (error_fn != NULL) {
-	    char buf[80];
+	    int saved_errno = errno;
+	    char message[80];
 
-	    (void)snprintf(buf, sizeof(buf), "malloc: %s", strerror(errno));
-            buf[sizeof(buf)-1] = '\000';
-            (*error_fn)(error_arg, buf);
+	    (void)snprintf(message, sizeof(message),
+		    "malloc: %s", strerror(errno));
+            message[sizeof(message)-1] = '\000';
+	    errno = saved_errno;
+            (*error_fn)(VNAERR_SYSTEM, message, error_arg);
+	    errno = saved_errno;
 	}
 	return NULL;
     }
@@ -449,7 +443,7 @@ vnafile_t *vnafile_alloc(vnafile_error_fn_t *error_fn, void *error_arg)
     vfp->vf_fprecision = 7;
     vfp->vf_dprecision = 6;
     if ((vfp->vf_format_vector = malloc(sizeof(vnafile_format_t))) == NULL) {
-	_vnafile_error(vfp, "malloc: %s", strerror(errno));
+	_vnafile_error(vfp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
 	vnafile_free(vfp);
 	return NULL;
     }
@@ -499,8 +493,8 @@ int vnafile_set_file_type(vnafile_t *vfp, vnafile_type_t type)
 	break;
 
     default:
-	_vnafile_error(vfp, "vnafile_set_file_type: invalid type");
-	errno = EINVAL;
+	_vnafile_error(vfp, VNAERR_USAGE,
+		"vnafile_set_file_type: invalid type");
 	return -1;
     }
     vfp->vf_type = type;
@@ -563,13 +557,13 @@ int vnafile_set_format(vnafile_t *vfp, const char *format)
      * fields and convert all commas to NUL's.
      */
     if ((format_copy = malloc(length + 1)) == NULL) {
-	_vnafile_error(vfp, "malloc: %s", strerror(errno));
+	_vnafile_error(vfp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
 	return -1;
     }
     cur = format_copy;
     for (const char *cp = format; *cp != '\000'; ++cp) {
 	if (*cp > 0x7e) {
-	    _vnafile_error(vfp, "vnafile_set_format: "
+	    _vnafile_error(vfp, VNAERR_USAGE, "vnafile_set_format: "
 		    "invalid char '\\%02x' in format", *cp);
 	    goto out;
 	}
@@ -589,7 +583,7 @@ int vnafile_set_format(vnafile_t *vfp, const char *format)
      * Allocate a new format vector.
      */
     if ((vffp_new = calloc(nfields, sizeof(vnafile_format_t))) == NULL) {
-	_vnafile_error(vfp, "malloc: %s", strerror(errno));
+	_vnafile_error(vfp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
 	goto out;
     }
 
@@ -599,7 +593,8 @@ int vnafile_set_format(vnafile_t *vfp, const char *format)
     cur = format_copy;
     for (int i = 0;;) {
 	if (parse_format(&vffp_new[i], cur) == -1) {
-	    _vnafile_error(vfp, "invalid format specifier: \"%s\"", cur);
+	    _vnafile_error(vfp, VNAERR_USAGE,
+		    "invalid format specifier: \"%s\"", cur);
 	    goto out;
 	}
 	if (++i >= nfields) {
@@ -646,7 +641,7 @@ int _vnafile_set_simple_format(vnafile_t *vfp,
      * Allocate the new format vector, length 1.
      */
     if ((vffp_new = malloc(sizeof(vnafile_format_t))) == NULL) {
-	_vnafile_error(vfp, "malloc: %s", strerror(errno));
+	_vnafile_error(vfp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
 	goto out;
     }
     (void)memset((void *)vffp_new, 0, sizeof(*vffp_new));
@@ -697,9 +692,8 @@ int vnafile_set_fprecision(vnafile_t *vfp, int precision)
 	return -1;
     }
     if (precision < 1) {
-	_vnafile_error(vfp, "vnafile_set_fprecision: invalid precision: %s",
-		precision);
-	errno = EINVAL;
+	_vnafile_error(vfp, VNAERR_USAGE, "vnafile_set_fprecision: "
+		"invalid precision: %d", precision);
 	return -1;
     }
     vfp->vf_fprecision = precision;
@@ -731,9 +725,8 @@ int vnafile_set_dprecision(vnafile_t *vfp, int precision)
 	return -1;
     }
     if (precision < 1) {
-	_vnafile_error(vfp, "vnafile_set_fprecision: invalid precision: %s",
-		precision);
-	errno = EINVAL;
+	_vnafile_error(vfp, VNAERR_USAGE, "vnafile_set_fprecision: "
+		"invalid precision: %d", precision);
 	return -1;
     }
     vfp->vf_dprecision = precision;

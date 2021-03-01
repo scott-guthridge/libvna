@@ -23,8 +23,6 @@ vnafile_alloc, vnafile_check, vnafile_fload, vnafile_free, vnafile_fsave, vnafil
 .SH SYNOPSIS
 .B #include <vnafile.h>
 .PP
-.BI "void vnafile_error_fn_t(const char *" message ", void *" error_arg );
-.PP
 .BI "vnadata_t *vnafile_alloc(vnafile_error_fn_t *" error_fn ,
 .if n \{\
 .in +4
@@ -96,17 +94,20 @@ vnafile_alloc, vnafile_check, vnafile_fload, vnafile_free, vnafile_fsave, vnafil
 Link with \fI-lvna\fP \fI-lm\fP.
 .\"
 .SH DESCRIPTION
-This library loads and saves vector network analyzer (VNA) parameter
+These functions load and save vector network analyzer (VNA) parameter
 data in Touchstone and native file formats.
 .PP
 \fBvnafile_alloc\fP() returns a pointer to a \fBvnafile_t\fP structure
 used by the other functions.
-The \fIerror_fn\fP argument is a pointer to a function the library calls
-with a single line \fImessage\fP (without newline) to report errors.
-If given as \s-2NULL\s+2, the library functions set \fIerrno\fP and
-return failure but do not print messages; the \fIerror_arg\fP argument
-is a pointer to arbitrary user data passed through to the error function.
-It can be \s-2NULL\s+2.
+The optional \fIerror_fn\fP is a pointer to a function the library
+calls with a single line message (without newline) to report errors;
+\fIerror_arg\fP is arbitrary user data passed through to the error
+function.  Both can be \s-2NULL\s+2.  See \fBvnaerr\fP(3).
+The \fIerror\fP argument is the \fBerrno\fP value associated with
+the error.
+Whether an \fIerror_fn\fP is provided or not, the library functions
+that can return failure set \fBerrno\fP and return -1 or \s-2NULL\s+2
+on failure.
 .PP
 The \fBvnafile_get_file_type\fP() and \fBvnafile_set_file_type\fP()
 functions get and set the current file type described by the following
@@ -275,10 +276,12 @@ static const char usage[] =
 
 /*
  * error_fn: error printing function for the library
+ *   @category: category of error (ignored here)
  *   @message: single line error message without a newline
  *   @error_arg: passed through to the error function (unused here)
  */
-static void error_fn(const char *message, void *error_arg)
+static void error_fn(vnaerr_category_t category, const char *message,
+        void *error_arg)
 {
     (void)fprintf(stderr, "%s: %s\\n", progname, message);
 }
@@ -321,8 +324,6 @@ int main(int argc, char **argv)
     vdp = vnadata_alloc();
     vfp = vnafile_alloc(error_fn, NULL);
     if (vnafile_load(vfp, argv[0], vdp)) {
-        (void)fprintf(stderr, "%s: vnafile_load: %s\\n",
-                progname, strerror(errno));
         exit(3);
     }
     vnafile_set_file_type(vfp, VNAFILE_AUTO);
@@ -332,8 +333,6 @@ int main(int argc, char **argv)
         }
     }
     if (vnafile_save(vfp, argv[1], vdp) == -1) {
-        (void)fprintf(stderr, "%s: vnafile_save: %s\\n",
-                progname, strerror(errno));
         exit(5);
     }
     vnadata_free(vdp);

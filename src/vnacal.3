@@ -18,14 +18,10 @@
 .TH VNACAL 3 "JULY 2017" GNU
 .nh
 .SH NAME
-vnacal_error_fn_t, vnacal_calset_alloc, vnacal_calset_set_frequency_vector, vnacal_calset_add_vector, vnacal_calset_set_reference, vnacal_calset_set_reference_vector, vnacal_calset_set_z0, vnacal_calset_free, vnacal_create, vnacal_save, vnacal_load, vnacal_get_filename, vnacal_get_sets, vnacal_get_setname, vnacal_get_rows, vnacal_get_columns, vnacal_get_frequencies, vnacal_get_fmax, vnacal_get_fmin, vnacal_get_frequency_vector, vnacal_set_fprecision, vnacal_set_dprecision, vnacal_property_set, vnacal_property_get, vnacal_property_delete, vnacal_property_type, vnacal_property_count, vnacal_property_keys, vnacal_free, vnacal_input_alloc, vnacal_input_set_frequency_vector, vnacal_input_add_vector, vnacal_input_add_mapped_vector, vnacal_input_get_value, vnacal_input_apply, vnacal_input_free \- vector network analyzer calibration
+vnacal_calset_alloc, vnacal_calset_set_frequency_vector, vnacal_calset_add_vector, vnacal_calset_set_reference, vnacal_calset_set_reference_vector, vnacal_calset_set_z0, vnacal_calset_free, vnacal_create, vnacal_save, vnacal_load, vnacal_get_filename, vnacal_get_sets, vnacal_get_setname, vnacal_get_rows, vnacal_get_columns, vnacal_get_frequencies, vnacal_get_fmax, vnacal_get_fmin, vnacal_get_frequency_vector, vnacal_set_fprecision, vnacal_set_dprecision, vnacal_property_set, vnacal_property_get, vnacal_property_delete, vnacal_property_type, vnacal_property_count, vnacal_property_keys, vnacal_free, vnacal_input_alloc, vnacal_input_set_frequency_vector, vnacal_input_add_vector, vnacal_input_add_mapped_vector, vnacal_input_get_value, vnacal_input_apply, vnacal_input_free \- vector network analyzer calibration
 .\"
 .SH SYNOPSIS
 .B #include <vnacal.h>
-.\"
-.PP
-.BI "typedef void vnacal_error_fn_t(const char *" message ,
-.BI "void *" error_arg );
 .\"
 .SS "Calibration Set"
 .PP
@@ -33,7 +29,7 @@ vnacal_error_fn_t, vnacal_calset_alloc, vnacal_calset_set_frequency_vector, vnac
 .in +4n
 .BI "int " rows ", int " columns ", int " frequencies ,
 .br
-.BI "vnacal_error_fn_t *" error_fn ", void *" error_arg );
+.BI "vnaerr_error_fn_t *" error_fn ", void *" error_arg );
 .in -4n
 .\"
 .PP
@@ -73,7 +69,7 @@ vnacal_error_fn_t, vnacal_calset_alloc, vnacal_calset_set_frequency_vector, vnac
 .PP
 .BI "vnacal_t *vnacal_create(int " sets ", vnacal_calset_t **" vcspp ,
 .in +4n
-.BI "vnacal_error_fn_t *" error_fn ", void *" error_arg );
+.BI "vnaerr_error_fn_t *" error_fn ", void *" error_arg );
 .in -4n
 .\"
 .PP
@@ -85,7 +81,7 @@ vnacal_error_fn_t, vnacal_calset_alloc, vnacal_calset_set_frequency_vector, vnac
 .PP
 .BI "vnacal_t *vnacal_load(const char *" pathname ", const char *" dotdir ,
 .in +4n
-.BI "vnacal_error_fn_t *" error_fn ", void *" error_arg );
+.BI "vnaerr_error_fn_t *" error_fn ", void *" error_arg );
 .in -4n
 .\"
 .PP
@@ -241,11 +237,15 @@ S parameter switch would have dimension 2x2.
 The \fIfrequencies\fP parameter gives the number of calibration frequency
 points and determines the length of the vectors in several of the
 subsequent functions.
-The optional \fIerror_fn\fP is a pointer to function the library calls
-with a single line \fImessage\fP (without newline) to report errors.
-If given as \s-2NULL\s+2, the library functions set \fIerrno\fP and
-return failure but do not print messages; \fIerror_arg\fP is a pointer
-to arbitrary user data passed through to the error function.
+The optional \fIerror_fn\fP is a pointer to a function the library
+calls with a single line message (without newline) to report errors;
+\fIerror_arg\fP is arbitrary user data passed through to the error
+function.  Both can be \s-2NULL\s+2.  See \fBvnaerr\fP(3).
+The \fIerror\fP argument is the \fBerrno\fP value associated with
+the error.
+Whether an \fIerror_fn\fP is provided or not, the library functions
+that can return failure set \fBerrno\fP and return -1 or \s-2NULL\s+2
+on failure.
 .PP
 \fBvnacal_calset_set_frequency_vector\fP() loads a vector of
 calibration frequency points into the \fBvnacal_calset_t\fP structure;
@@ -912,10 +912,12 @@ static int vna_measure(measurement_t measurement,
 
 /*
  * error_fn: error printing function for the library
+ *   @category: category of error (ignored here)
  *   @message: single line error message without a newline
  *   @error_arg: passed through to the error function (unused here)
  */
-static void error_fn(const char *message, void *error_arg)
+static void error_fn(vnaerr_category_t category, const char *message,
+        void *error_arg)
 {
     (void)fprintf(stderr, "example: %s\\n", message);
 }

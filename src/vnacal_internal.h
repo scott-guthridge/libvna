@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include "vnacal.h"
 #include "vnacommon_internal.h"
+#include "vnaerr_internal.h"
 #include "vnaproperty.h"
 
 #ifdef __cplusplus
@@ -127,7 +128,7 @@ struct vnacal_calset {
     vnacal_cdata_t *vcs_matrix;
 
     /* user-supplied error callback or NULL */
-    vnacal_error_fn_t *vcs_error_fn;
+    vnaerr_error_fn_t *vcs_error_fn;
 
     /* user-supplied error callback argument or NULL */
     void *vcs_error_arg;
@@ -238,7 +239,7 @@ struct vnacal {
     vnacal_etermset_t **vc_set_vector;
 
     /* user-supplied error callback or NULL */
-    vnacal_error_fn_t *vc_error_fn;
+    vnaerr_error_fn_t *vc_error_fn;
 
     /* user-supplied error callback argument or NULL */
     void *vc_error_arg;
@@ -283,9 +284,10 @@ struct vnacal_input {
 };
 
 /* report an error */
-extern void _vnacal_error(const vnacal_t *vcp, const char *format, ...)
+extern void _vnacal_error(const vnacal_t *vcp, vnaerr_category_t category,
+	const char *format, ...)
 #ifdef __GNUC__
-__attribute__ ((__format__ (__printf__, 2, 3)))
+__attribute__ ((__format__ (__printf__, 3, 4)))
 #endif /* __GNUC__ */
 ;
 

@@ -31,28 +31,18 @@
 /*
  * vnacal_calset_error: report an error
  *   @vcsp: pointer to vnacal_calset_t
+ *   @category: category of error
  *   @format: printf format string
  */
 static void _vnacal_calset_error(const vnacal_calset_t *vcsp,
-	const char *format, ...)
+	vnaerr_category_t category, const char *format, ...)
 {
     va_list ap;
-    char *msg = NULL;
-    int rv;
 
-    if (vcsp->vcs_error_fn != NULL) {
-	va_start(ap, format);
-	rv = vasprintf(&msg, format, ap);
-	va_end(ap);
-	if (rv == -1) {
-	    (*vcsp->vcs_error_fn)(strerror(errno), vcsp->vcs_error_arg);
-	    goto out;
-	}
-	(*vcsp->vcs_error_fn)(msg, vcsp->vcs_error_arg);
-    }
-
-out:
-    free((void *)msg);
+    va_start(ap, format);
+    _vnaerr_verror(vcsp->vcs_error_fn, vcsp->vcs_error_arg,
+	    category, format, ap);
+    va_end(ap);
 }
 
 /*
@@ -72,7 +62,7 @@ out:
  */
 vnacal_calset_t *vnacal_calset_alloc(const char *setname,
 	int rows, int columns, int frequencies,
-	vnacal_error_fn_t *error_fn, void *error_arg)
+	vnaerr_error_fn_t *error_fn, void *error_arg)
 {
     vnacal_calset_t *vcsp;
     int ncells = rows *columns;
@@ -83,12 +73,15 @@ vnacal_calset_t *vnacal_calset_alloc(const char *setname,
     vcsp = (vnacal_calset_t *)malloc(sizeof(vnacal_calset_t));
     if (vcsp == NULL) {
 	if (error_fn != NULL) {
-	    char buf[80];
+	    int saved_errno = errno;
+	    char message[80];
 
-	    (void)snprintf(buf, sizeof(buf), "vnacal_create: %s",
+	    (void)snprintf(message, sizeof(message), "vnacal_create: %s",
                     strerror(errno));
-            buf[sizeof(buf)-1] = '\000';
-            (*error_fn)(error_arg, buf);
+            message[sizeof(message)-1] = '\000';
+	    errno = saved_errno;
+            (*error_fn)(VNAERR_SYSTEM, message, error_arg);
+	    errno = saved_errno;
 	}
 	return NULL;
     }
@@ -97,24 +90,23 @@ vnacal_calset_t *vnacal_calset_alloc(const char *setname,
     vcsp->vcs_error_arg = error_arg;
 
     if (setname == NULL) {
-	_vnacal_calset_error(vcsp, "invalid NULL setname");
-	errno = EINVAL;
+	_vnacal_calset_error(vcsp, VNAERR_USAGE, "invalid NULL setname");
 	vnacal_calset_free(vcsp);
 	return NULL;
     }
     if (rows < 1 || columns < 1) {
-	_vnacal_calset_error(vcsp, "vnacal_calset_alloc: "
+	_vnacal_calset_error(vcsp, VNAERR_USAGE, "vnacal_calset_alloc: "
 		"invalid dimension (%d x %d)", rows, columns);
-	errno = EINVAL;
 	return NULL;
     }
     if (frequencies < 0) {
-	_vnacal_calset_error(vcsp, "vnacal_calset_alloc: "
+	_vnacal_calset_error(vcsp, VNAERR_USAGE, "vnacal_calset_alloc: "
 		"invalid frequency count (%d)", frequencies);
-	errno = EINVAL;
 	return NULL;
     }
     if ((vcsp->vcs_setname = strdup(setname)) == NULL) {
+	_vnacal_calset_error(vcsp, VNAERR_SYSTEM,
+		"strdup: %s", strerror(errno));
 	vnacal_calset_free(vcsp);
 	return NULL;
     }
@@ -126,14 +118,16 @@ vnacal_calset_t *vnacal_calset_alloc(const char *setname,
     vcsp->vcs_references[2].u.vcdsr_gamma =  0.0;
     if ((vcsp->vcs_frequency_vector = calloc(frequencies,
 		    sizeof(double))) == NULL) {
-	_vnacal_calset_error(vcsp, "calloc: %s", strerror(errno));
+	_vnacal_calset_error(vcsp, VNAERR_SYSTEM,
+		"calloc: %s", strerror(errno));
 	vnacal_calset_free(vcsp);
 	return NULL;
     }
     vcsp->vcs_z0 = VNADATA_DEFAULT_Z0;
     if ((vcsp->vcs_matrix = calloc(ncells,
 		    sizeof(vnacal_cdata_t))) == NULL) {
-	_vnacal_calset_error(vcsp, "calloc: %s", strerror(errno));
+	_vnacal_calset_error(vcsp, VNAERR_SYSTEM,
+		"calloc: %s", strerror(errno));
 	vnacal_calset_free(vcsp);
 	return NULL;
     }
@@ -143,7 +137,8 @@ vnacal_calset_t *vnacal_calset_alloc(const char *setname,
 	for (int j = 0; j < 3; ++j) {
 	    if ((vcdp->vcd_data_vectors[j] = calloc(frequencies,
 			    sizeof(double complex))) == NULL) {
-		_vnacal_calset_error(vcsp, "calloc: %s", strerror(errno));
+		_vnacal_calset_error(vcsp, VNAERR_SYSTEM,
+			"calloc: %s", strerror(errno));
 		vnacal_calset_free(vcsp);
 		return NULL;
 	    }
@@ -165,24 +160,24 @@ int vnacal_calset_set_frequency_vector(vnacal_calset_t *vcsp,
 	return -1;
     }
     if (frequency_vector == NULL) {
-	_vnacal_calset_error(vcsp, "vnacal_calset_set_frequency_vector: "
+	_vnacal_calset_error(vcsp, VNAERR_USAGE,
+		"vnacal_calset_set_frequency_vector: "
 		"invalid NULL frequency_vector");
-	errno = EINVAL;
 	return -1;
     }
     for (int i = 0; i < vcsp->vcs_frequencies; ++i) {
 	if (isnan(frequency_vector[i]) || frequency_vector[i] < 0.0) {
-	    _vnacal_calset_error(vcsp, "vnacal_calset_set_frequency_vector: "
+	    _vnacal_calset_error(vcsp, VNAERR_USAGE,
+		    "vnacal_calset_set_frequency_vector: "
 		    "invalid frequency, %f", frequency_vector[i]);
-	    errno = EINVAL;
 	    return -1;
 	}
     }
     for (int i = 0; i < vcsp->vcs_frequencies - 1; ++i) {
 	if (frequency_vector[i] >= frequency_vector[i + 1]) {
-	    _vnacal_calset_error(vcsp, "vnacal_calset_set_frequency_vector: "
+	    _vnacal_calset_error(vcsp, VNAERR_USAGE,
+		    "vnacal_calset_set_frequency_vector: "
 		    "error: frequencies not ascending");
-	    errno = EINVAL;
 	    return -1;
 	}
     }
@@ -235,40 +230,36 @@ int vnacal_calset_add_vector(vnacal_calset_t *vcsp, int row, int column,
 	return -1;
     }
     if (row < 0 || row >= vcsp->vcs_rows) {
-	_vnacal_calset_error(vcsp, "vnacal_calset_add_vector: "
-		"invalid row: %d", row);
-	errno = EINVAL;
+	_vnacal_calset_error(vcsp, VNAERR_USAGE,
+		"vnacal_calset_add_vector: invalid row: %d", row);
 	return -1;
     }
     if (column < 0 || column >= vcsp->vcs_columns) {
-	_vnacal_calset_error(vcsp, "vnacal_calset_add_vector: "
-		"invalid column: %d", column);
-	errno = EINVAL;
+	_vnacal_calset_error(vcsp, VNAERR_USAGE,
+		"vnacal_calset_add_vector: invalid column: %d", column);
 	return -1;
     }
     if (vector == NULL) {
-	_vnacal_calset_error(vcsp, "vnacal_calset_add_vector: "
-		"invalid NULL vector");
-	errno = EINVAL;
+	_vnacal_calset_error(vcsp, VNAERR_USAGE,
+		"vnacal_calset_add_vector: invalid NULL vector");
 	return -1;
     }
     if ((term & _VNACAL_DIAGONAL) && row != column) {
-	_vnacal_calset_error(vcsp, "vnacal_calset_add_vector: "
-		"error: diagonal term given on off-diagonal cell");
-	errno = EINVAL;
+	_vnacal_calset_error(vcsp, VNAERR_USAGE,
+		"vnacal_calset_add_vector: "
+		"diagonal term given on off-diagonal cell");
 	return -1;
     }
     if ((term & _VNACAL_OFF_DIAGONAL) && row == column) {
-	_vnacal_calset_error(vcsp, "vnacal_calset_add_vector: "
-		"error: off-diagonal term given on diagonal cell");
-	errno = EINVAL;
+	_vnacal_calset_error(vcsp, VNAERR_USAGE,
+		"vnacal_calset_add_vector: "
+		"off-diagonal term given on diagonal cell");
 	return -1;
     }
     term &= ~(_VNACAL_DIAGONAL | _VNACAL_OFF_DIAGONAL);
     if (term < 0 || term > 2) {
-	_vnacal_calset_error(vcsp, "vnacal_calset_add_vector: "
-		"invalid term");
-	errno = EINVAL;
+	_vnacal_calset_error(vcsp, VNAERR_USAGE,
+		"vnacal_calset_add_vector: invalid term");
 	return -1;
     }
     vcdp = VNACAL_CALIBRATION_DATA(vcsp, row, column);
@@ -296,9 +287,9 @@ int vnacal_calset_set_reference(vnacal_calset_t *vcsp, int reference,
 	return -1;
     }
     if (reference < 0 || reference > 2) {
-	_vnacal_calset_error(vcsp, "vnacal_calset_set_reference: "
+	_vnacal_calset_error(vcsp, VNAERR_USAGE,
+		"vnacal_calset_set_reference: "
 		"error: reference index %d not in 0..2", reference);
-	errno = EINVAL;
 	return -1;
     }
     vcdsrp = &vcsp->vcs_references[reference];
@@ -341,15 +332,15 @@ int vnacal_calset_set_reference_vector(vnacal_calset_t *vcsp,
 	return -1;
     }
     if (reference < 0 || reference > 2) {
-	_vnacal_calset_error(vcsp, "vnacal_calset_set_reference_vector: "
+	_vnacal_calset_error(vcsp, VNAERR_USAGE,
+		"vnacal_calset_set_reference_vector: "
 		"error: reference index %d not in 0..2", reference);
-	errno = EINVAL;
 	return -1;
     }
     if (frequencies < 1) {
-	_vnacal_calset_error(vcsp, "vnacal_calset_set_reference_vector: "
+	_vnacal_calset_error(vcsp, VNAERR_USAGE,
+		"vnacal_calset_set_reference_vector: "
 		"invalid number of frequencies: %d", frequencies);
-	errno = EINVAL;
 	return -1;
     }
 
@@ -358,10 +349,9 @@ int vnacal_calset_set_reference_vector(vnacal_calset_t *vcsp,
      */
     for (int i = 1; i < frequencies; ++i) {
 	if (frequency_vector[i - 1] >= frequency_vector[i]) {
-	    _vnacal_calset_error(vcsp,
+	    _vnacal_calset_error(vcsp, VNAERR_USAGE,
 		    "vnacal_calset_set_reference_vector: error: "
 		    "frequencies not ascending");
-	    errno = EINVAL;
 	    return -1;
 	}
     }
@@ -370,12 +360,14 @@ int vnacal_calset_set_reference_vector(vnacal_calset_t *vcsp,
      * Allocate new vectors.
      */
     if ((new_frequency_vector = calloc(frequencies, sizeof(double))) == NULL) {
-	_vnacal_calset_error(vcsp, "calloc: %s", strerror(errno));
+	_vnacal_calset_error(vcsp, VNAERR_SYSTEM,
+		"calloc: %s", strerror(errno));
 	return -1;
     }
     if ((new_gamma_vector = calloc(frequencies,
 		    sizeof(double complex))) == NULL) {
-	_vnacal_calset_error(vcsp, "calloc: %s", strerror(errno));
+	_vnacal_calset_error(vcsp, VNAERR_SYSTEM,
+		"calloc: %s", strerror(errno));
 	free((void *)new_frequency_vector);
 	return -1;
     }

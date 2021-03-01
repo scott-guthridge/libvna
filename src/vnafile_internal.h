@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include "vnaerr_internal.h"
 #include "vnafile.h"
 
 #ifdef __cplusplus
@@ -70,7 +71,7 @@ typedef struct vnafile_format {
  */
 struct vnafile {
     uint32_t vf_magic;
-    vnafile_error_fn_t *vf_error_fn;
+    vnaerr_error_fn_t *vf_error_fn;
     void *vf_error_arg;
     vnafile_type_t vf_type;
     vnafile_format_t *vf_format_vector;
@@ -81,7 +82,13 @@ struct vnafile {
 };
 
 /* vnafile_error: report an error */
-extern void _vnafile_error(const vnafile_t *vfp, const char *format, ...);
+extern void _vnafile_error(const vnafile_t *vfp, vnaerr_category_t category,
+	const char *format, ...)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 3, 4)));
+#else
+    ;
+#endif
 
 /* _vnafile_format_to_name: return the given format descriptor as a string */
 extern const char *_vnafile_format_to_name(const vnafile_format_t *vffp);

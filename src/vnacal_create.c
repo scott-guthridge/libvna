@@ -124,7 +124,7 @@ static void _vnacal_calc_off_diagonal_error_terms(vnacal_etermset_t *etsp,
  *   @error_arg: user data passed through to the error function (or NULL)
  */
 vnacal_t *vnacal_create(int sets, vnacal_calset_t **vcspp,
-	vnacal_error_fn_t *error_fn, void *error_arg)
+	vnaerr_error_fn_t *error_fn, void *error_arg)
 {
     vnacal_t *vcp;
 
@@ -133,12 +133,15 @@ vnacal_t *vnacal_create(int sets, vnacal_calset_t **vcspp,
      */
     if ((vcp = (vnacal_t *)malloc(sizeof(vnacal_t))) == NULL) {
 	if (error_fn != NULL) {
-	    char buf[80];
+	    int saved_errno = errno;
+	    char message[80];
 
-	    (void)snprintf(buf, sizeof(buf), "vnacal_create: %s",
+	    (void)snprintf(message, sizeof(message), "vnacal_create: %s",
 		    strerror(errno));
-	    buf[sizeof(buf)-1] = '\000';
-	    (*error_fn)(error_arg, buf);
+	    message[sizeof(message)-1] = '\000';
+	    errno = saved_errno;
+	    (*error_fn)(VNAERR_SYSTEM, message, error_arg);
+	    errno = saved_errno;
 	}
 	return NULL;
     }
@@ -154,7 +157,8 @@ vnacal_t *vnacal_create(int sets, vnacal_calset_t **vcspp,
      */
     if ((vcp->vc_set_vector = (vnacal_etermset_t **)calloc(sets,
 		    sizeof(vnacal_etermset_t *))) == NULL) {
-	_vnacal_error(vcp, "vnacal_create: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"calloc %s", strerror(errno));
 	vnacal_free(vcp);
 	return NULL;
     }
@@ -168,24 +172,21 @@ vnacal_t *vnacal_create(int sets, vnacal_calset_t **vcspp,
 	 * Validate dimensions
 	 */
 	if (vcsp->vcs_rows < 1) {
-	    _vnacal_error(vcp, "vnacal_create: set %d: rows must be >= 1",
-		    set);
+	    _vnacal_error(vcp, VNAERR_USAGE,
+		    "vnacal_create: set %d: rows must be >= 1", set);
 	    vnacal_free(vcp);
-	    errno = EINVAL;
 	    return NULL;
 	}
 	if (vcsp->vcs_columns < 1) {
-	    _vnacal_error(vcp, "vnacal_create: set %d: columns must be >= 1",
-		    set);
+	    _vnacal_error(vcp, VNAERR_USAGE,
+		    "vnacal_create: set %d: columns must be >= 1", set);
 	    vnacal_free(vcp);
-	    errno = EINVAL;
 	    return NULL;
 	}
 	if (vcsp->vcs_frequencies < 1) {
-	    _vnacal_error(vcp, "vnacal_create: set %d: frequencies must "
-		    "be >= 1", set);
+	    _vnacal_error(vcp, VNAERR_USAGE,
+		    "vnacal_create: set %d: frequencies must be >= 1", set);
 	    vnacal_free(vcp);
-	    errno = EINVAL;
 	    return NULL;
 	}
 
@@ -193,9 +194,8 @@ vnacal_t *vnacal_create(int sets, vnacal_calset_t **vcspp,
 	 * Make sure the frequency vector was given.
 	 */
 	if (!vcsp->vcs_frequencies_valid) {
-	    _vnacal_error(vcp, "vnacal_create: set %d: "
-	       "no calibration frequency vector given", set);
-	    errno = EINVAL;
+	    _vnacal_error(vcp, VNAERR_USAGE, "vnacal_create: set %d: "
+		    "no calibration frequency vector given", set);
 	    return NULL;
 	}
 
@@ -218,13 +218,12 @@ vnacal_t *vnacal_create(int sets, vnacal_calset_t **vcspp,
 	    upper = (1.0 + VNACAL_F_EXTRAPOLATION) *
 		vcdsrp->u.v.vcdsr_frequency_vector[n - 1];
 	    if (cfmin < lower || cfmax > upper) {
-		_vnacal_error(vcp, "vnacal_create: set %d: "
+		_vnacal_error(vcp, VNAERR_USAGE, "vnacal_create: set %d: "
 		   "error: frequency range %.3e..%.3e is outside of "
 		   "reference %d range %.3e..%.3e",
 		   set, cfmin, cfmax, i,
 		   vcdsrp->u.v.vcdsr_frequency_vector[0],
 		   vcdsrp->u.v.vcdsr_frequency_vector[n - 1]);
-		errno = EINVAL;
 		return NULL;
 	    }
 	}
@@ -237,7 +236,6 @@ vnacal_t *vnacal_create(int sets, vnacal_calset_t **vcspp,
 			vcsp->vcs_setname,
 			vcsp->vcs_rows, vcsp->vcs_columns,
 			vcsp->vcs_frequencies)) == NULL) {
-	    _vnacal_error(vcp, "vnacal_create: %s", strerror(errno));
 	    vnacal_free(vcp);
 	    return NULL;
 	}

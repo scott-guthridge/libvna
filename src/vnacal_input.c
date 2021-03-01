@@ -69,25 +69,22 @@ vnacal_input_t *vnacal_input_alloc(vnacal_t *vcp, int set,
 	return NULL;
     }
     if (set < 0 || set >= vcp->vc_sets) {
-	_vnacal_error(vcp, "vnacal_input_alloc: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_alloc: "
 		"invalid set index (%d)", set);
-	errno = EINVAL;
 	return NULL;
     }
     if (rows < 0 || columns < 0) {
-	_vnacal_error(vcp, "vnacal_input_alloc: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_alloc: "
 		"invalid dimension (%d x %d)", rows, columns);
-	errno = EINVAL;
 	return NULL;
     }
     if (frequencies < 0) {
-	_vnacal_error(vcp, "vnacal_input_alloc: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_alloc: "
 		"invalid frequency count (%d)", frequencies);
-	errno = EINVAL;
 	return NULL;
     }
     if ((vip = malloc(sizeof(vnacal_input_t))) == NULL) {
-	_vnacal_error(vcp, "malloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
 	return NULL;
     }
     (void)memset((void *)vip, 0, sizeof(*vip));
@@ -99,31 +96,31 @@ vnacal_input_t *vnacal_input_alloc(vnacal_t *vcp, int set,
     vip->vi_frequencies_valid = false;
     if ((vip->vi_frequency_vector = calloc(frequencies,
 		    sizeof(double))) == NULL) {
-	_vnacal_error(vcp, "calloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	vnacal_input_free(vip);
 	return NULL;
     }
     if ((vip->vi_matrix = calloc(rows * columns,
 		    sizeof(double complex *))) == NULL) {
-	_vnacal_error(vcp, "calloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	vnacal_input_free(vip);
 	return NULL;
     }
     for (int cell = 0; cell < rows * columns; ++cell) {
 	if ((vip->vi_matrix[cell] = calloc(frequencies,
 			sizeof(double complex))) == NULL) {
-	    _vnacal_error(vcp, "calloc: %s", strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	    vnacal_input_free(vip);
 	    return NULL;
 	}
     }
     if ((vip->vi_counts = calloc(rows * columns, sizeof(int))) == NULL) {
-	_vnacal_error(vcp, "calloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	vnacal_input_free(vip);
 	return NULL;
     }
     if ((vip->vi_map = calloc(rows * columns, sizeof(int))) == NULL) {
-	_vnacal_error(vcp, "calloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	vnacal_input_free(vip);
 	return NULL;
     }
@@ -152,32 +149,31 @@ int vnacal_input_set_frequency_vector(vnacal_input_t *vip,
     vcp = vip->vi_vcp;
     etsp = vcp->vc_set_vector[vip->vi_set];
     if (frequency_vector == NULL) {
-	_vnacal_error(vcp, "vnacal_input_set_frequency_vector: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_set_frequency_vector: "
 		"invalid NULL frequency vector");
-	errno = EINVAL;
 	return -1;
     }
     for (int i = 0; i < vip->vi_frequencies - 1; ++i) {
 	if (frequency_vector[i] >= frequency_vector[i + 1]) {
-	    errno = EINVAL;
+	    _vnacal_error(vcp, VNAERR_USAGE,
+		    "vnacal_input_set_frequency_vector: "
+		    "frequencies must be ascending");
 	    return -1;
 	}
     }
     fmin = _vnacal_etermset_get_fmin_bound(etsp);
     fmax = _vnacal_etermset_get_fmax_bound(etsp);
     if (frequency_vector[0] < fmin) {
-	_vnacal_error(vcp, "vnacal_input_set_frequency_vector: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_set_frequency_vector: "
 		"frequency out of bounds %.3e < %.3e",
 		frequency_vector[0], etsp->ets_frequency_vector[0]);
-	errno = EINVAL;
 	return -1;
     }
     if (frequency_vector[vip->vi_frequencies - 1] > fmax) {
-	_vnacal_error(vcp, "vnacal_input_set_frequency_vector: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_set_frequency_vector: "
 		"frequency out of bounds %.3e > %.3e",
 		frequency_vector[vip->vi_frequencies - 1],
 		etsp->ets_frequency_vector[etsp->ets_frequencies - 1]);
-	errno = EINVAL;
 	return -1;
     }
     (void)memcpy((void *)vip->vi_frequency_vector, (void *)frequency_vector,
@@ -213,21 +209,18 @@ int vnacal_input_add_vector(vnacal_input_t *vip,
     etsp = vcp->vc_set_vector[vip->vi_set];
     cell = row * vip->vi_columns + column;
     if (row < 0 || row >= vip->vi_rows) {
-	_vnacal_error(vcp, "vnacal_input_add_vector: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_add_vector: "
 	   "invalid row: %d", row);
-	errno = EINVAL;
 	return -1;
     }
     if (column < 0 || column >= vip->vi_columns) {
-	_vnacal_error(vcp, "vnacal_input_add_vector: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_add_vector: "
 	   "invalid column: %d", column);
-	errno = EINVAL;
 	return -1;
     }
     if (vector == NULL) {
-	_vnacal_error(vcp, "vnacal_input_add_vector: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_add_vector: "
 	   "invalid NULL vector");
-	errno = EINVAL;
 	return -1;
     }
     if (etsp->ets_rows * etsp->ets_columns == 2) {
@@ -235,19 +228,18 @@ int vnacal_input_add_vector(vnacal_input_t *vip,
     } else if (row < etsp->ets_rows && column < etsp->ets_columns) {
 	map = etsp->ets_columns * row + column;
     } else {
-	_vnacal_error(vcp, "vnacal_input_add_vector: ambiguous DUT "
-		"to VNA port map: use vnacal_input_add_vector_map "
-		"instead");
-	errno = EINVAL;
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_add_vector: "
+		"ambiguous DUT to VNA port map: "
+		"use vnacal_input_add_vector_map instead");
 	return -1;
     }
     if (vip->vi_map[cell] != -1 && vip->vi_map[cell] != map) {
-	_vnacal_error(vcp, "vnacal_input_add_vector: inconsistent "
-		"DUT to VNA port mapping %d,%d -> %d,%d (previously %d,%d)",
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_add_vector: "
+		"inconsistent DUT to VNA port mapping %d,%d -> %d,%d "
+		"(previously %d,%d)",
 		row, column, map / etsp->ets_columns, map % etsp->ets_columns,
 		vip->vi_map[cell] / etsp->ets_columns,
 		vip->vi_map[cell] % etsp->ets_columns);
-	errno = EINVAL;
 	return -1;
     }
     vip->vi_map[cell] = map;
@@ -289,43 +281,39 @@ int vnacal_input_add_mapped_vector(vnacal_input_t *vip,
     etsp = vcp->vc_set_vector[vip->vi_set];
     cell = drow * vip->vi_columns + dcolumn;
     if (vrow < 0 || vrow >= etsp->ets_rows) {
-	_vnacal_error(vcp, "vnacal_input_add_vector: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_add_vector: "
 	   "invalid vrow: %d", vrow);
-	errno = EINVAL;
 	return -1;
     }
     if (vcolumn < 0 || vcolumn >= etsp->ets_columns) {
-	_vnacal_error(vcp, "vnacal_input_add_vector: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_add_vector: "
 	   "invalid vcolumn: %d", vcolumn);
-	errno = EINVAL;
 	return -1;
     }
     if (drow < 0 || drow >= vip->vi_rows) {
-	_vnacal_error(vcp, "vnacal_input_add_vector: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_add_vector: "
 	   "invalid drow: %d", drow);
-	errno = EINVAL;
 	return -1;
     }
     if (dcolumn < 0 || dcolumn >= vip->vi_columns) {
-	_vnacal_error(vcp, "vnacal_input_add_vector: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_add_vector: "
 	   "invalid dcolumn: %d", dcolumn);
-	errno = EINVAL;
 	return -1;
     }
     if (vector == NULL) {
-	_vnacal_error(vcp, "vnacal_input_add_vector: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_add_vector: "
 	   "invalid NULL vector");
-	errno = EINVAL;
 	return -1;
     }
     map = etsp->ets_columns * vrow + vcolumn;
     if (vip->vi_map[cell] != -1 && vip->vi_map[cell] != map) {
-	_vnacal_error(vcp, "vnacal_input_add_vector: inconsistent "
-		"DUT to VNA port mapping %d,%d -> %d,%d (previously %d,%d)",
-		drow, dcolumn, map / etsp->ets_columns, map % etsp->ets_columns,
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_add_vector: "
+		"inconsistent DUT to VNA port mapping %d,%d -> %d,%d "
+		"(previously %d,%d)",
+		drow, dcolumn, map / etsp->ets_columns,
+		map % etsp->ets_columns,
 		vip->vi_map[cell] / etsp->ets_columns,
 		vip->vi_map[cell] % etsp->ets_columns);
-	errno = EINVAL;
 	return -1;
     }
     vip->vi_map[cell] = map;
@@ -367,21 +355,18 @@ double complex vnacal_input_get_value(vnacal_input_t *vip,
     }
     vcp = vip->vi_vcp;
     if (row < 0 || row >= vip->vi_rows) {
-	_vnacal_error(vcp, "vnacal_input_get_value: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_get_value: "
 	   "invalid row: %d", row);
-	errno = EINVAL;
 	return HUGE_VAL;
     }
     if (column < 0 || column >= vip->vi_columns) {
-	_vnacal_error(vcp, "vnacal_input_get_value: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_get_value: "
 	   "invalid column: %d", column);
-	errno = EINVAL;
 	return HUGE_VAL;
     }
     if (findex < 0 || findex >= vip->vi_frequencies) {
-	_vnacal_error(vcp, "vnacal_input_get_value: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_get_value: "
 	   "invalid findex: %d", findex);
-	errno = EINVAL;
 	return HUGE_VAL;
     }
 
@@ -411,15 +396,13 @@ int vnacal_input_apply(const vnacal_input_t *vip,
     }
     vcp = vip->vi_vcp;
     if (s_parameters == NULL) {
-	_vnacal_error(vcp, "vnacal_input_apply: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_apply: "
 	   "invalid NULL s_parameters");
-	errno = EINVAL;
 	goto error;
     }
     if (!vip->vi_frequencies_valid) {
-	_vnacal_error(vcp, "vnacal_input_apply: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_input_apply: "
 	   "no frequency vector given");
-	errno = EINVAL;
 	goto error;
     }
 
@@ -445,8 +428,8 @@ int vnacal_input_apply(const vnacal_input_t *vip,
 	 */
 	if (vnadata_init(s_parameters, frequencies, rows, columns,
 		    VPT_S) == -1) {
-	    _vnacal_error(vcp, "_vnacal_input_apply: %s",
-		    strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "malloc: %s", strerror(errno));
 	    goto error;
 	}
 	(void)vnadata_set_frequency_vector(s_parameters, frequency_vector);
@@ -528,10 +511,9 @@ int vnacal_input_apply(const vnacal_input_t *vip,
 		for (int column = 0; column < columns; ++column) {
 		    if (vnadata_set_cell(s_parameters, findex, row, column,
 			    S(row, column)) != 0) {
-			_vnacal_error(vcp,
-				"_vnacal_input_get_s_parameters: "
-				"vnadata_set_cell: %s",
-			    strerror(errno));
+			_vnacal_error(vcp, VNAERR_INTERNAL,
+				"%s: vnadata_set_cell: %s",
+			    __func__, strerror(errno));
 			goto error;
 		    }
 		}

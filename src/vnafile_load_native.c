@@ -93,8 +93,8 @@ static int add_char(native_scan_state_t *nssp, char c)
 	char *cp;
 
 	if ((cp = realloc(nssp->nss_text, new_allocation)) == NULL) {
-	    _vnafile_error(vfp, "%s (line %d) error: realloc: %s",
-		nssp->nss_filename, nssp->nss_line, strerror(errno));
+	    _vnafile_error(vfp, VNAERR_SYSTEM,
+		    "realloc: %s", strerror(errno));
 	    return -1;
 	}
 	nssp->nss_text = cp;
@@ -118,8 +118,8 @@ static int start_field(native_scan_state_t *nssp)
 
 	ip = realloc(nssp->nss_fields, new_allocation * sizeof(int));
 	if (ip == NULL) {
-	    _vnafile_error(vfp, "%s (line %d) error: realloc: %s",
-		nssp->nss_filename, nssp->nss_line, strerror(errno));
+	    _vnafile_error(vfp, VNAERR_SYSTEM,
+		    "realloc: %s", strerror(errno));
 	    return -1;
 	}
 	nssp->nss_fields = ip;
@@ -317,9 +317,9 @@ static int scan_line(native_scan_state_t *nssp)
 	default:
 	    break;
 	}
-	_vnafile_error(vfp, "%s (line %d) error: unrecognized keyword: %s",
-	    nssp->nss_filename, nssp->nss_line, FIELD(nssp, 0));
-	errno = EBADMSG;
+	_vnafile_error(vfp, VNAERR_SYNTAX,
+		"%s (line %d) error: unrecognized keyword: %s",
+		nssp->nss_filename, nssp->nss_line, FIELD(nssp, 0));
 	return -1;
     }
     nssp->nss_record_type = T_DATA;
@@ -373,19 +373,17 @@ static int expect_nnint_arg(native_scan_state_t *nssp, int *value)
     int temp;
 
     if (nssp->nss_field_count != 2) {
-	_vnafile_error(vfp, "%s (line %d) error: "
-		"one argument expected after %s",
+	_vnafile_error(vfp, VNAERR_SYNTAX,
+		"%s (line %d) error: one argument expected after %s",
 		nssp->nss_filename, nssp->nss_line,
 		&FIELD(nssp, 0)[2]);
-	errno = EBADMSG;
 	return -1;
     }
     if (!convert_int(FIELD(nssp, 1), &temp) || temp < 0) {
-	_vnafile_error(vfp, "%s (line %d) error: "
-		"non-negative integer expected after %s",
+	_vnafile_error(vfp, VNAERR_SYNTAX,
+		"%s (line %d) error: non-negative integer expected after %s",
 		nssp->nss_filename, nssp->nss_line,
 		FIELD(nssp, 0));
-	errno = EBADMSG;
 	return -1;
     }
     *value = temp;
@@ -441,18 +439,16 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	switch (nss.nss_record_type) {
 	case T_KVERSION:
 	    if (nss.nss_field_count < 2) {
-		_vnafile_error(vfp, "%s (line %d) error: "
+		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			"argument expected after %s",
 			nss.nss_filename, nss.nss_line,
 			FIELD(&nss, 0));
-		errno = EBADMSG;
 		goto out;
 	    }
 	    if (strcmp(FIELD(&nss, 1), "1.0") != 0) {
-		_vnafile_error(vfp, "%s (line %d) error: "
+		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			"unsupported version %s",
 			nss.nss_filename, nss.nss_line, FIELD(&nss, 0));
-		errno = EBADMSG;
 		goto out;
 	    }
 	    if (scan_line(&nss) == -1) {
@@ -497,11 +493,10 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 
 	case T_KPARAMETERS:
 	    if (nss.nss_field_count != 2) {
-		_vnafile_error(vfp, "%s (line %d) error: "
+		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			"at least one argument expected after %s",
 			nss.nss_filename, nss.nss_line,
 			FIELD(&nss, 0));
-		errno = EBADMSG;
 		goto out;
 	    }
 	    if (vnafile_set_format(vfp, FIELD(&nss, 1)) == -1) {
@@ -521,12 +516,11 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		    goto out;
 		}
 		if (temp > VNAFILE_MAX_PRECISION) {
-		    _vnafile_error(vfp, "%s (line %d) error: "
+		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s may not exceed %d",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, 0),
 			    VNAFILE_MAX_PRECISION);
-		    errno = EBADMSG;
 		    goto out;
 		}
 		vfp->vf_fprecision = temp;
@@ -544,12 +538,11 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		    goto out;
 		}
 		if (temp > VNAFILE_MAX_PRECISION) {
-		    _vnafile_error(vfp, "%s (line %d) error: "
+		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s may not exceed %d",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, 0),
 			    VNAFILE_MAX_PRECISION);
-		    errno = EBADMSG;
 		    goto out;
 		}
 		vfp->vf_dprecision = temp;
@@ -562,10 +555,9 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 
 	case T_KZ0:
 	    if (ports < 0) {
-		_vnafile_error(vfp, "%s (line %d) error: "
+		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			"rows and columns must come before #:z0",
 			nss.nss_filename, nss.nss_line);
-		errno = EBADMSG;
 		goto out;
 	    }
 	    if (nss.nss_field_count == 2 &&
@@ -577,19 +569,17 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		continue;
 	    }
 	    if (nss.nss_field_count != 1 + 2 * ports) {
-		_vnafile_error(vfp, "%s (line %d) error: "
+		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			"expected %d fields after z0",
 			nss.nss_filename, nss.nss_line,
 			2 * ports);
-		errno = EBADMSG;
 		goto out;
 	    }
 	    if (z0_vector == NULL) {
 		if ((z0_vector = calloc(ports,
 				sizeof(double complex))) == NULL) {
-		    _vnafile_error(vfp, "%s (line %d) error: calloc: %s",
-			    nss.nss_filename, nss.nss_line,
-			    strerror(errno));
+		    _vnafile_error(vfp, VNAERR_SYSTEM,
+			    "calloc: %s", strerror(errno));
 		    goto out;
 		}
 	    }
@@ -598,11 +588,10 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		char *cp;
 
 		if (!convert_double(FIELD(&nss, 1 + 2 * port), &re)) {
-		    _vnafile_error(vfp, "%s (line %d) error: "
+		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s: expected a numeric argument",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, 1 + 2 * port));
-		    errno = EBADMSG;
 		    goto out;
 		}
 		if ((cp = strrchr(FIELD(&nss, 2 + 2 * port), 'j')) != NULL) {
@@ -611,11 +600,10 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		    }
 		}
 		if (!convert_double(FIELD(&nss, 2 + 2 * port), &im)) {
-		    _vnafile_error(vfp, "%s (line %d) error: "
+		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s: expected a numeric argument",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, 2 + 2 * port));
-		    errno = EBADMSG;
 		    goto out;
 		}
 		z0_vector[port] = re + I * im;
@@ -632,31 +620,27 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	break;
     }
     if (rows < 0) {
-	_vnafile_error(vfp, "%s (line %d) error: "
+	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 		"required keyword #:rows missing",
 		nss.nss_filename, nss.nss_line);
-	errno = EBADMSG;
 	goto out;
     }
     if (columns < 0) {
-	_vnafile_error(vfp, "%s (line %d) error: "
+	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 		"required keyword #:columns missing",
 		nss.nss_filename, nss.nss_line);
-	errno = EBADMSG;
 	goto out;
     }
     if (frequencies < 0) {
-	_vnafile_error(vfp, "%s (line %d) error: "
+	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 		"required keyword #:frequencies missing",
 		nss.nss_filename, nss.nss_line);
-	errno = EBADMSG;
 	goto out;
     }
     if (parameter_line == -1) {
-	_vnafile_error(vfp, "%s (line %d) error: "
+	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 		"required keyword #:parameters missing",
 		nss.nss_filename, nss.nss_line);
-	errno = EBADMSG;
 	goto out;
     }
 
@@ -686,11 +670,10 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	parameter_type = vffp->vff_parameter;
 	switch (vffp->vff_parameter) {
 	case VPT_UNDEF:
-	    _vnafile_error(vfp, "%s (line %d) error: "
+	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "%s parameter with no type",
 		    nss.nss_filename, parameter_line,
 		    vnadata_get_typename(vffp->vff_parameter));
-	    errno = EBADMSG;
 	    goto out;
 
 	case VPT_S:
@@ -709,11 +692,10 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	case VPT_Z:
 	case VPT_Y:
 	    if (rows != columns) {
-		_vnafile_error(vfp, "%s (line %d) error: "
+		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			"%s parameters require a square matrix",
 			nss.nss_filename, nss.nss_line,
 			vnadata_get_typename(vffp->vff_parameter));
-		errno = EBADMSG;
 		goto out;
 	    }
 	    break;
@@ -724,11 +706,10 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	case VPT_A:
 	case VPT_B:
 	    if (rows != 2 || columns != 2) {
-		_vnafile_error(vfp, "%s (line %d) error: "
+		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			"%s parameters require a 2x2 matrix",
 			nss.nss_filename, nss.nss_line,
 			_vnafile_format_to_name(vffp));
-		errno = EBADMSG;
 		goto out;
 	    }
 
@@ -793,10 +774,9 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	n_fields += fields;
     }
     if (best_vffp == NULL) {
-	_vnafile_error(vfp, "%s (line %d) error: "
+	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 		"file contains no parameter we can load",
 		nss.nss_filename, nss.nss_line);
-	errno = EBADMSG;
 	goto out;
     }
 
@@ -805,26 +785,21 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
      */
     if (vnadata_init(vdp, frequencies, best_drows, best_dcolumns,
 		best_parameter_type) == -1) {
-	_vnafile_error(vfp, "%s (line %d) error: "
-		"vnadata_init: %s",
-		nss.nss_filename, nss.nss_line,
-		strerror(errno));
 	goto out;
+	_vnafile_error(vfp, VNAERR_SYSTEM,
+		"vnadata_init: %s", strerror(errno));
     }
     if (z0_vector != NULL) {
 	if (vnadata_set_z0_vector(vdp, z0_vector) == -1) {
-	    _vnafile_error(vfp, "%s (line %d) error: "
-		    "vnadata_set_z0_vector: %s",
-		    nss.nss_filename, nss.nss_line,
-		    strerror(errno));
+	    _vnafile_error(vfp, VNAERR_SYSTEM,
+		    "vnadata_set_z0_vector: %s", strerror(errno));
 	    goto out;
 	}
     } else if (fz0) {
 	assert(z0_vector == NULL);
 	if ((z0_vector = calloc(ports, sizeof(double complex))) == NULL) {
-	    _vnafile_error(vfp, "%s (line %d) error: calloc: %s",
-		    nss.nss_filename, nss.nss_line,
-		    strerror(errno));
+	    _vnafile_error(vfp, VNAERR_SYSTEM,
+		    "calloc: %s", strerror(errno));
 	    goto out;
 	}
     }
@@ -837,41 +812,35 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 
 	if (nss.nss_record_type != T_DATA) {
 	    if (nss.nss_record_type == T_EOF) {
-		_vnafile_error(vfp, "%s (line %d) error: "
+		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			"expected %d data lines; found only %d",
 			nss.nss_filename, nss.nss_line,
 			frequencies, findex + 1);
-		errno = EBADMSG;
 		goto out;
 	    }
-	    _vnafile_error(vfp, "%s (line %d) error: "
+	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "expected a data line: found %s",
 		    nss.nss_filename, nss.nss_line,
 		    FIELD(&nss, 0));
-	    errno = EBADMSG;
 	    goto out;
 	}
 	if (nss.nss_field_count != n_fields) {
-	    _vnafile_error(vfp, "%s (line %d) error: "
+	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "expected %d fields; found %d",
 		    nss.nss_filename, nss.nss_line,
-		    n_fields, nss.nss_field_count);
-	    errno = EBADMSG;
+		    n_fields, (int)nss.nss_field_count);
 	    goto out;
 	}
 	if (!convert_double(FIELD(&nss, 0), &f)) {
-	    _vnafile_error(vfp, "%s (line %d) error: "
+	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "%s: number expected",
 		    nss.nss_filename, nss.nss_line,
 		    FIELD(&nss, 0));
-	    errno = EBADMSG;
 	    goto out;
 	}
 	if (vnadata_set_frequency(vdp, findex, f) == -1) {
-	    _vnafile_error(vfp, "%s (line %d) error: "
-		    "vnadata_set_frequency: %s",
-		    nss.nss_filename, nss.nss_line,
-		    strerror(errno));
+	    _vnafile_error(vfp, VNAERR_SYSTEM,
+		    "vnadata_set_frequency: %s", strerror(errno));
 	    goto out;
 	}
 	if (fz0) {
@@ -879,28 +848,24 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		double re, im;
 
 		if (!convert_double(FIELD(&nss, 1 + 2 * port), &re)) {
-		    _vnafile_error(vfp, "%s (line %d) error: "
+		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s: number expected",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, 1 + 2 * port));
-		    errno = EBADMSG;
 		    goto out;
 		}
 		if (!convert_double(FIELD(&nss, 2 + 2 * port), &im)) {
-		    _vnafile_error(vfp, "%s (line %d) error: "
+		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s: number expected",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, 2 + 2 * port));
-		    errno = EBADMSG;
 		    goto out;
 		}
 		z0_vector[port] = re + I * im;
 	    }
 	    if (vnadata_set_fz0_vector(vdp, findex, z0_vector) == -1) {
-		_vnafile_error(vfp, "%s (line %d) error: "
-			"vnadata_set_fz0_vector: %s",
-			nss.nss_filename, nss.nss_line,
-			strerror(errno));
+		_vnafile_error(vfp, VNAERR_SYSTEM,
+			"vnadata_set_fz0_vector: %s", strerror(errno));
 		goto out;
 	    }
 	}
@@ -911,20 +876,18 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		double complex value;
 
 		if (!convert_double(FIELD(&nss, best_field + 2 * cell), &v1)) {
-		    _vnafile_error(vfp, "%s (line %d) error: "
+		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s: number expected",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, best_field + cell));
-		    errno = EBADMSG;
 		    goto out;
 		}
 		if (!convert_double(FIELD(&nss, best_field + 2 * cell + 1),
 			    &v2)) {
-		    _vnafile_error(vfp, "%s (line %d) error: "
+		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s: number expected",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, best_field + cell + 1));
-		    errno = EBADMSG;
 		    goto out;
 		}
 		switch (best_vffp->vff_format) {
@@ -969,9 +932,9 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	}
     }
     if (nss.nss_record_type != T_EOF) {
-	_vnafile_error(vfp, "%s (line %d) error: extra lines at end of input",
+	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		"extra lines at end of input",
 		nss.nss_filename, nss.nss_line);
-	errno = EBADMSG;
 	goto out;
     }
     rv = 0;

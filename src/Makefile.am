@@ -10,7 +10,7 @@ SUFFIXES= .3 .pdf
 #
 # Library
 #
-include_HEADERS = vnacal.h vnaconv.h vnadata.h vnafile.h
+include_HEADERS = vnacal.h vnaconv.h vnadata.h vnaerr.h vnafile.h
 lib_LTLIBRARIES = libvna.la
 libvna_la_SOURCES = archdep.h archdep.c \
 	vnacal_internal.h vnacal_calset.c vnacal_create.c vnacal_error.c \
@@ -19,6 +19,7 @@ libvna_la_SOURCES = archdep.h archdep.c \
 	vnacal_save.c vnacal_set_dprecision.c vnacal_set_fprecision.c \
 	vnacommon_internal.h vnacommon_lu.c vnacommon_minverse.c \
 	vnacommon_mldivide.c vnacommon_mrdivide.c \
+	vnaerr_internal.h vnaerr_verror.c \
 	vnaconv_internal.h vnaconv_a2b.c vnaconv_a2g.c vnaconv_a2h.c \
 	vnaconv_a2s.c vnaconv_a2t.c vnaconv_a2y.c vnaconv_a2z.c \
 	vnaconv_a2zi.c vnaconv_b2a.c vnaconv_b2g.c vnaconv_b2h.c \
@@ -51,7 +52,7 @@ libvna_la_SOURCES = archdep.h archdep.c \
 #
 # Man pages
 #
-dist_man_MANS = vnacal.3 vnaconv.3 vnadata.3 vnafile.3
+dist_man_MANS = vnacal.3 vnaconv.3 vnadata.3 vnaerr.3 vnafile.3
 
 #
 # Tests
@@ -122,7 +123,7 @@ plot: vnacal-example.out vnacal-example.gnuplot
 .3.pdf:
 	$(PDFROFF) -t -e -man --no-toc-relocation $< > "$@"
 
-pdfman: vnacal.pdf vnaconv.pdf vnadata.pdf vnafile.pdf
+pdfman: vnacal.pdf vnaconv.pdf vnadata.pdf vnaerr.pdf vnafile.pdf
 
 clean-local:
 	rm -f example.vnacal vnacal-example.out vnacal-test.vnacal \

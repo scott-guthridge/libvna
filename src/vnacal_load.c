@@ -58,9 +58,8 @@ static int parse_int(vnacal_load_t *vlp, yaml_node_t *node, int *result)
     return 0;
 
 error:
-    _vnacal_error(vcp, "%s (line %ld) error: expected integer",
+    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: expected integer",
 	    vcp->vc_filename, node->start_mark.line + 1);
-    errno = EBADMSG;
     return -1;
 }
 
@@ -84,9 +83,8 @@ static int parse_double(vnacal_load_t *vlp, yaml_node_t *node, double *result)
     return 0;
 
 error:
-    _vnacal_error(vcp, "%s (line %ld) error: expected number",
+    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: expected number",
 	    vcp->vc_filename, node->start_mark.line + 1);
-    errno = EBADMSG;
     return -1;
 }
 
@@ -171,9 +169,8 @@ static int parse_complex(vnacal_load_t *vlp, yaml_node_t *node,
     return 0;
 
 error:
-    _vnacal_error(vcp, "%s (line %ld) error: expected number",
+    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: expected number",
 	    vcp->vc_filename, node->start_mark.line + 1);
-    errno = EBADMSG;
     return -1;
 }
 
@@ -192,10 +189,9 @@ static vnaproperty_t *parse_properties(vnacal_load_t *vlp, yaml_node_t *node)
     case YAML_SCALAR_NODE:
 	if ((root = vnaproperty_scalar_alloc((const char *)node->data.
 			scalar.value)) == NULL) {
-	    _vnacal_error(vcp, "%s (line %ld) error: "
-		    "vnaproperty_scalar_alloc: %s",
-		    vcp->vc_filename, (long)node->start_mark.line + 1,
-		    strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "vnaproperty_scalar_alloc: %s: %s",
+		    vcp->vc_filename, strerror(errno));
 	    goto out;
 	}
 	return root;
@@ -205,10 +201,9 @@ static vnaproperty_t *parse_properties(vnacal_load_t *vlp, yaml_node_t *node)
 	    yaml_node_pair_t *pair;
 
 	    if ((root = vnaproperty_map_alloc()) == NULL) {
-		_vnacal_error(vcp, "%s (line %ld) error: "
-			"vnaproperty_map_alloc: %s",
-			vcp->vc_filename, (long)node->start_mark.line + 1,
-			strerror(errno));
+		_vnacal_error(vcp, VNAERR_SYSTEM,
+			"vnaproperty_map_alloc: %s: %s",
+			vcp->vc_filename, strerror(errno));
 		goto out;
 	    }
 	    for (pair = node->data.mapping.pairs.start;
@@ -217,8 +212,9 @@ static vnaproperty_t *parse_properties(vnacal_load_t *vlp, yaml_node_t *node)
 
 		key = yaml_document_get_node(&vlp->vl_document, pair->key);
 		if (key->type != YAML_SCALAR_NODE) {
-		    _vnacal_error(vcp, "%s (line %ld) warning: non-scalar "
-			    "property key ignored\n",
+		    _vnacal_error(vcp, VNAERR_WARNING,
+			    "%s (line %ld) warning: "
+			    "non-scalar property key ignored\n",
 			    vcp->vc_filename, key->start_mark.line + 1);
 		    continue;
 		}
@@ -230,10 +226,9 @@ static vnaproperty_t *parse_properties(vnacal_load_t *vlp, yaml_node_t *node)
 		if (vnaproperty_map_set(root,
 			    (const char *)key->data.scalar.value,
 			    subtree) == -1) {
-		    _vnacal_error(vcp, "%s (line %ld) error: "
-			    "vnaproperty_map_set: %s",
-			    vcp->vc_filename, (long)key->start_mark.line + 1,
-			    strerror(errno));
+		    _vnacal_error(vcp, VNAERR_SYSTEM,
+			    "vnaproperty_map_set: %s: %s",
+			    vcp->vc_filename, strerror(errno));
 		    goto out;
 		}
 		subtree = NULL;
@@ -246,10 +241,9 @@ static vnaproperty_t *parse_properties(vnacal_load_t *vlp, yaml_node_t *node)
 	    yaml_node_item_t *item;
 
 	    if ((root = vnaproperty_list_alloc()) == NULL) {
-		_vnacal_error(vcp, "%s (line %ld) error: "
-			"vnaproperty_list_alloc: %s",
-			vcp->vc_filename, (long)node->start_mark.line + 1,
-			strerror(errno));
+		_vnacal_error(vcp, VNAERR_SYSTEM,
+			"vnaproperty_list_alloc: %s: %s",
+			vcp->vc_filename, strerror(errno));
 		goto out;
 	    }
 	    for (item = node->data.sequence.items.start;
@@ -263,10 +257,9 @@ static vnaproperty_t *parse_properties(vnacal_load_t *vlp, yaml_node_t *node)
 		    goto out;
 		}
 		if (vnaproperty_list_set(root, term, subtree) == -1) {
-		    _vnacal_error(vcp, "%s (line %ld) error: "
-			    "vnaproperty_list_set: %s",
-			    vcp->vc_filename, (long)node->start_mark.line + 1,
-			    strerror(errno));
+		    _vnacal_error(vcp, VNAERR_SYSTEM,
+			    "vnaproperty_list_set: %s: %s",
+			    vcp->vc_filename, strerror(errno));
 		    goto out;
 		}
 	    }
@@ -299,19 +292,16 @@ static int parse_matrix_column(vnacal_load_t *vlp, vnacal_etermset_t *etsp,
     yaml_node_item_t *item;
 
     if (node->type != YAML_SEQUENCE_NODE) {
-	_vnacal_error(vcp, "%s (line %ld) error: expected sequence "
-		"value", vcp->vc_filename,
-		node->start_mark.line + 1);
-	errno = EBADMSG;
+	_vnacal_error(vcp, VNAERR_SYNTAX,
+		"%s (line %ld) error: expected sequence",
+		vcp->vc_filename, node->start_mark.line + 1);
 	return -1;
     }
     terms = node->data.sequence.items.top - node->data.sequence.items.start;
     if (terms != 3) {
-	_vnacal_error(vcp, "%s (line %ld) error: expected 3 terms "
-		"but found %d",
-		vcp->vc_filename, node->start_mark.line + 1,
-		terms);
-	errno = EBADMSG;
+	_vnacal_error(vcp, VNAERR_SYNTAX,
+		"%s (line %ld) error: expected 3 terms but found %d",
+		vcp->vc_filename, node->start_mark.line + 1, terms);
 	return -1;
     }
     for (item = node->data.sequence.items.start;
@@ -345,18 +335,17 @@ static int parse_matrix_row(vnacal_load_t *vlp, vnacal_etermset_t *etsp,
     yaml_node_item_t *item;
 
     if (node->type != YAML_SEQUENCE_NODE) {
-	_vnacal_error(vcp, "%s (line %ld) error: expected sequence "
-		"value", vcp->vc_filename, node->start_mark.line + 1);
-	errno = EBADMSG;
+	_vnacal_error(vcp, VNAERR_SYNTAX,
+		"%s (line %ld) error: expected sequence",
+		vcp->vc_filename, node->start_mark.line + 1);
 	return -1;
     }
     columns = node->data.sequence.items.top - node->data.sequence.items.start;
     if (columns != etsp->ets_columns) {
-	_vnacal_error(vcp, "%s (line %ld) error: expected %d columns "
-		"but found %d",
+	_vnacal_error(vcp, VNAERR_SYNTAX,
+		"%s (line %ld) error: expected %d columns but found %d",
 		vcp->vc_filename, node->start_mark.line + 1,
 		etsp->ets_columns, columns);
-	errno = EBADMSG;
 	return -1;
     }
     for (item = node->data.sequence.items.start;
@@ -388,18 +377,17 @@ static int parse_matrix(vnacal_load_t *vlp, vnacal_etermset_t *etsp,
     yaml_node_item_t *item;
 
     if (node->type != YAML_SEQUENCE_NODE) {
-	_vnacal_error(vcp, "%s (line %ld) error: expected sequence "
-		"value", vcp->vc_filename, node->start_mark.line + 1);
-	errno = EBADMSG;
+	_vnacal_error(vcp, VNAERR_SYNTAX,
+		"%s (line %ld) error: expected sequence",
+		vcp->vc_filename, node->start_mark.line + 1);
 	return -1;
     }
     rows = node->data.sequence.items.top - node->data.sequence.items.start;
     if (rows != etsp->ets_rows) {
-	_vnacal_error(vcp, "%s (line %ld) error: expected %d rows "
-		"but found %d",
+	_vnacal_error(vcp, VNAERR_SYNTAX,
+		"%s (line %ld) error: expected %d rows but found %d",
 		vcp->vc_filename, node->start_mark.line + 1,
 		etsp->ets_rows, rows);
-	errno = EBADMSG;
 	return -1;
     }
     for (item = node->data.sequence.items.start;
@@ -430,19 +418,17 @@ static int parse_data(vnacal_load_t *vlp, vnacal_etermset_t *etsp,
     yaml_node_pair_t *pair;
 
     if (node->type != YAML_SEQUENCE_NODE) {
-	_vnacal_error(vcp, "%s (line %ld) error: expected sequence "
-		"value for \"data\"",
+	_vnacal_error(vcp, VNAERR_SYNTAX,
+		"%s (line %ld) error: expected sequence for \"data\"",
 		vcp->vc_filename, node->start_mark.line + 1);
-	errno = EBADMSG;
 	return -1;
     }
     count = node->data.sequence.items.top - node->data.sequence.items.start;
     if (count != etsp->ets_frequencies) {
-	_vnacal_error(vcp, "%s (line %ld) error: expected %d frequency entries "
-		"but found %d",
+	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: "
+		"expected %d frequency entries but found %d",
 		vcp->vc_filename, node->start_mark.line + 1,
 		etsp->ets_frequencies, count);
-	errno = EBADMSG;
 	return -1;
     }
     for (item = node->data.sequence.items.start;
@@ -488,14 +474,14 @@ static int parse_data(vnacal_load_t *vlp, vnacal_etermset_t *etsp,
 	    }
 	}
 	if (frequency < 0.0 || matrix == NULL) {
-	    _vnacal_error(vcp,
+	    _vnacal_error(vcp, VNAERR_SYNTAX,
 		    "%s (line %ld) error: missing required field "
 		    "\"f\" or \"e\"",
 		    vcp->vc_filename, child->start_mark.line + 1);
 	    return -1;
 	}
 	if (findex > 1 && frequency <= etsp->ets_frequency_vector[findex - 1]) {
-	    _vnacal_error(vcp,
+	    _vnacal_error(vcp, VNAERR_SYNTAX,
 		    "%s (line %ld) error: frequencies are not in "
 		    "ascending order",
 		    vcp->vc_filename, child->start_mark.line + 1);
@@ -527,10 +513,9 @@ static int parse_set(vnacal_load_t *vlp, int set, yaml_node_t *node)
     vnacal_etermset_t *etsp = NULL;
 
     if (node->type != YAML_MAPPING_NODE) {
-	_vnacal_error(vcp, "%s (line %ld) error: expected mapping "
-		"value for \"set\"",
+	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: "
+		"expected mapping for \"set\"",
 		vcp->vc_filename, node->start_mark.line + 1);
-	errno = EBADMSG;
 	return -1;
     }
     for (pair = node->data.mapping.pairs.start;
@@ -580,8 +565,8 @@ static int parse_set(vnacal_load_t *vlp, int set, yaml_node_t *node)
 	case 'n':
 	    if (strcmp((const char *)key->data.scalar.value, "name") == 0) {
 		if (value->type != YAML_SCALAR_NODE) {
-		    _vnacal_error(vcp, "%s (line %ld) error: expected scalar "
-			    "value for name",
+		    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: "
+			    "expected scalar for name",
 			    vcp->vc_filename, value->start_mark.line + 1);
 		    return -1;
 		}
@@ -621,7 +606,7 @@ static int parse_set(vnacal_load_t *vlp, int set, yaml_node_t *node)
 	}
     }
     if (name == NULL || rows < 0 || columns < 0 || frequencies < 0) {
-	_vnacal_error(vcp,
+	_vnacal_error(vcp, VNAERR_SYNTAX,
 		"%s (line %ld) error: missing required field \"name\", "
 		"\"rows\", \"columns\" or \"frequencies\"",
 		vcp->vc_filename, node->start_mark.line + 1);
@@ -658,19 +643,16 @@ static int parse_sets(vnacal_load_t *vlp, yaml_node_t *node)
     int sets;
 
     if (node->type != YAML_SEQUENCE_NODE) {
-	_vnacal_error(vcp, "%s (line %ld) error: expected sequence "
-		"value for \"sets\"",
+	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: "
+		"expected sequence or \"sets\"",
 		vcp->vc_filename, node->start_mark.line + 1);
-	errno = EBADMSG;
 	return -1;
     }
     sets = node->data.sequence.items.top - node->data.sequence.items.start;
     if ((vcp->vc_set_vector = calloc(sets,
 		    sizeof(vnacal_etermset_t *))) == NULL) {
-	_vnacal_error(vcp, "%s (line %ld) error: "
-		"calloc: %s",
-		vcp->vc_filename, (long)node->start_mark.line + 1,
-		strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"calloc: %s", strerror(errno));
 	return -1;
     }
     vcp->vc_sets = sets;
@@ -694,9 +676,9 @@ static int parse_document(vnacal_load_t *vlp, yaml_node_t *node)
     yaml_node_pair_t *pair;
 
     if (node->type != YAML_MAPPING_NODE) {
-	_vnacal_error(vcp, "%s (line %ld) error: expected map at top level",
+	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: "
+		"expected map at top level",
 		vcp->vc_filename, node->start_mark.line + 1);
-	errno = EBADMSG;
 	return -1;
     }
     for (pair = node->data.mapping.pairs.start;
@@ -744,7 +726,7 @@ static int parse_document(vnacal_load_t *vlp, yaml_node_t *node)
  *   error messages using error_fn before returning failure to the caller.
  */
 vnacal_t *vnacal_load(const char *pathname, const char *dotdir,
-	vnacal_error_fn_t *error_fn, void *error_arg)
+	vnaerr_error_fn_t *error_fn, void *error_arg)
 {
     vnacal_t *vcp;
     FILE *fp;
@@ -755,16 +737,20 @@ vnacal_t *vnacal_load(const char *pathname, const char *dotdir,
     bool delete_document = false;
 
     /*
-     * Allocate the vnaset_t structure and initialize the error reporting function.
+     * Allocate the vnaset_t structure and initialize the error
+     * reporting function.
      */
     if ((vcp = (vnacal_t *)malloc(sizeof(vnacal_t))) == NULL) {
 	if (error_fn != NULL) {
-	    char buf[80];
+	    int saved_errno = errno;
+	    char message[80];
 
-	    (void)snprintf(buf, sizeof(buf), "vnacal_create: %s",
+	    (void)snprintf(message, sizeof(message), "vnacal_load: %s",
 		    strerror(errno));
-	    buf[sizeof(buf)-1] = '\000';
-	    (*error_fn)(error_arg, buf);
+	    message[sizeof(message)-1] = '\000';
+	    errno = saved_errno;
+	    (*error_fn)(VNAERR_SYSTEM, message, error_arg);
+	    errno = saved_errno;
 	}
 	return NULL;
     }
@@ -788,33 +774,31 @@ vnacal_t *vnacal_load(const char *pathname, const char *dotdir,
 	return NULL;
     }
     if (fscanf(fp, "#VNACAL %lf", &vnacal_version) != 1) {
-	_vnacal_error(vcp, "%s (line 1) error: expected #VNACAL",
-		vcp->vc_filename);
-	errno = EBADMSG;
+	_vnacal_error(vcp, VNAERR_SYNTAX,
+		"%s (line 1) error: expected #VNACAL", vcp->vc_filename);
 	goto error;
     }
     if (vnacal_version < 2.0 || vnacal_version >= 3.0) {
-	_vnacal_error(vcp, "%s (line 1) error: unsupported version %.1f",
+	_vnacal_error(vcp, VNAERR_VERSION,
+		"%s (line 1) error: unsupported version %.1f",
 		vcp->vc_filename, vnacal_version);
-	errno = ENOPROTOOPT;
 	goto error;
     }
     yaml_parser_initialize(&parser);
     yaml_parser_set_input_file(&parser, fp);
     if (!yaml_parser_load(&parser, &vl.vl_document)) {
-	_vnacal_error(vcp, "%s (line %ld) error: %s",
+	_vnacal_error(vcp, VNAERR_SYSTEM, "yaml_parser_load: "
+		"%s (line %ld) error: %s",
 		vcp->vc_filename, (long)parser.problem_mark.line + 1,
 		parser.problem);
-	errno = EBADMSG;
 	goto error;
     }
     delete_document = true;
     (void)fclose(fp);
     fp = NULL;
     if ((root = yaml_document_get_root_node(&vl.vl_document)) == NULL) {
-	_vnacal_error(vcp, "%s error: empty YAML document",
+	_vnacal_error(vcp, VNAERR_SYNTAX, "%s: empty YAML document",
 		vcp->vc_filename);
-	errno = EBADMSG;
 	goto error;
     }
     if (parse_document(&vl, root) == -1) {

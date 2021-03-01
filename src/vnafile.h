@@ -21,6 +21,7 @@
 
 #include <errno.h>
 #include <vnadata.h>
+#include <vnaerr.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,18 +53,11 @@ typedef enum vnafile_type {
 typedef struct vnafile vnafile_t;
 
 /*
- * vnafile_error_fn_t: error reporting function type
- *   @message: error message without newline
- *   @error_arg: user-supplied argument passed through to error function
- */
-typedef void vnafile_error_fn_t(const char *message, void *error_arg);
-
-/*
  * vnafile_alloc: allocate the vnafile_t parameter structure
  *   @error_fn:  optional error reporting function
  *   @error_arg: optional opaque argument passed through to the error function
  */
-extern vnafile_t *vnafile_alloc(vnafile_error_fn_t *error_fn, void *error_arg);
+extern vnafile_t *vnafile_alloc(vnaerr_error_fn_t *error_fn, void *error_arg);
 
 /*
  * vnafile_get_file_type: return the file type

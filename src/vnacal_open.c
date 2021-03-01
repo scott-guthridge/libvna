@@ -45,12 +45,14 @@ static int _make_dirs(vnacal_t *vcp, char *filename, int offset)
 	*cp = '\000';
 	if (stat(filename, &ss) == -1) {
 	    if (errno != ENOENT) {
-		_vnacal_error(vcp, "stat: %s: %s", filename, strerror(errno));
+		_vnacal_error(vcp, VNAERR_SYSTEM, "stat: %s: %s",
+			filename, strerror(errno));
 		*cp = '/';
 		return -1;
 	    }
 	    if (mkdir(filename, 0777) == -1) {
-		_vnacal_error(vcp, "mkdir: %s: %s", filename, strerror(errno));
+		_vnacal_error(vcp, VNAERR_SYSTEM, "mkdir: %s: %s",
+			filename, strerror(errno));
 		*cp = '/';
 		return -1;
 	    }
@@ -91,7 +93,7 @@ FILE *_vnacal_open(vnacal_t *vcp, const char *pathname, const char *dotdir,
      */
     if (mode[0] == 'r' || pathname[0] == '/' || has_extension) {
 	if ((filename = malloc(pathname_length + 1)) == NULL) {
-	    _vnacal_error(vcp, "malloc: %s", strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
 	    return NULL;
 	}
 	(void)memcpy((void *)filename, (void *)pathname, pathname_length + 1);
@@ -101,7 +103,8 @@ FILE *_vnacal_open(vnacal_t *vcp, const char *pathname, const char *dotdir,
 	    return fp;
 	}
 	if (mode[0] != 'r' || errno != ENOENT || has_extension) {
-	    _vnacal_error(vcp, "%s: %s", filename, strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM, "fopen: %s: %s",
+		    filename, strerror(errno));
 	    goto error;
 	}
 	free((void *)filename);
@@ -116,7 +119,7 @@ FILE *_vnacal_open(vnacal_t *vcp, const char *pathname, const char *dotdir,
 	char *cp;
 
 	if ((filename = malloc(pathname_length + sizeof(extension))) == NULL) {
-	    _vnacal_error(vcp, "malloc: %s", strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
 	    return NULL;
 	}
 	cp = filename;
@@ -129,7 +132,8 @@ FILE *_vnacal_open(vnacal_t *vcp, const char *pathname, const char *dotdir,
 	    return fp;
 	}
 	if (errno != ENOENT) {
-	    _vnacal_error(vcp, "%s: %s", filename, strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM, "fopen: %s: %s",
+		    filename, strerror(errno));
 	    goto error;
 	}
 	free((void *)filename);
@@ -148,7 +152,7 @@ FILE *_vnacal_open(vnacal_t *vcp, const char *pathname, const char *dotdir,
 
 	if ((filename = malloc(home_length + 1 + dotdir_length + 1 +
 			pathname_length + sizeof(extension))) == NULL) {
-	    _vnacal_error(vcp, "malloc: %s", strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
 	    return NULL;
 	}
 	cp = filename;
@@ -169,14 +173,16 @@ FILE *_vnacal_open(vnacal_t *vcp, const char *pathname, const char *dotdir,
 	    }
 	}
 	if ((fp = fopen(filename, mode)) == NULL) {
-	    _vnacal_error(vcp, "%s: %s", filename, strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM, "fopen: %s: %s",
+		    filename, strerror(errno));
 	    goto error;
 	}
 	free((void *)vcp->vc_filename);
 	vcp->vc_filename = filename;
 	return fp;
     }
-    _vnacal_error(vcp, "%s: %s", pathname, strerror(errno));
+    _vnacal_error(vcp, VNAERR_SYSTEM, "fopen: %s: %s",
+	    pathname, strerror(errno));
     /*FALLTHROUGH*/
 
 error:

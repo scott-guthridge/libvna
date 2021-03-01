@@ -117,13 +117,15 @@ static int add_mapping_entry(vnacal_t *vcp, yaml_document_t *document,
     if ((t_key = yaml_document_add_scalar(document, NULL,
 		    (yaml_char_t *)key, strlen(key),
 		    YAML_ANY_SCALAR_STYLE)) == 0) {
-	_vnacal_error(vcp, "yaml_document_add_scalar: %s: %s",
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"yaml_document_add_scalar: %s: %s",
 		vcp->vc_filename, strerror(errno));
 	return -1;
     }
     if (yaml_document_append_mapping_pair(document, t_map,
 		t_key, t_value) == 0) {
-	_vnacal_error(vcp, "yaml_document_add_mapping_pair: %s: %s",
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"yaml_document_add_mapping_pair: %s: %s",
 		vcp->vc_filename, strerror(errno));
 	return -1;
     }
@@ -150,8 +152,9 @@ static int add_properties(vnacal_t *vcp, yaml_document_t *document,
 	    yaml_scalar_style_t style = YAML_ANY_SCALAR_STYLE;
 
 	    if ((value = vnaproperty_scalar_get(root)) == NULL) {
-		_vnacal_error(vcp, "vnaproperty_scalar_get: %s: %s",
-			vcp->vc_filename, strerror(errno));
+		_vnacal_error(vcp, VNAERR_INTERNAL,
+			"%s: vnaproperty_scalar_get: %s: %s",
+			__func__, vcp->vc_filename, strerror(errno));
 		return -1;
 	    }
 	    if (strchr(value, '\n') != NULL) {
@@ -159,7 +162,8 @@ static int add_properties(vnacal_t *vcp, yaml_document_t *document,
 	    }
 	    if ((item = yaml_document_add_scalar(document, NULL,
 		(yaml_char_t *)value, strlen(value), style)) == 0) {
-		_vnacal_error(vcp, "yaml_document_add_scalar: %s: %s",
+		_vnacal_error(vcp, VNAERR_SYSTEM,
+			"yaml_document_add_scalar: %s: %s",
 			vcp->vc_filename, strerror(errno));
 		return -1;
 	    }
@@ -173,7 +177,8 @@ static int add_properties(vnacal_t *vcp, yaml_document_t *document,
 
 	    if ((map = yaml_document_add_mapping(document, NULL,
 		    YAML_ANY_MAPPING_STYLE)) == 0) {
-		_vnacal_error(vcp, "yaml_document_add_mapping: %s: %s",
+		_vnacal_error(vcp, VNAERR_SYSTEM,
+			"yaml_document_add_mapping: %s: %s",
 			vcp->vc_filename, strerror(errno));
 		return -1;
 	    }
@@ -200,7 +205,8 @@ static int add_properties(vnacal_t *vcp, yaml_document_t *document,
 
 	    if ((sequence = yaml_document_add_sequence(document, NULL,
 			    YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
-		_vnacal_error(vcp, "yaml_document_add_sequence: %s: %s",
+		_vnacal_error(vcp, VNAERR_SYSTEM,
+			"yaml_document_add_sequence: %s: %s",
 			vcp->vc_filename, strerror(errno));
 		return -1;
 	    }
@@ -209,8 +215,9 @@ static int add_properties(vnacal_t *vcp, yaml_document_t *document,
 		int value;
 
 		if ((property = vnaproperty_list_get(root, i)) == NULL) {
-		    _vnacal_error(vcp, "vnaproperty_list_get: %s: %s",
-			    vcp->vc_filename, strerror(errno));
+		    _vnacal_error(vcp, VNAERR_INTERNAL,
+			    "%s: vnaproperty_list_get: %s: %s",
+			    __func__, vcp->vc_filename, strerror(errno));
 		    return -1;
 		}
 		if ((value = add_properties(vcp, document, property)) == -1) {
@@ -218,9 +225,9 @@ static int add_properties(vnacal_t *vcp, yaml_document_t *document,
 		}
 		if (yaml_document_append_sequence_item(document, sequence,
 			    value) == 0) {
-		    _vnacal_error(vcp,
-			    "yaml_document_append_sequence_item: "
-			    "%s: %s", vcp->vc_filename, strerror(errno));
+		    _vnacal_error(vcp, VNAERR_SYSTEM,
+			    "yaml_document_append_sequence_item: %s: %s",
+			    vcp->vc_filename, strerror(errno));
 		    return -1;
 		}
 	    }
@@ -256,7 +263,8 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 
     if (!yaml_document_initialize(&document, &version, &tags[0], &tags[0],
 		0, 0)) {
-	_vnacal_error(vcp, "yaml_document_initialize: %s: %s",
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"yaml_document_initialize: %s: %s",
 		vcp->vc_filename, strerror(errno));
 	goto error;
     }
@@ -264,7 +272,8 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
     t_root = yaml_document_add_mapping(&document, NULL,
 	    YAML_BLOCK_MAPPING_STYLE);
     if (t_root == 0) {
-	_vnacal_error(vcp, "yaml_document_add_mapping: %s: %s",
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"yaml_document_add_mapping: %s: %s",
 		vcp->vc_filename, strerror(errno));
 	goto error;
     }
@@ -280,7 +289,8 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
     }
     if ((t_sets = yaml_document_add_sequence(&document, NULL,
 		    YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
-	_vnacal_error(vcp, "yaml_document_add_sequence: %s: %s",
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"yaml_document_add_sequence: %s: %s",
 		vcp->vc_filename, strerror(errno));
 	goto error;
     }
@@ -294,12 +304,14 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 	t_set = yaml_document_add_mapping(&document, NULL,
 		YAML_ANY_MAPPING_STYLE);
 	if (t_set == 0) {
-	    _vnacal_error(vcp, "yaml_document_add_mapping: %s: %s",
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "yaml_document_add_mapping: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
 	if (yaml_document_append_sequence_item(&document, t_sets, t_set) == 0) {
-	    _vnacal_error(vcp, "yaml_document_append_sequence_item: %s: %s",
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "yaml_document_append_sequence_item: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
@@ -307,7 +319,8 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 			(yaml_char_t *)etsp->ets_setname,
 			strlen(etsp->ets_setname),
 			YAML_ANY_SCALAR_STYLE)) == 0) {
-	    _vnacal_error(vcp, "yaml_document_add_scalar: %s: %s",
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "yaml_document_add_scalar: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
@@ -315,7 +328,8 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 	    goto error;
 	}
 	if ((t_value = add_integer(&document, etsp->ets_rows)) == -1) {
-	    _vnacal_error(vcp, "yaml_document_add_scalar: %s: %s",
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "yaml_document_add_scalar: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
@@ -323,7 +337,8 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 	    goto error;
 	}
 	if ((t_value = add_integer(&document, etsp->ets_columns)) == -1) {
-	    _vnacal_error(vcp, "yaml_document_add_scalar: %s: %s",
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "yaml_document_add_scalar: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
@@ -332,7 +347,8 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 	    goto error;
 	}
 	if ((t_value = add_integer(&document, etsp->ets_frequencies)) == -1) {
-	    _vnacal_error(vcp, "yaml_document_add_scalar: %s: %s",
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "yaml_document_add_scalar: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
@@ -342,7 +358,8 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 	}
 	if ((t_value = add_complex(&document, etsp->ets_z0,
 			vcp->vc_dprecision)) == -1) {
-	    _vnacal_error(vcp, "yaml_document_add_scalar: %s: %s",
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "yaml_document_add_scalar: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
@@ -351,7 +368,8 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 	}
 	if ((t_matrix = yaml_document_add_sequence(&document, NULL,
 			YAML_ANY_SEQUENCE_STYLE)) == 0) {
-	    _vnacal_error(vcp, "yaml_document_add_sequence: %s: %s",
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "yaml_document_add_sequence: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
@@ -371,7 +389,8 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 	}
 	if ((t_data = yaml_document_add_sequence(&document, NULL,
 			YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
-	    _vnacal_error(vcp, "yaml_document_add_sequence: %s: %s",
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "yaml_document_add_sequence: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
@@ -383,20 +402,23 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 
 	    if ((t_fitem = yaml_document_add_mapping(&document, NULL,
 			    YAML_ANY_MAPPING_STYLE)) == 0) {
-		_vnacal_error(vcp, "yaml_document_add_sequence: %s: %s",
+		_vnacal_error(vcp, VNAERR_SYSTEM,
+			"yaml_document_add_sequence: %s: %s",
 			vcp->vc_filename, strerror(errno));
 		goto error;
 	    }
 	    if (!yaml_document_append_sequence_item(&document, t_data,
 			t_fitem)) {
-		_vnacal_error(vcp, "yaml_document_append_sequence_item: %s: %s",
+		_vnacal_error(vcp, VNAERR_SYSTEM,
+			"yaml_document_append_sequence_item: %s: %s",
 			vcp->vc_filename, strerror(errno));
 		goto error;
 	    }
 	    if ((t_value = add_double(&document,
 			    etsp->ets_frequency_vector[findex],
 			    vcp->vc_fprecision)) == -1) {
-		_vnacal_error(vcp, "yaml_document_add_scalar: %s: %s",
+		_vnacal_error(vcp, VNAERR_SYSTEM,
+			"yaml_document_add_scalar: %s: %s",
 			vcp->vc_filename, strerror(errno));
 		goto error;
 	    }
@@ -406,7 +428,8 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 	    }
 	    if ((t_matrix = yaml_document_add_sequence(&document, NULL,
 			    YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
-		_vnacal_error(vcp, "yaml_document_add_sequence: %s: %s",
+		_vnacal_error(vcp, VNAERR_SYSTEM,
+			"yaml_document_add_sequence: %s: %s",
 			vcp->vc_filename, strerror(errno));
 		goto error;
 	    }
@@ -417,15 +440,15 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 	    for (int row = 0; row < etsp->ets_rows; ++row) {
 		if ((t_row = yaml_document_add_sequence(&document, NULL,
 				YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
-		    _vnacal_error(vcp, "yaml_document_add_sequence: %s: %s",
+		    _vnacal_error(vcp, VNAERR_SYSTEM,
+			    "yaml_document_add_sequence: %s: %s",
 			    vcp->vc_filename, strerror(errno));
 		    goto error;
 		}
 		if (yaml_document_append_sequence_item(&document,
 			    t_matrix, t_row) == 0) {
-		    _vnacal_error(vcp,
-			    "yaml_document_append_sequence_item: "
-			    "%s: %s",
+		    _vnacal_error(vcp, VNAERR_SYSTEM,
+			    "yaml_document_append_sequence_item: %s: %s",
 			    vcp->vc_filename, strerror(errno));
 		    goto error;
 		}
@@ -439,15 +462,15 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 				    vcp->vc_dprecision <= 4 ?
 					YAML_FLOW_SEQUENCE_STYLE :
 					YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
-			_vnacal_error(vcp, "yaml_document_add_sequence: %s: %s",
+			_vnacal_error(vcp, VNAERR_SYSTEM,
+				"yaml_document_add_sequence: %s: %s",
 				vcp->vc_filename, strerror(errno));
 			goto error;
 		    }
 		    if (yaml_document_append_sequence_item(&document,
 				t_row, t_triple) == 0) {
-			_vnacal_error(vcp,
-				"yaml_document_append_sequence_item: "
-				"%s: %s",
+			_vnacal_error(vcp, VNAERR_SYSTEM,
+				"yaml_document_append_sequence_item: %s: %s",
 				vcp->vc_filename, strerror(errno));
 			goto error;
 		    }
@@ -455,14 +478,14 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 			if ((t_value = add_complex(&document,
 					etp->et_data_vectors[item][findex],
 					vcp->vc_dprecision)) == -1) {
-			    _vnacal_error(vcp,
+			    _vnacal_error(vcp, VNAERR_SYSTEM,
 				    "yaml_document_add_scalar: %s: %s",
 				    vcp->vc_filename, strerror(errno));
 			    goto error;
 			}
 			if (yaml_document_append_sequence_item(&document,
 				    t_triple, t_value) == 0) {
-			    _vnacal_error(vcp,
+			    _vnacal_error(vcp, VNAERR_SYSTEM,
 				    "yaml_document_append_sequence_item: "
 				    "%s: %s",
 				    vcp->vc_filename, strerror(errno));
@@ -479,8 +502,11 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
      */
     (void)fprintf(fp, "#VNACAL 2.0\n");
     if (!yaml_emitter_initialize(&emitter)) {
-	_vnacal_error(vcp, "yaml_emitter_initialize: %s: error",
-		vcp->vc_filename);
+	if (errno == 0) {
+	    errno = EBADMSG;
+	}
+	_vnacal_error(vcp, VNAERR_SYSTEM, "yaml_emitter_initialize: %s: %s",
+		vcp->vc_filename, strerror(errno));
 	goto error;
     }
     yaml_emitter_set_output_file(&emitter, fp);
@@ -491,17 +517,26 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
     yaml_emitter_set_unicode(&emitter, 1);
     yaml_emitter_set_break(&emitter, YAML_ANY_BREAK);
     if (!yaml_emitter_open(&emitter)) {
-	_vnacal_error(vcp, "yaml_emitter_open: %s: error: %s",
+	if (errno == 0) {
+	    errno = EBADMSG;
+	}
+	_vnacal_error(vcp, VNAERR_SYSTEM, "yaml_emitter_open: %s: error: %s",
 		vcp->vc_filename, emitter.problem);
 	goto error;
     }
     if (!yaml_emitter_dump(&emitter, &document)) {
-	_vnacal_error(vcp, "yaml_emitter_dump: %s: error: %s",
+	if (errno == 0) {
+	    errno = EBADMSG;
+	}
+	_vnacal_error(vcp, VNAERR_SYSTEM, "yaml_emitter_dump: %s: error: %s",
 		vcp->vc_filename, emitter.problem);
 	goto error;
     }
     if (!yaml_emitter_close(&emitter)) {
-	_vnacal_error(vcp, "yaml_emitter_close: %s: error: %s",
+	if (errno == 0) {
+	    errno = EBADMSG;
+	}
+	_vnacal_error(vcp, VNAERR_SYSTEM, "yaml_emitter_close: %s: error: %s",
 		vcp->vc_filename, emitter.problem);
 	goto error;
     }
@@ -510,8 +545,8 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
     delete_document = false;
 
     if (fclose(fp) == -1) {
-	_vnacal_error(vcp, "fclose: %s: %s", vcp->vc_filename,
-	    strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM, "fclose: %s: %s",
+		vcp->vc_filename, strerror(errno));
 	goto error;
     }
     return 0;

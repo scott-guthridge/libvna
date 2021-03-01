@@ -23,6 +23,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <vnadata.h>
+#include <vnaerr.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,13 +49,6 @@ typedef struct vnacal vnacal_t;
  * vnacal_input_t: opaque type returned from vnacal_input_alloc
  */
 typedef struct vnacal_input vnacal_input_t;
-
-/*
- * vnacal_error_fn_t: error reporting function type
- *   @message: error message without newline
- *   @error_arg: user-supplied argument passed through to error function
- */
-typedef void vnacal_error_fn_t(const char *message, void *error_arg);
 
 /*
  * Optional parameter tag used to sanity check that diagnonal and
@@ -91,7 +85,7 @@ typedef void vnacal_error_fn_t(const char *message, void *error_arg);
  */
 extern vnacal_calset_t *vnacal_calset_alloc(
 	const char *setname, int rows, int columns, int frequencies,
-	vnacal_error_fn_t *error_fn, void *error_arg);
+	vnaerr_error_fn_t *error_fn, void *error_arg);
 
 /*
  * vnacal_calset_set_frequency_vector: set the frequency vector
@@ -170,7 +164,7 @@ extern void vnacal_calset_free(vnacal_calset_t *vcsp);
  *   @error_arg: user data passed through to the error function (or NULL)
  */
 extern vnacal_t *vnacal_create(int sets, vnacal_calset_t **vcspp,
-	vnacal_error_fn_t *error_fn, void *error_arg);
+	vnaerr_error_fn_t *error_fn, void *error_arg);
 
 /*
  * vnacal_load: load the calibration from a file
@@ -183,7 +177,7 @@ extern vnacal_t *vnacal_create(int sets, vnacal_calset_t **vcspp,
  *   error messages using error_fn before returning failure to the caller.
  */
 extern vnacal_t *vnacal_load(const char *pathname, const char *dotdir,
-	vnacal_error_fn_t *error_fn, void *error_arg);
+	vnaerr_error_fn_t *error_fn, void *error_arg);
 
 /*
  * vnacal_save: create or overwrite a calibration file with new data

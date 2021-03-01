@@ -46,12 +46,12 @@ vnacal_etermset_t *_vnacal_etermset_alloc(vnacal_t *vcp, const char *setname,
 
     etsp = (vnacal_etermset_t *)malloc(sizeof(vnacal_etermset_t));
     if (etsp == NULL) {
-	_vnacal_error(vcp, "malloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
 	return NULL;
     }
     (void)memset((void *)etsp, 0, sizeof(vnacal_etermset_t));
     if ((etsp->ets_setname = strdup(setname)) == NULL) {
-	_vnacal_error(vcp, "strdup: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM, "strdup: %s", strerror(errno));
 	goto error;
     }
     etsp->ets_vcp = vcp;
@@ -60,12 +60,12 @@ vnacal_etermset_t *_vnacal_etermset_alloc(vnacal_t *vcp, const char *setname,
     etsp->ets_frequencies = frequencies;
     etsp->ets_frequency_vector = calloc(frequencies, sizeof(double));
     if (etsp->ets_frequency_vector == NULL) {
-	_vnacal_error(vcp, "calloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	goto error;
     }
     etsp->ets_error_term_matrix = calloc(ncells, sizeof(vnacal_error_terms_t));
     if (etsp->ets_error_term_matrix == NULL) {
-	_vnacal_error(vcp, "calloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	goto error;
     }
     for (int i = 0; i < ncells; ++i) {
@@ -75,7 +75,8 @@ vnacal_etermset_t *_vnacal_etermset_alloc(vnacal_t *vcp, const char *setname,
 	    etp->et_data_vectors[j] = (double complex *)calloc(frequencies,
 		    sizeof(double complex));
 	    if (etp->et_data_vectors[j] == NULL) {
-		_vnacal_error(vcp, "calloc: %s", strerror(errno));
+		_vnacal_error(vcp, VNAERR_SYSTEM,
+			"calloc: %s", strerror(errno));
 		goto error;
 	    }
 	}
