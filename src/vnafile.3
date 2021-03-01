@@ -99,8 +99,8 @@ Link with \fI-lvna\fP \fI-lm\fP.
 This library loads and saves vector network analyzer (VNA) parameter
 data in Touchstone and native file formats.
 .PP
-The \fBvnafile_alloc\fP() function must be called first to allocate a
-handle object used by the other functions.
+\fBvnafile_alloc\fP() returns a pointer to a \fBvnafile_t\fP structure
+used by the other functions.
 The \fIerror_fn\fP argument is a pointer to a function the library calls
 with a single line \fImessage\fP (without newline) to report errors.
 If given as \s-2NULL\s+2, the library functions set \fIerrno\fP and
@@ -187,11 +187,11 @@ values, respectively, when saving to a file.
 If not set, \fIfprecision\fP defaults to 7 digits and \fIdprecision\fP
 defaults to 6 digits.
 .PP
-The \fBvnafile_load\fP() function loads VNA parameter data from
-\fIfilename\fP, places the resulting parameter data into the
-\fBvnadata_t\fP object pointed to by \fIvdp\fP (see \fBvnadata\fP(3)),
-and updates the parameters in the \fBvnafile_t\fP object to match what
-was read from the file.
+The \fBvnafile_load\fP() function loads VNA parameter data
+from \fIfilename\fP, places the resulting parameter data into the
+\fBvnadata_t\fP structure pointed to by \fIvdp\fP (see \fBvnadata\fP(3)),
+and updates the parameters in the \fBvnafile_t\fP structure to match
+what was read from the file.
 The \fBvnafile_loadf\fP() function does the same, but uses the
 caller-supplied open file pointer \fIfp\fP.
 The \fIfilename\fP parameter to \fBvnafile_loadf\fP() is used only for
