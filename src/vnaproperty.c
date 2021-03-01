@@ -349,13 +349,13 @@ vnaproperty_t *vnaproperty_list_get(const vnaproperty_t *list, int index)
 {
     vnaproperty_list_t *vplp;
 
-    if (list->vpr_type != VNAPROPERTY_LIST) {
+    if (list->vpr_type != VNAPROPERTY_LIST || index < 0) {
 	errno = EINVAL;
 	return NULL;
     }
     vplp = (vnaproperty_list_t *)list;
-    if (index < 0 || index >= vplp->vpl_length) {
-	errno = EDOM;
+    if (index >= vplp->vpl_length) {
+	errno = ENOENT;
 	return NULL;
     }
     return vplp->vpl_vector[index];
@@ -372,15 +372,11 @@ int vnaproperty_list_set(vnaproperty_t *list, int index,
 {
     vnaproperty_list_t *vplp;
 
-    if (list->vpr_type != VNAPROPERTY_LIST) {
+    if (list->vpr_type != VNAPROPERTY_LIST || index < 0) {
 	errno = EINVAL;
 	return -1;
     }
     vplp = (vnaproperty_list_t *)list;
-    if (index < 0) {
-	errno = EDOM;
-	return -1;
-    }
     if (index >= vplp->vpl_length) {	/* extend case */
 	if (_vnaproperty_list_check_allocation(vplp, index + 1) == -1) {
 	    return -1;
@@ -435,15 +431,11 @@ int vnaproperty_list_insert(vnaproperty_t *list, int index,
 {
     vnaproperty_list_t *vplp;
 
-    if (list->vpr_type != VNAPROPERTY_LIST) {
+    if (list->vpr_type != VNAPROPERTY_LIST || index < 0) {
 	errno = EINVAL;
 	return -1;
     }
     vplp = (vnaproperty_list_t *)list;
-    if (index < 0) {
-	errno = EDOM;
-	return -1;
-    }
     if (index >= vplp->vpl_length) {
 	return vnaproperty_list_set(list, index, element);
     }
@@ -467,13 +459,13 @@ int vnaproperty_list_delete(vnaproperty_t *list, int index)
 {
     vnaproperty_list_t *vplp;
 
-    if (list->vpr_type != VNAPROPERTY_LIST) {
+    if (list->vpr_type != VNAPROPERTY_LIST || index < 0) {
 	errno = EINVAL;
 	return -1;
     }
     vplp = (vnaproperty_list_t *)list;
-    if (index < 0 || index >= vplp->vpl_length) {
-	errno = EDOM;
+    if (index >= vplp->vpl_length) {
+	errno = ENOENT;
 	return -1;
     }
     (void)memmove((void *)&vplp->vpl_vector[index],
