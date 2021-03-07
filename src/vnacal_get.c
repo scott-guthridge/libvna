@@ -26,10 +26,32 @@
 #include <string.h>
 #include "vnacal_internal.h"
 
+/*
+ * _vnacal_get_calibration: return the calibration at the given index
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ */
+vnacal_calibration_t *_vnacal_get_calibration(const vnacal_t *vcp, int ci)
+{
+    vnacal_calibration_t *calp;
+
+    if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
+	errno = EINVAL;
+	return NULL;
+    }
+    if (ci < 0 || ci >= vcp->vc_calibration_allocation) {
+	errno = EINVAL;
+	return NULL;
+    }
+    if ((calp = vcp->vc_calibration_vector[ci]) == NULL) {
+	errno = EINVAL;
+	return NULL;
+    }
+    return calp;
+}
 
 /*
  * vnacal_get_filename: return the calibration file name
- *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
  *
  * Return:
  *   NULL if the vnacal_t structure came from vnacal_create and vnacal_save
@@ -37,115 +59,152 @@
  */
 const char *vnacal_get_filename(const vnacal_t *vcp)
 {
+    if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
+	errno = EINVAL;
+	return NULL;
+    }
     return vcp->vc_filename;
 }
 
 /*
- * vnacal_get_sets: return the number of calibration sets
- *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
+ * vnacal_get_calibration_end: return one past the highest calibration index
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
  */
-int vnacal_get_sets(const vnacal_t *vcp)
+int vnacal_get_calibration_end(const vnacal_t *vcp)
 {
-    return vcp->vc_sets;
+    int n;
+
+    if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
+	errno = EINVAL;
+	return -1;
+    }
+    n = vcp->vc_calibration_allocation;
+    while (n > 0 && vcp->vc_calibration_vector[n - 1] == NULL) {
+	--n;
+    }
+    return n;
 }
 
 /*
- * vnacal_get_setname: return the calibration set setname
- *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
- *   @set: set index (beginning with zero)
+ * vnacal_get_name: return the calibration name
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  */
-const char *vnacal_get_setname(const vnacal_t *vcp, int set)
+const char *vnacal_get_name(const vnacal_t *vcp, int ci)
 {
-    if (set < 0 || set >= vcp->vc_sets) {
+    const vnacal_calibration_t *calp;
+
+    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
 	errno = EINVAL;
 	return NULL;
     }
-    return vcp->vc_set_vector[set]->ets_setname;
+    return calp->cal_name;
+}
+
+/*
+ * vnacal_get_type: return the type of error terms
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
+ */
+vnacal_type_t vnacal_get_type(const vnacal_t *vcp, int ci)
+{
+    const vnacal_calibration_t *calp;
+
+    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
+	errno = EINVAL;
+	return -1;
+    }
+    return calp->cal_type;
 }
 
 /*
  * vnacal_get_rows: return the number of rows in the calibration matrix
- *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
- *   @set: set index (beginning with zero)
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  */
-int vnacal_get_rows(const vnacal_t *vcp, int set)
+int vnacal_get_rows(const vnacal_t *vcp, int ci)
 {
-    if (set < 0 || set >= vcp->vc_sets) {
+    const vnacal_calibration_t *calp;
+
+    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
 	errno = EINVAL;
 	return -1;
     }
-    return vcp->vc_set_vector[set]->ets_rows;
+    return calp->cal_rows;
 }
 
 /*
  * vnacal_get_columns: return the number of columns in the calibration matrix
- *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
- *   @set: set index (beginning with zero)
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  */
-int vnacal_get_columns(const vnacal_t *vcp, int set)
+int vnacal_get_columns(const vnacal_t *vcp, int ci)
 {
-    if (set < 0 || set >= vcp->vc_sets) {
+    const vnacal_calibration_t *calp;
+
+    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
 	errno = EINVAL;
 	return -1;
     }
-    return vcp->vc_set_vector[set]->ets_columns;
+    return calp->cal_rows;
 }
 
 /*
  * vnacal_get_frequencies: return the number of frequency points
- *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
- *   @set: set index (beginning with zero)
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  */
-int vnacal_get_frequencies(const vnacal_t *vcp, int set)
+int vnacal_get_frequencies(const vnacal_t *vcp, int ci)
 {
-    if (set < 0 || set >= vcp->vc_sets) {
-	errno = EINVAL;
+    const vnacal_calibration_t *calp;
+
+    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
 	return -1;
     }
-    return vcp->vc_set_vector[set]->ets_frequencies;
+    return calp->cal_frequencies;
 }
 
 /*
  * vnacal_get_fmin: return the minimum frequency point
- *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
- *   @set: set index (beginning with zero)
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  */
-double vnacal_get_fmin(const vnacal_t *vcp, int set)
+double vnacal_get_fmin(const vnacal_t *vcp, int ci)
 {
-    if (set < 0 || set >= vcp->vc_sets) {
-	errno = EINVAL;
+    const vnacal_calibration_t *calp;
+
+    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
 	return HUGE_VAL;
     }
-    return vcp->vc_set_vector[set]->ets_frequency_vector[0];
+    return calp->cal_frequency_vector[0];
 }
 
 /*
  * vnacal_get_fmax: return the maximum frequency point
- *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
- *   @set: set index (beginning with zero)
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  */
-double vnacal_get_fmax(const vnacal_t *vcp, int set)
+double vnacal_get_fmax(const vnacal_t *vcp, int ci)
 {
-    vnacal_etermset_t *etsp;
+    const vnacal_calibration_t *calp;
 
-    if (set < 0 || set >= vcp->vc_sets) {
-	errno = EINVAL;
+    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
 	return HUGE_VAL;
     }
-    etsp = vcp->vc_set_vector[set];
-    return etsp->ets_frequency_vector[etsp->ets_frequencies - 1];
+    return calp->cal_frequency_vector[calp->cal_frequencies - 1];
 }
 
 /*
  * vnacal_get_fmax: return a pointer to the calibration frequency vector
- *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
- *   @set: set index (beginning with zero)
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  */
-const double *vnacal_get_frequency_vector(const vnacal_t *vcp, int set)
+const double *vnacal_get_frequency_vector(const vnacal_t *vcp, int ci)
 {
-    if (set < 0 || set >= vcp->vc_sets) {
-	errno = EINVAL;
+    const vnacal_calibration_t *calp;
+
+    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
 	return NULL;
     }
-    return vcp->vc_set_vector[set]->ets_frequency_vector;
+    return calp->cal_frequency_vector;
 }

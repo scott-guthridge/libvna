@@ -30,13 +30,19 @@
 /*
  * _get_property_root: return the address of the appropriate property root
  */
-static vnaproperty_t **_get_property_root(vnacal_t *vcp, int set)
+static vnaproperty_t **_get_property_root(vnacal_t *vcp, int ci)
 {
-    if (set >= 0 && set < vcp->vc_sets) {
-	return &vcp->vc_set_vector[set]->ets_properties;
+    vnacal_calibration_t *calp;
+
+    if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
+	errno = EINVAL;
+	return NULL;
     }
-    if (set == -1) {
+    if (ci == -1) {
 	return &vcp->vc_properties;
+    }
+    if ((calp = _vnacal_get_calibration(vcp, ci)) != NULL) {
+	return &calp->cal_properties;
     }
     errno = EINVAL;
     return NULL;
@@ -45,16 +51,17 @@ static vnaproperty_t **_get_property_root(vnacal_t *vcp, int set)
 /*
  * vnacal_property_type: get the type of the given property expression
  *   @root:   property data root (can be NULL)
- *   @format: printf-like format string forming the property expression
+ *   @format: printf format string forming the property expression
  *   @...:    optional variable arguments
  */
-int vnacal_property_type(vnacal_t *vcp, int set, const char *format, ...)
+int vnacal_property_type(vnacal_t *vcp, int ci,
+	const char *format, ...)
 {
     va_list ap;
     vnaproperty_t **anchor;
     vnaproperty_type_t type;
 
-    if ((anchor = _get_property_root(vcp, set)) == NULL) {
+    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
 	return -1;
     }
     va_start(ap, format);
@@ -82,16 +89,17 @@ int vnacal_property_type(vnacal_t *vcp, int set, const char *format, ...)
 /*
  * vnacal_property_count: return count of elements in given collection
  *   @root:   property data root (can be NULL)
- *   @format: printf-like format string forming the property expression
+ *   @format: printf format string forming the property expression
  *   @...:    optional variable arguments
  */
-int vnacal_property_count(vnacal_t *vcp, int set, const char *format, ...)
+int vnacal_property_count(vnacal_t *vcp, int ci,
+	const char *format, ...)
 {
     va_list ap;
     vnaproperty_t **anchor;
     int count;
 
-    if ((anchor = _get_property_root(vcp, set)) == NULL) {
+    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
 	return -1;
     }
     va_start(ap, format);
@@ -104,19 +112,19 @@ int vnacal_property_count(vnacal_t *vcp, int set, const char *format, ...)
 /*
  * vnacal_property_keys: return a vector of keys for the given map expr
  *   @root:   property data root (can be NULL)
- *   @format: printf-like format string forming the property expression
+ *   @format: printf format string forming the property expression
  *   @...:    optional variable arguments
  *
  * Caller can free the vector by a call to free.
  */
-const char **vnacal_property_keys(vnacal_t *vcp, int set,
+const char **vnacal_property_keys(vnacal_t *vcp, int ci,
 	const char *format, ...)
 {
     va_list ap;
     vnaproperty_t **anchor;
     const char **keys;
 
-    if ((anchor = _get_property_root(vcp, set)) == NULL) {
+    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
 	return NULL;
     }
     va_start(ap, format);
@@ -129,16 +137,17 @@ const char **vnacal_property_keys(vnacal_t *vcp, int set,
 /*
  * vnacal_property_get: get a property value from a property expression
  *   @root:   property data root (can be NULL)
- *   @format: printf-like format string forming the property expression
+ *   @format: printf format string forming the property expression
  *   @...:    optional variable arguments
  */
-const char *vnacal_property_get(vnacal_t *vcp, int set, const char *format, ...)
+const char *vnacal_property_get(vnacal_t *vcp, int ci,
+	const char *format, ...)
 {
     va_list ap;
     vnaproperty_t **anchor;
     const char *value;
 
-    if ((anchor = _get_property_root(vcp, set)) == NULL) {
+    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
 	return NULL;
     }
     va_start(ap, format);
@@ -151,16 +160,17 @@ const char *vnacal_property_get(vnacal_t *vcp, int set, const char *format, ...)
 /*
  * vnacal_property_set: set a property value from a property expression
  *   @anchor: address of root property pointer
- *   @format: printf-like format string forming the property expression
+ *   @format: printf format string forming the property expression
  *   @...:    optional variable arguments
  */
-int vnacal_property_set(vnacal_t *vcp, int set, const char *format, ...)
+int vnacal_property_set(vnacal_t *vcp, int ci,
+	const char *format, ...)
 {
     va_list ap;
     vnaproperty_t **anchor;
     int rv;
 
-    if ((anchor = _get_property_root(vcp, set)) == NULL) {
+    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
 	return -1;
     }
     va_start(ap, format);
@@ -173,16 +183,17 @@ int vnacal_property_set(vnacal_t *vcp, int set, const char *format, ...)
 /*
  * vnacal_property_delete: delete the value described by format
  *   @anchor: address of root property pointer
- *   @format: printf-like format string forming the property expression
+ *   @format: printf format string forming the property expression
  *   @...:    optional variable arguments
  */
-int vnacal_property_delete(vnacal_t *vcp, int set, const char *format, ...)
+int vnacal_property_delete(vnacal_t *vcp, int ci,
+	const char *format, ...)
 {
     va_list ap;
     vnaproperty_t **anchor;
     int rv;
 
-    if ((anchor = _get_property_root(vcp, set)) == NULL) {
+    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
 	return -1;
     }
     va_start(ap, format);

@@ -1,0 +1,139 @@
+.\"
+.\" Vector Network Analyzer Library
+.\" Copyright © 2020, 2021 D Scott Guthridge <scott_guthridge@rompromity.net>
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published
+.\" by the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.\"
+.TH VNACAL_PARAMETER 3 "FEB 2021" GNU
+.nh
+.SH NAME
+vnacal_make_scalar_parameter, vnacal_make_vector_parameter, vnacal_make_unknown_parameter, vnacal_make_correlated_parameter, vnacal_delete_parameter \- vnacal s-parameter functions
+.\"
+.SH SYNOPSIS
+.B #include <vnacal.h>
+.\"
+.PP
+.TS
+tab(;);
+ll.
+\fB\s-2VNACAL_MATCH\s+2\fP; (also \fB\s-2VNACAL_ZERO\s+2\fP)
+\fB\s-2VNACAL_OPEN\s+2\fP; (also \fB\s-2VNACAL_ONE\s+2\fP)
+\fB\s-2VNACAL_SHORT\s+2\fP;
+.TE
+.\"
+.PP
+.BI "int vnacal_make_scalar_parameter(vnacal_t *" vcp ,
+.BI "double complex " gamma );
+.\"
+.PP
+.ie t \{\
+.BI "int vnacal_make_vector_parameter(vnacal_t *" vcp ", int " frequencies ,
+.in +4n
+.BI "const double *" frequency_vector ", const double complex *" gamma_vector );
+.\}
+.el \{\
+.BI "int vnacal_make_vector_parameter(vnacal_t *" vcp ,
+.in +4n
+.BI "int " frequencies ", const double *" frequency_vector ,
+.br
+.BI "const double complex *" gamma_vector );
+.in -4n
+.\}
+.\"
+.PP
+.BI "int vnacal_make_unknown_parameter(vnacal_t *" vcp ", int " initial_guess );
+.PP
+.BI "int vnacal_make_correlated_parameter(vnacal_t *" vcp ", int "other ,
+.if n \{\
+.in +4n
+.\}
+.BI "double " sigma );
+.if n \{\
+.in -4n
+.\}
+.\"
+.PP
+.BI "int vnacal_delete_parameter(vnacal_t *" vcp ", int " parameter );
+.\"
+.PP
+Link with \fI-lvna\fP \fI-lyaml\fP \fI-lm\fP.
+.sp
+.\"
+.SH DESCRIPTION
+These functions are used to specify the S-parameters for calibration
+standards used by the \fBvnacal_new_add_\fP*() functions.
+.PP
+Instead of taking a matrix of complex numbers that specify the
+S-parameters directly, the \fBvnacal_new_add_\fP*() functions instead
+take a matrix of type \fBint\fP, filled with either the predefined
+constants:
+\fB\s-2VNACAL_MATCH\s+2\fP, \fB\s-2VNACAL_OPEN\s+2\fP,
+\fB\s-2VNACAL_SHORT\s+2\fP, \fB\s-2VNACAL_ZERO\s+2\fP,
+\fB\s-2VNACAL_ONE\s+2\fP; or the integer handles returned from the four
+\fBvnacal_make_\fP*\fP_parameter\fP() functions described here.
+There are two reasons for this extra level of abstraction.
+First, it unifies the interface between scalar parameters \- parameters
+that are constant across all frequencies (e.g. -1.0 for short) \- and
+vector parameters that are given at a list of frequency points.
+Second, it allows for parameters to be specified as unknown: parameters
+that the library has to solve for.
+.PP
+All of the functions take a pointer to a \fBvnacal_t\fP obtained from
+\fBvnacal_create\fP() or \fBvnacal_load\fP().  See \fBvnacal\fP(3).
+.PP
+\fBvnacal_make_scalar_parameter\fP() creates a frequency-independent
+parameter with a reflection coefficient of \fIgamma\fP.
+.PP
+\fBvnacal_make_vector_parameter\fP() creates a frequency-dependent
+parameter, where \fIfrequency_vector\fP and \fIgamma_vector\fP are
+vectors of length \fIfrequencies\fP giving the frequency and value
+at each point.
+The library uses rational function interpolation to interpolate between
+frequencies if the given frequency points don't align with the calibration
+frequencies.
+.PP
+\fBvnacal_make_unknown_parameter\fP() creates a parameter with unknown
+value, where \fIinitial_guess\fP is either one of the pre-defined
+constants or the value returned from \fBvnacal_make_scalar_parameter\fP()
+or \fBvnacal_make_vector_parameter\fP(), giving a starting point for
+the solution.
+.PP
+\fBvnacal_make_correlated_parameter\fP() creates a parameter with unknown
+value that is correlated with another (possibly unknown) parameter,
+\fIother\fP, connected by a standard deviation of \fIsigma\fP.
+.PP
+\fBvnacal_delete_parameter\fP() removes a parameter from the
+\fBvnacal_t\fP structure.
+.\"
+.SH "RETURN VALUE"
+The \fBvnacal_make_\fP*\fB_parameter\fP() functions return an integer
+handle to the newly formed parameter on success, or -1 on error.
+\fBvnacal_delete_parameter\fP() returns 0 on success or -1 on error.
+.\"
+.SH ERRORS
+On error, these functions invoke the \fIerror_fn\fP, given to
+\fBvnacal_create\fP() or \fBvnacal_load\fP() if not \s-2NULL\s+2, set
+\fBerrno\fP to one of the following values and return failure.
+.IP \fB\s-2ENOENT\s+2\fP
+The \fBvnacal_delete_parameter\fP() function was called with a parameter
+handle that doesn't refer to an extant parameter.
+.IP \fB\s-2ENOMEM\s+2\fP
+The library was unable to allocate memory.
+.IP \fB\s-2EINVAL\s+2\fP
+\fBvnacal_delete_parameter\fP() was called with an invalid handle or
+with one of the predefined values.
+.\"
+.SH "SEE ALSO"
+.BR vnacal "(3), " vnacal_new "(3), " vnaconv "(3), " vnadata "(3),"
+.BR vnaerr "(3), " vnafile "(3)"

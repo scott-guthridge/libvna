@@ -70,9 +70,9 @@ void _vnaerr_verror(vnaerr_error_fn_t *error_fn, void *error_arg,
 	break;
 
     case VNAERR_INTERNAL:
+    default:
 	new_errno = ENOSYS;
 	break;
-
     }
 
     /*

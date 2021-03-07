@@ -90,8 +90,8 @@ static int add_complex(yaml_document_t *document, double complex value,
 	(void)sprintf(buf, "%+a %+aj", real, imag);
     } else {
 	(void)sprintf(buf, "%+.*e %+.*ej",
-	    precision - 1, real,
-	    precision - 1, imag);
+		precision - 1, real,
+		precision - 1, imag);
     }
     if ((tag = yaml_document_add_scalar(document, NULL,
 		    (yaml_char_t *)buf, strlen(buf),
@@ -103,7 +103,7 @@ static int add_complex(yaml_document_t *document, double complex value,
 
 /*
  * add_mapping_entry: add a simple scalar tag to value mapping entry
- *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @document: yaml document
  *   @t_map:    map into which we're adding
  *   @key:      string valued key
@@ -114,9 +114,13 @@ static int add_mapping_entry(vnacal_t *vcp, yaml_document_t *document,
 {
     int t_key;
 
+    errno = 0;
     if ((t_key = yaml_document_add_scalar(document, NULL,
 		    (yaml_char_t *)key, strlen(key),
 		    YAML_ANY_SCALAR_STYLE)) == 0) {
+	if (errno == 0) {
+	    errno = EINVAL;
+	}
 	_vnacal_error(vcp, VNAERR_SYSTEM,
 		"yaml_document_add_scalar: %s: %s",
 		vcp->vc_filename, strerror(errno));
@@ -124,6 +128,9 @@ static int add_mapping_entry(vnacal_t *vcp, yaml_document_t *document,
     }
     if (yaml_document_append_mapping_pair(document, t_map,
 		t_key, t_value) == 0) {
+	if (errno == 0) {
+	    errno = EINVAL;
+	}
 	_vnacal_error(vcp, VNAERR_SYSTEM,
 		"yaml_document_add_mapping_pair: %s: %s",
 		vcp->vc_filename, strerror(errno));
@@ -133,8 +140,459 @@ static int add_mapping_entry(vnacal_t *vcp, yaml_document_t *document,
 }
 
 /*
+ * error_terms_common_arguments_t: common error term matrix arguments
+ */
+typedef struct error_terms_common_arguments {
+    vnacal_t	       *etca_vcp;
+    yaml_document_t    *etca_document;
+    int			etca_mapping;
+    int			etca_findex;
+} error_terms_common_arguments_t;
+
+/*
+ * add_vector: add a complex vector to an existing map
+ *   @etca:     arguments passed through from vnacal_save
+ *   @name:     name of vector
+ *   @vector:   data
+ *   @length:   length of vector
+ */
+static int add_vector(error_terms_common_arguments_t etca,
+	const char *name, double complex *const *vector, int length)
+{
+    vnacal_t *vcp = etca.etca_vcp;
+    yaml_document_t *document = etca.etca_document;
+    int mapping = etca.etca_mapping;
+    int findex = etca.etca_findex;
+    int t_vector, t_value;
+
+    yaml_sequence_style_t sequence_style =
+	(2 * length * (vcp->vc_dprecision + 8) <= 70) ?
+	YAML_FLOW_SEQUENCE_STYLE : YAML_BLOCK_SEQUENCE_STYLE;
+
+    if ((t_vector = yaml_document_add_sequence(document, NULL,
+		    sequence_style)) == 0) {
+	if (errno == 0) {
+	    errno = EINVAL;
+	}
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"yaml_document_add_sequence: %s: %s",
+		vcp->vc_filename, strerror(errno));
+	return -1;
+    }
+    if (add_mapping_entry(vcp, document, mapping, name, t_vector) == -1) {
+	return -1;
+    }
+    for (int i = 0; i < length; ++i) {
+	if ((t_value = add_complex(document, vector[i][findex],
+			vcp->vc_dprecision)) == -1) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "yaml_document_add_scalar: %s: %s",
+		    vcp->vc_filename, strerror(errno));
+	    return -1;
+	}
+	if (yaml_document_append_sequence_item(document,
+		    t_vector, t_value) == 0) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "yaml_document_append_sequence_item: %s: %s",
+		    vcp->vc_filename, strerror(errno));
+	    return -1;
+	}
+    }
+    return 0;
+}
+
+/*
+ * add_matrix: add a complex matrix to an existing map
+ *   @etca:     arguments passed through from vnacal_save
+ *   @name:        name of vector
+ *   @matrix:      data
+ *   @rows:        rows in matrix
+ *   @columns:     columns in matrix
+ *   @no_diagonal: matrix is missing the major diagonal
+ */
+static int add_matrix(error_terms_common_arguments_t etca,
+	const char *name, double complex *const *matrix,
+	int rows, int columns, bool no_diagonal)
+{
+    vnacal_t *vcp = etca.etca_vcp;
+    yaml_document_t *document = etca.etca_document;
+    int mapping = etca.etca_mapping;
+    int findex = etca.etca_findex;
+    int t_matrix, t_value;
+    yaml_sequence_style_t row_style;
+
+    row_style = (2 * columns * (vcp->vc_dprecision + 8) <= 70) ?
+	YAML_FLOW_SEQUENCE_STYLE : YAML_BLOCK_SEQUENCE_STYLE;
+    if ((t_matrix = yaml_document_add_sequence(document, NULL,
+		    YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
+	if (errno == 0) {
+	    errno = EINVAL;
+	}
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"yaml_document_add_sequence: %s: %s",
+		vcp->vc_filename, strerror(errno));
+	return -1;
+    }
+    if (add_mapping_entry(vcp, document, mapping, name, t_matrix) == -1) {
+	return -1;
+    }
+    for (int row = 0; row < rows; ++row) {
+	int t_row;
+
+	if ((t_row = yaml_document_add_sequence(document, NULL,
+			row_style)) == 0) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "yaml_document_add_sequence: %s: %s",
+		    vcp->vc_filename, strerror(errno));
+	    return -1;
+	}
+	if (yaml_document_append_sequence_item(document,
+		    t_matrix, t_row) == 0) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "yaml_document_append_sequence_item: %s: %s",
+		    vcp->vc_filename, strerror(errno));
+	    return -1;
+	}
+	for (int column = 0; column < columns; ++column) {
+	    if (no_diagonal && row == column) {
+		if ((t_value = yaml_document_add_scalar(document, NULL,
+				(yaml_char_t *)"~", 1,
+				YAML_ANY_SCALAR_STYLE)) == 0) {
+		    if (errno == 0) {
+			errno = EINVAL;
+		    }
+		    _vnacal_error(vcp, VNAERR_SYSTEM,
+			    "yaml_document_add_scalar: %s: %s",
+			    vcp->vc_filename, strerror(errno));
+		    return -1;
+		}
+	    } else {
+		if ((t_value = add_complex(document, (*matrix++)[findex],
+				vcp->vc_dprecision)) == -1) {
+		    if (errno == 0) {
+			errno = EINVAL;
+		    }
+		    _vnacal_error(vcp, VNAERR_SYSTEM,
+			    "yaml_document_add_scalar: %s: %s",
+			    vcp->vc_filename, strerror(errno));
+		    return -1;
+		}
+	    }
+	    if (yaml_document_append_sequence_item(document,
+			t_row, t_value) == 0) {
+		if (errno == 0) {
+		    errno = EINVAL;
+		}
+		_vnacal_error(vcp, VNAERR_SYSTEM,
+			"yaml_document_append_sequence_item: %s: %s",
+			vcp->vc_filename, strerror(errno));
+		return -1;
+	    }
+	}
+    }
+    return 0;
+}
+
+/*
+ * add_error_parameters: add error parameters matrices for one frequency
+ *   @etca:     arguments passed through from vnacal_save
+ *   @calp:     pointer to calibration structure
+ *   @vlp:      pointer to vnacal_layout_t structure
+ */
+static int add_error_parameters(error_terms_common_arguments_t etca,
+	const vnacal_calibration_t *calp, const vnacal_layout_t *vlp)
+{
+    double complex **e = calp->cal_error_term_vector;
+
+    switch (calp->cal_type) {
+    case VNACAL_T8:
+    case VNACAL_TE10:
+	{
+	    const int ts_terms  = VL_TS_TERMS(vlp);
+	    const int ts_offset = VL_TS_OFFSET(vlp);
+	    const int ti_terms  = VL_TI_TERMS(vlp);
+	    const int ti_offset = VL_TI_OFFSET(vlp);
+	    const int tx_terms  = VL_TX_TERMS(vlp);
+	    const int tx_offset = VL_TX_OFFSET(vlp);
+	    const int tm_terms  = VL_TM_TERMS(vlp);
+	    const int tm_offset = VL_TM_OFFSET(vlp);
+	    double complex **ts = &e[ts_offset];
+	    double complex **ti = &e[ti_offset];
+	    double complex **tx = &e[tx_offset];
+	    double complex **tm = &e[tm_offset];
+	    if (add_vector(etca, "ts", ts, ts_terms) == -1) {
+		return -1;
+	    }
+
+	    if (add_vector(etca, "ti", ti, ti_terms) == -1) {
+		return -1;
+	    }
+
+	    if (add_vector(etca, "tx", tx, tx_terms) == -1) {
+		return -1;
+	    }
+
+	    if (add_vector(etca, "tm", tm, tm_terms) == -1) {
+		return -1;
+	    }
+	}
+	if (calp->cal_type == VNACAL_TE10) {
+	    const int el_rows    = VL_EL_ROWS(vlp);
+	    const int el_columns = VL_EL_COLUMNS(vlp);
+	    const int el_offset  = VL_EL_OFFSET(vlp);
+	    double complex **el = &e[el_offset];
+
+	    if (add_matrix(etca, "el",
+			el, el_rows, el_columns, true) == -1) {
+		return -1;
+	    }
+	}
+	return 0;
+
+    case VNACAL_U8:
+    case VNACAL_UE10:
+	{
+	    const int um_terms  = VL_UM_TERMS(vlp);
+	    const int um_offset = VL_UM_OFFSET(vlp);
+	    const int ui_terms  = VL_UI_TERMS(vlp);
+	    const int ui_offset = VL_UI_OFFSET(vlp);
+	    const int ux_terms  = VL_UX_TERMS(vlp);
+	    const int ux_offset = VL_UX_OFFSET(vlp);
+	    const int us_terms  = VL_US_TERMS(vlp);
+	    const int us_offset = VL_US_OFFSET(vlp);
+	    double complex **um = &e[um_offset];
+	    double complex **ui = &e[ui_offset];
+	    double complex **ux = &e[ux_offset];
+	    double complex **us = &e[us_offset];
+	    if (add_vector(etca, "um", um, um_terms) == -1) {
+		return -1;
+	    }
+
+	    if (add_vector(etca, "ui", ui, ui_terms) == -1) {
+		return -1;
+	    }
+
+	    if (add_vector(etca, "ux", ux, ux_terms) == -1) {
+		return -1;
+	    }
+
+	    if (add_vector(etca, "us", us, us_terms) == -1) {
+		return -1;
+	    }
+	}
+	if (calp->cal_type == VNACAL_UE10) {
+	    const int el_rows    = VL_EL_ROWS(vlp);
+	    const int el_columns = VL_EL_COLUMNS(vlp);
+	    const int el_offset  = VL_EL_OFFSET(vlp);
+	    double complex **el = &e[el_offset];
+
+	    if (add_matrix(etca, "el",
+			el, el_rows, el_columns, true) == -1) {
+		return -1;
+	    }
+	}
+	return 0;
+
+    case VNACAL_T16:
+	{
+	    const int ts_rows    = VL_TS_ROWS(vlp);
+	    const int ts_columns = VL_TS_COLUMNS(vlp);
+	    const int ts_offset  = VL_TS_OFFSET(vlp);
+	    const int ti_rows    = VL_TI_ROWS(vlp);
+	    const int ti_columns = VL_TI_COLUMNS(vlp);
+	    const int ti_offset  = VL_TI_OFFSET(vlp);
+	    const int tx_rows    = VL_TX_ROWS(vlp);
+	    const int tx_columns = VL_TX_COLUMNS(vlp);
+	    const int tx_offset  = VL_TX_OFFSET(vlp);
+	    const int tm_rows    = VL_TM_ROWS(vlp);
+	    const int tm_columns = VL_TM_COLUMNS(vlp);
+	    const int tm_offset  = VL_TM_OFFSET(vlp);
+	    double complex **ts = &e[ts_offset];
+	    double complex **ti = &e[ti_offset];
+	    double complex **tx = &e[tx_offset];
+	    double complex **tm = &e[tm_offset];
+	    if (add_matrix(etca, "ts", ts,
+			ts_rows, ts_columns, false) == -1) {
+		return -1;
+	    }
+	    if (add_matrix(etca, "ti", ti,
+			ti_rows, ti_columns, false) == -1) {
+		return -1;
+	    }
+	    if (add_matrix(etca, "tx", tx,
+			tx_rows, tx_columns, false) == -1) {
+		return -1;
+	    }
+	    if (add_matrix(etca, "tm", tm,
+			tm_rows, tm_columns, false) == -1) {
+		return -1;
+	    }
+	}
+	return 0;
+
+    case VNACAL_U16:
+	{
+	    const int um_rows    = VL_UM_ROWS(vlp);
+	    const int um_columns = VL_UM_COLUMNS(vlp);
+	    const int um_offset  = VL_UM_OFFSET(vlp);
+	    const int ui_rows    = VL_UI_ROWS(vlp);
+	    const int ui_columns = VL_UI_COLUMNS(vlp);
+	    const int ui_offset  = VL_UI_OFFSET(vlp);
+	    const int ux_rows    = VL_UX_ROWS(vlp);
+	    const int ux_columns = VL_UX_COLUMNS(vlp);
+	    const int ux_offset  = VL_UX_OFFSET(vlp);
+	    const int us_rows    = VL_US_ROWS(vlp);
+	    const int us_columns = VL_US_COLUMNS(vlp);
+	    const int us_offset  = VL_US_OFFSET(vlp);
+	    double complex **um = &e[um_offset];
+	    double complex **ui = &e[ui_offset];
+	    double complex **ux = &e[ux_offset];
+	    double complex **us = &e[us_offset];
+	    if (add_matrix(etca, "um", um,
+			um_rows, um_columns, false) == -1) {
+		return -1;
+	    }
+	    if (add_matrix(etca, "ui", ui,
+			ui_rows, ui_columns, false) == -1) {
+		return -1;
+	    }
+	    if (add_matrix(etca, "ux", ux,
+			ux_rows, ux_columns, false) == -1) {
+		return -1;
+	    }
+	    if (add_matrix(etca, "us", us,
+			us_rows, us_columns, false) == -1) {
+		return -1;
+	    }
+	}
+	return 0;
+
+    case VNACAL_UE14:
+	{
+	    const int m_columns  = VL_M_COLUMNS(vlp);
+	    const int um_terms   = VL_UM14_TERMS(vlp);
+	    const int ui_terms   = VL_UI14_TERMS(vlp);
+	    const int ux_terms   = VL_UX14_TERMS(vlp);
+	    const int us_terms   = VL_US14_TERMS(vlp);
+	    const int el_rows    = VL_EL_ROWS(vlp);
+	    const int el_columns = VL_EL_COLUMNS(vlp);
+	    const int el_offset  = VL_EL_OFFSET(vlp);
+	    double complex *packed_um[um_terms][m_columns];
+	    double complex *packed_ui[ui_terms][m_columns];
+	    double complex *packed_ux[ux_terms][m_columns];
+	    double complex *packed_us[us_terms][m_columns];
+	    double complex **el = &e[el_offset];
+
+	    for (int m_column = 0; m_column < m_columns; ++m_column) {
+		const int um_offset = VL_UM14_OFFSET(vlp, m_column);
+		const int ui_offset = VL_UI14_OFFSET(vlp, m_column);
+		const int ux_offset = VL_UX14_OFFSET(vlp, m_column);
+		const int us_offset = VL_US14_OFFSET(vlp, m_column);
+		double complex **um = &e[um_offset];
+		double complex **ui = &e[ui_offset];
+		double complex **ux = &e[ux_offset];
+		double complex **us = &e[us_offset];
+
+		for (int term = 0; term < um_terms; ++term) {
+		    packed_um[term][m_column] = um[term];
+		}
+		for (int term = 0; term < ui_terms; ++term) {
+		    packed_ui[term][m_column] = ui[term];
+		}
+		for (int term = 0; term < ux_terms; ++term) {
+		    packed_ux[term][m_column] = ux[term];
+		}
+		for (int term = 0; term < us_terms; ++term) {
+		    packed_us[term][m_column] = us[term];
+		}
+	    }
+	    if (add_matrix(etca, "um", &packed_um[0][0],
+			um_terms, m_columns, false) == -1) {
+		return -1;
+	    }
+	    if (add_matrix(etca, "ui", &packed_ui[0][0],
+			ui_terms, m_columns, false) == -1) {
+		return -1;
+	    }
+	    if (add_matrix(etca, "ux", &packed_ux[0][0],
+			ux_terms, m_columns, false) == -1) {
+		return -1;
+	    }
+	    if (add_matrix(etca, "us", &packed_us[0][0],
+			us_terms, m_columns, false) == -1) {
+		return -1;
+	    }
+	    if (add_matrix(etca, "el",
+			el, el_rows, el_columns, true) == -1) {
+		return -1;
+	    }
+	}
+	return 0;
+
+    case VNACAL_E12:
+	{
+	    const int m_columns = VL_M_COLUMNS(vlp);
+	    const int el_terms  = VL_EL12_TERMS(vlp);
+	    const int er_terms  = VL_ER12_TERMS(vlp);
+	    const int em_terms  = VL_EM12_TERMS(vlp);
+	    double complex *packed_el[el_terms][m_columns];
+	    double complex *packed_er[er_terms][m_columns];
+	    double complex *packed_em[em_terms][m_columns];
+
+	    for (int m_column = 0; m_column < m_columns; ++m_column) {
+		const int el_offset = VL_EL12_OFFSET(vlp, m_column);
+		const int er_offset = VL_ER12_OFFSET(vlp, m_column);
+		const int em_offset = VL_EM12_OFFSET(vlp, m_column);
+		double complex **el = &e[el_offset];
+		double complex **er = &e[er_offset];
+		double complex **em = &e[em_offset];
+
+		for (int term = 0; term < el_terms; ++term) {
+		    packed_el[term][m_column] = el[term];
+		}
+		for (int term = 0; term < er_terms; ++term) {
+		    packed_er[term][m_column] = er[term];
+		}
+		for (int term = 0; term < em_terms; ++term) {
+		    packed_em[term][m_column] = em[term];
+		}
+	    }
+	    if (add_matrix(etca, "el", &packed_el[0][0],
+			el_terms, m_columns, false) == -1) {
+		return -1;
+	    }
+	    if (add_matrix(etca, "er", &packed_er[0][0],
+			er_terms, m_columns, false) == -1) {
+		return -1;
+	    }
+	    if (add_matrix(etca, "em", &packed_em[0][0],
+			em_terms, m_columns, false) == -1) {
+		return -1;
+	    }
+	}
+	return 0;
+
+    default:
+	abort();
+    }
+    return -1;
+}
+
+/*
  * add_properties: add a property list to the document
- *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @document: yaml document
  *   @root:     property list root
  */
@@ -160,8 +618,12 @@ static int add_properties(vnacal_t *vcp, yaml_document_t *document,
 	    if (strchr(value, '\n') != NULL) {
 		style = YAML_LITERAL_SCALAR_STYLE;
 	    }
+	    errno = 0;
 	    if ((item = yaml_document_add_scalar(document, NULL,
-		(yaml_char_t *)value, strlen(value), style)) == 0) {
+			    (yaml_char_t *)value, strlen(value), style)) == 0) {
+		if (errno == 0) {
+		    errno = EINVAL;
+		}
 		_vnacal_error(vcp, VNAERR_SYSTEM,
 			"yaml_document_add_scalar: %s: %s",
 			vcp->vc_filename, strerror(errno));
@@ -175,15 +637,19 @@ static int add_properties(vnacal_t *vcp, yaml_document_t *document,
 	    int map;
 	    const vnaproperty_map_pair_t *vmprp;
 
+	    errno = 0;
 	    if ((map = yaml_document_add_mapping(document, NULL,
-		    YAML_ANY_MAPPING_STYLE)) == 0) {
+			    YAML_ANY_MAPPING_STYLE)) == 0) {
+		if (errno == 0) {
+		    errno = EINVAL;
+		}
 		_vnacal_error(vcp, VNAERR_SYSTEM,
 			"yaml_document_add_mapping: %s: %s",
 			vcp->vc_filename, strerror(errno));
 		return -1;
 	    }
 	    for (vmprp = vnaproperty_map_begin(root); vmprp != NULL;
-		 vmprp = vnaproperty_map_next(vmprp)) {
+		    vmprp = vnaproperty_map_next(vmprp)) {
 		int value;
 
 		if ((value = add_properties(vcp, document,
@@ -203,8 +669,12 @@ static int add_properties(vnacal_t *vcp, yaml_document_t *document,
 	    int sequence;
 	    int count = vnaproperty_list_count(root);
 
+	    errno = 0;
 	    if ((sequence = yaml_document_add_sequence(document, NULL,
 			    YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
+		if (errno == 0) {
+		    errno = EINVAL;
+		}
 		_vnacal_error(vcp, VNAERR_SYSTEM,
 			"yaml_document_add_sequence: %s: %s",
 			vcp->vc_filename, strerror(errno));
@@ -225,6 +695,9 @@ static int add_properties(vnacal_t *vcp, yaml_document_t *document,
 		}
 		if (yaml_document_append_sequence_item(document, sequence,
 			    value) == 0) {
+		    if (errno == 0) {
+			errno = EINVAL;
+		    }
 		    _vnacal_error(vcp, VNAERR_SYSTEM,
 			    "yaml_document_append_sequence_item: %s: %s",
 			    vcp->vc_filename, strerror(errno));
@@ -241,14 +714,13 @@ static int add_properties(vnacal_t *vcp, yaml_document_t *document,
 
 /*
  * vnacal_save: create or overwrite a calibration file with new data
- *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @pathname: calibration file name
- *   @dotdir: directory under $HOME or NULL
  *
  *   The pathname and basename parameters work as in vnacal_load except
  *   that the $HOME/{pathname} directory is created if necessary.
  */
-int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
+int vnacal_save(vnacal_t *vcp, const char *pathname)
 {
     FILE *fp;
     yaml_document_t document;
@@ -256,13 +728,19 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
     yaml_tag_directive_t tags[1];
     yaml_emitter_t emitter;
     bool delete_document = false;
-    int t_root, t_properties, t_sets;
+    int t_root, t_properties, t_calibrations;
 
-    if ((fp = _vnacal_open(vcp, pathname, dotdir, "w")) == NULL)
+    if ((fp = fopen(pathname, "w")) == NULL) {
+	_vnacal_error(vcp, VNAERR_SYSTEM, "fopen: %s: %s",
+		vcp->vc_filename, strerror(errno));
 	return -1;
-
+    }
+    errno = 0;
     if (!yaml_document_initialize(&document, &version, &tags[0], &tags[0],
 		0, 0)) {
+	if (errno == 0) {
+	    errno = EINVAL;
+	}
 	_vnacal_error(vcp, VNAERR_SYSTEM,
 		"yaml_document_initialize: %s: %s",
 		vcp->vc_filename, strerror(errno));
@@ -272,6 +750,9 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
     t_root = yaml_document_add_mapping(&document, NULL,
 	    YAML_BLOCK_MAPPING_STYLE);
     if (t_root == 0) {
+	if (errno == 0) {
+	    errno = EINVAL;
+	}
 	_vnacal_error(vcp, VNAERR_SYSTEM,
 		"yaml_document_add_mapping: %s: %s",
 		vcp->vc_filename, strerror(errno));
@@ -287,212 +768,219 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
 	    goto error;
 	}
     }
-    if ((t_sets = yaml_document_add_sequence(&document, NULL,
+    if ((t_calibrations = yaml_document_add_sequence(&document, NULL,
 		    YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
+	if (errno == 0) {
+	    errno = EINVAL;
+	}
 	_vnacal_error(vcp, VNAERR_SYSTEM,
 		"yaml_document_add_sequence: %s: %s",
 		vcp->vc_filename, strerror(errno));
 	goto error;
     }
-    if (add_mapping_entry(vcp, &document, t_root, "sets", t_sets) == -1) {
+    if (add_mapping_entry(vcp, &document, t_root, "calibrations",
+		t_calibrations) == -1) {
 	goto error;
     }
-    for (int set = 0; set < vcp->vc_sets; ++set) {
-	vnacal_etermset_t *etsp = vcp->vc_set_vector[set];
-	int t_set, t_value, t_matrix, t_row, t_data;
+    for (int ci = 0; ci < vcp->vc_calibration_allocation; ++ci) {
+	vnacal_calibration_t *calp = vcp->vc_calibration_vector[ci];
+	int t_calibration, t_value, t_matrix, t_data;
+	vnacal_layout_t vl;
+	const char *cp;
 
-	t_set = yaml_document_add_mapping(&document, NULL,
+	if (calp == NULL) {
+	    continue;
+	}
+	_vnacal_layout(&vl, calp->cal_type, calp->cal_rows, calp->cal_columns);
+	t_calibration = yaml_document_add_mapping(&document, NULL,
 		YAML_ANY_MAPPING_STYLE);
-	if (t_set == 0) {
+	if (t_calibration == 0) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
 	    _vnacal_error(vcp, VNAERR_SYSTEM,
 		    "yaml_document_add_mapping: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
-	if (yaml_document_append_sequence_item(&document, t_sets, t_set) == 0) {
+	if (yaml_document_append_sequence_item(&document, t_calibrations,
+		    t_calibration) == 0) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
 	    _vnacal_error(vcp, VNAERR_SYSTEM,
 		    "yaml_document_append_sequence_item: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
 	if ((t_value = yaml_document_add_scalar(&document, NULL,
-			(yaml_char_t *)etsp->ets_setname,
-			strlen(etsp->ets_setname),
+			(yaml_char_t *)calp->cal_name,
+			strlen(calp->cal_name),
 			YAML_ANY_SCALAR_STYLE)) == 0) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
 	    _vnacal_error(vcp, VNAERR_SYSTEM,
 		    "yaml_document_add_scalar: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
-	if (add_mapping_entry(vcp, &document, t_set, "name", t_value) == -1) {
+	if (add_mapping_entry(vcp, &document, t_calibration,
+		    "name", t_value) == -1) {
 	    goto error;
 	}
-	if ((t_value = add_integer(&document, etsp->ets_rows)) == -1) {
+	cp = _vnacal_type_to_name(calp->cal_type);
+	if ((t_value = yaml_document_add_scalar(&document, NULL,
+			(yaml_char_t *)cp, strlen(cp),
+			YAML_ANY_SCALAR_STYLE)) == 0) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
 	    _vnacal_error(vcp, VNAERR_SYSTEM,
 		    "yaml_document_add_scalar: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
-	if (add_mapping_entry(vcp, &document, t_set, "rows", t_value) == -1) {
+	if (add_mapping_entry(vcp, &document, t_calibration,
+		    "type", t_value) == -1) {
 	    goto error;
 	}
-	if ((t_value = add_integer(&document, etsp->ets_columns)) == -1) {
+	if ((t_value = add_integer(&document, calp->cal_rows)) == -1) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
 	    _vnacal_error(vcp, VNAERR_SYSTEM,
 		    "yaml_document_add_scalar: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
-	if (add_mapping_entry(vcp, &document, t_set, "columns",
+	if (add_mapping_entry(vcp, &document, t_calibration,
+		    "rows", t_value) == -1) {
+	    goto error;
+	}
+	if ((t_value = add_integer(&document, calp->cal_columns)) == -1) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "yaml_document_add_scalar: %s: %s",
+		    vcp->vc_filename, strerror(errno));
+	    goto error;
+	}
+	if (add_mapping_entry(vcp, &document, t_calibration, "columns",
 		    t_value) == -1) {
 	    goto error;
 	}
-	if ((t_value = add_integer(&document, etsp->ets_frequencies)) == -1) {
+	if ((t_value = add_integer(&document, calp->cal_frequencies)) == -1) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
 	    _vnacal_error(vcp, VNAERR_SYSTEM,
 		    "yaml_document_add_scalar: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
-	if (add_mapping_entry(vcp, &document, t_set, "frequencies",
+	if (add_mapping_entry(vcp, &document, t_calibration, "frequencies",
 		    t_value) == -1) {
 	    goto error;
 	}
-	if ((t_value = add_complex(&document, etsp->ets_z0,
+	if ((t_value = add_complex(&document, calp->cal_z0,
 			vcp->vc_dprecision)) == -1) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
 	    _vnacal_error(vcp, VNAERR_SYSTEM,
 		    "yaml_document_add_scalar: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
-	if (add_mapping_entry(vcp, &document, t_set, "z0", t_value) == -1) {
+	if (add_mapping_entry(vcp, &document, t_calibration,
+		    "z0", t_value) == -1) {
 	    goto error;
 	}
 	if ((t_matrix = yaml_document_add_sequence(&document, NULL,
 			YAML_ANY_SEQUENCE_STYLE)) == 0) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
 	    _vnacal_error(vcp, VNAERR_SYSTEM,
 		    "yaml_document_add_sequence: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
 	{
-	    int t_set_properties;
+	    int t_calibration_properties;
 
-	    if ((t_set_properties = add_properties(vcp, &document,
-			    etsp->ets_properties)) == -1) {
+	    if ((t_calibration_properties = add_properties(vcp, &document,
+			    calp->cal_properties)) == -1) {
 		goto error;
 	    }
-	    if (t_set_properties != 0) {
-		if (add_mapping_entry(vcp, &document, t_set, "properties",
-			    t_set_properties) == -1) {
+	    if (t_calibration_properties != 0) {
+		if (add_mapping_entry(vcp, &document, t_calibration,
+			    "properties", t_calibration_properties) == -1) {
 		    goto error;
 		}
 	    }
 	}
 	if ((t_data = yaml_document_add_sequence(&document, NULL,
 			YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
 	    _vnacal_error(vcp, VNAERR_SYSTEM,
 		    "yaml_document_add_sequence: %s: %s",
 		    vcp->vc_filename, strerror(errno));
 	    goto error;
 	}
-	if (add_mapping_entry(vcp, &document, t_set, "data", t_data) == -1) {
+	if (add_mapping_entry(vcp, &document, t_calibration, "data",
+		    t_data) == -1) {
 	    goto error;
 	}
-	for (int findex = 0; findex < etsp->ets_frequencies; ++findex) {
-	    int t_fitem;
+	for (int findex = 0; findex < calp->cal_frequencies; ++findex) {
+	    int t_per_frequency;
+	    error_terms_common_arguments_t etca;
 
-	    if ((t_fitem = yaml_document_add_mapping(&document, NULL,
+	    if ((t_per_frequency = yaml_document_add_mapping(&document, NULL,
 			    YAML_ANY_MAPPING_STYLE)) == 0) {
+		if (errno == 0) {
+		    errno = EINVAL;
+		}
 		_vnacal_error(vcp, VNAERR_SYSTEM,
 			"yaml_document_add_sequence: %s: %s",
 			vcp->vc_filename, strerror(errno));
 		goto error;
 	    }
 	    if (!yaml_document_append_sequence_item(&document, t_data,
-			t_fitem)) {
+			t_per_frequency)) {
+		if (errno == 0) {
+		    errno = EINVAL;
+		}
 		_vnacal_error(vcp, VNAERR_SYSTEM,
 			"yaml_document_append_sequence_item: %s: %s",
 			vcp->vc_filename, strerror(errno));
 		goto error;
 	    }
 	    if ((t_value = add_double(&document,
-			    etsp->ets_frequency_vector[findex],
+			    calp->cal_frequency_vector[findex],
 			    vcp->vc_fprecision)) == -1) {
+		if (errno == 0) {
+		    errno = EINVAL;
+		}
 		_vnacal_error(vcp, VNAERR_SYSTEM,
 			"yaml_document_add_scalar: %s: %s",
 			vcp->vc_filename, strerror(errno));
 		goto error;
 	    }
-	    if (add_mapping_entry(vcp, &document, t_fitem, "f",
+	    if (add_mapping_entry(vcp, &document, t_per_frequency, "f",
 			t_value) == -1) {
 		goto error;
 	    }
-	    if ((t_matrix = yaml_document_add_sequence(&document, NULL,
-			    YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
-		_vnacal_error(vcp, VNAERR_SYSTEM,
-			"yaml_document_add_sequence: %s: %s",
-			vcp->vc_filename, strerror(errno));
+	    etca.etca_vcp = vcp;
+	    etca.etca_document = &document;
+	    etca.etca_mapping = t_per_frequency;
+	    etca.etca_findex = findex;
+	    if (add_error_parameters(etca, calp, &vl) == -1) {
 		goto error;
-	    }
-	    if (add_mapping_entry(vcp, &document, t_fitem, "e",
-			t_matrix) == -1) {
-		goto error;
-	    }
-	    for (int row = 0; row < etsp->ets_rows; ++row) {
-		if ((t_row = yaml_document_add_sequence(&document, NULL,
-				YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
-		    _vnacal_error(vcp, VNAERR_SYSTEM,
-			    "yaml_document_add_sequence: %s: %s",
-			    vcp->vc_filename, strerror(errno));
-		    goto error;
-		}
-		if (yaml_document_append_sequence_item(&document,
-			    t_matrix, t_row) == 0) {
-		    _vnacal_error(vcp, VNAERR_SYSTEM,
-			    "yaml_document_append_sequence_item: %s: %s",
-			    vcp->vc_filename, strerror(errno));
-		    goto error;
-		}
-		for (int column = 0; column < etsp->ets_columns; ++column) {
-		    int index = row * etsp->ets_columns + column;
-		    vnacal_error_terms_t *etp =
-			&etsp->ets_error_term_matrix[index];
-		    int t_triple;
-
-		    if ((t_triple = yaml_document_add_sequence(&document, NULL,
-				    vcp->vc_dprecision <= 4 ?
-					YAML_FLOW_SEQUENCE_STYLE :
-					YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
-			_vnacal_error(vcp, VNAERR_SYSTEM,
-				"yaml_document_add_sequence: %s: %s",
-				vcp->vc_filename, strerror(errno));
-			goto error;
-		    }
-		    if (yaml_document_append_sequence_item(&document,
-				t_row, t_triple) == 0) {
-			_vnacal_error(vcp, VNAERR_SYSTEM,
-				"yaml_document_append_sequence_item: %s: %s",
-				vcp->vc_filename, strerror(errno));
-			goto error;
-		    }
-		    for (int item = 0; item < 3; ++item) {
-			if ((t_value = add_complex(&document,
-					etp->et_data_vectors[item][findex],
-					vcp->vc_dprecision)) == -1) {
-			    _vnacal_error(vcp, VNAERR_SYSTEM,
-				    "yaml_document_add_scalar: %s: %s",
-				    vcp->vc_filename, strerror(errno));
-			    goto error;
-			}
-			if (yaml_document_append_sequence_item(&document,
-				    t_triple, t_value) == 0) {
-			    _vnacal_error(vcp, VNAERR_SYSTEM,
-				    "yaml_document_append_sequence_item: "
-				    "%s: %s",
-				    vcp->vc_filename, strerror(errno));
-			    goto error;
-			}
-		    }
-		}
 	    }
 	}
     }
@@ -500,10 +988,10 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
     /*
      * Write the output file.
      */
-    (void)fprintf(fp, "#VNACAL 2.0\n");
+    (void)fprintf(fp, "#VNACAL 3.0\n");
     if (!yaml_emitter_initialize(&emitter)) {
 	if (errno == 0) {
-	    errno = EBADMSG;
+	    errno = EINVAL;
 	}
 	_vnacal_error(vcp, VNAERR_SYSTEM, "yaml_emitter_initialize: %s: %s",
 		vcp->vc_filename, strerror(errno));
@@ -518,32 +1006,30 @@ int vnacal_save(vnacal_t *vcp, const char *pathname, const char *dotdir)
     yaml_emitter_set_break(&emitter, YAML_ANY_BREAK);
     if (!yaml_emitter_open(&emitter)) {
 	if (errno == 0) {
-	    errno = EBADMSG;
+	    errno = EINVAL;
 	}
-	_vnacal_error(vcp, VNAERR_SYSTEM, "yaml_emitter_open: %s: error: %s",
+	_vnacal_error(vcp, VNAERR_SYSTEM, "yaml_emitter_open: %s: %s",
 		vcp->vc_filename, emitter.problem);
 	goto error;
     }
+    delete_document = false;	/* deleted by yaml_emitter_dump */
     if (!yaml_emitter_dump(&emitter, &document)) {
 	if (errno == 0) {
-	    errno = EBADMSG;
+	    errno = EINVAL;
 	}
-	_vnacal_error(vcp, VNAERR_SYSTEM, "yaml_emitter_dump: %s: error: %s",
+	_vnacal_error(vcp, VNAERR_SYSTEM, "yaml_emitter_dump: %s: %s",
 		vcp->vc_filename, emitter.problem);
 	goto error;
     }
     if (!yaml_emitter_close(&emitter)) {
 	if (errno == 0) {
-	    errno = EBADMSG;
+	    errno = EINVAL;
 	}
-	_vnacal_error(vcp, VNAERR_SYSTEM, "yaml_emitter_close: %s: error: %s",
+	_vnacal_error(vcp, VNAERR_SYSTEM, "yaml_emitter_close: %s: %s",
 		vcp->vc_filename, emitter.problem);
 	goto error;
     }
     (void)yaml_emitter_delete(&emitter);
-    //(void)yaml_document_delete(&document);
-    delete_document = false;
-
     if (fclose(fp) == -1) {
 	_vnacal_error(vcp, VNAERR_SYSTEM, "fclose: %s: %s",
 		vcp->vc_filename, strerror(errno));

@@ -689,7 +689,7 @@ The \fIzi\fP and \fIz0\fP vectors must have length at least
 MIN(\fIrows\fP, \fIcolumns\fP).
 .\"
 .SH "RETURN VALUE"
-All functions return void.  The result matrix may contain inf and/or nan
+All functions return void.  The result matrix may contain inf or nan
 values if the conversion is nondeterministic.
 .\"
 .\" .SH ERRORS
@@ -755,4 +755,5 @@ int main(int argc, char **argv)
 .fi
 .\"
 .SH "SEE ALSO"
-.BR vnacal "(3), " vnadata "(3), " vnafile "(3)"
+.BR vnacal "(3), " vnacal_new "(3), " vnadata "(3), " vnaerr "(3),"
+.BR vnafile "(3), " vnacal_parameter "(3)"

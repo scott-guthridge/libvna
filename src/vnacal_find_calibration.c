@@ -18,11 +18,9 @@
 
 #include "archdep.h"
 
-#include <assert.h>
 #include <errno.h>
 #include <math.h>
 #include <stdarg.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,23 +28,23 @@
 
 
 /*
- * vnacal_free: free a vnacal_t structure
+ * vnacal_find_calibration: find a calibration by name
  *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @name: name of calibration to find
  */
-void vnacal_free(vnacal_t *vcp)
+int vnacal_find_calibration(const vnacal_t *vcp, const char *name)
 {
-    if (vcp != NULL && vcp->vc_magic == VC_MAGIC) {
-	while (vcp->vc_new_head.l_forw != &vcp->vc_new_head) {
-	    vnacal_new_t *vnp = (vnacal_new_t *)((char *)(vcp->vc_new_head.
-			l_forw) - offsetof(vnacal_new_t, vn_next));
-
-	    vnacal_new_free(vnp);
-	}
-	(void)vnaproperty_expr_delete(&vcp->vc_properties, ".");
-	assert(vcp->vc_properties == NULL);
-	_vnacal_teardown_parameter_collection(vcp);
-	vcp->vc_magic = -1;
-	free((void *)vcp->vc_filename);
-	free((void *)vcp);
+    if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
+	errno = EINVAL;
+	return -1;
     }
+    for (int ci = 0; ci < vcp->vc_calibration_allocation; ++ci) {
+	vnacal_calibration_t *calp = vcp->vc_calibration_vector[ci];
+
+	if (calp != NULL && strcmp(calp->cal_name, name) == 0) {
+	    return ci;
+	}
+    }
+    errno = ENOENT;
+    return -1;
 }

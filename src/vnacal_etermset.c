@@ -28,7 +28,7 @@
 
 /*
  * _vnacal_etermset_alloc: alloc vnacal_etermset
- *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
+ *   @vcp: a pointer to the vnacal_t structure
  *   @setname: set setname
  *   @rows: number of VNA ports where signal is detected
  *   @columns: number of VNA ports where signal is generated
@@ -46,12 +46,14 @@ vnacal_etermset_t *_vnacal_etermset_alloc(vnacal_t *vcp, const char *setname,
 
     etsp = (vnacal_etermset_t *)malloc(sizeof(vnacal_etermset_t));
     if (etsp == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"malloc: %s", strerror(errno));
 	return NULL;
     }
     (void)memset((void *)etsp, 0, sizeof(vnacal_etermset_t));
     if ((etsp->ets_setname = strdup(setname)) == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM, "strdup: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"strdup: %s", strerror(errno));
 	goto error;
     }
     etsp->ets_vcp = vcp;
@@ -60,12 +62,14 @@ vnacal_etermset_t *_vnacal_etermset_alloc(vnacal_t *vcp, const char *setname,
     etsp->ets_frequencies = frequencies;
     etsp->ets_frequency_vector = calloc(frequencies, sizeof(double));
     if (etsp->ets_frequency_vector == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"calloc: %s", strerror(errno));
 	goto error;
     }
     etsp->ets_error_term_matrix = calloc(ncells, sizeof(vnacal_error_terms_t));
     if (etsp->ets_error_term_matrix == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"calloc: %s", strerror(errno));
 	goto error;
     }
     for (int i = 0; i < ncells; ++i) {

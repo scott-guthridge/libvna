@@ -39,7 +39,7 @@
 /*
  * C_ROWS, C_COLUMNS, C_FREQUENCIES: calibration dimensions
  *   Calibration matrix is 2x1, i.e. the VNA drives signal and
- *   measures reflected power on the first port only.  It measures
+ *   measures reflected power on the first port only, and measures
  *   forward power on the second port only.  C_FREQUENCIES is the
  *   number of frequency points used for the calibration.
  */
@@ -52,7 +52,7 @@
  *   We measure full 2x2 S-parameters from the device under test.
  *   The number of frequency points used in the measurement doesn't
  *   have to match the calibration -- the library interpolates
- *   between error parameters if necessary.
+ *   between error parameters when necessary.
  */
 #define M_ROWS		  2
 #define M_COLUMNS	  2
@@ -87,27 +87,23 @@ typedef enum measurement {
  *   @measurement: which measurement to simulate
  *   @frequencies: number of frequency points
  *   @m_frequency_vector: returned vector of frequencies
- *   @detector0_vector: returned voltages from detector 0
  *   @detector1_vector: returned voltages from detector 1
+ *   @detector2_vector: returned voltages from detector 2
  *
- *   To avoid confusion, we refer to the two ports of the VNA as
- *   port 0 and port 1 (as opposed to 1 and 2) to match C array
- *   indices, which start with zero.
+ *   Our simulated VNA has two flaws: first, there is a
+ *   stray capacitance of 1 / (Z0 * W1) [318pF] between
+ *   port 1 and ground; second, there is an inductance of
+ *   Z0 / W1 [796 nH] in series with port 2.
  *
- *   Our simulated VNA has two flaws: first, there is a stray
- *   capacitance of 1 / (Z0 * W1) [318pF] between port 0 and ground;
- *   second, there is an inductance of Z0 / W1 [796 nH] in series
- *   with port 1.
- *
- *   The simulated device under test (DUT) is a second order
- *   LC divider low pass filter with L = Z0 / W2 [7.96 μH] and
- *   C = 1 / (Z0 * W2) [3.18nF].
+ *   The simulated device under test (DUT) is a second
+ *   order LC divider low pass filter with L = Z0 / W2
+ *   [7.96 μH] and C = 1 / (Z0 * W2) [3.18nF].
  *
  */
 static int vna_measure(measurement_t measurement,
 	int frequencies, double *m_frequency_vector,
-	double complex *detector0_vector,
-	double complex *detector1_vector)
+	double complex *detector1_vector,
+	double complex *detector2_vector)
 {
     double c = log(FMAX / FMIN);
 
@@ -118,51 +114,51 @@ static int vna_measure(measurement_t measurement,
     for (int findex = 0; findex < frequencies; ++findex) {
 	double f = FMIN * exp((double)findex / (frequencies - 1) * c);
 	double complex s = I * 2 * PI * f;
-	double complex d, detector0, detector1;
+	double complex d, detector1, detector2;
 
 	switch (measurement) {
 	case SHORT_CALIBRATION:
 	    /*
-	     * The shorted calibration standard on port 0 shunts
+	     * The shorted calibration standard on port 1 shunts
 	     * out the stray capacitance, giving a perfect gamma
 	     * value of -1.  Port 1 is connected to a terminator
 	     * and receives no signal, but the detector picks up
 	     * a bit of internal noise.
 	     */
-	    detector0 = -1.0;
-	    detector1 =  0.1;
+	    detector1 = -1.0;
+	    detector2 =  0.1;
 	    break;
 
 	case OPEN_CALIBRATION:
 	    /*
 	     * The open calibration standard exposes the stray
-	     * capacitance on port 0.  Port 1 continues to pick up
+	     * capacitance on port 1.  Port 1 continues to pick up
 	     * internal noise.
 	     */
-	    detector0 = (1.0 - s/W1) / (1.0 + s/W1);
-	    detector1 = -0.3;
+	    detector1 = (1.0 - s/W1) / (1.0 + s/W1);
+	    detector2 = -0.3;
 	    break;
 
 	case LOAD_CALIBRATION:
 	    /*
 	     * The load calibration is in parallel with the stray
-             * capacitance on port 0.  Port 1 picks up yet more
+             * capacitance on port 1.  Port 1 picks up yet more
 	     * internal noise.
 	     */
-	    detector0 = -s / (s + 2*W1);
-	    detector1 = 0.2;
+	    detector1 = -s / (s + 2*W1);
+	    detector2 = 0.2;
 	    break;
 
 	case THROUGH_CALIBRATION:
 	    /*
 	     * In the through configuration, the stray capacitance
-	     * on port 0 and stray inductance on port 1 form a
+	     * on port 1 and stray inductance on port 2 form a
 	     * resonant circuit with a high-pass reflected signal
 	     * and low-pass transmitted signal.
 	     */
 	    d = s*s + 2*W1*s + 2*W1*W1;
-	    detector0 = -s*s / d;
-	    detector1 = 2*W1*W1 / d;
+	    detector1 = -s*s / d;
+	    detector2 = 2*W1*W1 / d;
 	    break;
 
 	case FORWARD_MEASUREMENT:
@@ -173,20 +169,20 @@ static int vna_measure(measurement_t measurement,
 	     */
 	    d = s*s*s*s + 2*W1*s*s*s + (W1+W2)*(W1+W2)*s*s
 		+ 2*W1*W2*(W1+W2)*s + 2*W1*W1*W2*W2;
-	    detector0 = -(s*s*s*s - (W1*W1 - 2*W1*W2 - W2*W2)*s*s) / d;
-	    detector1 = 2*W1*W1*W2*W2 / d;
+	    detector1 = -(s*s*s*s - (W1*W1 - 2*W1*W2 - W2*W2)*s*s) / d;
+	    detector2 = 2*W1*W1*W2*W2 / d;
 	    break;
 
 	case REVERSE_MEASUREMENT:
 	    /*
 	     * In the reverse configuration, the stray capacitance on
-	     * port 0 is in parallel with the DUT capacitor and the
-	     * stray inductance on port 1 is in series with the DUT
+	     * port 1 is in parallel with the DUT capacitor and the
+	     * stray inductance on port 2 is in series with the DUT
 	     * inductor forming only a second order resonant circuit.
 	     */
 	    d = s*s + 2*W1*W2/(W1+W2)*s + 2*W1*W1*W2*W2/((W1+W2)*(W1+W2));
-	    detector0 = -s*s / d;
-	    detector1 = 2*W1*W1*W2*W2/((W1+W2)*(W1+W2)) / d;
+	    detector1 = -s*s / d;
+	    detector2 = 2*W1*W1*W2*W2/((W1+W2)*(W1+W2)) / d;
 	    break;
 
 	default:
@@ -198,10 +194,10 @@ static int vna_measure(measurement_t measurement,
 	 */
 	if (m_frequency_vector != NULL)
 	    m_frequency_vector[findex] = f;
-	if (detector0_vector != NULL)
-	    detector0_vector[findex] = detector0;
 	if (detector1_vector != NULL)
 	    detector1_vector[findex] = detector1;
+	if (detector2_vector != NULL)
+	    detector2_vector[findex] = detector2;
     }
     return 0;
 }
@@ -223,21 +219,28 @@ static void error_fn(vnaerr_category_t category, const char *message,
  */
 static void make_calibration()
 {
-    vnacal_calset_t *vcsp;
+    vnacal_new_t *vnp;
     double frequency_vector[C_FREQUENCIES];
-    double complex m_vector0[C_FREQUENCIES];
     double complex m_vector1[C_FREQUENCIES];
+    double complex m_vector2[C_FREQUENCIES];
+    const double complex *const m[C_ROWS][C_COLUMNS] = {
+	{ m_vector1 },
+	{ m_vector2 }
+    };
     vnacal_t *vcp;
 
     /*
-     * Allocate the structure to hold the calibration measurements.
+     * Create the calibration container structure.
      */
-    if ((vcsp = vnacal_calset_alloc(VNACAL_E12,
-		    /*setname=*/"default",
-		    C_ROWS, C_COLUMNS, C_FREQUENCIES,
-		    error_fn, /*error_arg=*/NULL)) == NULL) {
-	(void)fprintf(stderr, "vnacal_calset_alloc: %s\n",
-		strerror(errno));
+    if ((vcp = vnacal_create(error_fn, /*error_arg=*/NULL)) == NULL) {
+	exit(1);
+    }
+
+    /*
+     * Create a new calibration.
+     */
+    if ((vnp = vnacal_new_alloc(vcp, VNACAL_E12,
+		    C_ROWS, C_COLUMNS, C_FREQUENCIES)) == NULL) {
 	exit(2);
     }
 
@@ -256,51 +259,49 @@ static void make_calibration()
      * Short calibration
      */
     vna_measure(SHORT_CALIBRATION, C_FREQUENCIES,
-	    frequency_vector, m_vector0, m_vector1);
-    vnacal_calset_set_frequency_vector(vcsp, frequency_vector);
-    vnacal_calset_add_vector(vcsp, 0, 0, VNACAL_Sii_REF0, m_vector0);
-    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_LEAKAGE, m_vector1);
+	    frequency_vector, m_vector1, m_vector2);
+    vnacal_new_set_frequency_vector(vnp, frequency_vector);
+    vnacal_new_add_single_reflect_m(vnp, &m[0][0], C_ROWS, C_COLUMNS,
+	    VNACAL_SHORT, 1);
 
     /*
      * Open calibration
      */
-    vna_measure(OPEN_CALIBRATION, C_FREQUENCIES,
-        NULL, m_vector0, m_vector1);
-    vnacal_calset_add_vector(vcsp, 0, 0, VNACAL_Sii_REF1, m_vector0);
-    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_LEAKAGE, m_vector1);
+    vna_measure(OPEN_CALIBRATION, C_FREQUENCIES, NULL, m_vector1, m_vector2);
+    vnacal_new_add_single_reflect_m(vnp, &m[0][0], C_ROWS, C_COLUMNS,
+	    VNACAL_OPEN, 1);
 
     /*
      * Load calibration
      */
-    vna_measure(LOAD_CALIBRATION, C_FREQUENCIES,
-        NULL, m_vector0, m_vector1);
-    vnacal_calset_add_vector(vcsp, 0, 0, VNACAL_Sii_REF2, m_vector0);
-    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_LEAKAGE, m_vector1);
+    vna_measure(LOAD_CALIBRATION, C_FREQUENCIES, NULL, m_vector1, m_vector2);
+    vnacal_new_add_single_reflect_m(vnp, &m[0][0], C_ROWS, C_COLUMNS,
+	    VNACAL_MATCH, 1);
 
     /*
      * Through calibration.
      */
     vna_measure(THROUGH_CALIBRATION, C_FREQUENCIES,
-        NULL, m_vector0, m_vector1);
-    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sjj_THROUGH, m_vector0);
-    vnacal_calset_add_vector(vcsp, 1, 0, VNACAL_Sij_THROUGH, m_vector1);
+        NULL, m_vector1, m_vector2);
+    vnacal_new_add_through_m(vnp, &m[0][0], C_ROWS, C_COLUMNS, 1, 2);
 
     /*
-     * Create the calibration from the measurements and save it to
-     * a file.
+     * Solve for the error terms.
      */
-    if ((vcp = vnacal_create(/*sets=*/1, &vcsp, error_fn,
-		    /*error_arg=*/NULL)) == NULL) {
-	(void)fprintf(stderr, "vnacal_create: %s\n",
-		strerror(errno));
+    if (vnacal_new_solve(vnp) == -1) {
 	exit(3);
     }
-    if (vnacal_save(vcp, "example.vnacal", ".excal") == -1) {
-	(void)fprintf(stderr, "vnacal_save: %s\n",
-		strerror(errno));
+
+    /*
+     * Add the calibration and save to a file.
+     */
+    if (vnacal_add_calibration(vcp, "cal_2x1", vnp) == -1) {
 	exit(4);
     }
-    vnacal_calset_free(vcsp);
+    if (vnacal_save(vcp, "example.vnacal") == -1) {
+	exit(5);
+    }
+    vnacal_new_free(vnp);
     vnacal_free(vcp);
     vcp = NULL;
 }
@@ -315,52 +316,23 @@ static void make_calibration()
 static void apply_calibration()
 {
     vnacal_t *vcp;
-    vnacal_apply_t *vap;
     double frequency_vector[M_FREQUENCIES];
-    double complex m_vector00[M_FREQUENCIES];
-    double complex m_vector01[M_FREQUENCIES];
-    double complex m_vector10[M_FREQUENCIES];
     double complex m_vector11[M_FREQUENCIES];
-    const double complex *m_matrix0[2][1] = {
-	{ m_vector00 },
-	{ m_vector10 }
+    double complex m_vector12[M_FREQUENCIES];
+    double complex m_vector21[M_FREQUENCIES];
+    double complex m_vector22[M_FREQUENCIES];
+    const double complex *m[M_ROWS][M_COLUMNS] = {
+	{ m_vector11, m_vector12 },
+	{ m_vector21, m_vector22 }
     };
-    const double complex *m_matrix1[2][1] = {
-	{ m_vector01 },
-	{ m_vector11 }
-    };
-    static const int forward_map[] = { 0, 1 };
-    static const int reverse_map[] = { 1, 0 };
     vnadata_t *s_matrix;
 
     /*
      * Load the calibration file.
      */
-    if ((vcp = vnacal_load("example.vnacal", ".excal", error_fn,
+    if ((vcp = vnacal_load("example.vnacal", error_fn,
 		    /*error_arg=*/NULL)) == NULL) {
-	(void)fprintf(stderr, "vnacal_load: %s\n",
-		strerror(errno));
-	exit(5);
-    }
-
-    /*
-     * Allocate a vnacal_apply_t structure to apply the calibration
-     * to measured values.
-     */
-    if ((vap = vnacal_apply_alloc(vcp, /*set=*/0,
-		    M_ROWS, M_COLUMNS, M_FREQUENCIES)) == NULL) {
-	(void)fprintf(stderr, "example: vnacal_apply_alloc: %s\n",
-		strerror(errno));
 	exit(6);
-    }
-
-    /*
-     * Allocate a vnadata_t structure to receive the computed S parameters.
-     */
-    if ((s_matrix = vnadata_alloc()) == NULL) {
-	(void)fprintf(stderr, "example: vnadata_alloc: %s\n",
-		strerror(errno));
-	exit(7);
     }
 
     /*
@@ -375,28 +347,16 @@ static void apply_calibration()
      */
 
     /*
-     * Forward measurement: make the forward measurement and apply the
-     * frequency vector and measured voltages to the vnacal_apply_t
-     * structure.  Note that we have to apply measurements in the same
-     * dimensions as the calibration matrix, which is why m_matrix0 is
-     * 2x1 instead of 2x2.  The forward map indicates that VNA ports 0
-     * and 1 are connected to DUT ports 0 and 1, respectively.
+     * Make the forward measurement.
      */
     vna_measure(FORWARD_MEASUREMENT, M_FREQUENCIES, frequency_vector,
-	    m_vector00, m_vector10);
-    vnacal_apply_set_frequency_vector(vap, frequency_vector);
-    vnacal_apply_add_matrix(vap, &m_matrix0[0][0], forward_map);
+	    m_vector11, m_vector21);
 
     /*
-     * Reverse measurement: make the reverse measurement and apply to
-     * the vnacal_apply_t structure.  The measured matrix given to this
-     * function must again match the dimensions of the calibration matrix.
-     * The reverse map indicates that VNA ports 0 and 1 are connected
-     * to DUT ports 1 and 0, respectively.
+     * Make the reverse measurement.
      */
     vna_measure(REVERSE_MEASUREMENT, M_FREQUENCIES, NULL,
-	    m_vector01, m_vector11);
-    vnacal_apply_add_matrix(vap, &m_matrix1[0][0], reverse_map);
+	    m_vector22, m_vector12);
 
     /*
      * First, calculate and print the S-parameters we would expect
@@ -407,17 +367,17 @@ static void apply_calibration()
     for (int i = 0; i < M_FREQUENCIES; ++i) {
 	double complex s = 2 * PI * I * frequency_vector[i];
 	double complex d = s*s + 2*W2*s + 2*W2*W2;
-	double complex s00 =  s*s     / d;
-	double complex s01 =  2*W2*W2 / d;
-	double complex s10 =  2*W2*W2 / d;
-	double complex s11 = -s*s     / d;
+	double complex s11 =  s*s     / d;
+	double complex s12 =  2*W2*W2 / d;
+	double complex s21 =  2*W2*W2 / d;
+	double complex s22 = -s*s     / d;
 
 	(void)printf("%e %+e %+e %+e %+e %+e %+e %+e %+e\n",
 		frequency_vector[i],
-		creal(s00), cimag(s00),
-		creal(s01), cimag(s01),
-		creal(s10), cimag(s10),
-		creal(s11), cimag(s11));
+		creal(s11), cimag(s11),
+		creal(s12), cimag(s12),
+		creal(s21), cimag(s21),
+		creal(s22), cimag(s22));
     }
     (void)printf("\n\n");
 
@@ -426,45 +386,52 @@ static void apply_calibration()
      */
     (void)printf("# measured\n");
     for (int i = 0; i < M_FREQUENCIES; ++i) {
-	double complex m00 = m_vector00[i];
-	double complex m01 = m_vector01[i];
-	double complex m10 = m_vector10[i];
 	double complex m11 = m_vector11[i];
+	double complex m12 = m_vector12[i];
+	double complex m21 = m_vector21[i];
+	double complex m22 = m_vector22[i];
 
 	(void)printf("%e %+e %+e %+e %+e %+e %+e %+e %+e\n",
 		frequency_vector[i],
-		creal(m00), cimag(m00),
-		creal(m01), cimag(m01),
-		creal(m10), cimag(m10),
-		creal(m11), cimag(m11));
+		creal(m11), cimag(m11),
+		creal(m12), cimag(m12),
+		creal(m21), cimag(m21),
+		creal(m22), cimag(m22));
     }
     (void)printf("\n\n");
 
     /*
-     * Finally, compute and report the corrected values.
+     * Allocate a vnadata_t structure to receive the computed S parameters.
      */
-    if (vnacal_apply_get_data(vap, s_matrix) == -1) {
-	(void)fprintf(stderr, "vnacal_apply_get_data: %s\n",
+    if ((s_matrix = vnadata_alloc()) == NULL) {
+	(void)fprintf(stderr, "example: vnadata_alloc: %s\n",
 		strerror(errno));
+	exit(7);
+    }
+
+    /*
+     * Apply the calibration and report the corrected values.
+     */
+    if (vnacal_apply_m(vcp, /*index*/0, frequency_vector, M_FREQUENCIES,
+		&m[0][0], M_ROWS, M_COLUMNS, s_matrix) == -1) {
 	exit(8);
     }
     (void)printf("# corrected\n");
     for (int i = 0; i < M_FREQUENCIES; ++i) {
-	double complex s00, s01, s10, s11;
+	double complex s11, s12, s21, s22;
 
-	s00 = vnadata_get_cell(s_matrix, i, 0, 0);
-	s01 = vnadata_get_cell(s_matrix, i, 0, 1);
-	s10 = vnadata_get_cell(s_matrix, i, 1, 0);
-	s11 = vnadata_get_cell(s_matrix, i, 1, 1);
+	s11 = vnadata_get_cell(s_matrix, i, 0, 0);
+	s12 = vnadata_get_cell(s_matrix, i, 0, 1);
+	s21 = vnadata_get_cell(s_matrix, i, 1, 0);
+	s22 = vnadata_get_cell(s_matrix, i, 1, 1);
 	(void)printf("%e %+e %+e %+e %+e %+e %+e %+e %+e\n",
 		frequency_vector[i],
-		creal(s00), cimag(s00),
-		creal(s01), cimag(s01),
-		creal(s10), cimag(s10),
-		creal(s11), cimag(s11));
+		creal(s11), cimag(s11),
+		creal(s12), cimag(s12),
+		creal(s21), cimag(s21),
+		creal(s22), cimag(s22));
     }
     vnadata_free(s_matrix);
-    vnacal_apply_free(vap);
     vnacal_free(vcp);
 }
 

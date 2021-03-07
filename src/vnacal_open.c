@@ -93,7 +93,8 @@ FILE *_vnacal_open(vnacal_t *vcp, const char *pathname, const char *dotdir,
      */
     if (mode[0] == 'r' || pathname[0] == '/' || has_extension) {
 	if ((filename = malloc(pathname_length + 1)) == NULL) {
-	    _vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "malloc: %s", strerror(errno));
 	    return NULL;
 	}
 	(void)memcpy((void *)filename, (void *)pathname, pathname_length + 1);
@@ -119,7 +120,8 @@ FILE *_vnacal_open(vnacal_t *vcp, const char *pathname, const char *dotdir,
 	char *cp;
 
 	if ((filename = malloc(pathname_length + sizeof(extension))) == NULL) {
-	    _vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "malloc: %s", strerror(errno));
 	    return NULL;
 	}
 	cp = filename;
@@ -152,7 +154,8 @@ FILE *_vnacal_open(vnacal_t *vcp, const char *pathname, const char *dotdir,
 
 	if ((filename = malloc(home_length + 1 + dotdir_length + 1 +
 			pathname_length + sizeof(extension))) == NULL) {
-	    _vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "malloc: %s", strerror(errno));
 	    return NULL;
 	}
 	cp = filename;

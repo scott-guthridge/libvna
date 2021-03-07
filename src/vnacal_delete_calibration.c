@@ -22,7 +22,6 @@
 #include <errno.h>
 #include <math.h>
 #include <stdarg.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,23 +29,25 @@
 
 
 /*
- * vnacal_free: free a vnacal_t structure
+ * vnacal_delete_calibration: delete a calibration
  *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  */
-void vnacal_free(vnacal_t *vcp)
+int vnacal_delete_calibration(vnacal_t *vcp, int ci)
 {
-    if (vcp != NULL && vcp->vc_magic == VC_MAGIC) {
-	while (vcp->vc_new_head.l_forw != &vcp->vc_new_head) {
-	    vnacal_new_t *vnp = (vnacal_new_t *)((char *)(vcp->vc_new_head.
-			l_forw) - offsetof(vnacal_new_t, vn_next));
-
-	    vnacal_new_free(vnp);
-	}
-	(void)vnaproperty_expr_delete(&vcp->vc_properties, ".");
-	assert(vcp->vc_properties == NULL);
-	_vnacal_teardown_parameter_collection(vcp);
-	vcp->vc_magic = -1;
-	free((void *)vcp->vc_filename);
-	free((void *)vcp);
+    if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
+	errno = EINVAL;
+	return -1;
     }
+    if (ci >= 0 && ci < vcp->vc_calibration_allocation) {
+	vnacal_calibration_t *calp = vcp->vc_calibration_vector[ci];
+
+	if (calp != NULL) {
+	    _vnacal_calibration_free(vcp->vc_calibration_vector[ci]);
+	    vcp->vc_calibration_vector[ci] = NULL;
+	    return 0;
+	}
+    }
+    errno = ENOENT;
+    return -1;
 }

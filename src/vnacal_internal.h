@@ -24,10 +24,14 @@
 #include "vnacommon_internal.h"
 #include "vnaerr_internal.h"
 #include "vnaproperty.h"
+#include "vnacal_layout.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* number of predefined parameters */
+#define VNACAL_PREDEFINED_PARAMETERS		3
 
 /* default numerical precision for vnacal_save frequencies (in digits) */
 #define VNACAL_DEFAULT_FREQUENCY_PRECISION	7
@@ -42,201 +46,367 @@ extern "C" {
 #define VNACAL_F_EXTRAPOLATION			0.01
 
 /*
- * vnacal_calset_reference: a reference value or reference vector
+ * magic numbers to protect against bad pointers from the user
  */
-typedef struct vnacal_calset_reference {
-    bool vcmr_is_vector;
+#define VN_MAGIC				0x564E4557 /* VNEW */
+#define VC_MAGIC				0x5643414C /* VCAL */
+
+/*
+ * vnacal_parameter_type_t: type of parameter
+ */
+typedef enum vnacal_parameter_type {
+    VNACAL_NEW,
+    VNACAL_SCALAR,
+    VNACAL_VECTOR,
+    VNACAL_UNKNOWN,
+    VNACAL_CORRELATED
+} vnacal_parameter_type_t;
+
+/*
+ * vnacal_parameter_t: internal representation of a parameter
+ */
+typedef struct vnacal_parameter {
+    vnacal_parameter_type_t vpmr_type;		/* parameter type */
+    bool vpmr_deleted;				/* true if deleted */
+    int vpmr_hold_count;			/* hold count */
+    int vpmr_index;				/* position in vector */
+    int vpmr_segment;				/* for _vnacal_rfi */
+    vnacal_t *vpmr_vcp;				/* back pointer to vnacal_t */
     union {
-	double complex vcmr_gamma;
+	double complex scalar;			/* simple gamma value */
 	struct {
-	    int vcmr_frequencies;
-	    double *vcmr_frequency_vector;
-	    double complex *vcmr_gamma_vector;
-	} v;
-    } u ;
-} vnacal_calset_reference_t;
+	    int frequencies;			/* number of frequencies */
+	    double *frequency_vector;		/* vector of frequencies */
+	    double complex *gamma_vector;	/* vector of gamma values */
+	} vector;
+	struct {
+	    struct vnacal_parameter *other;
+	    union {
+		struct {
+		    double sigma;
+		} correlated;
+	    } u;
+	} unknown;
+    } u;
+} vnacal_parameter_t;
+#define vpmr_gamma		u.scalar
+#define vpmr_frequencies	u.vector.frequencies
+#define vpmr_frequency_vector	u.vector.frequency_vector
+#define vpmr_gamma_vector	u.vector.gamma_vector
+#define vpmr_other		u.unknown.other
+#define vpmr_sigma		u.unknown.u.correlated.sigma
 
 /*
- * vnacal_cdata_t: a cell of the matrix of measured calibration data
- *
- *   Each column of the matrix represents the driving VNA port for a
- *   set of measurements.  Each row of the matrix represents the receiving
- *   VNA port.  The diagonal and off diagonal elements of the matrix
- *   contain different information and use different union members.
- *   Diagonal:
- *     vcd_data_vectors[0]	reflected voltage from reference 0
- *     vcd_data_vectors[1]	reflected voltage from reference 1
- *     vcd_data_vectors[2]	reflected voltage from reference 2
- *   Off-diagnonal:
- *     vcd_data_vectors[0]	reflected signal back to driving port
- *     vcd_data_vectors[1]	transmitted signal to receiving port
- *     vcd_data_vectors[2]	leakage from driving port to isolated
- *                              receiving port
- *
- *   Each member is a pointer to a vector of complex voltage ratios,
- *   one entry for each frequency.
- *
+ * VNACAL_GET_PARAMETER_TYPE: access the parameter type
+ *   @vpmrp: pointer returned from _vnacal_get_parameter
  */
-typedef struct vnacal_cdata {
-
-    /* three column vectors of data (see aliases below) */
-    double complex *vcd_data_vectors[3];
-
-    /* how many vectors have been added into each slot */
-    int vcd_counts[3];
-
-} vnacal_cdata_t;
+#define VNACAL_GET_PARAMETER_TYPE(vpmrp)	((vpmrp)->vpmr_type)
 
 /*
- * vnacal_calset_t: measured calibration data for vnacal_create
- *   This structure represents one set of VNA calibration data.  A VNA
- *   calibration file may contain more than one set of calibration
- *   data, for example, if a relay-controlled attenuator is used and
- *   it's desired to make a separate calibration for each setting.
- *   Another example is where the reflection bridge can be switched
- *   between returning forward / reflected signal and forward+reflected /
- *   forward-reflected signal.
+ * VNACAL_GET_PARAMETER_INDEX: access the parameter index
+ *   @vpmrp: pointer returned from _vnacal_get_parameter
  */
-struct vnacal_calset {
+#define VNACAL_GET_PARAMETER_INDEX(vpmrp)	((vpmrp)->vpmr_index)
 
-    /* name of this set */
-    const char *vcs_setname;
+/*
+ * VNACAL_GET_PARAMETER_OTHER: get the related parameter
+ *   @vpmrp: pointer returned from _vnacal_get_parameter
+ */
+#define VNACAL_GET_PARAMETER_OTHER(vpmrp) \
+    ((vpmrp)->vpmr_type == VNACAL_UNKNOWN || \
+     (vpmrp)->vpmr_type == VNACAL_CORRELATED ? \
+     ((vpmrp)->vpmr_other) : NULL)
 
-    /* number of ports where signal is measured (must be >= columns) */
-    int vcs_rows;
+/*
+ * vnacal_parameter_collection_t: collection of parameters
+ */
+typedef struct vnacal_parameter_collection {
+    /* allocation of vprmc_vector */
+    int vprmc_allocation;
 
-    /* number of ports where signal is generated */
-    int vcs_columns;
+    /* number of non-NULL slots in vprmc_vector */
+    int vprmc_count;
+
+    /* first slot of vprmc_vector that might be free */
+    int vprmc_first_free;
+
+    /* vector of parameters */
+    vnacal_parameter_t **vprmc_vector;
+
+} vnacal_parameter_collection_t;
+
+/*
+ * vnacal_calibration_t: error terms
+ */
+typedef struct vnacal_calibration {
+    /* calibration name filled in by _vnacal_add_calibration_common */
+    char *cal_name;
+
+    /* pointer to associated vnacal_t structure */
+    vnacal_t *cal_vcp;
+
+    /* type of error terms */
+    vnacal_type_t cal_type;
+
+    /* dimensions of the measurement matrix */
+    int cal_rows;
+    int cal_columns;
+
+    /* number and vector of frequency values */
+    int cal_frequencies;
+    double *cal_frequency_vector;
+
+    /* system impedance of the VNA ports (currently assumed all the same) */
+    double complex cal_z0;
+
+    /* vector, one per error term, of vectors of values, one per frequency */
+    int cal_error_terms;
+    double complex **cal_error_term_vector;
+
+    /* per-calibration properties */
+    vnaproperty_t *cal_properties;
+
+} vnacal_calibration_t;
+
+/*
+ * vnacal_new_parameter_t: a parameter used in a new calibration
+ */
+typedef struct vnacal_new_parameter {
+    /* pointer to corresponding vnacal_parameter_t structure */
+    vnacal_parameter_t *vnpr_parameter;
+
+    /* back pointer to vnacal_new_t structure */
+    vnacal_new_t *vnpr_cmp;
+
+    /* true if the parameter value is unknown and must be determined */
+    bool vnpr_unknown;
+
+    /* union keyed on vnpr_unknown */
+    union {
+	/* known value of the parameter at the current frequency */
+	double complex known_value;
+
+	struct {
+	    /* second index to cmprc_unknown_vector */
+	    int unknown_index;
+
+	    /* for correlated parameters, the other */
+	    struct vnacal_new_parameter *correlate;
+
+	    /* next unknown parameter */
+	    struct vnacal_new_parameter *next_unknown;
+	} vnpr_unknown;
+
+    } u;
+
+    /* next parameter in hash chain */
+    struct vnacal_new_parameter *vnpr_hash_next;
+
+} vnacal_new_parameter_t;
+
+#define vnpr_unknown_index	u.vnpr_unknown.unknown_index
+#define vnpr_correlate		u.vnpr_unknown.correlate
+#define vnpr_next_unknown	u.vnpr_unknown.next_unknown
+
+/*
+ * vnacal_new_parameter_hash_t: collection of new calibration parameters
+ */
+typedef struct vnacal_new_parameter_hash {
+    /* hash table keyed on vnpr_parameter->vpmr_index */
+    vnacal_new_parameter_t **vnph_table;
+
+    /* number of hash table buckets */
+    int vnph_allocation;
+
+    /* number of elements stored in hash table */
+    int vnph_count;
+
+} vnacal_new_parameter_hash_t;
+
+/*
+ * vnacal_new_term_t: single term of an equation
+ */
+typedef struct vnacal_new_term {
+    /* column in expanded coefficient matrix, or -1 for "b" vector */
+    int vnt_coefficient;
+
+    /* multiply by -1 */
+    bool vnt_negative;
+
+    /* index into vnm_m_matrix or -1 if no m */
+    int vnt_measurement;
+
+    /* index into vnm_s_matrix or -1 if no s */
+    int vnt_sparameter;
+
+    /* next term in equation */
+    struct vnacal_new_term *vnt_next;
+
+} vnacal_new_term_t;
+
+/*
+ * vnacal_new_equation_t: equation generated from a measured standard
+ */
+typedef struct vnacal_new_equation {
+    /* associated measured calibration standard */
+    struct vnacal_new_measurement *vne_vcsp;
+
+    /* equation row and column */
+    int vne_row;
+    int vne_column;
+
+    /* linked list of terms */
+    vnacal_new_term_t *vne_term_list;
+
+    /* next equation in system */
+    struct vnacal_new_equation *vne_next;
+
+} vnacal_new_equation_t;
+
+/*
+ * vnacal_new_measurement_t: measurement of a calibration standard
+ */
+typedef struct vnacal_new_measurement {
+    /* matrix of vectors of per-frequency measurements of the standard */
+    double complex **vnm_m_matrix;
+
+    /* matrix of refrences representing the S parameters of the standard */
+    vnacal_new_parameter_t **vnm_s_matrix;
+
+    /* transitive closure of vnm_s_matrix */
+    bool *vnm_reachability_matrix;
+
+    /* pointer to the associated vnacal_new_t structure */
+    struct vnacal_new *vnm_ncp;
+
+    /* next in list of measured calibration standards */
+    struct vnacal_new_measurement *vnm_next;
+
+} vnacal_new_measurement_t;
+
+/*
+ * vnacal_new_system_t: a linear system of equations
+ */
+typedef struct vnacal_new_system {
+    /* count of equations in this system */
+    int vns_equation_count;
+
+    /* list of equations in this system */
+    vnacal_new_equation_t *vns_equation_list;
+
+    /* location where next equation should be linked */
+    vnacal_new_equation_t **vns_equation_anchor;
+
+} vnacal_new_system_t;
+
+/*
+ * vnacal_new_t: a system of calibration measurements
+ */
+struct vnacal_new {
+    /* magic number used to avoid double-free */
+    uint32_t vn_magic;
+
+    /* pointer to vnacal_t structure */
+    vnacal_t *vn_vcp;
+
+    /* error parameter type and layout */
+    vnacal_layout_t vn_layout;
 
     /* number of frequencies */
-    int vcs_frequencies;
+    int vn_frequencies;
 
-    /* reference gamma values */
-    vnacal_calset_reference_t vcs_references[3];
+    /* constant zero parameter */
+    vnacal_new_parameter_t *vn_zero;
+
+    /* hash table of parameters used here */
+    vnacal_new_parameter_hash_t vn_parameter_hash;
+
+    /* number of unknown parameters */
+    int vn_unknown_parameters;
+
+    /* linked list of unknown parameters */
+    vnacal_new_parameter_t *vn_unknown_parameter_list;
+
+    /* point where next unknown parameter should be linked */
+    vnacal_new_parameter_t **vn_unknown_parameter_anchor;
+
+    /* vector (entry per frequency) of vectors of unknown parameter values */
+    double complex **vn_unknown_parameter_vector;
 
     /* vector of frequencies */
-    double *vcs_frequency_vector;
+    double *vn_frequency_vector;
 
     /* true if the frequency vector has been set */
-    bool vcs_frequencies_valid;
+    bool vn_frequencies_valid;
 
-    /* system impedance of the VNA ports (currently assumed all
-       the same) */
-    double complex vcs_z0;
+    /* system impedance of the VNA ports (currently assumed all the same) */
+    double complex vn_z0;
 
-    /* serialized matrix of vnacal_cdata_t structures */
-    vnacal_cdata_t *vcs_matrix;
+    /* number of linear systems */
+    int vn_systems;
 
-    /* user-supplied error callback or NULL */
-    vnaerr_error_fn_t *vcs_error_fn;
+    /* vector of linear systems of equations */
+    vnacal_new_system_t *vn_system_vector;
 
-    /* user-supplied error callback argument or NULL */
-    void *vcs_error_arg;
+    /* maximum number of equations in any system */
+    int vn_max_equations;
 
+    /* list of measurements of calibration standards */
+    vnacal_new_measurement_t *vn_measurement_list;
+
+    /* address where next measurement should be added */
+    vnacal_new_measurement_t **vn_measurement_anchor;
+
+    /* solved error parameters */
+    vnacal_calibration_t *vn_calibration;
+
+    /* next and previous elements in list of vnacal_new_t structure */
+    list_t vn_next;
 };
 
 /*
- * VNACAL_CALIBRATION_DATA: return a pointer to vnacal_cdata_t *
- *	given row and column
+ * vnacal_new_add_arguments_t: common arguments for _vnacal_new_add_common
  */
-#define VNACAL_CALIBRATION_DATA(vcsp, row, column) \
-	(&(vcsp)->vcs_matrix[(row) * (vcsp)->vcs_columns + (column)])
+typedef struct vnacal_new_add_arguments {
+    /* name of user called function */
+    const char			       *vnaa_function;
 
-/*
- * vnacal_error_terms_t: a cell of the error term matrix
- */
-typedef struct vnacal_error_terms {
+    /* associated vnacal_new_t structure */
+    vnacal_new_t		       *vnaa_cmp;
 
-    /* three column vectors of data (see aliases below) */
-    double complex *et_data_vectors[3];
+    /* matrix of voltages leaving each VNA port */
+    const double complex	*const *vnaa_a_matrix;
+    int					vnaa_a_rows;
+    int					vnaa_a_columns;
 
-} vnacal_error_terms_t;
+    /* matrix of voltages entering each VNA port */
+    const double complex	*const *vnaa_b_matrix;
+    int					vnaa_b_rows;
+    int					vnaa_b_columns;
 
-/* directivity error (diagonal entry only) */
-#define et_e00		et_data_vectors[0]
+    /* scattering parameters for the measured standard */
+    const int			       *vnaa_s_matrix;
+    int					vnaa_s_rows;
+    int					vnaa_s_columns;
 
-/* reflection tracking error (diagonal entry only) */
-#define et_e10e01	et_data_vectors[1]
+    /* true if m, s is only the diagonal */
+    bool				vnaa_m_is_diagonal;
+    bool				vnaa_s_is_diagonal;
 
-/* port 1 match error (diagnonal entry only) */
-#define et_e11		et_data_vectors[2]
+    /* measurement type: 'a' for a/b or 'm' for m */
+    char				vnaa_m_type;
 
-/* leakage error (off-diagonal entry only) */
-#define et_e30		et_data_vectors[0]
+    /* map from S port to VNA port */
+    const int			       *vnaa_s_port_map;
 
-/* transmission tracking error (off-diagonal entry only) */
-#define et_e10e32	et_data_vectors[1]
-
-/* port 2 match error (off-diagonal entry only) */
-#define et_e22		et_data_vectors[2]
-
-/*
- * vnacal_etermset_t: set of calibration data
- *   This structure represents one complete set of VNA calibration
- *   measurements.
- *
- *   A VNA calibration file may contain more than one set of calibration data,
- *   for example, if a relay-controlled attenuator is used and it's desired to
- *   make a separate calibration for each setting.  Another example is where
- *   the reflection bridge can be switched between returning forward /
- *   reflected signal and forward+reflected / forward-reflected signal.
- */
-typedef struct vnacal_etermset {
-    /* back pointer to vnacal_t structure */
-    vnacal_t *ets_vcp;
-
-    /* name of this set */
-    const char *ets_setname;
-
-    /* number of ports where signal is measured (must be >= columns) */
-    int ets_rows;
-
-    /* number of ports where signal is generated */
-    int ets_columns;
-
-    /* number of frequencies */
-    int ets_frequencies;
-
-    /* vector of frequencies */
-    double *ets_frequency_vector;
-
-    /* system impedance of the VNA ports (currently assumed all
-       the same) */
-    double complex ets_z0;
-
-    /* per-set property list */
-    vnaproperty_t *ets_properties;
-
-    /* serialized matrix of error terms */
-    vnacal_error_terms_t *ets_error_term_matrix;
-
-} vnacal_etermset_t;
-
-/*
- * VNACAL_ERROR_TERMS: return a pointer to vnacal_error_terms given row
- *   and column
- */
-#define VNACAL_ERROR_TERMS(etsp, row, column) \
-	(&(etsp)->ets_error_term_matrix[(row) * (etsp)->ets_columns + (column)])
+} vnacal_new_add_arguments_t;
 
 /*
  * vnacal_t: structure returned from vnacal_load
  */
 struct vnacal {
-    /* calibration filename */
-    char *vc_filename;
-
-    /* number of independent sets of calibration data */
-    int vc_sets;
-
-    /* precision for frequency values */
-    int vc_fprecision;
-
-    /* precision for data values */
-    int vc_dprecision;
-
-    /* vector of pointers to vnacal_etermset_t structures, vc_sets long */
-    vnacal_etermset_t **vc_set_vector;
+    /* magic number */
+    uint32_t vc_magic;
 
     /* user-supplied error callback or NULL */
     vnaerr_error_fn_t *vc_error_fn;
@@ -244,43 +414,29 @@ struct vnacal {
     /* user-supplied error callback argument or NULL */
     void *vc_error_arg;
 
+    /* collection of parameters */
+    vnacal_parameter_collection_t vc_parameter_collection;
+
+    /* allocation of vc_calibration_vector */
+    int vc_calibration_allocation;
+
+    /* vector of pointers to vnacal_calibration_t */
+    vnacal_calibration_t **vc_calibration_vector;
+
+    /* calibration filename */
+    char *vc_filename;
+
+    /* precision for frequency values */
+    int vc_fprecision;
+
+    /* precision for data values */
+    int vc_dprecision;
+
     /* global properties */
     vnaproperty_t *vc_properties;
-};
 
-/*
- * vnacal_apply_t: measured data from the device under test
- */
-struct vnacal_apply {
-    /* associated vnacal_t structure */
-    vnacal_t *va_vcp;
-
-    /* associated calibration set */
-    int va_set;
-
-    /* number of rows in the calibration matrix */
-    int va_vrows;
-
-    /* number of columns in the calibration matrix */
-    int va_vcolumns;
-
-    /* number of rows in the DUT matrix */
-    int va_drows;
-
-    /* number of columns in the DUT matrix */
-    int va_dcolumns;
-
-    /* number of equations so far collected, next row in va_data */
-    int va_equations;
-
-    /* true if the frequency vector has been set */
-    bool va_frequencies_valid;
-
-    /* bitmap showing which S parameters have equations */
-    uint32_t *va_bitmap;
-
-    /* internal storage for the frequency vector and A and B matrices */
-    vnadata_t *va_data;
+    /* doubly linked ring list of vnacal_new_t structures */
+    list_t vc_new_head;
 };
 
 /* report an error */
@@ -291,30 +447,90 @@ __attribute__ ((__format__ (__printf__, 3, 4)))
 #endif /* __GNUC__ */
 ;
 
-/* _vnacal_calset_get_value: return the requested calibration value */
-extern double complex _vnacal_calset_get_value(const vnacal_cdata_t *vcdp,
-	int term, int findex);
+/* _vnacal_type_to_name: convert type to type name */
+extern const char *_vnacal_type_to_name(vnacal_type_t type);
 
-/* _vnacal_calset_get_reference: get the given reference value */
-extern double complex _vnacal_calset_get_reference(
-	const vnacal_calset_t *vcsp, int reference, int findex);
+/* _vnacal_name_to_type: convert type name to type */
+extern vnacal_type_t _vnacal_name_to_type(const char *name);
 
-/* _vnacal_etermset_alloc: alloc vnacal_etermset_t and internal vectors */
-extern vnacal_etermset_t *_vnacal_etermset_alloc(vnacal_t *vcp,
-	const char *name, int rows, int columns, int frequencies);
+/* _vnacal_layout: init the error term layout structure */
+extern void _vnacal_layout(vnacal_layout_t *vlp, vnacal_type_t type,
+	int m_rows, int m_columns);
 
-/* _vnacal_etermset_get_fmin_bound: get the lower frequency bound */
-extern double _vnacal_etermset_get_fmin_bound(const vnacal_etermset_t *etsp);
+/* _vnacal_new_get_parameter: add/find parameter and return held */
+extern vnacal_new_parameter_t *_vnacal_new_get_parameter(
+	const char *function, vnacal_new_t *vnp, int parameter);
+
+/* _vnacal_new_init_parameter_hash: set up the parameter hash */
+extern int _vnacal_new_init_parameter_hash(const char *function,
+	vnacal_new_parameter_hash_t *vnphp);
+
+/* _vnacal_new_free_parameter_hash: free the parameter hash */
+extern void _vnacal_new_free_parameter_hash(
+	vnacal_new_parameter_hash_t *vnphp);
+
+/* free a vnacal_new_measurement_t structure */
+extern void _vnacal_new_free_standard(vnacal_new_measurement_t *vnmp);
+
+/* _vnacal_new_check_all_frequency_ranges: check f range of all parameters */
+extern int _vnacal_new_check_all_frequency_ranges(const char *function,
+	vnacal_new_t *vnp, double fmin, double fmax);
+
+/* _vnacal_alloc: allocate a vnacal_new_t structure */
+extern vnacal_t *_vnacal_alloc(const char *function,
+	vnaerr_error_fn_t *error_fn, void *error_arg);
+
+/* _vnacal_calibration_alloc: alloc vnacal_calibration */
+extern vnacal_calibration_t *_vnacal_calibration_alloc(vnacal_t *vcp,
+	vnacal_type_t type, int rows, int columns, int frequencies,
+	int error_terms);
+
+/* _vnacal_calibration_get_fmin_bound: get the lower frequency bound */
+extern double _vnacal_calibration_get_fmin_bound(
+	const vnacal_calibration_t *calp);
 
 /* _vnacal_etermset_get_fmax_bound: get the upper frequency bound */
-extern double _vnacal_etermset_get_fmax_bound(const vnacal_etermset_t *etsp);
+extern double _vnacal_calibration_get_fmax_bound(
+	const vnacal_calibration_t *calp);
 
-/* _vnacal_etermset_free: free vnacal_etermset_t and internal vectors */
-extern void _vnacal_etermset_free(vnacal_etermset_t *etsp);
+/* _vnacal_calibration_free: free the memory for a vnacal_calibration_t */
+extern void _vnacal_calibration_free(vnacal_calibration_t *calp);
 
-/* open a calibration file with given fopen mode */
-extern FILE *_vnacal_open(vnacal_t *vcp, const char *pathname,
-	const char *dotdir, const char *mode);
+/* _vnacal_get_calibration: return the calibration at the given index */
+extern vnacal_calibration_t *_vnacal_get_calibration(const vnacal_t *vcp,
+	int ci);
+
+/* _vnacal_add_calibration_common */
+extern int _vnacal_add_calibration_common(const char *function, vnacal_t *vcp,
+        vnacal_calibration_t *calp, const char *name);
+
+/* _vnacal_get_parameter: return a pointer to the parameter */
+extern vnacal_parameter_t *_vnacal_get_parameter(vnacal_t *vcp, int parameter);
+
+/* _vnacal_alloc_parameter: allocate a vnacal_parameter and return index */
+extern vnacal_parameter_t *_vnacal_alloc_parameter(const char *function,
+	vnacal_t *vcp);
+
+/* _vnacal_hold_parameter: increase the hold count on a parameter */
+extern void _vnacal_hold_parameter(vnacal_parameter_t *vpmrp);
+
+/* _vnacal_release_parameter: decrease the hold count and free if zero */
+extern void _vnacal_release_parameter(vnacal_parameter_t *vpmrp);
+
+/* _vnacal_get_parameter_frange: get the frequency limits for the parameter */
+extern void _vnacal_get_parameter_frange(vnacal_parameter_t *vpmrp,
+	double *fmin, double *fmax);
+
+/* _vnacal_get_parameter_value: get the value of the parameter at frequency */
+extern double complex _vnacal_get_parameter_value(vnacal_parameter_t *vpmrp,
+	double frequency);
+
+/* _vnacal_setup_parameter_collection: allocate the parameter collection */
+extern int _vnacal_setup_parameter_collection(const char *function,
+	vnacal_t *vcp);
+
+/* _vnacal_teardown_parameter_collection: free the parameter collection */
+extern void _vnacal_teardown_parameter_collection(vnacal_t *vcp);
 
 /* _vnacal_rfi: apply rational function interpolation */
 extern double complex _vnacal_rfi(const double *xp, double complex *yp,

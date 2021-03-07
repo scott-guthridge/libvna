@@ -22,7 +22,6 @@
 #include <errno.h>
 #include <math.h>
 #include <stdarg.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,23 +29,26 @@
 
 
 /*
- * vnacal_free: free a vnacal_t structure
+ * vnacal_delete_parameter: delete the parameter with given index
  *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @parameter: parameter to delete
  */
-void vnacal_free(vnacal_t *vcp)
+int vnacal_delete_parameter(vnacal_t *vcp, int parameter)
 {
-    if (vcp != NULL && vcp->vc_magic == VC_MAGIC) {
-	while (vcp->vc_new_head.l_forw != &vcp->vc_new_head) {
-	    vnacal_new_t *vnp = (vnacal_new_t *)((char *)(vcp->vc_new_head.
-			l_forw) - offsetof(vnacal_new_t, vn_next));
+    vnacal_parameter_t *vpmrp;
 
-	    vnacal_new_free(vnp);
-	}
-	(void)vnaproperty_expr_delete(&vcp->vc_properties, ".");
-	assert(vcp->vc_properties == NULL);
-	_vnacal_teardown_parameter_collection(vcp);
-	vcp->vc_magic = -1;
-	free((void *)vcp->vc_filename);
-	free((void *)vcp);
+    if (parameter < VNACAL_PREDEFINED_PARAMETERS) {
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_delete_parameter: %s",
+		strerror(errno));
+	return -1;
     }
+    vpmrp = _vnacal_get_parameter(vcp, parameter);
+    if (vpmrp == NULL || vpmrp->vpmr_deleted) {
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_delete_parameter: "
+		"%d: nonexistent parameter", parameter);
+	return -1;
+    }
+    vpmrp->vpmr_deleted = true;
+    _vnacal_release_parameter(vpmrp);
+    return 0;
 }

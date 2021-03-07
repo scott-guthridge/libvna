@@ -12,12 +12,17 @@ SUFFIXES= .3 .pdf
 #
 include_HEADERS = vnacal.h vnaconv.h vnadata.h vnaerr.h vnafile.h
 lib_LTLIBRARIES = libvna.la
-libvna_la_SOURCES = archdep.h archdep.c \
-	vnacal_internal.h vnacal_apply.c vnacal_apply_alloc.c \
-	vnacal_calset.c vnacal_create.c vnacal_error.c \
-	vnacal_etermset.c vnacal_free.c vnacal_get.c vnacal_load.c \
-	vnacal_open.c vnacal_property.c vnacal_rfi.c vnacal_save.c \
-	vnacal_set_dprecision.c vnacal_set_fprecision.c \
+libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
+	vnacal_delete_parameter.c vnacal_apply.c vnacal_new_add_common.c \
+	vnacal_new_parameter.c vnacal_new_solve.c \
+	vnacal_new.c vnacal_create.c vnacal_calibration.c \
+	vnacal_make_correlated_parameter.c vnacal_make_scalar_parameter.c \
+	vnacal_make_unknown_parameter.c vnacal_make_vector_parameter.c \
+	vnacal_add_calibration.c vnacal_delete_calibration.c \
+	vnacal_layout.h vnacal_layout.c vnacal_get_parameter_value.c \
+	vnacal_error.c vnacal_find_calibration.c vnacal_free.c vnacal_get.c \
+	vnacal_load.c vnacal_property.c vnacal_rfi.c vnacal_save.c \
+	vnacal_set_dprecision.c vnacal_set_fprecision.c vnacal_parameter.c \
 	vnacommon_internal.h vnacommon_lu.c vnacommon_minverse.c \
 	vnacommon_mldivide.c vnacommon_mrdivide.c \
 	vnaerr_internal.h vnaerr_verror.c \
@@ -51,10 +56,12 @@ libvna_la_SOURCES = archdep.h archdep.c \
 	vnafile_load_touchstone.c vnafile_save.c \
 	vnaproperty.h vnaproperty_internal.h vnaproperty.c
 
+
 #
 # Man pages
 #
-dist_man_MANS = vnacal.3 vnaconv.3 vnadata.3 vnaerr.3 vnafile.3
+dist_man_MANS = vnacal.3 vnacal_new.3 vnacal_parameter.3 vnaconv.3 \
+	vnadata.3 vnaerr.3 vnafile.3
 
 #
 # Tests
@@ -125,7 +132,8 @@ plot: vnacal-example.out vnacal-example.gnuplot
 .3.pdf:
 	$(PDFROFF) -t -e -man --no-toc-relocation $< > "$@"
 
-pdfman: vnacal.pdf vnaconv.pdf vnadata.pdf vnaerr.pdf vnafile.pdf
+pdfman: vnacal.pdf vnacal_new.pdf vnacal_parameter.pdf vnaconv.pdf \
+	vnadata.pdf vnaerr.pdf vnafile.pdf
 
 clean-local:
 	rm -f example.vnacal vnacal-example.out vnacal-test.vnacal \

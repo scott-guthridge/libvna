@@ -109,7 +109,7 @@ The library detected a singular matrix or a numerical solution did not
 converge.
 Example:
 .sp
-\(lqvnacal_create: set 0: system is singular\(rq
+\(lqvnacal_new_add_double_reflect: 'a' matrix is singular at frequency index 5\(rq
 .IP "\s-2VNAERR_INTERNAL\s+2"
 The library detected an internal inconsistency.  The message starts
 with the internal function that failed followed by details useful to a
@@ -144,4 +144,5 @@ returning failure from a library function.
 .\" .SH EXAMPLES
 .\"
 .SH "SEE ALSO"
-.BR vnacal "(3)," vnafile "(3)"
+.BR vnacal "(3), " vnacal_new "(3), " vnaconv "(3), " vnadata "(3),"
+.BR vnafile "(3), " vnacal_parameter "(3)"

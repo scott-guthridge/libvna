@@ -84,7 +84,8 @@ vnacal_input_t *vnacal_input_alloc(vnacal_t *vcp, int set,
 	return NULL;
     }
     if ((vip = malloc(sizeof(vnacal_input_t))) == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"malloc: %s", strerror(errno));
 	return NULL;
     }
     (void)memset((void *)vip, 0, sizeof(*vip));
@@ -96,31 +97,36 @@ vnacal_input_t *vnacal_input_alloc(vnacal_t *vcp, int set,
     vip->vi_frequencies_valid = false;
     if ((vip->vi_frequency_vector = calloc(frequencies,
 		    sizeof(double))) == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"calloc: %s", strerror(errno));
 	vnacal_input_free(vip);
 	return NULL;
     }
     if ((vip->vi_matrix = calloc(rows * columns,
 		    sizeof(double complex *))) == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"calloc: %s", strerror(errno));
 	vnacal_input_free(vip);
 	return NULL;
     }
     for (int cell = 0; cell < rows * columns; ++cell) {
 	if ((vip->vi_matrix[cell] = calloc(frequencies,
 			sizeof(double complex))) == NULL) {
-	    _vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "calloc: %s", strerror(errno));
 	    vnacal_input_free(vip);
 	    return NULL;
 	}
     }
     if ((vip->vi_counts = calloc(rows * columns, sizeof(int))) == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"calloc: %s", strerror(errno));
 	vnacal_input_free(vip);
 	return NULL;
     }
     if ((vip->vi_map = calloc(rows * columns, sizeof(int))) == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"calloc: %s", strerror(errno));
 	vnacal_input_free(vip);
 	return NULL;
     }

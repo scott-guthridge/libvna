@@ -22,7 +22,6 @@
 #include <errno.h>
 #include <math.h>
 #include <stdarg.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,23 +29,32 @@
 
 
 /*
- * vnacal_free: free a vnacal_t structure
+ * vnacal_make_unknown_parameter: create an unknown parameter
  *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @initial_guess: index of scalar or vector parameter serving as guess
  */
-void vnacal_free(vnacal_t *vcp)
+int vnacal_make_unknown_parameter(vnacal_t *vcp, int initial_guess)
 {
-    if (vcp != NULL && vcp->vc_magic == VC_MAGIC) {
-	while (vcp->vc_new_head.l_forw != &vcp->vc_new_head) {
-	    vnacal_new_t *vnp = (vnacal_new_t *)((char *)(vcp->vc_new_head.
-			l_forw) - offsetof(vnacal_new_t, vn_next));
+    vnacal_parameter_t *vstdp_other;
+    vnacal_parameter_t *vpmrp;
 
-	    vnacal_new_free(vnp);
-	}
-	(void)vnaproperty_expr_delete(&vcp->vc_properties, ".");
-	assert(vcp->vc_properties == NULL);
-	_vnacal_teardown_parameter_collection(vcp);
-	vcp->vc_magic = -1;
-	free((void *)vcp->vc_filename);
-	free((void *)vcp);
+    if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
+	errno = EINVAL;
+	return -1;
     }
+    vstdp_other = _vnacal_get_parameter(vcp, initial_guess);
+    if (vstdp_other == NULL) {
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_make_unknown_parameter: "
+		"initial_guess must refer to a valid scalar or vector "
+		"parameter");
+	return -1;
+    }
+    vpmrp = _vnacal_alloc_parameter("vnacal_make_unknown_parameter", vcp);
+    if (vpmrp == NULL) {
+	return -1;
+    }
+    _vnacal_hold_parameter(vstdp_other);
+    vpmrp->vpmr_type = VNACAL_UNKNOWN;
+    vpmrp->vpmr_other = vstdp_other;
+    return vpmrp->vpmr_index;
 }

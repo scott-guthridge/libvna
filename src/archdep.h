@@ -41,7 +41,7 @@
 #endif /* HAVE_SEARCH_H */
 
 /*
- * list_t: list object for insque and remque
+ * list_t: list structure for insque and remque
  *	We use this in place of the old struct qelem with its
  *	unwanted baggage of q_data[1].  If it conflicts with
  *	something, we can rename it.

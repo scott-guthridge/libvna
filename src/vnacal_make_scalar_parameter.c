@@ -22,7 +22,6 @@
 #include <errno.h>
 #include <math.h>
 #include <stdarg.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,23 +29,23 @@
 
 
 /*
- * vnacal_free: free a vnacal_t structure
+ * vnacal_make_scalar_parameter: create frequency-independent parameter
  *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @gamma: coefficient of reflection or transmission
  */
-void vnacal_free(vnacal_t *vcp)
+int vnacal_make_scalar_parameter(vnacal_t *vcp, double complex gamma)
 {
-    if (vcp != NULL && vcp->vc_magic == VC_MAGIC) {
-	while (vcp->vc_new_head.l_forw != &vcp->vc_new_head) {
-	    vnacal_new_t *vnp = (vnacal_new_t *)((char *)(vcp->vc_new_head.
-			l_forw) - offsetof(vnacal_new_t, vn_next));
+    vnacal_parameter_t *vpmrp;
 
-	    vnacal_new_free(vnp);
-	}
-	(void)vnaproperty_expr_delete(&vcp->vc_properties, ".");
-	assert(vcp->vc_properties == NULL);
-	_vnacal_teardown_parameter_collection(vcp);
-	vcp->vc_magic = -1;
-	free((void *)vcp->vc_filename);
-	free((void *)vcp);
+    if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
+	errno = EINVAL;
+	return -1;
     }
+    vpmrp = _vnacal_alloc_parameter("vnacal_make_scalar_parameter", vcp);
+    if (vpmrp == NULL) {
+	return -1;
+    }
+    vpmrp->vpmr_type = VNACAL_SCALAR;
+    vpmrp->vpmr_gamma = gamma;
+    return vpmrp->vpmr_index;
 }

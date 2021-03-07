@@ -32,7 +32,7 @@
 
 /*
  * vnacal_set_fprecision: set the data precision for vnacal_save
- *   @vcp: a pointer to the structure returned by vnacal_create or vnacal_load
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @precision: precision in decimal places (1..n) or VNACAL_MAX_PRECISION
  */
 int vnacal_set_fprecision(vnacal_t *vcp, int precision)

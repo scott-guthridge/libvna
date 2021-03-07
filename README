@@ -1,11 +1,10 @@
 LIBVNA: Vector Network Analyzer Library
 Copyright © 2020, 2021 D Scott Guthridge <scott-guthridge@rompromity.net>
 
-Library for electrical vector network analyzers.  The library provides
-functions for 12-error parameter (and other) VNA calibration, generalized
-conversions between network parameter types, and loading and saving
-network parameter data in Touchstone 1, Touchstone 2 and a native format.
-Refer to the provided manual pages and examples.
+Library for vector network analyzers: provides calibration using 8 and
+16 term T parameters, 12-term E parameters (classic SOLT) and others,
+parameter conversion, and loading and storing of network parameter data
+in Touchstone 1, Touchstone 2 and network parameter data (.npd) formats.
 
 Prerequisites:
     - You'll need a C99 level C compiler such as gcc or clang.
@@ -39,7 +38,7 @@ Build, Test and Install:
     /usr/local/share/doc/libvna.  The README-EXAMPLES is worded for
     someone building the example programs by hand after the library
     has been installed on the system.  After running a make all here,
-    though the examples will already be built in the src/ directory.
+    though, the examples will already be built in the src/ directory.
 
 
 If you have gnuplot installed, you can see an interesting example of
@@ -70,12 +69,12 @@ To build PDF versions of the man pages (requries pdfroff):
 
 To build RPM files:
     make srcrpm
-    make rpms
+    make rpm
 
     The source RPM appears in rpm/libvna-*.src.rpm.  Binary RPMs appear
     in an architecture-specific subdirectory, e.g. rpm/x86-64/.
 
-    When installing from RPM, the installed files go into the normal
+    When installing from RPM, the installed files go into the standard
     system directories such as /usr/include, /usr/lib64, /usr/share/doc,
     and /usr/share/man instead of /usr/local/
 
@@ -90,7 +89,7 @@ Creating a new release (for git developers only)
 
 
 The library is still undergoing some final development.  While the
-version remains at 0.0.x, there may be a few compatiblity breaks not
+version remains at 0.x.x, there may be a few compatiblity breaks not
 reflected in the library .so version.
 
 If you'd like to help, please contact me.  The main things I could use
@@ -102,7 +101,9 @@ help on right now are:
 	  compatibility.
 	- What's missing?
 
-    - A review of the code (almost 24000 lines of C99 code)
+    - A review of the code (over 41000 lines of source code)
+
+    - There's a TODO list in src/
 
 Finally, please make suggestions for how the library could be improved.
 

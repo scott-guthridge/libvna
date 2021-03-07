@@ -19,29 +19,49 @@
 #include "archdep.h"
 
 #include <assert.h>
-#include <ctype.h>
 #include <errno.h>
 #include <math.h>
 #include <stdarg.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "vnacal_internal.h"
 
-
 /*
- * vnacal_set_dprecision: set the data precision for vnacal_save
+ * vnacal_add_calibration: add a newly solved calibration to the vnacal_t
  *   @vcp: pointer returned from vnacal_create or vnacal_load
- *   @precision: precision in decimal places (1..n) or VNACAL_MAX_PRECISION
+ *   @name: name of the new calibration
+ *   @vnp: pointer to vnacal_new_t structure
+ *
+ * If name exists, this function replaces the previous calibration.
  */
-int vnacal_set_dprecision(vnacal_t *vcp, int precision)
+int vnacal_add_calibration(vnacal_t *vcp, const char *name, vnacal_new_t *vnp)
 {
-    if (precision < 1) {
-	_vnacal_error(vcp, VNAERR_USAGE,
-		"vnacal_set_dprecision: precision must be at least 1");
+    int ci;
+
+    if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
+	errno = EINVAL;
 	return -1;
     }
-    vcp->vc_dprecision = precision;
-    return 0;
+    if (vnp == NULL || vnp->vn_magic != VN_MAGIC) {
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_add_calibration: invalid vnp");
+	return -1;
+    }
+    if (vnp->vn_vcp != vcp) {
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_add_calibration: "
+		"new calibration not associated with this vnacal_t structure");
+	return -1;
+    }
+    if (vnp->vn_calibration == NULL) {
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_add_calibration: "
+		"need to call vnacal_new_solve first");
+	return -1;
+    }
+    if ((ci = _vnacal_add_calibration_common(__func__, vcp,
+		    vnp->vn_calibration, name)) == -1) {
+	return -1;
+    }
+    vnp->vn_calibration = NULL;
+
+    return ci;
 }

@@ -392,7 +392,8 @@ int _vnafile_update_format_string(vnafile_t *vfp)
     vfp->vf_format_string = NULL;
     if ((new_string = malloc(vfp->vf_format_count *
 		    (MAX_FORMAT + 1))) == NULL) {
-	_vnafile_error(vfp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+	_vnafile_error(vfp, VNAERR_SYSTEM,
+		"malloc: %s", strerror(errno));
 	return -1;
     }
     cur = new_string;
@@ -443,7 +444,8 @@ vnafile_t *vnafile_alloc(vnaerr_error_fn_t *error_fn, void *error_arg)
     vfp->vf_fprecision = 7;
     vfp->vf_dprecision = 6;
     if ((vfp->vf_format_vector = malloc(sizeof(vnafile_format_t))) == NULL) {
-	_vnafile_error(vfp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+	_vnafile_error(vfp, VNAERR_SYSTEM,
+		"malloc: %s", strerror(errno));
 	vnafile_free(vfp);
 	return NULL;
     }
@@ -557,7 +559,8 @@ int vnafile_set_format(vnafile_t *vfp, const char *format)
      * fields and convert all commas to NUL's.
      */
     if ((format_copy = malloc(length + 1)) == NULL) {
-	_vnafile_error(vfp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+	_vnafile_error(vfp, VNAERR_SYSTEM,
+		"malloc: %s", strerror(errno));
 	return -1;
     }
     cur = format_copy;
@@ -583,7 +586,8 @@ int vnafile_set_format(vnafile_t *vfp, const char *format)
      * Allocate a new format vector.
      */
     if ((vffp_new = calloc(nfields, sizeof(vnafile_format_t))) == NULL) {
-	_vnafile_error(vfp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+	_vnafile_error(vfp, VNAERR_SYSTEM,
+		"malloc: %s", strerror(errno));
 	goto out;
     }
 
@@ -641,7 +645,8 @@ int _vnafile_set_simple_format(vnafile_t *vfp,
      * Allocate the new format vector, length 1.
      */
     if ((vffp_new = malloc(sizeof(vnafile_format_t))) == NULL) {
-	_vnafile_error(vfp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+	_vnafile_error(vfp, VNAERR_SYSTEM,
+		"malloc: %s", strerror(errno));
 	goto out;
     }
     (void)memset((void *)vffp_new, 0, sizeof(*vffp_new));
