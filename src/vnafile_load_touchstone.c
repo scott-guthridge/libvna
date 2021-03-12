@@ -31,6 +31,13 @@
 
 
 /*
+ * Constants
+ */
+#define PI		3.14159265358979323846264338327950288419716939937508
+#define LOG10		2.30258509299404568401799145468436420760110148862877
+#define RAD_PER_DEG	(PI / 180.0)
+
+/*
  * ts_token_t: touchstone tokens
  */
 typedef enum ts_token {
@@ -202,6 +209,7 @@ static const char *get_token_name(ts_parser_state_t *tpsp)
 
 /*
  * start_text: start accumulating text
+ *   @tpsp: touchstone parser state structure
  */
 static void start_text(ts_parser_state_t *tpsp)
 {
@@ -210,6 +218,8 @@ static void start_text(ts_parser_state_t *tpsp)
 
 /*
  * add_char: add a character to the text buffer
+ *   @tpsp: touchstone parser state structure
+ *   @c: character to add
  *
  * Return:
  *	 0: success
@@ -234,6 +244,7 @@ static int add_char(ts_parser_state_t *tpsp, char c)
 
 /*
  * end_text: stop accumulating text
+ *   @tpsp: touchstone parser state structure
  */
 static void end_text(ts_parser_state_t *tpsp)
 {
@@ -242,6 +253,7 @@ static void end_text(ts_parser_state_t *tpsp)
 
 /*
  * next_char: read the next character from the input
+ *   @tpsp: touchstone parser state structure
  */
 static void next_char(ts_parser_state_t *tpsp)
 {
@@ -253,6 +265,7 @@ static void next_char(ts_parser_state_t *tpsp)
 
 /*
  * is_in_word_char: return true if ch can occur within a word
+ *   @ch: character to test
  */
 static int is_in_word_char(int ch)
 {
@@ -275,6 +288,7 @@ static int is_in_word_char(int ch)
 
 /*
  * convert_int: convert an integer
+ *   @tpsp: touchstone parser state structure
  */
 static bool convert_int(ts_parser_state_t *tpsp)
 {
@@ -286,6 +300,7 @@ static bool convert_int(ts_parser_state_t *tpsp)
 
 /*
  * convert_double: convert a double
+ *   @tpsp: touchstone parser state structure
  */
 static bool convert_double(ts_parser_state_t *tpsp)
 {
@@ -297,6 +312,8 @@ static bool convert_double(ts_parser_state_t *tpsp)
 
 /*
  * next_token: scan the next token from the input
+ *   @tpsp: touchstone parser state structure
+ *   @flags: bitwise OR of ts_flags_t values
  */
 static int next_token(ts_parser_state_t *tpsp, uint32_t flags)
 {
@@ -610,6 +627,7 @@ static int next_token(ts_parser_state_t *tpsp, uint32_t flags)
 
 /*
  * parse_data_line: parse a line of floating point numbers
+ *   @tpsp: touchstone parser state structure
  */
 static int parse_data_line(ts_parser_state_t *tpsp)
 {
@@ -658,7 +676,37 @@ static int parse_data_line(ts_parser_state_t *tpsp)
 }
 
 /*
+ * convert_value_pair: convert a pair of double to complex based on format
+ *   @tpsp: touchstone parser state structure
+ *   @value_pair: pointer to vector of two doubles
+ *   @result: complex result
+ */
+static void convert_value_pair(ts_parser_state_t *tpsp,
+	const double *value_pair, double complex *result)
+{
+    switch (tpsp->tps_data_format) {
+    case 'D':	/* DB */
+	*result = cexp(LOG10 * value_pair[0] / 20.0 +
+			I * RAD_PER_DEG * value_pair[1]);
+	break;
+
+    case 'M':	/* MA */
+	*result = value_pair[0] * cexp(I * RAD_PER_DEG * value_pair[1]);
+	break;
+
+    case 'R':	/* RI */
+	*result = value_pair[0] + I * value_pair[1];
+	break;
+
+    default:
+	abort();
+    }
+}
+
+/*
  * load_touchstone1: load Touchstone version 1
+ *   @tpsp: touchstone parser state structure
+ *   @vdp: vnadata_t structure to receive network parameter data
  */
 static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 {
@@ -684,7 +732,7 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 	return -1;
     }
     if (tpsp->tps_value_count == 5)
-	goto skip_noise_data;
+	goto parse_noise_data;
 
     if (tpsp->tps_parameter_type == VPT_H ||
 	    tpsp->tps_parameter_type == VPT_G) {
@@ -718,6 +766,9 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
      */
     if (tpsp->tps_ports == 2) {
 	for (;;) {
+	    /*
+	     * Validate and load the frequency.
+	     */
 	    findex = vdp->vd_frequencies;
 	    if (findex != 0 &&
 		    tpsp->tps_frequency_multiplier *
@@ -736,28 +787,51 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 			strerror(errno));
 		return -1;
 	    }
-	    /* load transpose */
-	    vdp->vd_data[findex][0] =
-		    tpsp->tps_value_vector[1] + I * tpsp->tps_value_vector[2];
-	    vdp->vd_data[findex][2] =
-		    tpsp->tps_value_vector[3] + I * tpsp->tps_value_vector[4];
-	    vdp->vd_data[findex][1] =
-		    tpsp->tps_value_vector[5] + I * tpsp->tps_value_vector[6];
-	    vdp->vd_data[findex][3] =
-		    tpsp->tps_value_vector[7] + I * tpsp->tps_value_vector[8];
+
+	    /*
+	     * Convert fields 1..8 and store transposed.
+	     */
+	    assert(tpsp->tps_value_count == 9);
+	    convert_value_pair(tpsp, &tpsp->tps_value_vector[1],
+		    &vdp->vd_data[findex][0]);
+	    convert_value_pair(tpsp, &tpsp->tps_value_vector[3],
+		    &vdp->vd_data[findex][2]);
+	    convert_value_pair(tpsp, &tpsp->tps_value_vector[5],
+		    &vdp->vd_data[findex][1]);
+	    convert_value_pair(tpsp, &tpsp->tps_value_vector[7],
+		    &vdp->vd_data[findex][3]);
+
+	    /*
+	     * If no more values, break.
+	     */
 	    if (tpsp->tps_token != T_DOUBLE)
 		break;
 
+	    /*
+	     * Read the next line.
+	     */
 	    if (parse_data_line(tpsp) == -1)
 		return -1;
 
+	    /*
+	     * If the new line has 9 fields, then our guess of a 2x2
+	     * matrix was right.  If it has 8, then our guess was wrong --
+	     * what we parsed so far was only the first line of a
+	     * 4x4 matrix.  If it has 5 fields, then we've finished the
+	     * data block and found noise parameters.  Any other number
+	     * of fields is an error.
+	     */
 	    if (tpsp->tps_value_count != 9) {
 		if (tpsp->tps_value_count == 5)
-		    goto skip_noise_data;
+		    goto parse_noise_data;
 
 		if (maybe4ports && tpsp->tps_value_count == 8) {
 		    double complex d21, d12;
 
+		    /*
+		     * 4x4: transpose first row back into the correct order
+		     * and resize the vnadata_t structure.
+		     */
 		    d21 = vdp->vd_data[findex][1];
 		    d12 = vdp->vd_data[findex][2];
 		    vdp->vd_data[findex][1] = d12;
@@ -812,9 +886,8 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 	    for (column = 0; column < tpsp->tps_ports; ++column) {
 		int idx = 1 + 2 * column;
 
-		vdp->vd_data[findex][column] =
-		    tpsp->tps_value_vector[idx] +
-		    I * tpsp->tps_value_vector[idx + 1];
+		convert_value_pair(tpsp, &tpsp->tps_value_vector[idx],
+			&vdp->vd_data[findex][column]);
 	    }
 
 	    /* remaining rows */
@@ -841,9 +914,9 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 		for (column = 0; column < tpsp->tps_ports; ++column) {
 		    int idx = 2 * column;
 
-		    vdp->vd_data[findex][tpsp->tps_ports * row + column] =
-			    tpsp->tps_value_vector[idx] +
-			    I * tpsp->tps_value_vector[idx + 1];
+		    convert_value_pair(tpsp, &tpsp->tps_value_vector[idx],
+			    &vdp->vd_data[findex][tpsp->tps_ports * row +
+			    column]);
 		}
 	    }
 	    if (tpsp->tps_token != T_DOUBLE)
@@ -854,7 +927,7 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 
 	    if (tpsp->tps_value_count != 1 + 2 * tpsp->tps_ports) {
 		if (tpsp->tps_value_count == 5)
-		    goto skip_noise_data;
+		    goto parse_noise_data;
 
 		_vnafile_error(vfp, "%s (line %d) error: expected %d fields; "
 			"found %d",
@@ -867,7 +940,10 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
     }
     return 0;
 
-skip_noise_data:
+    /*
+     * Parse and discard noise data.  TODO: extend vnadata_t to store it.
+     */
+parse_noise_data:
     while (tpsp->tps_token == T_DOUBLE) {
 	if (parse_data_line(tpsp) == -1)
 	    return -1;
@@ -893,17 +969,13 @@ skip_noise_data:
 #define T21_12	2
 
 /*
- * Constants
+ * parse_value_pair: parse two values and convert to complex
+ *   @tpsp: touchstone parser state structure
+ *   @nexpected: number of value pairs expected (for error messages)
+ *   @result: address to receive complex result
  */
-#define PI		3.14159265358979323846264338327950288419716939937508
-#define LOG10		2.30258509299404568401799145468436420760110148862877
-#define RAD_PER_DEG	(PI / 180.0)
-
-/*
- * get_value_pair: parse two values and convert to complex
- */
-static int get_value_pair(ts_parser_state_t *tpsp, int nexpected,
-	double complex *xp)
+static int parse_value_pair(ts_parser_state_t *tpsp, int nexpected,
+	double complex *result)
 {
     vnafile_t *vfp = tpsp->tps_vfp;
     double v[2];
@@ -920,23 +992,8 @@ static int get_value_pair(ts_parser_state_t *tpsp, int nexpected,
 	    return -1;
 	}
     }
-    switch (tpsp->tps_data_format) {
-    case 'D':	/* DB */
-	*xp = cexp(LOG10 * v[0] / 20.0 + I * RAD_PER_DEG * v[1]);
-	return 0;
-
-    case 'M':	/* MA */
-	*xp = v[0] * cexp(I * RAD_PER_DEG * v[1]);
-	return 0;
-
-    case 'R':	/* RI */
-	*xp = v[0] + I * v[1];
-	return 0;
-
-    default:
-	abort();
-	/*NOTREACHED*/
-    }
+    convert_value_pair(tpsp, v, result);
+    return 0;
 }
 
 /*
@@ -1482,7 +1539,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 		for (int column = 0; column < tps.tps_ports; ++column) {
 		    double complex x;
 
-		    if (get_value_pair(&tps, expected_pairs, &x) == -1) {
+		    if (parse_value_pair(&tps, expected_pairs, &x) == -1) {
 			goto out;
 		    }
 		    if (two_port_order == T21_12) {
@@ -1499,7 +1556,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 		for (int column = row; column < tps.tps_ports; ++column) {
 		    double complex x;
 
-		    if (get_value_pair(&tps, expected_pairs, &x) == -1) {
+		    if (parse_value_pair(&tps, expected_pairs, &x) == -1) {
 			goto out;
 		    }
 		    (void)vnadata_set_cell(vdp, findex, row, column, x);
@@ -1513,7 +1570,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 		for (int column = 0; column <= row; ++column) {
 		    double complex x;
 
-		    if (get_value_pair(&tps, expected_pairs, &x) == -1) {
+		    if (parse_value_pair(&tps, expected_pairs, &x) == -1) {
 			goto out;
 		    }
 		    (void)vnadata_set_cell(vdp, findex, row, column, x);

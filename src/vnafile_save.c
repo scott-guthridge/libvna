@@ -1072,9 +1072,9 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
     }
 
     /*
-     * Go through the format vector and fixup any instances of "ri",
-     * "ma" and "db" without parameter types with the parameter type
-     * from the data object.
+     * Go through the format vector and fix up any instances of "ri",
+     * "ma" and "db" without parameter types, taking the parameter type
+     * from the vnadata_t structure.
      */
     {
 	bool changed = false;
