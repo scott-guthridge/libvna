@@ -842,8 +842,8 @@ int _vnacal_apply_common(vnacal_apply_args_t vaa)
  */
 int vnacal_apply(vnacal_t *vcp, int ci,
 	const double *frequency_vector, int frequencies,
-	const double complex *const *a, int a_rows, int a_columns,
-	const double complex *const *b, int b_rows, int b_columns,
+	double complex *const *a, int a_rows, int a_columns,
+	double complex *const *b, int b_rows, int b_columns,
 	vnadata_t *s_parameters)
 {
     vnacal_apply_args_t vaa;
@@ -854,10 +854,10 @@ int vnacal_apply(vnacal_t *vcp, int ci,
     vaa.vaa_ci			= ci;
     vaa.vaa_frequency_vector	= frequency_vector;
     vaa.vaa_frequencies		= frequencies;
-    vaa.vaa_a_matrix		= a;
+    vaa.vaa_a_matrix		= (const double complex *const *)a;
     vaa.vaa_a_rows		= a_rows;
     vaa.vaa_a_columns		= a_columns;
-    vaa.vaa_b_matrix		= b;
+    vaa.vaa_b_matrix		= (const double complex *const *)b;
     vaa.vaa_b_rows		= b_rows;
     vaa.vaa_b_columns		= b_columns;
     vaa.vaa_m_type		= 'a';
@@ -879,7 +879,7 @@ int vnacal_apply(vnacal_t *vcp, int ci,
  */
 int vnacal_apply_m(vnacal_t *vcp, int ci,
 	const double *frequency_vector, int frequencies,
-	const double complex *const *m, int m_rows, int m_columns,
+	double complex *const *m, int m_rows, int m_columns,
 	vnadata_t *s_parameters)
 {
     vnacal_apply_args_t vaa;
@@ -893,7 +893,7 @@ int vnacal_apply_m(vnacal_t *vcp, int ci,
     vaa.vaa_a_matrix		= NULL;
     vaa.vaa_a_rows		= 0;
     vaa.vaa_a_columns		= 0;
-    vaa.vaa_b_matrix		= m;
+    vaa.vaa_b_matrix		= (const double complex *const *)m;
     vaa.vaa_b_rows		= m_rows;
     vaa.vaa_b_columns		= m_columns;
     vaa.vaa_m_type		= 'm';

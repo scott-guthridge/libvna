@@ -45,9 +45,9 @@ vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new
 .PP
 .BI "int vnacal_new_add_single_reflect(vnacal_new_t *" vnp ,
 .in +4n
-.BI "const double complex *const *" a ", int " a_rows ", int " a_columns ,
+.BI "double complex *const *" a ", int " a_rows ", int " a_columns ,
 .br
-.BI "const double complex *const *" b ", int " b_rows ", int " b_columns ,
+.BI "double complex *const *" b ", int " b_rows ", int " b_columns ,
 .br
 .BI "int " s11 ", int " port );
 .in -4n
@@ -55,7 +55,7 @@ vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new
 .PP
 .BI "int vnacal_new_add_single_reflect_m(vnacal_new_t *" vnp ,
 .in +4n
-.BI "const double complex *const *" m ", int " m_rows ", int "m_columns ,
+.BI "double complex *const *" m ", int " m_rows ", int "m_columns ,
 .br
 .BI "int " s11 ", int " port );
 .in -4n
@@ -63,9 +63,9 @@ vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new
 .PP
 .BI "int vnacal_new_add_double_reflect(vnacal_new_t *" vnp ,
 .in +4n
-.BI "const double complex *const *" a ", int " a_rows ", int " a_columns ,
+.BI "double complex *const *" a ", int " a_rows ", int " a_columns ,
 .br
-.BI "const double complex *const *" b ", int " b_rows ", int " b_columns ,
+.BI "double complex *const *" b ", int " b_rows ", int " b_columns ,
 .br
 .BI "int " s11 ", int " s22 ", int " port1 ", int " port2 );
 .in -4n
@@ -73,7 +73,7 @@ vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new
 .PP
 .BI "int vnacal_new_add_double_reflect_m(vnacal_new_t *" vnp ,
 .in +4n
-.BI "const double complex *const *" m ", int " m_rows ", int " m_columns ,
+.BI "double complex *const *" m ", int " m_rows ", int " m_columns ,
 .br
 .BI "int " s11 ", int " s22 ", int " port1 ", int " port2 );
 .in -4n
@@ -81,9 +81,9 @@ vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new
 .PP
 .BI "int vnacal_new_add_line(vnacal_new_t *" vnp ,
 .in +4n
-.BI "const double complex *const *" a ", int " a_rows ", int " a_columns ,
+.BI "double complex *const *" a ", int " a_rows ", int " a_columns ,
 .br
-.BI "const double complex *const *" b ", int " b_rows ", int " b_columns ,
+.BI "double complex *const *" b ", int " b_rows ", int " b_columns ,
 .br
 .BI "const int *" s_2x2 ", int " port1 ", int " port2 );
 .in -4n
@@ -91,7 +91,7 @@ vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new
 .PP
 .BI "int vnacal_new_add_line_m(vnacal_new_t *" vnp ,
 .in +4n
-.BI "const double complex *const *" m ", int " m_rows ", int " m_columns ,
+.BI "double complex *const *" m ", int " m_rows ", int " m_columns ,
 .br
 .BI "const int *" s_2x2 ", int " port1 ", int " port2 );
 .in -4n
@@ -99,9 +99,9 @@ vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new
 .PP
 .BI "int vnacal_new_add_through(vnacal_new_t *" vnp ,
 .in +4n
-.BI "const double complex *const *" a ", int " a_rows ", int " a_columns ,
+.BI "double complex *const *" a ", int " a_rows ", int " a_columns ,
 .br
-.BI "const double complex *const *" b ", int " b_rows ", int " b_columns ,
+.BI "double complex *const *" b ", int " b_rows ", int " b_columns ,
 .br
 .BI "int " port1 ", int " port2 );
 .in -4n
@@ -109,7 +109,7 @@ vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new
 .PP
 .BI "int vnacal_new_add_through_m(vnacal_new_t *" vnp ,
 .in +4n
-.BI "const double complex *const *" m ", int " m_rows ", int " m_columns ,
+.BI "double complex *const *" m ", int " m_rows ", int " m_columns ,
 .br
 .BI "int " port1 ", int " port2 );
 .in -4n
@@ -117,9 +117,9 @@ vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new
 .PP
 .BI "int vnacal_new_add_mapped_matrix(vnacal_new_t *" vnp ,
 .in +4n
-.BI "const double complex *const *" a ", int " a_rows, int " a_columns ,
+.BI "double complex *const *" a ", int " a_rows, int " a_columns ,
 .br
-.BI "const double complex *const *" b ", int " b_rows, int " b_columns ,
+.BI "double complex *const *" b ", int " b_rows, int " b_columns ,
 .br
 .BI "const int *" s ", int " s_rows ", int " s_columns ,
 .br
@@ -129,7 +129,7 @@ vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new
 .PP
 .BI "int vnacal_new_add_mapped_matrix_m(vnacal_new_t *" vnp ,
 .in +4n
-.BI "const double complex *const *" m ", int " m_rows ", int " m_columns ,
+.BI "double complex *const *" m ", int " m_rows ", int " m_columns ,
 .br
 .BI "const int *" s ", int " s_rows ", int " s_columns ,
 .br

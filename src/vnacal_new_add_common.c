@@ -1344,8 +1344,8 @@ out:
  *   @port: VNA port on which the measurement is made
  */
 int vnacal_new_add_single_reflect(vnacal_new_t *vnp,
-	const double complex *const *a, int a_rows, int a_columns,
-	const double complex *const *b, int b_rows, int b_columns,
+	double complex *const *a, int a_rows, int a_columns,
+	double complex *const *b, int b_rows, int b_columns,
 	int s11, int port)
 {
     vnacal_new_add_arguments_t vnaa;
@@ -1357,10 +1357,10 @@ int vnacal_new_add_single_reflect(vnacal_new_t *vnp,
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
     vnaa.vnaa_cmp		= vnp;
-    vnaa.vnaa_a_matrix		= a;
+    vnaa.vnaa_a_matrix		= (const double complex *const *)a;
     vnaa.vnaa_a_rows		= a_rows;
     vnaa.vnaa_a_columns		= a_columns;
-    vnaa.vnaa_b_matrix		= b;
+    vnaa.vnaa_b_matrix		= (const double complex *const *)b;
     vnaa.vnaa_b_rows		= b_rows;
     vnaa.vnaa_b_columns		= b_columns;
     vnaa.vnaa_s_matrix		= &s11;
@@ -1384,7 +1384,7 @@ int vnacal_new_add_single_reflect(vnacal_new_t *vnp,
  *   @port: VNA port on which the measurement is made
  */
 int vnacal_new_add_single_reflect_m(vnacal_new_t *vnp,
-	const double complex *const *m, int m_rows, int m_columns,
+	double complex *const *m, int m_rows, int m_columns,
 	int s11, int port)
 {
     vnacal_new_add_arguments_t vnaa;
@@ -1399,7 +1399,7 @@ int vnacal_new_add_single_reflect_m(vnacal_new_t *vnp,
     vnaa.vnaa_a_matrix		= NULL;
     vnaa.vnaa_a_rows		= 0;
     vnaa.vnaa_a_columns		= 0;
-    vnaa.vnaa_b_matrix		= m;
+    vnaa.vnaa_b_matrix		= (const double complex *const *)m;
     vnaa.vnaa_b_rows		= m_rows;
     vnaa.vnaa_b_columns		= m_columns;
     vnaa.vnaa_s_matrix		= &s11;
@@ -1428,8 +1428,8 @@ int vnacal_new_add_single_reflect_m(vnacal_new_t *vnp,
  *   @port2: second reflect is on this VNA port
  */
 int vnacal_new_add_double_reflect(vnacal_new_t *vnp,
-	const double complex *const *a, int a_rows, int a_columns,
-	const double complex *const *b, int b_rows, int b_columns,
+	double complex *const *a, int a_rows, int a_columns,
+	double complex *const *b, int b_rows, int b_columns,
 	int s11, int s22, int port1, int port2)
 {
     vnacal_new_add_arguments_t vnaa;
@@ -1443,10 +1443,10 @@ int vnacal_new_add_double_reflect(vnacal_new_t *vnp,
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
     vnaa.vnaa_cmp		= vnp;
-    vnaa.vnaa_a_matrix		= a;
+    vnaa.vnaa_a_matrix		= (const double complex *const *)a;
     vnaa.vnaa_a_rows		= a_rows;
     vnaa.vnaa_a_columns		= a_columns;
-    vnaa.vnaa_b_matrix		= b;
+    vnaa.vnaa_b_matrix		= (const double complex *const *)b;
     vnaa.vnaa_b_rows		= b_rows;
     vnaa.vnaa_b_columns		= b_columns;
     vnaa.vnaa_s_matrix		= s_vector;
@@ -1471,7 +1471,7 @@ int vnacal_new_add_double_reflect(vnacal_new_t *vnp,
  *   @port2: second reflect is on this VNA port
  */
 int vnacal_new_add_double_reflect_m(vnacal_new_t *vnp,
-	const double complex *const *m, int m_rows, int m_columns,
+	double complex *const *m, int m_rows, int m_columns,
 	int s11, int s22, int port1, int port2)
 {
     vnacal_new_add_arguments_t vnaa;
@@ -1488,7 +1488,7 @@ int vnacal_new_add_double_reflect_m(vnacal_new_t *vnp,
     vnaa.vnaa_a_matrix		= NULL;
     vnaa.vnaa_a_rows		= 0;
     vnaa.vnaa_a_columns		= 0;
-    vnaa.vnaa_b_matrix		= m;
+    vnaa.vnaa_b_matrix		= (const double complex *const *)m;
     vnaa.vnaa_b_rows		= m_rows;
     vnaa.vnaa_b_columns		= m_columns;
     vnaa.vnaa_s_matrix		= s_vector;
@@ -1531,8 +1531,8 @@ int vnacal_new_add_double_reflect_m(vnacal_new_t *vnp,
  *   @port2: second VNA port attached to standard
  */
 int vnacal_new_add_line(vnacal_new_t *vnp,
-	const double complex *const *a, int a_rows, int a_columns,
-	const double complex *const *b, int b_rows, int b_columns,
+	double complex *const *a, int a_rows, int a_columns,
+	double complex *const *b, int b_rows, int b_columns,
 	const int *s_2x2, int port1, int port2)
 {
     vnacal_new_add_arguments_t vnaa;
@@ -1545,10 +1545,10 @@ int vnacal_new_add_line(vnacal_new_t *vnp,
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
     vnaa.vnaa_cmp		= vnp;
-    vnaa.vnaa_a_matrix		= a;
+    vnaa.vnaa_a_matrix		= (const double complex *const *)a;
     vnaa.vnaa_a_rows		= a_rows;
     vnaa.vnaa_a_columns		= a_columns;
-    vnaa.vnaa_b_matrix		= b;
+    vnaa.vnaa_b_matrix		= (const double complex *const *)b;
     vnaa.vnaa_b_rows		= b_rows;
     vnaa.vnaa_b_columns		= b_columns;
     vnaa.vnaa_s_matrix		= s_2x2;
@@ -1573,7 +1573,7 @@ int vnacal_new_add_line(vnacal_new_t *vnp,
  *   @port2: second VNA port attached to standard
  */
 int vnacal_new_add_line_m(vnacal_new_t *vnp,
-	const double complex *const *m, int m_rows, int m_columns,
+	double complex *const *m, int m_rows, int m_columns,
 	const int *s_2x2, int port1, int port2)
 {
     vnacal_new_add_arguments_t vnaa;
@@ -1589,7 +1589,7 @@ int vnacal_new_add_line_m(vnacal_new_t *vnp,
     vnaa.vnaa_a_matrix		= NULL;
     vnaa.vnaa_a_rows		= 0;
     vnaa.vnaa_a_columns		= 0;
-    vnaa.vnaa_b_matrix		= m;
+    vnaa.vnaa_b_matrix		= (const double complex *const *)m;
     vnaa.vnaa_b_rows		= m_rows;
     vnaa.vnaa_b_columns		= m_columns;
     vnaa.vnaa_s_matrix		= s_2x2;
@@ -1616,8 +1616,8 @@ int vnacal_new_add_line_m(vnacal_new_t *vnp,
  *   @port2: second VNA port attached to through
  */
 int vnacal_new_add_through(vnacal_new_t *vnp,
-	const double complex *const *a, int a_rows, int a_columns,
-	const double complex *const *b, int b_rows, int b_columns,
+	double complex *const *a, int a_rows, int a_columns,
+	double complex *const *b, int b_rows, int b_columns,
 	int port1, int port2)
 {
     vnacal_new_add_arguments_t vnaa;
@@ -1632,10 +1632,10 @@ int vnacal_new_add_through(vnacal_new_t *vnp,
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
     vnaa.vnaa_cmp		= vnp;
-    vnaa.vnaa_a_matrix		= a;
+    vnaa.vnaa_a_matrix		= (const double complex *const *)a;
     vnaa.vnaa_a_rows		= a_rows;
     vnaa.vnaa_a_columns		= a_columns;
-    vnaa.vnaa_b_matrix		= b;
+    vnaa.vnaa_b_matrix		= (const double complex *const *)b;
     vnaa.vnaa_b_rows		= b_rows;
     vnaa.vnaa_b_columns		= b_columns;
     vnaa.vnaa_s_matrix		= &s_2x2[0][0];
@@ -1659,7 +1659,7 @@ int vnacal_new_add_through(vnacal_new_t *vnp,
  *   @port2: second VNA port attached to through
  */
 int vnacal_new_add_through_m(vnacal_new_t *vnp,
-	const double complex *const *m, int m_rows, int m_columns,
+	double complex *const *m, int m_rows, int m_columns,
 	int port1, int port2)
 {
     vnacal_new_add_arguments_t vnaa;
@@ -1677,7 +1677,7 @@ int vnacal_new_add_through_m(vnacal_new_t *vnp,
     vnaa.vnaa_a_matrix		= NULL;
     vnaa.vnaa_a_rows		= 0;
     vnaa.vnaa_a_columns		= 0;
-    vnaa.vnaa_b_matrix		= m;
+    vnaa.vnaa_b_matrix		= (const double complex *const *)m;
     vnaa.vnaa_b_rows		= m_rows;
     vnaa.vnaa_b_columns		= m_columns;
     vnaa.vnaa_s_matrix		= &s_2x2[0][0];
@@ -1706,8 +1706,8 @@ int vnacal_new_add_through_m(vnacal_new_t *vnp,
  *   @port_map: vector of VNA port numbers corresponding to these ports
  */
 int vnacal_new_add_mapped_matrix(vnacal_new_t *vnp,
-	const double complex *const *a, int a_rows, int a_columns,
-	const double complex *const *b, int b_rows, int b_columns,
+	double complex *const *a, int a_rows, int a_columns,
+	double complex *const *b, int b_rows, int b_columns,
 	const int *s, int s_rows, int s_columns,
 	const int *port_map)
 {
@@ -1720,10 +1720,10 @@ int vnacal_new_add_mapped_matrix(vnacal_new_t *vnp,
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
     vnaa.vnaa_cmp		= vnp;
-    vnaa.vnaa_a_matrix		= a;
+    vnaa.vnaa_a_matrix		= (const double complex *const *)a;
     vnaa.vnaa_a_rows		= a_rows;
     vnaa.vnaa_a_columns		= a_columns;
-    vnaa.vnaa_b_matrix		= b;
+    vnaa.vnaa_b_matrix		= (const double complex *const *)b;
     vnaa.vnaa_b_rows		= b_rows;
     vnaa.vnaa_b_columns		= b_columns;
     vnaa.vnaa_s_matrix		= s;
@@ -1749,7 +1749,7 @@ int vnacal_new_add_mapped_matrix(vnacal_new_t *vnp,
  *   @port_map: vector of VNA port numbers corresponding to these ports
  */
 int vnacal_new_add_mapped_matrix_m(vnacal_new_t *vnp,
-	const double complex *const *m, int m_rows, int m_columns,
+	double complex *const *m, int m_rows, int m_columns,
 	const int *s, int s_rows, int s_columns,
 	const int *port_map)
 {
@@ -1765,7 +1765,7 @@ int vnacal_new_add_mapped_matrix_m(vnacal_new_t *vnp,
     vnaa.vnaa_a_matrix		= NULL;
     vnaa.vnaa_a_rows		= 0;
     vnaa.vnaa_a_columns		= 0;
-    vnaa.vnaa_b_matrix		= m;
+    vnaa.vnaa_b_matrix		= (const double complex *const *)m;
     vnaa.vnaa_b_rows		= m_rows;
     vnaa.vnaa_b_columns		= m_columns;
     vnaa.vnaa_s_matrix		= s;

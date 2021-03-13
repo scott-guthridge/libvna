@@ -223,7 +223,7 @@ static void make_calibration()
     double frequency_vector[C_FREQUENCIES];
     double complex m_vector1[C_FREQUENCIES];
     double complex m_vector2[C_FREQUENCIES];
-    const double complex *const m[C_ROWS][C_COLUMNS] = {
+    double complex *const m[C_ROWS][C_COLUMNS] = {
 	{ m_vector1 },
 	{ m_vector2 }
     };
@@ -321,7 +321,7 @@ static void apply_calibration()
     double complex m_vector12[M_FREQUENCIES];
     double complex m_vector21[M_FREQUENCIES];
     double complex m_vector22[M_FREQUENCIES];
-    const double complex *m[M_ROWS][M_COLUMNS] = {
+    double complex *m[M_ROWS][M_COLUMNS] = {
 	{ m_vector11, m_vector12 },
 	{ m_vector21, m_vector22 }
     };

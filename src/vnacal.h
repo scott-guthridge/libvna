@@ -114,8 +114,8 @@ extern int vnacal_new_set_z0(vnacal_new_t *vnp, double complex z0);
  *   @port: VNA port on which the measurement is made
  */
 extern int vnacal_new_add_single_reflect(vnacal_new_t *vnp,
-	const double complex *const *a, int a_rows, int a_columns,
-	const double complex *const *b, int b_rows, int b_columns,
+	double complex *const *a, int a_rows, int a_columns,
+	double complex *const *b, int b_rows, int b_columns,
 	int s11, int port);
 
 /*
@@ -128,7 +128,7 @@ extern int vnacal_new_add_single_reflect(vnacal_new_t *vnp,
  *   @port: VNA port on which the measurement is made
  */
 extern int vnacal_new_add_single_reflect_m(vnacal_new_t *vnp,
-	const double complex *const *m, int m_rows, int m_columns,
+	double complex *const *m, int m_rows, int m_columns,
 	int s11, int port);
 
 /*
@@ -146,8 +146,8 @@ extern int vnacal_new_add_single_reflect_m(vnacal_new_t *vnp,
  *   @port2: second reflect is on this VNA port
  */
 extern int vnacal_new_add_double_reflect(vnacal_new_t *vnp,
-	const double complex *const *a, int a_rows, int a_columns,
-	const double complex *const *b, int b_rows, int b_columns,
+	double complex *const *a, int a_rows, int a_columns,
+	double complex *const *b, int b_rows, int b_columns,
 	int s11, int s22, int port1, int port2);
 
 /*
@@ -161,7 +161,7 @@ extern int vnacal_new_add_double_reflect(vnacal_new_t *vnp,
  *   @port2: second reflect is on this VNA port
  */
 extern int vnacal_new_add_double_reflect_m(vnacal_new_t *vnp,
-	const double complex *const *m, int m_rows, int m_columns,
+	double complex *const *m, int m_rows, int m_columns,
 	int s11, int s22, int port1, int port2);
 
 /*
@@ -178,8 +178,8 @@ extern int vnacal_new_add_double_reflect_m(vnacal_new_t *vnp,
  *   @port2: second VNA port attached to standard
  */
 extern int vnacal_new_add_line(vnacal_new_t *vnp,
-	const double complex *const *a, int a_rows, int a_columns,
-	const double complex *const *b, int b_rows, int b_columns,
+	double complex *const *a, int a_rows, int a_columns,
+	double complex *const *b, int b_rows, int b_columns,
 	const int *s_2x2, int port1, int port2);
 
 /*
@@ -193,7 +193,7 @@ extern int vnacal_new_add_line(vnacal_new_t *vnp,
  *   @port2: second VNA port attached to standard
  */
 extern int vnacal_new_add_line_m(vnacal_new_t *vnp,
-	const double complex *const *m, int m_rows, int m_columns,
+	double complex *const *m, int m_rows, int m_columns,
 	const int *s_2x2, int port1, int port2);
 
 /*
@@ -209,8 +209,8 @@ extern int vnacal_new_add_line_m(vnacal_new_t *vnp,
  *   @port2: second VNA port attached to through
  */
 extern int vnacal_new_add_through(vnacal_new_t *vnp,
-	const double complex *const *a, int a_rows, int a_columns,
-	const double complex *const *b, int b_rows, int b_columns,
+	double complex *const *a, int a_rows, int a_columns,
+	double complex *const *b, int b_rows, int b_columns,
 	int port1, int port2);
 
 /*
@@ -223,7 +223,7 @@ extern int vnacal_new_add_through(vnacal_new_t *vnp,
  *   @port2: second VNA port attached to through
  */
 extern int vnacal_new_add_through_m(vnacal_new_t *vnp,
-	const double complex *const *m, int m_rows, int m_columns,
+	double complex *const *m, int m_rows, int m_columns,
 	int port1, int port2);
 
 /*
@@ -241,8 +241,8 @@ extern int vnacal_new_add_through_m(vnacal_new_t *vnp,
  *   @port_map: vector of VNA port numbers corresponding to these ports
  */
 extern int vnacal_new_add_mapped_matrix(vnacal_new_t *vnp,
-	const double complex *const *a, int a_rows, int a_columns,
-	const double complex *const *b, int b_rows, int b_columns,
+	double complex *const *a, int a_rows, int a_columns,
+	double complex *const *b, int b_rows, int b_columns,
 	const int *s, int s_rows, int s_columns,
 	const int *port_map);
 
@@ -258,7 +258,7 @@ extern int vnacal_new_add_mapped_matrix(vnacal_new_t *vnp,
  *   @port_map: vector of VNA port numbers corresponding to these ports
  */
 extern int vnacal_new_add_mapped_matrix_m(vnacal_new_t *vnp,
-	const double complex *const *m, int m_rows, int m_columns,
+	double complex *const *m, int m_rows, int m_columns,
 	const int *s, int s_rows, int s_columns,
 	const int *port_map);
 
@@ -551,8 +551,8 @@ extern void vnacal_free(vnacal_t *vcp);
  */
 extern int vnacal_apply(vnacal_t *vcp, int ci,
 	const double *frequency_vector, int frequencies,
-	const double complex *const *a, int a_rows, int a_columns,
-	const double complex *const *b, int b_rows, int b_columns,
+	double complex *const *a, int a_rows, int a_columns,
+	double complex *const *b, int b_rows, int b_columns,
 	vnadata_t *s_parameters);
 
 /*
@@ -568,7 +568,7 @@ extern int vnacal_apply(vnacal_t *vcp, int ci,
  */
 extern int vnacal_apply_m(vnacal_t *vcp, int ci,
 	const double *frequency_vector, int frequencies,
-	const double complex *const *m, int m_rows, int m_columns,
+	double complex *const *m, int m_rows, int m_columns,
 	vnadata_t *s_parameters);
 
 #ifdef __cplusplus

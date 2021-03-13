@@ -2253,22 +2253,20 @@ static int add_single_reflect(const test_terms_t *ttp,
     const int m_columns = VL_M_COLUMNS(vlp);
     vnacal_new_t *vnp = ttp->tt_vnp;
     int a_rows = VL_HAS_COLUMN_SYSTEMS(vlp) ? 1 : m_columns;
-    const double complex **a = (const double complex **)tmp->tm_a_matrix;
-    const double complex **b = (const double complex **)tmp->tm_b_matrix;
 
     if (calc_measurements(ttp, tmp, &s11, 1, 1, &port) == -1) {
 	return -1;
     }
-    if (a != NULL) {
+    if (tmp->tm_a_matrix != NULL) {
 	if (vnacal_new_add_single_reflect(vnp,
-		    a, a_rows, m_columns,
-		    b, m_rows, m_columns,
+		    tmp->tm_a_matrix, a_rows, m_columns,
+		    tmp->tm_b_matrix, m_rows, m_columns,
 		    s11, port) == -1) {
 	    return -1;
 	}
     } else {
 	if (vnacal_new_add_single_reflect_m(vnp,
-		    b, m_rows, m_columns,
+		    tmp->tm_b_matrix, m_rows, m_columns,
 		    s11, port) == -1) {
 	    return -1;
 	}
@@ -2293,8 +2291,6 @@ static int add_double_reflect(const test_terms_t *ttp,
     const int m_columns = VL_M_COLUMNS(vlp);
     vnacal_new_t *vnp = ttp->tt_vnp;
     int a_rows = VL_HAS_COLUMN_SYSTEMS(vlp) ? 1 : m_columns;
-    const double complex **a = (const double complex **)tmp->tm_a_matrix;
-    const double complex **b = (const double complex **)tmp->tm_b_matrix;
     int s_matrix[2][2] = {
 	{ s11, VNACAL_ZERO },
 	{ VNACAL_ZERO, s22 }
@@ -2304,16 +2300,16 @@ static int add_double_reflect(const test_terms_t *ttp,
     if (calc_measurements(ttp, tmp, &s_matrix[0][0], 2, 2, port_map) == -1) {
 	return -1;
     }
-    if (a != NULL) {
+    if (tmp->tm_a_matrix != NULL) {
 	if (vnacal_new_add_double_reflect(vnp,
-		    a, a_rows, m_columns,
-		    b, m_rows, m_columns,
+		    tmp->tm_a_matrix, a_rows, m_columns,
+		    tmp->tm_b_matrix, m_rows, m_columns,
 		    s11, s22, port1, port2) == -1) {
 	    return -1;
 	}
     } else {
 	if (vnacal_new_add_double_reflect_m(vnp,
-		    b, m_rows, m_columns,
+		    tmp->tm_b_matrix, m_rows, m_columns,
 		    s11, s22, port1, port2) == -1) {
 	    return -1;
 	}
@@ -2339,22 +2335,20 @@ static int add_through(const test_terms_t *ttp, test_measurements_t *tmp,
     static int s_matrix[2][2] = { { VNACAL_MATCH, VNACAL_ONE },
 				  { VNACAL_ONE, VNACAL_MATCH } };
     int port_map[2] = { port1, port2 };
-    const double complex **a = (const double complex **)tmp->tm_a_matrix;
-    const double complex **b = (const double complex **)tmp->tm_b_matrix;
 
     if (calc_measurements(ttp, tmp, &s_matrix[0][0], 2, 2, port_map) == -1) {
 	return -1;
     }
-    if (a != NULL) {
+    if (tmp->tm_a_matrix != NULL) {
 	if (vnacal_new_add_through(vnp,
-		    a, a_rows, m_columns,
-		    b, m_rows, m_columns,
+		    tmp->tm_a_matrix, a_rows, m_columns,
+		    tmp->tm_b_matrix, m_rows, m_columns,
 		    port1, port2) == -1) {
 	    return -1;
 	}
     } else {
 	if (vnacal_new_add_through_m(vnp,
-		    b, m_rows, m_columns,
+		    tmp->tm_b_matrix, m_rows, m_columns,
 		    port1, port2) == -1) {
 	    return -1;
 	}
@@ -2378,22 +2372,20 @@ static int add_line(const test_terms_t *ttp, test_measurements_t *tmp,
     vnacal_new_t *vnp = ttp->tt_vnp;
     int a_rows = VL_HAS_COLUMN_SYSTEMS(vlp) ? 1 : m_columns;
     int port_map[2] = { port1, port2 };
-    const double complex **a = (const double complex **)tmp->tm_a_matrix;
-    const double complex **b = (const double complex **)tmp->tm_b_matrix;
 
     if (calc_measurements(ttp, tmp, s_2x2, 2, 2, port_map) == -1) {
 	return -1;
     }
-    if (a != NULL) {
+    if (tmp->tm_a_matrix != NULL) {
 	if (vnacal_new_add_line(vnp,
-		    a, a_rows, m_columns,
-		    b, m_rows, m_columns,
+		    tmp->tm_a_matrix, a_rows, m_columns,
+		    tmp->tm_b_matrix, m_rows, m_columns,
 		    s_2x2, port1, port2) == -1) {
 	    return -1;
 	}
     } else {
 	if (vnacal_new_add_line_m(vnp,
-		    b, m_rows, m_columns,
+		    tmp->tm_b_matrix, m_rows, m_columns,
 		    s_2x2, port1, port2) == -1) {
 	    return -1;
 	}
@@ -3128,8 +3120,6 @@ static test_terms_t *make_random_calibration(vnacal_t *vcp, vnacal_type_t type,
     bool add_all_match;
     int standards;
     test_measurements_t *tmp = NULL;
-    const double complex **a;
-    const double complex **b;
 
     /*
      * Generate random error parameters.
@@ -3154,8 +3144,6 @@ static test_terms_t *make_random_calibration(vnacal_t *vcp, vnacal_type_t type,
 		    frequencies, ab)) == NULL) {
 	goto error;
     }
-    a = (const double complex **)tmp->tm_a_matrix;
-    b = (const double complex **)tmp->tm_b_matrix;
 
     /*
      * If needed, add an all match matrix.
@@ -3171,15 +3159,15 @@ static test_terms_t *make_random_calibration(vnacal_t *vcp, vnacal_type_t type,
 	}
 	if (ab) {
 	    if (vnacal_new_add_mapped_matrix(ttp->tt_vnp,
-			a, tmp->tm_a_rows, tmp->tm_a_columns,
-			b, m_rows, m_columns,
+			tmp->tm_a_matrix, tmp->tm_a_rows, tmp->tm_a_columns,
+			tmp->tm_b_matrix, m_rows, m_columns,
 			s, ports, ports, NULL) == -1) {
 
 		goto error;
 	    }
 	} else {
 	    if (vnacal_new_add_mapped_matrix_m(ttp->tt_vnp,
-			b, m_rows, m_columns,
+			tmp->tm_b_matrix, m_rows, m_columns,
 			s, ports, ports, NULL) == -1) {
 
 		goto error;
@@ -3201,15 +3189,15 @@ static test_terms_t *make_random_calibration(vnacal_t *vcp, vnacal_type_t type,
 	}
 	if (ab) {
 	    if (vnacal_new_add_mapped_matrix(ttp->tt_vnp,
-			a, tmp->tm_a_rows, tmp->tm_a_columns,
-			b, m_rows, m_columns,
+			tmp->tm_a_matrix, tmp->tm_a_rows, tmp->tm_a_columns,
+			tmp->tm_b_matrix, m_rows, m_columns,
 			s, ports, ports, NULL) == -1) {
 
 		goto error;
 	    }
 	} else {
 	    if (vnacal_new_add_mapped_matrix_m(ttp->tt_vnp,
-			b, m_rows, m_columns,
+			tmp->tm_b_matrix, m_rows, m_columns,
 			s, ports, ports, NULL) == -1) {
 
 		goto error;
@@ -3368,8 +3356,6 @@ static test_result_type run_vnacal_apply_trial(int trial,
     test_measurements_t *tmp = NULL;
     int ci = -1;
     int s[ports * ports];
-    const double complex **a;
-    const double complex **b;
     vnadata_t *vdp = NULL;
     test_result_type result = T_SKIPPED;
 
@@ -3409,8 +3395,6 @@ static test_result_type run_vnacal_apply_trial(int trial,
 	result = T_FAIL;
 	goto out;
     }
-    a = (const double complex **)tmp->tm_a_matrix;
-    b = (const double complex **)tmp->tm_b_matrix;
 
     /*
      * Add it to the vnacal_t structure.
@@ -3445,14 +3429,15 @@ static test_result_type run_vnacal_apply_trial(int trial,
      */
     if (ab) {
 	if (vnacal_apply(vcp, ci, ttp->tt_frequency_vector, ttp->tt_frequencies,
-		    a, tmp->tm_a_rows, tmp->tm_b_columns,
-		    b, ports, ports, vdp) == -1) {
+		    tmp->tm_a_matrix, tmp->tm_a_rows, tmp->tm_b_columns,
+		    tmp->tm_b_matrix, ports, ports, vdp) == -1) {
 	    result = T_FAIL;
 	    goto out;
 	}
     } else {
 	if (vnacal_apply_m(vcp, ci, ttp->tt_frequency_vector,
-		    ttp->tt_frequencies, b, ports, ports, vdp) == -1) {
+		    ttp->tt_frequencies, tmp->tm_b_matrix,
+		    ports, ports, vdp) == -1) {
 	    result = T_FAIL;
 	    goto out;
 	}
@@ -6246,7 +6231,7 @@ static void test_vnacal_load_compat_V2()
      * Apply the calibration.
      */
     if (vnacal_apply_m(vcp, 0, compat_V2_frequency_vector, CV2_F,
-		compat_V2_m, 2, 2, vdp) == -1) {
+		(double complex *const *)compat_V2_m, 2, 2, vdp) == -1) {
 	result = T_FAIL;
 	goto out;
     }
