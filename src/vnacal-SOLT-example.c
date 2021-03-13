@@ -298,7 +298,7 @@ static void make_calibration()
     if (vnacal_add_calibration(vcp, "cal_2x1", vnp) == -1) {
 	exit(4);
     }
-    if (vnacal_save(vcp, "example.vnacal") == -1) {
+    if (vnacal_save(vcp, "SOLT.vnacal") == -1) {
 	exit(5);
     }
     vnacal_new_free(vnp);
@@ -330,7 +330,7 @@ static void apply_calibration()
     /*
      * Load the calibration file.
      */
-    if ((vcp = vnacal_load("example.vnacal", error_fn,
+    if ((vcp = vnacal_load("SOLT.vnacal", error_fn,
 		    /*error_arg=*/NULL)) == NULL) {
 	exit(6);
     }

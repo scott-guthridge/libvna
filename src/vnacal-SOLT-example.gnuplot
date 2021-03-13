@@ -16,14 +16,14 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Plot script for example.c
+# Plot script for vnacal-SOLT-example
 #
 set key left top
-set title 'S Parameter Calibration'
+set title 'SOLT Calibration'
 set xlabel 'frequency (Hz)'
 unset ylabel
 set logscale x
-plot 'vnacal-example.out' \
+plot 'vnacal-SOLT-example.out' \
     index 0 using 1:2 title 'expected   S11_r' lt 1 with points, \
     '' index 1 using 1:2 title 'measured   S11_r' lt 1 dt 2 with lines, \
     '' index 2 using 1:2 title 'corrected  S11_r' lt 1 dt solid with lines, \

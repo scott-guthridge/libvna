@@ -2,24 +2,39 @@
 
 The example programs from the man pages are included here.
 
-vnacal-example.c:
+vnacal-SOLT-example.c:
     Example of using the vnacal functions to calibrate a simulated
-    imperfect vector network analyzer.  In this case, it's showing
+    imperfect vector network analyzer using classic "short", "open",
+    "load", "through" calibration.  This example demonstrates 2x1
     six-error term calibration.
 
     Build:
-	cc -g -o vnacal-example vnacal-example.c -lvna -lyaml -lm
+	cc -g -o vnacal-SOLT-example vnacal-SOLT-example.c -lvna -lyaml -lm
 
     Run:
-	./vnacal-example > vnacal-example.out
-	gnuplot vnacal-example.gnuplot
+	./vnacal-SOLT-example > vnacal-SOLT-example.out
+	gnuplot vnacal-SOLT-example.gnuplot
 
     In the plot, dashed lines are measured values, solid lines are the
     value corrected by calibration and points are calulated expected
-    values (which as you can see, correctly lie on the solid lines).
-    Notice that S11 is very far off before correction.  The S12 calibrated
-    curve and expected points aren't visible in the figure as they're
-    exactly covered by the S21 calibrated curve and expected points.
+    values.  Notice that S11 is pretty far off before correction.
+    Because we're using a passive linear DUT, the S12 calibrated curve
+    and expected points aren't visible in the figure as they're exactly
+    covered by the S21 calibrated curve and expected points.
+
+
+vnacal-TSD-example.c:
+    Example of using the vnacal functions to calibrate a simulated
+    imperfect vector network analyzer using "through", "short", "delay"
+    calibration.  This example demonstrates 2x2 ten term T and E error
+    correction.
+
+    Build:
+	cc -g -o vnacal-TSD-example vnacal-TSD-example.c -lvna -lyaml -lm
+
+    Run:
+	./vnacal-TSD-example > vnacal-TSD-example.out
+	gnuplot vnacal-TSD-example.gnuplot
 
 
 vnaconv-example.c:

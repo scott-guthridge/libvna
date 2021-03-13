@@ -97,16 +97,20 @@ vnacal_test_LDFLAGS = -static
 #
 # Examples
 #
-noinst_PROGRAMS = vnacal-example vnaconv-example vnadata-example \
-	vnafile-example
+noinst_PROGRAMS = vnacal-SOLT-example vnacal-TSD-example \
+		  vnaconv-example vnadata-example vnafile-example
 
 #vnaproperty_example_SOURCES = vnaproperty-example.c
 #vnaproperty_example_LDADD = libvna.la
 #vnaproperty_example_LDFLAGS = -static
 
-vnacal_example_SOURCES = vnacal-example.c
-vnacal_example_LDADD = libvna.la -lyaml -lm
-vnacal_example_LDFLAGS = -static
+vnacal_SOLT_example_SOURCES = vnacal-SOLT-example.c
+vnacal_SOLT_example_LDADD = libvna.la -lyaml -lm
+vnacal_SOLT_example_LDFLAGS = -static
+
+vnacal_TSD_example_SOURCES = vnacal-TSD-example.c
+vnacal_TSD_example_LDADD = libvna.la -lyaml -lm
+vnacal_TSD_example_LDFLAGS = -static
 
 vnaconv_example_SOURCES = vnaconv-example.c
 vnaconv_example_LDADD = libvna.la -lm
@@ -120,14 +124,24 @@ vnafile_example_SOURCES = vnafile-example.c
 vnafile_example_LDADD = libvna.la -lm
 vnafile_example_LDFLAGS = -static
 
-dist_doc_DATA = vnacal-example.c vnacal-example.gnuplot vnaconv-example.c \
-	vnadata-example.c vnafile-example.c vnafile-example.ts
+dist_doc_DATA = MwT-1F.s2p vnacal-SOLT-example.c vnacal-SOLT-example.gnuplot \
+	vnacal-TSD-example.c vnacal-TSD-example.gnuplot \
+	vnaconv-example.c vnadata-example.c vnafile-example.c \
+	vnafile-example.ts
 
-vnacal-example.out: vnacal-example
-	./vnacal-example > "$@"
+vnacal-SOLT-example.out: vnacal-SOLT-example
+	./vnacal-SOLT-example > "$@"
 
-plot: vnacal-example.out vnacal-example.gnuplot
-	$(GNUPLOT) vnacal-example.gnuplot
+plot1: vnacal-SOLT-example.out vnacal-SOLT-example.gnuplot
+	$(GNUPLOT) vnacal-SOLT-example.gnuplot
+
+vnacal-TSD-example.out: vnacal-TSD-example
+	./vnacal-TSD-example > "$@"
+
+plot2: vnacal-TSD-example.out vnacal-TSD-example.gnuplot
+	$(GNUPLOT) vnacal-TSD-example.gnuplot
+
+plot: plot1
 
 .3.pdf:
 	$(PDFROFF) -t -e -man --no-toc-relocation $< > "$@"
@@ -136,5 +150,6 @@ pdfman: vnacal.pdf vnacal_new.pdf vnacal_parameter.pdf vnaconv.pdf \
 	vnadata.pdf vnaerr.pdf vnafile.pdf
 
 clean-local:
-	rm -f example.vnacal vnacal-example.out vnacal-test.vnacal \
-		vnacal.pdf vnaconv.pdf vnadata.pdf vnafile.pdf
+	rm -f example.vnacal vnacal-SOLT-example.out vnacal-TSD-example.out \
+		vnacal-test.vnacal vnacal.pdf vnaconv.pdf vnadata.pdf \
+		vnafile.pdf

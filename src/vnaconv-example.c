@@ -31,17 +31,15 @@
 #define R1	(sqrt(Z1) * sqrt(Z1 - Z2))
 #define R2	(sqrt(Z1) * Z2 / sqrt(Z1 - Z2))
 
-/* Z-parameters of the L pad */
-static const double complex z[2][2] = {
-    { R1+R2, R2 },
-    { R2,    R2 }
-};
-
 /* system impedance vector */
 static const double complex z0[] = { Z1, Z2 };
 
 int main(int argc, char **argv)
 {
+    const double complex z[2][2] = { /* Z-parameters of the L pad */
+	{ R1+R2, R2 },
+	{ R2,    R2 }
+    };
     double complex s[2][2];
     double complex zi[2];
 
