@@ -123,21 +123,26 @@ extern int vnafile_set_dprecision(vnafile_t *vcp, int precision);
 
 /*
  * vnafile_load: load network parameters from filename
- *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @filename: file to load
+ *   @type: file format (use VNAFILE_AUTO to determine from filename)
+ *   @error_fn:  optional error reporting function
+ *   @error_arg: optional opaque argument passed through to the error function
  *   @vdp: output data (reshaped as needed)
  */
-extern int vnafile_load(vnafile_t *vfp, const char *filename, vnadata_t *vdp);
+extern vnafile_t *vnafile_load(const char *filename, vnafile_type_t type,
+	vnaerr_error_fn_t *error_fn, void *error_arg, vnadata_t *vdp);
 
 /*
  * vnafile_load: load network parameters from a file pointer
- *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @fp: file pointer
  *   @filename: filename used in error messages and to intuit the file type
+ *   @error_fn:  optional error reporting function
+ *   @error_arg: optional opaque argument passed through to the error function
  *   @vdp: output data (reshaped as needed)
  */
-extern int vnafile_fload(vnafile_t *vfp, FILE *fp, const char *filename,
-	vnadata_t *vdp);
+extern vnafile_t *vnafile_fload(FILE *fp, const char *filename,
+	vnafile_type_t type, vnaerr_error_fn_t *error_fn,
+	void *error_arg, vnadata_t *vdp);
 
 /*
  * vnafile_check: test if parameters are valid for save

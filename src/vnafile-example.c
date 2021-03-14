@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "vnafile.h"
+#include <vnafile.h>
 
 
 static char *progname;
@@ -116,10 +116,11 @@ int main(int argc, char **argv)
 	exit(2);
     }
     vdp = vnadata_alloc();
-    vfp = vnafile_alloc(error_fn, NULL);
-    if (vnafile_load(vfp, argv[0], vdp)) {
+    if ((vfp = vnafile_load(argv[0], VNAFILE_AUTO,
+		    error_fn, NULL, vdp)) == NULL) {
 	exit(3);
     }
+    /* Let vnafile_save get the file type from the filename. */
     vnafile_set_file_type(vfp, VNAFILE_AUTO);
     if (f_opt != NULL) {
 	if (vnafile_set_format(vfp, f_opt) == -1) {

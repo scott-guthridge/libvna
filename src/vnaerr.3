@@ -52,9 +52,9 @@ vnaerr_error_fn_t \- vector network analyzer library error reporting
 .\"
 .SH DESCRIPTION
 The \fBvnacal_calset_alloc\fP(), \fBvnacal_create\fP(),
-\fBvnacal_load\fP(), and \fBvnafile_alloc\fP functions take an optional
-function pointer, \fIerror_fn\fP, which the library calls to report
-detailed error messages.
+\fBvnacal_load\fP(), and \fBvnafile_alloc\fP(), \fBvnafile_load\fP(),
+and \fBvnafile_fload\fP() functions take an optional function pointer,
+\fIerror_fn\fP, which the library calls to report detailed error messages.
 .PP
 The \fIcategory\fP argument to \fIerror_fn\fP() broadly classifies
 the error.

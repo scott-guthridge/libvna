@@ -48,18 +48,19 @@ vnafile_alloc, vnafile_check, vnafile_fload, vnafile_free, vnafile_fsave, vnafil
 .PP
 .BI "int vnafile_set_dprecision(const vnafile_t *" vfp ", int " dprecision );
 .PP
-.BI "int vnafile_load(vnafile_t *" vfp ", const char *" filename ", "
-.BI "vnadata_t *" vdp );
-.PP
-.BI "int vnafile_fload(vnafile_t *" vfp ", FILE *" fp ,
-.BI "const char *" filename ,
-.if n \{\
+.BI "vnafile_t *vnafile_load(const char *" filename ", vnafile_type_t " type ,
 .in +4n
-.\}
-.BI "vnadata_t *" vdp );
-.if n \{\
+.BI "vnafile_error_fn_t *" error_fn ", void " error_arg ", vnadata_t *" vdp );
 .in -4n
-.\}
+.PP
+.BI "vnafile_t *vnafile_fload(FILE *" fp ", const char *" filename ,
+.if n .in +4n
+.BI "vnafile_type_t " type ,
+.if !n .in +4n
+.BI "vnafile_error_fn_t *" error_fn ,
+.if n .br
+.BI "void " error_arg ", vnadata_t *" vdp );
+.in -4n
 .PP
 .BI "int vnafile_check(vnafile_t *" vfp ", const char *" filename ,
 .if n \{\
@@ -100,14 +101,11 @@ data in Touchstone and native file formats.
 \fBvnafile_alloc\fP() returns a pointer to a \fBvnafile_t\fP structure
 used by the other functions.
 The optional \fIerror_fn\fP is a pointer to a function the library
-calls with a single line message (without newline) to report errors;
+calls with a single line message (without newline) to report errors.
 \fIerror_arg\fP is arbitrary user data passed through to the error
 function.  Both can be \s-2NULL\s+2.  See \fBvnaerr\fP(3).
-The \fIerror\fP argument is the \fBerrno\fP value associated with
-the error.
-Whether an \fIerror_fn\fP is provided or not, the library functions
-that can return failure set \fBerrno\fP and return -1 or \s-2NULL\s+2
-on failure.
+Whether an \fIerror_fn\fP is provided or not, the library functions that
+can fail set \fBerrno\fP and return -1 or \s-2NULL\s+2 on failure.
 .PP
 The \fBvnafile_get_file_type\fP() and \fBvnafile_set_file_type\fP()
 functions get and set the current file type described by the following
@@ -127,15 +125,15 @@ typedef enum vnafile_type {
 .in -4n
 .sp
 The default is \s-2VNAFILE_AUTO\s+2 which causes the load and save
-functions to try to automatically intuit the type based on the file
-extension.
+functions to try to automatically intuit the file type based on the
+filename extension.
 If the file ends with ".s<digit>p", the library assumes Touchstone 1
 format; if it ends in ".ts", the library assumes Touchstone 2 format;
 if it ends in ".npd" (network parameter data), or anything else,
 the library assumes native format.
 When loading Touchstone files, the parser internally uses the presence
 of the [Version] keyword to determine the version \- either Touchstone
-file extension is acceptable.
+file extension works.
 .PP
 The \fBvnafile_get_format\fP() and \fBvnafile_set_format\fP() functions
 get and set the way VNA parameter data is represented in the file.
@@ -188,11 +186,12 @@ values, respectively, when saving to a file.
 If not set, \fIfprecision\fP defaults to 7 digits and \fIdprecision\fP
 defaults to 6 digits.
 .PP
-The \fBvnafile_load\fP() function loads VNA parameter data
-from \fIfilename\fP, places the resulting parameter data into the
-\fBvnadata_t\fP structure pointed to by \fIvdp\fP (see \fBvnadata\fP(3)),
-and updates the parameters in the \fBvnafile_t\fP structure to match
-what was read from the file.
+The \fBvnafile_load\fP() function allocates a \fBvnafile_t\fP structure,
+loads VNA parameter data from \fIfilename\fP, places the resulting
+parameter data into the \fBvnadata_t\fP structure pointed to by \fIvdp\fP
+(see \fBvnadata\fP(3)), and stores metadata about the loaded file such
+as the file type into the \fBvnafile_t\fP structure.
+.PP
 The \fBvnafile_loadf\fP() function does the same, but uses the
 caller-supplied open file pointer \fIfp\fP.
 The \fIfilename\fP parameter to \fBvnafile_loadf\fP() is used only for
@@ -216,15 +215,15 @@ the caller-supplied open file pointer \fIfp\fP.
 In the later case, \fIvnafile\fP is used for error messages only \-
 it doesn't have to refer to an actual file.
 .SH "RETURN VALUE"
-The \fBvnafile_alloc\fP() function returns a pointer to a \fBvnadata_t\fP
-structure used by the rest of the functions.
+The \fBvnafile_alloc\fP(), \fBvnafile_load\fP() and \fBvnafile_fload\fP()
+function return a pointer to a \fBvnadata_t\fP structure used by the
+other functions.
 The various get functions return the requested data; they don't return
 errors.
 The integer-valued functions \fBvnafile_set_file_type\fP(),
 \fBvnafile_set_format\fP(), \fBvnafile_set_fprecision\fP(),
-\fBvnafile_set_dprecision\fP(), \fBvnafile_load\fP(),
-\fBvnafile_loadf\fP(), \fBvnfile_check\fP(), \fBvnafile_save\fP() and
-\fBvnafile_savef\fP() return zero on success or set \fBerrno\fP and
+\fBvnafile_set_dprecision\fP(), \fBvnfile_check\fP(), \fBvnafile_save\fP()
+and \fBvnafile_savef\fP() return zero on success or set \fBerrno\fP and
 return -1 on error.
 .SH EXAMPLES
 .nf
@@ -240,7 +239,7 @@ return -1 on error.
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "vnafile.h"
+#include <vnafile.h>
 
 static char *progname;
 
@@ -322,10 +321,11 @@ int main(int argc, char **argv)
         exit(2);
     }
     vdp = vnadata_alloc();
-    vfp = vnafile_alloc(error_fn, NULL);
-    if (vnafile_load(vfp, argv[0], vdp)) {
+    if ((vfp = vnafile_load(vfp, argv[0], VNAFILE_AUTO,
+		    errfn, NULL, vdp)) == NULL) {
         exit(3);
     }
+    /* Let vnafile_save determine the file type from the output filename. */
     vnafile_set_file_type(vfp, VNAFILE_AUTO);
     if (f_opt != NULL) {
         if (vnafile_set_format(vfp, f_opt) == -1) {

@@ -84,43 +84,56 @@ static int _vnafile_load_common(vnafile_t *vfp,
 
 /*
  * vnafile_load: load network parameters from filename
- *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @filename: file to load
+ *   @type: file format (use VNAFILE_AUTO to determine from filename)
+ *   @error_fn:  optional error reporting function
+ *   @error_arg: optional opaque argument passed through to the error function
  *   @vdp: output data (reshaped as needed)
  */
-int vnafile_load(vnafile_t *vfp, const char *filename, vnadata_t *vdp)
+vnafile_t *vnafile_load(const char *filename, vnafile_type_t type,
+	vnaerr_error_fn_t *error_fn, void *error_arg, vnadata_t *vdp)
 {
+    vnafile_t *vfp;
     FILE *fp;
     int rv;
 
-    if (vfp == NULL || vfp->vf_magic != VF_MAGIC) {
-	errno = EINVAL;
-	return -1;
+    if ((vfp = vnafile_alloc(error_fn, error_arg)) == NULL) {
+	return NULL;
     }
     if ((fp = fopen(filename, "r")) == NULL) {
 	_vnafile_error(vfp, VNAERR_SYSTEM,
 		"fopen: %s: %s", filename, strerror(errno));
-	return -1;
+	vnafile_free(vfp);
+	return NULL;
     }
     rv = _vnafile_load_common(vfp, fp, filename, vdp);
     (void)fclose(fp);
-
-    return rv;
+    if (rv == -1) {
+	vnafile_free(vfp);
+	return NULL;
+    }
+    return vfp;
 }
 
 /*
  * vnafile_load: load network parameters from a file pointer
- *   @vfp: pointer to the structure returned from vnafile_alloc
  *   @fp: file pointer
  *   @filename: filename used in error messages and to intuit the file type
+ *   @error_fn:  optional error reporting function
+ *   @error_arg: optional opaque argument passed through to the error function
  *   @vdp: output data (reshaped as needed)
  */
-int vnafile_fload(vnafile_t *vfp, FILE *fp, const char *filename,
-	vnadata_t *vdp)
+vnafile_t *vnafile_fload(FILE *fp, const char *filename, vnafile_type_t type,
+	vnaerr_error_fn_t *error_fn, void *error_arg, vnadata_t *vdp)
 {
-    if (vfp == NULL || vfp->vf_magic != VF_MAGIC) {
-	errno = EINVAL;
-	return -1;
+    vnafile_t *vfp;
+
+    if ((vfp = vnafile_alloc(error_fn, error_arg)) == NULL) {
+	return NULL;
     }
-    return _vnafile_load_common(vfp, fp, filename, vdp);
+    if (_vnafile_load_common(vfp, fp, filename, vdp) == -1) {
+	vnafile_free(vfp);
+	return NULL;
+    }
+    return vfp;
 }

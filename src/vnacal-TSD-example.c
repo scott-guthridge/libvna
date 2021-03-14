@@ -538,17 +538,11 @@ static void apply_calibration()
     }
 
     /*
-     * Allocate a vnafile_t structure for vnafile_load.
-     */
-    if ((vfp = vnafile_alloc(error_fn, /*error_arg*/NULL)) == NULL) {
-	exit(11);
-    }
-
-    /*
      * Load the actual S-parameters.
      */
-    if (vnafile_load(vfp, ACTUAL_FILE, vdp_actual) == -1) {
-	exit(12);
+    if ((vfp = vnafile_load(ACTUAL_FILE, VNAFILE_AUTO,
+		    error_fn, /*error_arg*/NULL, vdp_actual)) == NULL) {
+	exit(11);
     }
 
     /*
@@ -557,7 +551,7 @@ static void apply_calibration()
     if (vnadata_convert(vdp_actual, vdp_actual, VPT_S) == -1) {
 	(void)fprintf(stderr, "%s: vnadata_convert: %s: %s\n",
 		progname, ACTUAL_FILE, strerror(errno));
-	exit(13);
+	exit(12);
     }
     vnafile_free(vfp);
     vfp = NULL;
@@ -575,7 +569,7 @@ static void apply_calibration()
     if ((vdp_corrected = vnadata_alloc()) == NULL) {
 	(void)fprintf(stderr, "example: vnadata_alloc: %s\n",
 		strerror(errno));
-	exit(14);
+	exit(13);
     }
 
     /*
@@ -583,7 +577,7 @@ static void apply_calibration()
      */
     if (vnacal_apply(vcp, /*index*/0, frequency_vector, frequencies,
 		&a[0][0], 2, 2, &b[0][0], 2, 2, vdp_corrected) == -1) {
-	exit(15);
+	exit(14);
     }
 
     /*
