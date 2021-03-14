@@ -482,21 +482,8 @@ double complex z[3][3];
 static double complex z0[3] = { 50.0, 75.0, 110.0 };
 
 vnaconv_stozn(&s[0][0], &z[0][0], z0, 3);
-vnaconv_stozn(*s, *z, z0, 3);    /* equivalent expression */
 .fi
 .in -4n
-.PP
-Through the rules of pointer arithmetic, the second call to
-\fBvnaconv_stozn\fP() is equivalent to the first.
-In the second expression, the array rule implicitly promotes s and z from
-array of three arrays of three double complex (double complex [3][3])
-to pointer to array of three double complex (double complex (*)[3]).
-Applying the indirection operator (*) to this intermediate type yields
-type array of three double complex (double complex [3]).
-The array rule then implicitly promotes the result to pointer to double
-complex (double complex *).
-In either form, these expressions give the correct type without need of
-a type cast.
 .\"
 .PP
 In order to give a more detailed description of the various parameter
@@ -778,12 +765,29 @@ values if the conversion is nondeterministic.
 .SH EXAMPLES
 .nf
 .ft CW
+/*
+ * Vector Network Analyzer Library
+ * Copyright © 2020, 2021 D Scott Guthridge <scott_guthridge@rompromity.net>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <complex.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <vnaconv.h>
-
 
 /* system impedances */
 #define Z1      75.0
@@ -793,17 +797,15 @@ values if the conversion is nondeterministic.
 #define R1      (sqrt(Z1) * sqrt(Z1 - Z2))
 #define R2      (sqrt(Z1) * Z2 / sqrt(Z1 - Z2))
 
-/* Z-parameters of the L pad */
-static const double complex z[2][2] = {
-    { R1+R2, R2 },
-    { R2,    R2 }
-};
-
 /* system impedance vector */
 static const double complex z0[] = { Z1, Z2 };
 
 int main(int argc, char **argv)
 {
+    const double complex z[2][2] = { /* Z-parameters of the L pad */
+        { R1+R2, R2 },
+        { R2,    R2 }
+    };
     double complex s[2][2];
     double complex zi[2];
 
@@ -819,7 +821,7 @@ int main(int argc, char **argv)
     (void)printf("\\n");
 
     /*
-     * Convert to impedance into each port.
+     * Convert to input impedance at each port.
      */
     vnaconv_stozi(s, zi, z0);
     (void)printf("input-impedances:\\n");

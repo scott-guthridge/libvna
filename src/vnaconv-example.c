@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <vnaconv.h>
 
-
 /* system impedances */
 #define Z1	75.0
 #define Z2	50.0
