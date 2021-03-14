@@ -35,127 +35,127 @@ typedef double complex vnaconv_array2_t[2];
 /*
  * 2x2 Conversions
  */
-extern void vnaconv_a2b(const vnaconv_array2_t *a, double complex (*b)[2]);
-extern void vnaconv_a2g(const vnaconv_array2_t *a, double complex (*g)[2]);
-extern void vnaconv_a2h(const vnaconv_array2_t *a, double complex (*h)[2]);
-extern void vnaconv_a2s(const vnaconv_array2_t *a, double complex (*s)[2],
+extern void vnaconv_atob(const vnaconv_array2_t *a, double complex (*b)[2]);
+extern void vnaconv_atog(const vnaconv_array2_t *a, double complex (*g)[2]);
+extern void vnaconv_atoh(const vnaconv_array2_t *a, double complex (*h)[2]);
+extern void vnaconv_atos(const vnaconv_array2_t *a, double complex (*s)[2],
 	const double complex *z0);
-extern void vnaconv_a2t(const vnaconv_array2_t *a, double complex (*t)[2],
+extern void vnaconv_atot(const vnaconv_array2_t *a, double complex (*t)[2],
 	const double complex *z0);
-extern void vnaconv_a2y(const vnaconv_array2_t *a, double complex (*y)[2]);
-extern void vnaconv_a2z(const vnaconv_array2_t *a, double complex (*z)[2]);
-extern void vnaconv_a2zi(const vnaconv_array2_t *a, double complex *zi,
+extern void vnaconv_atoy(const vnaconv_array2_t *a, double complex (*y)[2]);
+extern void vnaconv_atoz(const vnaconv_array2_t *a, double complex (*z)[2]);
+extern void vnaconv_atozi(const vnaconv_array2_t *a, double complex *zi,
 	const double complex *z0);
-extern void vnaconv_b2a(const vnaconv_array2_t *b, double complex (*a)[2]);
-extern void vnaconv_b2g(const vnaconv_array2_t *b, double complex (*g)[2]);
-extern void vnaconv_b2h(const vnaconv_array2_t *b, double complex (*h)[2]);
-extern void vnaconv_b2s(const vnaconv_array2_t *b, double complex (*s)[2],
+extern void vnaconv_btoa(const vnaconv_array2_t *b, double complex (*a)[2]);
+extern void vnaconv_btog(const vnaconv_array2_t *b, double complex (*g)[2]);
+extern void vnaconv_btoh(const vnaconv_array2_t *b, double complex (*h)[2]);
+extern void vnaconv_btos(const vnaconv_array2_t *b, double complex (*s)[2],
 	const double complex *z0);
-extern void vnaconv_b2t(const vnaconv_array2_t *b, double complex (*t)[2],
+extern void vnaconv_btot(const vnaconv_array2_t *b, double complex (*t)[2],
 	const double complex *z0);
-extern void vnaconv_b2y(const vnaconv_array2_t *b, double complex (*y)[2]);
-extern void vnaconv_b2z(const vnaconv_array2_t *b, double complex (*z)[2]);
-extern void vnaconv_b2zi(const vnaconv_array2_t *b, double complex *zi,
+extern void vnaconv_btoy(const vnaconv_array2_t *b, double complex (*y)[2]);
+extern void vnaconv_btoz(const vnaconv_array2_t *b, double complex (*z)[2]);
+extern void vnaconv_btozi(const vnaconv_array2_t *b, double complex *zi,
 	const double complex *z0);
-extern void vnaconv_g2a(const vnaconv_array2_t *g, double complex (*a)[2]);
-extern void vnaconv_g2b(const vnaconv_array2_t *g, double complex (*b)[2]);
-extern void vnaconv_g2h(const vnaconv_array2_t *g, double complex (*h)[2]);
-extern void vnaconv_g2s(const vnaconv_array2_t *g, double complex (*s)[2],
+extern void vnaconv_gtoa(const vnaconv_array2_t *g, double complex (*a)[2]);
+extern void vnaconv_gtob(const vnaconv_array2_t *g, double complex (*b)[2]);
+extern void vnaconv_gtoh(const vnaconv_array2_t *g, double complex (*h)[2]);
+extern void vnaconv_gtos(const vnaconv_array2_t *g, double complex (*s)[2],
 	const double complex *z0);
-extern void vnaconv_g2t(const vnaconv_array2_t *g, double complex (*t)[2],
+extern void vnaconv_gtot(const vnaconv_array2_t *g, double complex (*t)[2],
 	const double complex *z0);
-extern void vnaconv_g2y(const vnaconv_array2_t *g, double complex (*y)[2]);
-extern void vnaconv_g2z(const vnaconv_array2_t *g, double complex (*z)[2]);
-extern void vnaconv_g2zi(const vnaconv_array2_t *g, double complex *zi,
+extern void vnaconv_gtoy(const vnaconv_array2_t *g, double complex (*y)[2]);
+extern void vnaconv_gtoz(const vnaconv_array2_t *g, double complex (*z)[2]);
+extern void vnaconv_gtozi(const vnaconv_array2_t *g, double complex *zi,
 	const double complex *z0);
-extern void vnaconv_h2a(const vnaconv_array2_t *h, double complex (*a)[2]);
-extern void vnaconv_h2b(const vnaconv_array2_t *h, double complex (*b)[2]);
-extern void vnaconv_h2g(const vnaconv_array2_t *h, double complex (*g)[2]);
-extern void vnaconv_h2s(const vnaconv_array2_t *h, double complex (*s)[2],
+extern void vnaconv_htoa(const vnaconv_array2_t *h, double complex (*a)[2]);
+extern void vnaconv_htob(const vnaconv_array2_t *h, double complex (*b)[2]);
+extern void vnaconv_htog(const vnaconv_array2_t *h, double complex (*g)[2]);
+extern void vnaconv_htos(const vnaconv_array2_t *h, double complex (*s)[2],
 	const double complex *z0);
-extern void vnaconv_h2t(const vnaconv_array2_t *h, double complex (*t)[2],
+extern void vnaconv_htot(const vnaconv_array2_t *h, double complex (*t)[2],
 	const double complex *z0);
-extern void vnaconv_h2y(const vnaconv_array2_t *h, double complex (*y)[2]);
-extern void vnaconv_h2z(const vnaconv_array2_t *h, double complex (*z)[2]);
-extern void vnaconv_h2zi(const vnaconv_array2_t *h, double complex *zi,
+extern void vnaconv_htoy(const vnaconv_array2_t *h, double complex (*y)[2]);
+extern void vnaconv_htoz(const vnaconv_array2_t *h, double complex (*z)[2]);
+extern void vnaconv_htozi(const vnaconv_array2_t *h, double complex *zi,
 	const double complex *z0);
-extern void vnaconv_s2a(const vnaconv_array2_t *s, double complex (*a)[2],
+extern void vnaconv_stoa(const vnaconv_array2_t *s, double complex (*a)[2],
 	const double complex *z0);
-extern void vnaconv_s2b(const vnaconv_array2_t *s, double complex (*b)[2],
+extern void vnaconv_stob(const vnaconv_array2_t *s, double complex (*b)[2],
 	const double complex *z0);
-extern void vnaconv_s2g(const vnaconv_array2_t *s, double complex (*g)[2],
+extern void vnaconv_stog(const vnaconv_array2_t *s, double complex (*g)[2],
 	const double complex *z0);
-extern void vnaconv_s2h(const vnaconv_array2_t *s, double complex (*h)[2],
+extern void vnaconv_stoh(const vnaconv_array2_t *s, double complex (*h)[2],
 	const double complex *z0);
-extern void vnaconv_s2t(const vnaconv_array2_t *s, double complex (*t)[2]);
-extern void vnaconv_s2y(const vnaconv_array2_t *s, double complex (*y)[2],
+extern void vnaconv_stot(const vnaconv_array2_t *s, double complex (*t)[2]);
+extern void vnaconv_stoy(const vnaconv_array2_t *s, double complex (*y)[2],
 	const double complex *z0);
-extern void vnaconv_s2z(const vnaconv_array2_t *s, double complex (*z)[2],
+extern void vnaconv_stoz(const vnaconv_array2_t *s, double complex (*z)[2],
 	const double complex *z0);
-extern void vnaconv_s2zi(const vnaconv_array2_t *s, double complex *zi,
+extern void vnaconv_stozi(const vnaconv_array2_t *s, double complex *zi,
 	const double complex *z0);
-extern void vnaconv_t2a(const vnaconv_array2_t *t, double complex (*a)[2],
+extern void vnaconv_ttoa(const vnaconv_array2_t *t, double complex (*a)[2],
 	const double complex *z0);
-extern void vnaconv_t2b(const vnaconv_array2_t *t, double complex (*b)[2],
+extern void vnaconv_ttob(const vnaconv_array2_t *t, double complex (*b)[2],
 	const double complex *z0);
-extern void vnaconv_t2g(const vnaconv_array2_t *t, double complex (*g)[2],
+extern void vnaconv_ttog(const vnaconv_array2_t *t, double complex (*g)[2],
 	const double complex *z0);
-extern void vnaconv_t2h(const vnaconv_array2_t *t, double complex (*h)[2],
+extern void vnaconv_ttoh(const vnaconv_array2_t *t, double complex (*h)[2],
 	const double complex *z0);
-extern void vnaconv_t2s(const vnaconv_array2_t *t, double complex (*s)[2]);
-extern void vnaconv_t2y(const vnaconv_array2_t *t, double complex (*y)[2],
+extern void vnaconv_ttos(const vnaconv_array2_t *t, double complex (*s)[2]);
+extern void vnaconv_ttoy(const vnaconv_array2_t *t, double complex (*y)[2],
 	const double complex *z0);
-extern void vnaconv_t2z(const vnaconv_array2_t *t, double complex (*z)[2],
+extern void vnaconv_ttoz(const vnaconv_array2_t *t, double complex (*z)[2],
 	const double complex *z0);
-extern void vnaconv_t2zi(const vnaconv_array2_t *t, double complex *zi,
+extern void vnaconv_ttozi(const vnaconv_array2_t *t, double complex *zi,
 	const double complex *z0);
-extern void vnaconv_y2a(const vnaconv_array2_t *y, double complex (*a)[2]);
-extern void vnaconv_y2b(const vnaconv_array2_t *y, double complex (*b)[2]);
-extern void vnaconv_y2g(const vnaconv_array2_t *y, double complex (*g)[2]);
-extern void vnaconv_y2h(const vnaconv_array2_t *y, double complex (*h)[2]);
-extern void vnaconv_y2s(const vnaconv_array2_t *y, double complex (*s)[2],
+extern void vnaconv_ytoa(const vnaconv_array2_t *y, double complex (*a)[2]);
+extern void vnaconv_ytob(const vnaconv_array2_t *y, double complex (*b)[2]);
+extern void vnaconv_ytog(const vnaconv_array2_t *y, double complex (*g)[2]);
+extern void vnaconv_ytoh(const vnaconv_array2_t *y, double complex (*h)[2]);
+extern void vnaconv_ytos(const vnaconv_array2_t *y, double complex (*s)[2],
 	const double complex *z0);
-extern void vnaconv_y2t(const vnaconv_array2_t *y, double complex (*t)[2],
+extern void vnaconv_ytot(const vnaconv_array2_t *y, double complex (*t)[2],
 	const double complex *z0);
-extern void vnaconv_y2z(const vnaconv_array2_t *y, double complex (*z)[2]);
-extern void vnaconv_y2zi(const vnaconv_array2_t *y, double complex *zi,
+extern void vnaconv_ytoz(const vnaconv_array2_t *y, double complex (*z)[2]);
+extern void vnaconv_ytozi(const vnaconv_array2_t *y, double complex *zi,
 	const double complex *z0);
-extern void vnaconv_z2a(const vnaconv_array2_t *z, double complex (*a)[2]);
-extern void vnaconv_z2b(const vnaconv_array2_t *z, double complex (*b)[2]);
-extern void vnaconv_z2g(const vnaconv_array2_t *z, double complex (*g)[2]);
-extern void vnaconv_z2h(const vnaconv_array2_t *z, double complex (*h)[2]);
-extern void vnaconv_z2s(const vnaconv_array2_t *z, double complex (*s)[2],
+extern void vnaconv_ztoa(const vnaconv_array2_t *z, double complex (*a)[2]);
+extern void vnaconv_ztob(const vnaconv_array2_t *z, double complex (*b)[2]);
+extern void vnaconv_ztog(const vnaconv_array2_t *z, double complex (*g)[2]);
+extern void vnaconv_ztoh(const vnaconv_array2_t *z, double complex (*h)[2]);
+extern void vnaconv_ztos(const vnaconv_array2_t *z, double complex (*s)[2],
 	const double complex *z0);
-extern void vnaconv_z2t(const vnaconv_array2_t *z, double complex (*t)[2],
+extern void vnaconv_ztot(const vnaconv_array2_t *z, double complex (*t)[2],
 	const double complex *z0);
-extern void vnaconv_z2y(const vnaconv_array2_t *z, double complex (*y)[2]);
-extern void vnaconv_z2zi(const vnaconv_array2_t *z, double complex *zi,
+extern void vnaconv_ztoy(const vnaconv_array2_t *z, double complex (*y)[2]);
+extern void vnaconv_ztozi(const vnaconv_array2_t *z, double complex *zi,
 	const double complex *z0);
 
 /*
  * NxN conversions
  */
-extern void vnaconv_s2yn(const double complex *s, double complex *y,
+extern void vnaconv_stoyn(const double complex *s, double complex *y,
 	const double complex *z0, int n);
-extern void vnaconv_s2zin(const double complex *s, double complex *zi,
+extern void vnaconv_stozin(const double complex *s, double complex *zi,
 	const double complex *z0, int n);
-extern void vnaconv_s2zn(const double complex *s, double complex *z,
+extern void vnaconv_stozn(const double complex *s, double complex *z,
 	const double complex *z0, int n);
-extern void vnaconv_y2sn(const double complex *y, double complex *s,
+extern void vnaconv_ytosn(const double complex *y, double complex *s,
 	const double complex *z0, int n);
-extern void vnaconv_y2zin(const double complex *y, double complex *zi,
+extern void vnaconv_ytozin(const double complex *y, double complex *zi,
 	const double complex *z0, int n);
-extern void vnaconv_y2zn(const double complex *y, double complex *s, int n);
-extern void vnaconv_z2sn(const double complex *z, double complex *s,
+extern void vnaconv_ytozn(const double complex *y, double complex *s, int n);
+extern void vnaconv_ztosn(const double complex *z, double complex *s,
 	const double complex *z0, int n);
-extern void vnaconv_z2yn(const double complex *z, double complex *y, int n);
-extern void vnaconv_z2zin(const double complex *z, double complex *zi,
+extern void vnaconv_ztoyn(const double complex *z, double complex *y, int n);
+extern void vnaconv_ztozin(const double complex *z, double complex *zi,
 	const double complex *z0, int n);
 
 /*
  * MxN conversions
  */
-extern void vnaconv_s2zimn(const double complex *s, double complex *zi,
+extern void vnaconv_stozimn(const double complex *s, double complex *zi,
 	const double complex *z0, int rows, int columns);
 
 #ifdef __cplusplus

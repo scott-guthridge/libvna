@@ -218,7 +218,7 @@ static int vna_measure(measurement_t measurement,
 	     * convert to s-parameters and find b = s a.
 	     */
 	    multiply(port1_abcd, port2_abcd, temp1);
-	    vnaconv_a2s(temp1, temp1, z0);
+	    vnaconv_atos(temp1, temp1, z0);
 	    multiply(temp1, a, b);
 	    break;
 
@@ -245,7 +245,7 @@ static int vna_measure(measurement_t measurement,
 	     */
 	    multiply(port1_abcd, delay_abcd[findex], temp2);
 	    multiply(temp2, port2_abcd, temp1);
-	    vnaconv_a2s(temp1, temp1, z0);
+	    vnaconv_atos(temp1, temp1, z0);
 	    multiply(temp1, a, b);
 	    break;
 
@@ -262,10 +262,10 @@ static int vna_measure(measurement_t measurement,
 
 		dut_s = vnadata_get_matrix(dut_actual, findex);
 		assert(dut_s != NULL);
-		vnaconv_s2a((const row_type *)dut_s, dut_abcd, z0);
+		vnaconv_stoa((const row_type *)dut_s, dut_abcd, z0);
 		multiply(port1_abcd, dut_abcd, temp2);
 		multiply(temp2, port2_abcd, temp1);
-		vnaconv_a2s(temp1, temp1, z0);
+		vnaconv_atos(temp1, temp1, z0);
 		multiply(temp1, a, b);
 	    }
 	    break;
@@ -336,7 +336,7 @@ static void get_delay_parameters(vnacal_t *vcp,
 	/*
 	 * Convert to S and store as matrix of vectors.
 	 */
-	vnaconv_a2s(delay_abcd[findex], temp_s, z0);
+	vnaconv_atos(delay_abcd[findex], temp_s, z0);
 	for (int row = 0; row < 2; ++row) {
 	    for (int column = 0; column < 2; ++column) {
 		s[row][column][findex] = temp_s[row][column];

@@ -1,3 +1,4 @@
+.\" e t
 .\"
 .\" Vector Network Analyzer Library
 .\" Copyright © 2020, 2021 D Scott Guthridge <scott_guthridge@rompromity.net>
@@ -18,340 +19,417 @@
 .TH VNACONV 3 "JULY 2017" GNU
 .nh
 .SH NAME
-vnaconv_s2z, vnaconv_s2y, vnaconv_s2t, vnaconv_s2h, vnaconv_s2g, vnaconv_s2a, vnaconv_s2b, vnaconv_z2s, vnaconv_z2y, vnaconv_z2t, vnaconv_z2h, vnaconv_z2g, vnaconv_z2a, vnaconv_z2b, vnaconv_y2s, vnaconv_y2z, vnaconv_y2t, vnaconv_y2h, vnaconv_y2g, vnaconv_y2a, vnaconv_y2b, vnaconv_t2s, vnaconv_t2z, vnaconv_t2y, vnaconv_t2h, vnaconv_t2g, vnaconv_t2a, vnaconv_t2b, vnaconv_h2z, vnaconv_h2y, vnaconv_h2g, vnaconv_h2a, vnaconv_h2b, vnaconv_h2s, vnaconv_h2t, vnaconv_g2s, vnaconv_g2t, vnaconv_g2z, vnaconv_g2y, vnaconv_g2h, vnaconv_g2a, vnaconv_g2b, vnaconv_a2s, vnaconv_a2t, vnaconv_a2z, vnaconv_a2y, vnaconv_a2h, vnaconv_a2g, vnaconv_a2b, vnaconv_b2s, vnaconv_b2t, vnaconv_b2z, vnaconv_b2y, vnaconv_b2h, vnaconv_b2g, vnaconv_b2a, vnaconv_s2zi, vnaconv_z2zi, vnaconv_y2zi, vnaconv_t2zi, vnaconv_h2zi, vnaconv_g2zi, vnaconv_a2zi, vnaconv_b2zi, vnaconv_s2zn, vnaconv_s2yn, vnaconv_z2sn, vnaconv_z2yn, vnaconv_y2zn, vnaconv_y2sn, vnaconv_s2zin, vnaconv_z2zin, vnaconv_y2zin, vnaconv_s2zimn \- convert 2-port and N-port network parameters
+vnaconv_stoz, vnaconv_stoy, vnaconv_stot, vnaconv_stoh, vnaconv_stog, vnaconv_stoa, vnaconv_stob, vnaconv_ztos, vnaconv_ztoy, vnaconv_ztot, vnaconv_ztoh, vnaconv_ztog, vnaconv_ztoa, vnaconv_ztob, vnaconv_ytos, vnaconv_ytoz, vnaconv_ytot, vnaconv_ytoh, vnaconv_ytog, vnaconv_ytoa, vnaconv_ytob, vnaconv_ttos, vnaconv_ttoz, vnaconv_ttoy, vnaconv_ttoh, vnaconv_ttog, vnaconv_ttoa, vnaconv_ttob, vnaconv_htoz, vnaconv_htoy, vnaconv_htog, vnaconv_htoa, vnaconv_htob, vnaconv_htos, vnaconv_htot, vnaconv_gtos, vnaconv_gtot, vnaconv_gtoz, vnaconv_gtoy, vnaconv_gtoh, vnaconv_gtoa, vnaconv_gtob, vnaconv_atos, vnaconv_atot, vnaconv_atoz, vnaconv_atoy, vnaconv_atoh, vnaconv_atog, vnaconv_atob, vnaconv_btos, vnaconv_btot, vnaconv_btoz, vnaconv_btoy, vnaconv_btoh, vnaconv_btog, vnaconv_btoa, vnaconv_stozi, vnaconv_ztozi, vnaconv_ytozi, vnaconv_ttozi, vnaconv_htozi, vnaconv_gtozi, vnaconv_atozi, vnaconv_btozi, vnaconv_stozn, vnaconv_stoyn, vnaconv_ztosn, vnaconv_ztoyn, vnaconv_ytozn, vnaconv_ytosn, vnaconv_stozin, vnaconv_ztozin, vnaconv_ytozin, vnaconv_stozimn \- convert 2-port and N-port network parameters
 .\"
 .SH SYNOPSIS
 .SS "Include and Link"
+.if n .in -1
 .B #include <vnaconv.h>
 .PP
+.if n .in -1
 Link with \fI-lvnaconv\fP \fI-lm\fP.
 .SS "Two-Port Matrix Conversions"
-.BI "void vnaconv_s2t(const double complex (*" s ")[2],"
+.PP
+.if n .in -1
+.BI "void vnaconv_stot(const double complex (*" s ")[2],"
 .BI "double complex (*" t ")[2]);"
 .PP
-.BI "void vnaconv_s2z(const double complex (*" s ")[2],"
+.if n .in -1
+.BI "void vnaconv_stoz(const double complex (*" s ")[2],"
 .BI "double complex (*" z ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_s2y(const double complex (*" s ")[2],"
+.if n .in -1
+.BI "void vnaconv_stoy(const double complex (*" s ")[2],"
 .BI "double complex (*" y ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_s2h(const double complex (*" s ")[2],"
+.if n .in -1
+.BI "void vnaconv_stoh(const double complex (*" s ")[2],"
 .BI "double complex (*" h ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_s2g(const double complex (*" s ")[2],"
+.if n .in -1
+.BI "void vnaconv_stog(const double complex (*" s ")[2],"
 .BI "double complex (*" g ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_s2a(const double complex (*" s ")[2],"
+.if n .in -1
+.BI "void vnaconv_stoa(const double complex (*" s ")[2],"
 .BI "double complex (*" a ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_s2b(const double complex (*" s ")[2],"
+.if n .in -1
+.BI "void vnaconv_stob(const double complex (*" s ")[2],"
 .BI "double complex (*" b ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_t2s(const double complex (*" t ")[2],"
+.if n .in -1
+.BI "void vnaconv_ttos(const double complex (*" t ")[2],"
 .BI "double complex (*" s ")[2]);
 .PP
-.BI "void vnaconv_t2z(const double complex (*" t ")[2],"
+.if n .in -1
+.BI "void vnaconv_ttoz(const double complex (*" t ")[2],"
 .BI "double complex (*" z ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_t2y(const double complex (*" t ")[2],"
+.if n .in -1
+.BI "void vnaconv_ttoy(const double complex (*" t ")[2],"
 .BI "double complex (*" y ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_t2h(const double complex (*" t ")[2],"
+.if n .in -1
+.BI "void vnaconv_ttoh(const double complex (*" t ")[2],"
 .BI "double complex (*" h ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_t2g(const double complex (*" t ")[2],"
+.if n .in -1
+.BI "void vnaconv_ttog(const double complex (*" t ")[2],"
 .BI "double complex (*" g ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_t2a(const double complex (*" t ")[2],"
+.if n .in -1
+.BI "void vnaconv_ttoa(const double complex (*" t ")[2],"
 .BI "double complex (*" a ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_t2b(const double complex (*" t ")[2],"
+.if n .in -1
+.BI "void vnaconv_ttob(const double complex (*" t ")[2],"
 .BI "double complex (*" b ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_z2s(const double complex (*" z ")[2],"
+.if n .in -1
+.BI "void vnaconv_ztos(const double complex (*" z ")[2],"
 .BI "double complex (*" s ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_z2t(const double complex (*" z ")[2],"
+.if n .in -1
+.BI "void vnaconv_ztot(const double complex (*" z ")[2],"
 .BI "double complex (*" t ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_z2h(const double complex (*" z ")[2],"
+.if n .in -1
+.BI "void vnaconv_ztoh(const double complex (*" z ")[2],"
 .BI "double complex (*" h ")[2]);"
 .PP
-.BI "void vnaconv_z2g(const double complex (*" z ")[2],"
+.if n .in -1
+.BI "void vnaconv_ztog(const double complex (*" z ")[2],"
 .BI "double complex (*" g ")[2]);"
 .PP
-.BI "void vnaconv_z2a(const double complex (*" z ")[2],"
+.if n .in -1
+.BI "void vnaconv_ztoa(const double complex (*" z ")[2],"
 .BI "double complex (*" a ")[2]);"
 .PP
-.BI "void vnaconv_z2b(const double complex (*" z ")[2],"
+.if n .in -1
+.BI "void vnaconv_ztob(const double complex (*" z ")[2],"
 .BI "double complex (*" b ")[2]);"
 .PP
-.BI "void vnaconv_y2s(const double complex (*" y ")[2],"
+.if n .in -1
+.BI "void vnaconv_ytos(const double complex (*" y ")[2],"
 .BI "double complex (*" s ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_y2t(const double complex (*" y ")[2],"
+.if n .in -1
+.BI "void vnaconv_ytot(const double complex (*" y ")[2],"
 .BI "double complex (*" t ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_y2h(const double complex (*" y ")[2],"
+.if n .in -1
+.BI "void vnaconv_ytoh(const double complex (*" y ")[2],"
 .BI "double complex (*" h ")[2]);"
 .PP
-.BI "void vnaconv_y2g(const double complex (*" y ")[2],"
+.if n .in -1
+.BI "void vnaconv_ytog(const double complex (*" y ")[2],"
 .BI "double complex (*" g ")[2]);"
 .PP
-.BI "void vnaconv_y2a(const double complex (*" y ")[2],"
+.if n .in -1
+.BI "void vnaconv_ytoa(const double complex (*" y ")[2],"
 .BI "double complex (*" a ")[2]);"
 .PP
-.BI "void vnaconv_y2b(const double complex (*" y ")[2],"
+.if n .in -1
+.BI "void vnaconv_ytob(const double complex (*" y ")[2],"
 .BI "double complex (*" b ")[2]);"
 .PP
-.BI "void vnaconv_h2s(const double complex (*" h ")[2],"
+.if n .in -1
+.BI "void vnaconv_htos(const double complex (*" h ")[2],"
 .BI "double complex (*" s ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_h2t(const double complex (*" h ")[2],"
+.if n .in -1
+.BI "void vnaconv_htot(const double complex (*" h ")[2],"
 .BI "double complex (*" t ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_h2z(const double complex (*" h ")[2],"
+.if n .in -1
+.BI "void vnaconv_htoz(const double complex (*" h ")[2],"
 .BI "double complex (*" z ")[2]);"
 .PP
-.BI "void vnaconv_h2y(const double complex (*" h ")[2],"
+.if n .in -1
+.BI "void vnaconv_htoy(const double complex (*" h ")[2],"
 .BI "double complex (*" y ")[2]);"
 .PP
-.BI "void vnaconv_h2g(const double complex (*" h ")[2],"
+.if n .in -1
+.BI "void vnaconv_htog(const double complex (*" h ")[2],"
 .BI "double complex (*" g ")[2]);"
 .PP
-.BI "void vnaconv_h2a(const double complex (*" h ")[2],"
+.if n .in -1
+.BI "void vnaconv_htoa(const double complex (*" h ")[2],"
 .BI "double complex (*" a ")[2]);"
 .PP
-.BI "void vnaconv_h2b(const double complex (*" h ")[2],"
+.if n .in -1
+.BI "void vnaconv_htob(const double complex (*" h ")[2],"
 .BI "double complex (*" b ")[2]);"
 .PP
-.BI "void vnaconv_g2s(const double complex (*" g ")[2],"
+.if n .in -1
+.BI "void vnaconv_gtos(const double complex (*" g ")[2],"
 .BI "double complex (*" s ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_g2t(const double complex (*" g ")[2],"
+.if n .in -1
+.BI "void vnaconv_gtot(const double complex (*" g ")[2],"
 .BI "double complex (*" t ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_g2z(const double complex (*" g ")[2],"
+.if n .in -1
+.BI "void vnaconv_gtoz(const double complex (*" g ")[2],"
 .BI "double complex (*" z ")[2]);"
 .PP
-.BI "void vnaconv_g2y(const double complex (*" g ")[2],"
+.if n .in -1
+.BI "void vnaconv_gtoy(const double complex (*" g ")[2],"
 .BI "double complex (*" y ")[2]);"
 .PP
-.BI "void vnaconv_g2h(const double complex (*" g ")[2],"
+.if n .in -1
+.BI "void vnaconv_gtoh(const double complex (*" g ")[2],"
 .BI "double complex (*" h ")[2]);"
 .PP
-.BI "void vnaconv_g2a(const double complex (*" g ")[2],"
+.if n .in -1
+.BI "void vnaconv_gtoa(const double complex (*" g ")[2],"
 .BI "double complex (*" a ")[2]);"
 .PP
-.BI "void vnaconv_g2b(const double complex (*" g ")[2],"
+.if n .in -1
+.BI "void vnaconv_gtob(const double complex (*" g ")[2],"
 .BI "double complex (*" b ")[2]);"
 .PP
-.BI "void vnaconv_a2s(const double complex (*" a ")[2],"
+.if n .in -1
+.BI "void vnaconv_atos(const double complex (*" a ")[2],"
 .BI "double complex (*" s ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_a2t(const double complex (*" a ")[2],"
+.if n .in -1
+.BI "void vnaconv_atot(const double complex (*" a ")[2],"
 .BI "double complex (*" t ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_a2z(const double complex (*" a ")[2],"
+.BI "void vnaconv_atoz(const double complex (*" a ")[2],"
 .BI "double complex (*" z ")[2]);"
 .PP
-.BI "void vnaconv_a2y(const double complex (*" a ")[2],"
+.if n .in -1
+.BI "void vnaconv_atoy(const double complex (*" a ")[2],"
 .BI "double complex (*" y ")[2]);"
 .PP
-.BI "void vnaconv_a2h(const double complex (*" a ")[2],"
+.if n .in -1
+.BI "void vnaconv_atoh(const double complex (*" a ")[2],"
 .BI "double complex (*" h ")[2]);"
 .PP
-.BI "void vnaconv_a2g(const double complex (*" a ")[2],"
+.if n .in -1
+.BI "void vnaconv_atog(const double complex (*" a ")[2],"
 .BI "double complex (*" g ")[2]);"
 .PP
-.BI "void vnaconv_a2b(const double complex (*" a ")[2],"
+.if n .in -1
+.BI "void vnaconv_atob(const double complex (*" a ")[2],"
 .BI "double complex (*" b ")[2]);"
 .PP
-.BI "void vnaconv_b2s(const double complex (*" b ")[2],"
+.if n .in -1
+.BI "void vnaconv_btos(const double complex (*" b ")[2],"
 .BI "double complex (*" s ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .PP
-.BI "void vnaconv_b2t(const double complex (*" b ")[2],"
+.if n .in -1
+.BI "void vnaconv_btot(const double complex (*" b ")[2],"
 .BI "double complex (*" t ")[2],
 .in +4n
 .BI "const double complex *" z0 ");"
 .PP
-.BI "void vnaconv_b2z(const double complex (*" b ")[2],"
+.if n .in -1
+.BI "void vnaconv_btoz(const double complex (*" b ")[2],"
 .BI "double complex (*" z ")[2]);"
 .PP
-.BI "void vnaconv_b2y(const double complex (*" b ")[2],"
+.if n .in -1
+.BI "void vnaconv_btoy(const double complex (*" b ")[2],"
 .BI "double complex (*" y ")[2]);"
 .PP
-.BI "void vnaconv_b2h(const double complex (*" b ")[2],"
+.if n .in -1
+.BI "void vnaconv_btoh(const double complex (*" b ")[2],"
 .BI "double complex (*" h ")[2]);"
 .PP
-.BI "void vnaconv_b2g(const double complex (*" b ")[2],"
+.if n .in -1
+.BI "void vnaconv_btog(const double complex (*" b ")[2],"
 .BI "double complex (*" g ")[2]);"
 .PP
-.BI "void vnaconv_b2a(const double complex (*" b ")[2],"
+.if n .in -1
+.BI "void vnaconv_btoa(const double complex (*" b ")[2],"
 .BI "double complex (*" a ")[2]);"
 .\"
 .SS "2-Port Matrix to Input Impedance"
 .PP
-.BI "void vnaconv_s2zi(const double complex (*" s ")[2],"
+.if n .in -1
+.BI "void vnaconv_stozi(const double complex (*" s ")[2],"
 .BI "double complex " zi "[2],"
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_t2zi(const double complex (*" t ")[2],"
+.if n .in -1
+.BI "void vnaconv_ttozi(const double complex (*" t ")[2],"
 .BI "double complex " zi "[2],"
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_z2zi(const double complex (*" z ")[2],"
+.if n .in -1
+.BI "void vnaconv_ztozi(const double complex (*" z ")[2],"
 .BI "double complex " zi "[2],"
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_y2zi(const double complex (*" y ")[2],"
+.if n .in -1
+.BI "void vnaconv_ytozi(const double complex (*" y ")[2],"
 .BI "double complex " zi "[2],"
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_h2zi(const double complex (*" h ")[2],"
+.if n .in -1
+.BI "void vnaconv_htozi(const double complex (*" h ")[2],"
 .BI "double complex " zi "[2],"
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_g2zi(const double complex (*" g ")[2],"
+.if n .in -1
+.BI "void vnaconv_gtozi(const double complex (*" g ")[2],"
 .BI "double complex " zi "[2],"
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_a2zi(const double complex (*" a ")[2],"
+.if n .in -1
+.BI "void vnaconv_atozi(const double complex (*" a ")[2],"
 .BI "double complex " zi "[2],"
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .PP
-.BI "void vnaconv_b2zi(const double complex (*" b ")[2],"
+.if n .in -1
+.BI "void vnaconv_btozi(const double complex (*" b ")[2],"
 .BI "double complex " zi "[2],"
 .in +4n
 .BI "const double complex *" z0 ");"
 .in -4n
 .\"
 .SS "N-Port Matrix Conversions"
-.BI "void vnaconv_s2zn(const double complex *" s ", double complex *" z ,
+.PP
+.if n .in -1
+.BI "void vnaconv_stozn(const double complex *" s ", double complex *" z ,
 .in +4n
 .BI "const double complex *" z0 ", int " n ");"
 .in -4n
 .PP
-.BI "void vnaconv_s2yn(const double complex *" s ", double complex *" y ,
+.if n .in -1
+.BI "void vnaconv_stoyn(const double complex *" s ", double complex *" y ,
 .in +4n
 .BI "const double complex *" z0 ", int " n ");"
 .in -4n
 .PP
-.BI "void vnaconv_z2sn(const double complex *" z ", double complex *" s ,
+.if n .in -1
+.BI "void vnaconv_ztosn(const double complex *" z ", double complex *" s ,
 .in +4n
 .BI "const double complex *" z0 ", int " n ");"
 .in -4n
 .PP
-.BI "void vnaconv_z2yn(const double complex *" z ", double complex *" y ,
+.if n .in -1
+.BI "void vnaconv_ztoyn(const double complex *" z ", double complex *" y ,
 .BI "int " n ");"
 .PP
-.BI "void vnaconv_y2sn(const double complex *" y ", double complex *" s ,
+.if n .in -1
+.BI "void vnaconv_ytosn(const double complex *" y ", double complex *" s ,
 .in +4n
 .BI "const double complex *" z0 ", int " n ");"
 .in -4n
 .PP
-.BI "void vnaconv_y2zn(const double complex *" y ", double complex *" z ,
+.if n .in -1
+.BI "void vnaconv_ytozn(const double complex *" y ", double complex *" z ,
 .BI "int " n ");"
 .\"
 .SS "N-Port Matrix To Input Impedance"
-.BI "void vnaconv_s2zin(const double complex *" s ", double complex *" zi ,
+.PP
+.if n .in -1n
+.BI "void vnaconv_stozin(const double complex *" s ", double complex *" zi ,
 .in +4n
 .BI "const double complex *" z0 ", int " n ");"
 .in -4n
 .PP
-.BI "void vnaconv_z2zin(const double complex *" z ", double complex *" zi ,
+.if n .in -1
+.BI "void vnaconv_ztozin(const double complex *" z ", double complex *" zi ,
 .in +4n
 .BI "const double complex *" z0 ", int " n ");"
 .in -4n
 .PP
-.BI "void vnaconv_y2zin(const double complex *" y ", double complex *" zi ,
+.if n .in -1
+.BI "void vnaconv_ytozin(const double complex *" y ", double complex *" zi ,
 .in +4n
 .BI "const double complex *" z0 ", int " n ");"
 .in -4n
 .SS "Rectangular Matrix to Input Impedance"
-.BI "void vnaconv_s2zimn(const double complex *" s ", double complex *" zi ,
+.PP
+.if n .in -1n
+.BI "void vnaconv_stozimn(const double complex *" s ", double complex *" zi ,
 .in +4n
 .BI "const double complex *" z0 ", int " rows ", int " columns ");"
 .in -4n
@@ -371,8 +449,8 @@ and b-parameters are defined for two-port networks only.
 The library contains one set of functions for two-port networks and
 another set of functions for n-port networks \- the later all have names
 ending in \fBn\fP.
-For example, \fBvnaconv_s2y\fP() is the function to convert from
-s-parameters to y-parameters for two-port, while \fBvnaconv_s2yn\fP()
+For example, \fBvnaconv_stoy\fP() is the function to convert from
+s-parameters to y-parameters for two-port, while \fBvnaconv_stoyn\fP()
 is the equivalent function for n-ports.
 The two-port functions take matrices of type double complex [2][2] while
 the n-port functions take the address of the first element of an \fIn\fP
@@ -392,7 +470,7 @@ double complex s[2][2];
 double complex z[2][2];
 static double complex z0[2] = { 50.0, 50.0 };
 
-vnaconv_s2z(s, z, z0);
+vnaconv_stoz(s, z, z0);
 .fi
 .in -4n
 .PP
@@ -403,13 +481,13 @@ double complex s[3][3];
 double complex z[3][3];
 static double complex z0[3] = { 50.0, 75.0, 110.0 };
 
-vnaconv_s2zn(&s[0][0], &z[0][0], z0, 3);
-vnaconv_s2zn(*s, *z, z0, 3);    /* equivalent expression */
+vnaconv_stozn(&s[0][0], &z[0][0], z0, 3);
+vnaconv_stozn(*s, *z, z0, 3);    /* equivalent expression */
 .fi
 .in -4n
 .PP
 Through the rules of pointer arithmetic, the second call to
-\fBvnaconv_s2zn\fP() is equivalent to the first.
+\fBvnaconv_stozn\fP() is equivalent to the first.
 In the second expression, the array rule implicitly promotes s and z from
 array of three arrays of three double complex (double complex [3][3])
 to pointer to array of three double complex (double complex (*)[3]).
@@ -676,13 +754,13 @@ In addition to the functions that convert between parameter forms,
 there are also functions that calculate the input impedances looking
 into each port of the network when all other ports are terminated at
 the system impedances.
-For example, \fBvnaconv_s2zi\fP() finds the input impedances from a
-2x2 s-parameter matrix, while \fBvnaconv_z2zin\fP() finds the input
+For example, \fBvnaconv_stozi\fP() finds the input impedances from a
+2x2 s-parameter matrix, while \fBvnaconv_ztozin\fP() finds the input
 impedances from an \fIn\fP by \fIn\fP z-parameter matrix.
 The \fIzi\fP and \fIz0\fP vectors must have length at least \fIn\fP.
 .PP
-The special-case function \fBvnaconv_s2zimn\fP finds the input impedances
-for the ports along the major diagonal of an m by n rectangular
+The special-case function \fBvnaconv_stozimn\fP() finds the input
+impedances for the ports along the major diagonal of an m by n rectangular
 s-parameter matrix when all other ports are terminated at the system
 impedances.
 The \fIzi\fP and \fIz0\fP vectors must have length at least
@@ -732,7 +810,7 @@ int main(int argc, char **argv)
     /*
      * Convert to S-parameters.
      */
-    vnaconv_z2s(z, s, z0);
+    vnaconv_ztos(z, s, z0);
     (void)printf("s-parameters:\\n");
     (void)printf("  %7.4f%+7.4fi    %7.4f%+7.4fi\\n",
         creal(s[0][0]), cimag(s[0][0]), creal(s[0][1]), cimag(s[0][1]));
@@ -743,7 +821,7 @@ int main(int argc, char **argv)
     /*
      * Convert to impedance into each port.
      */
-    vnaconv_s2zi(s, zi, z0);
+    vnaconv_stozi(s, zi, z0);
     (void)printf("input-impedances:\\n");
     (void)printf("  %7.4f%+7.4fi    %7.4f%+7.4fi\\n",
         creal(zi[0]), cimag(zi[0]), creal(zi[1]), cimag(zi[1]));

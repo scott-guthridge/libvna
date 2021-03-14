@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     /*
      * Convert to S-parameters.
      */
-    vnaconv_z2s(z, s, z0);
+    vnaconv_ztos(z, s, z0);
     (void)printf("s-parameters:\n");
     (void)printf("  %7.4f%+7.4fi    %7.4f%+7.4fi\n",
         creal(s[0][0]), cimag(s[0][0]), creal(s[0][1]), cimag(s[0][1]));
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
     /*
      * Convert to input impedance at each port.
      */
-    vnaconv_s2zi(s, zi, z0);
+    vnaconv_stozi(s, zi, z0);
     (void)printf("input-impedances:\n");
     (void)printf("  %7.4f%+7.4fi    %7.4f%+7.4fi\n",
         creal(zi[0]), cimag(zi[0]), creal(zi[1]), cimag(zi[1]));

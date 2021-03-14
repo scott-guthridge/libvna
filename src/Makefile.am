@@ -25,27 +25,27 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnacal_set_dprecision.c vnacal_set_fprecision.c vnacal_parameter.c \
 	vnacommon_internal.h vnacommon_lu.c vnacommon_minverse.c \
 	vnacommon_mldivide.c vnacommon_mrdivide.c \
-	vnaerr_internal.h vnaerr_verror.c \
 	vnacommon_qrd.c vnacommon_qrsolve.c \
-	vnaconv_internal.h vnaconv_a2b.c vnaconv_a2g.c vnaconv_a2h.c \
-	vnaconv_a2s.c vnaconv_a2t.c vnaconv_a2y.c vnaconv_a2z.c \
-	vnaconv_a2zi.c vnaconv_b2a.c vnaconv_b2g.c vnaconv_b2h.c \
-	vnaconv_b2s.c vnaconv_b2t.c vnaconv_b2y.c vnaconv_b2z.c \
-	vnaconv_b2zi.c vnaconv_g2a.c vnaconv_g2b.c vnaconv_g2h.c \
-	vnaconv_g2s.c vnaconv_g2t.c vnaconv_g2y.c vnaconv_g2z.c \
-	vnaconv_g2zi.c vnaconv_h2a.c vnaconv_h2b.c vnaconv_h2g.c \
-	vnaconv_h2s.c vnaconv_h2t.c vnaconv_h2y.c vnaconv_h2z.c \
-	vnaconv_h2zi.c vnaconv_s2a.c vnaconv_s2b.c vnaconv_s2g.c \
-	vnaconv_s2h.c vnaconv_s2t.c vnaconv_s2y.c vnaconv_s2yn.c \
-	vnaconv_s2z.c vnaconv_s2zi.c vnaconv_s2zimn.c vnaconv_s2zin.c \
-	vnaconv_s2zn.c vnaconv_t2a.c vnaconv_t2b.c vnaconv_t2g.c \
-	vnaconv_t2h.c vnaconv_t2s.c vnaconv_t2y.c vnaconv_t2z.c \
-	vnaconv_t2zi.c vnaconv_y2a.c vnaconv_y2b.c vnaconv_y2g.c \
-	vnaconv_y2h.c vnaconv_y2s.c vnaconv_y2sn.c vnaconv_y2t.c \
-	vnaconv_y2z.c vnaconv_y2zi.c vnaconv_y2zin.c vnaconv_y2zn.c \
-	vnaconv_z2a.c vnaconv_z2b.c vnaconv_z2g.c vnaconv_z2h.c \
-	vnaconv_z2s.c vnaconv_z2sn.c vnaconv_z2t.c vnaconv_z2y.c \
-	vnaconv_z2yn.c vnaconv_z2zi.c vnaconv_z2zin.c \
+	vnaerr_internal.h vnaerr_verror.c \
+	vnaconv_internal.h vnaconv_atob.c vnaconv_atog.c vnaconv_atoh.c \
+	vnaconv_atos.c vnaconv_atot.c vnaconv_atoy.c vnaconv_atoz.c \
+	vnaconv_atozi.c vnaconv_btoa.c vnaconv_btog.c vnaconv_btoh.c \
+	vnaconv_btos.c vnaconv_btot.c vnaconv_btoy.c vnaconv_btoz.c \
+	vnaconv_btozi.c vnaconv_gtoa.c vnaconv_gtob.c vnaconv_gtoh.c \
+	vnaconv_gtos.c vnaconv_gtot.c vnaconv_gtoy.c vnaconv_gtoz.c \
+	vnaconv_gtozi.c vnaconv_htoa.c vnaconv_htob.c vnaconv_htog.c \
+	vnaconv_htos.c vnaconv_htot.c vnaconv_htoy.c vnaconv_htoz.c \
+	vnaconv_htozi.c vnaconv_stoa.c vnaconv_stob.c vnaconv_stog.c \
+	vnaconv_stoh.c vnaconv_stot.c vnaconv_stoy.c vnaconv_stoyn.c \
+	vnaconv_stoz.c vnaconv_stozi.c vnaconv_stozimn.c vnaconv_stozin.c \
+	vnaconv_stozn.c vnaconv_ttoa.c vnaconv_ttob.c vnaconv_ttog.c \
+	vnaconv_ttoh.c vnaconv_ttos.c vnaconv_ttoy.c vnaconv_ttoz.c \
+	vnaconv_ttozi.c vnaconv_ytoa.c vnaconv_ytob.c vnaconv_ytog.c \
+	vnaconv_ytoh.c vnaconv_ytos.c vnaconv_ytosn.c vnaconv_ytot.c \
+	vnaconv_ytoz.c vnaconv_ytozi.c vnaconv_ytozin.c vnaconv_ytozn.c \
+	vnaconv_ztoa.c vnaconv_ztob.c vnaconv_ztog.c vnaconv_ztoh.c \
+	vnaconv_ztos.c vnaconv_ztosn.c vnaconv_ztot.c vnaconv_ztoy.c \
+	vnaconv_ztoyn.c vnaconv_ztozi.c vnaconv_ztozin.c \
 	vnadata_internal.h vnadata_add_frequency.c vnadata_alloc.c \
 	vnadata_convert.c vnadata_convert_to_fz0.c vnadata_convert_to_z0.c \
 	vnadata_get_fz0.c vnadata_get_fz0_vector.c vnadata_get_typename.c \
