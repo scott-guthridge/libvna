@@ -1,0 +1,48 @@
+- Add a test suite for vnadata
+
+- Add a test suite for vnafile
+
+- Add vnacal-T16-example.c using T-MM-SS-SM-MS standards.
+  Approach: generally follow the example of vnacal-TSD-example, but
+  in the simulated VNA, use the M = (Ts S + Ti) (Tx S + Tm)^-1 matrix
+  equation to generate the measured value, taking into account all four
+  T error matrices.  Note that vnacal-test also tests this case and
+  can serve somewhat as an example.
+
+- Add U-parameter (inverse T) support to vnaconv, vnadata and vnafile.
+
+- Implement auto-calibration support based on the calibration algorithm
+  for unknown standards described in "Flexible Vector Network Analyzer
+  Calibration With Accuracy Bounds Using and 8-Term or a 16-Term Error
+  Correction Model", Van hamme & Bossche, 1994.  This will add support
+  for TRL, LRL, TRM, LRM, LRRM, UXYZ, etc. in a very general way.
+
+  The vnacal_make_*_parameter interface is sufficient to build the E
+  matrix and f vector in the algorithm.  The interfaces and structure
+  of vnacal_new_* should be sufficient to calculate the Jacobian and
+  implement the algorithm by extending vnacal_new_solve.
+
+  Add an interface to read-out the solved unknown parameters.  It
+  would be nice if one could provide a map of desired parameters and
+  load them into a vnadata_t object where they can be saved.
+
+  Add a function to compute the error bounds as described in the paper.
+
+- Bring back vnacal_apply_t from the git history (consider renaming to
+  vnacal_map_t to better match what it does and avoid confusion with the
+  vancal_apply functions).  But first, explore if we can make it work
+  with other than perfect match standards on the unconnected DUT ports.
+  Note that even if we know these standards exactly, if the reflections
+  aren't exactly zero, the system can't be solved with a linear system
+  of equations because it involes products of s-parameters.  Ideally,
+  we'd want to also be able to use unknown parameters and have the
+  library solve for the unknowns.
+
+  From an interface perspective, a clean approach would be to let
+  positive numbers in the DUT->VNA port map to be VNA port numbers and
+  zero or negative numbers represent parameters, using the negative of
+  the parameter handle.
+
+- Before the 1.0 release, lower-case "VNACAL" in the vnacal save file
+  and reset the version number to 1.0.  The vnacal_load function can
+  still recognize capital VNACAL versions for compatibility.
