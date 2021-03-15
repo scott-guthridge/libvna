@@ -13,10 +13,12 @@ RPMFLAGS= --buildroot="$${PWD}/root"
 srcrpm: $(rpmspec)
 	$(RPMBUILD) $(RPMFLAGS) -bs $(rpmmacros) $(rpmspec)
 
-rpms: $(rpmspec)
+rpm: $(rpmspec)
 	$(RPMBUILD) $(RPMFLAGS) -ba $(rpmmacros) $(rpmspec)
+
+rpms: rpm	# alias
 
 clean-local:
 	rm -rf $(PACKAGE_TARNAME)-$(PACKAGE_VERSION) root
 
-.PHONY: srcrpm rpms
+.PHONY: srcrpm rpm rpms

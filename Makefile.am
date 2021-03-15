@@ -6,7 +6,7 @@ SUBDIRS= rpm src
 dist_doc_DATA= COPYING README-EXAMPLES
 dist_noinst_SCRIPTS= bootstrap
 
-srcrpm rpms: dist
+srcrpm rpm rpms: dist
 	(cd rpm && $(MAKE) $(AM_MAKEFLAGS) $@)
 
 plot: all
@@ -18,4 +18,4 @@ pdfman:
 clean-local:
 	rm -f archdep.o
 
-.PHONY: srcrpm rpms plot pdfroff
+.PHONY: srcrpm rpm plot pdfroff
