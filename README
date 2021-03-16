@@ -90,7 +90,8 @@ Creating a new release (for git developers only)
 
 The library is still undergoing some final development.  While the
 version remains at 0.x.x, there may be a few compatiblity breaks not
-reflected in the library .so version.
+reflected in the library .so version.  Several compatibility breaks were
+introduced beween development versions v0.0.6 and v0.1.0 to improve APIs.
 
 If you'd like to help, please contact me.  The main things I could use
 help on right now are:
@@ -103,7 +104,7 @@ help on right now are:
 
     - A review of the code (over 41000 lines of source code)
 
-    - There's a TODO list in src/
+    - There's also a TODO list in src/
 
-Finally, please make suggestions for how the library could be improved.
+Finally, please make suggestions on how the library could be improved.
 
