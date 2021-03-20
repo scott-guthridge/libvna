@@ -150,7 +150,7 @@ static void report_test_result(const char *test_name, test_result_type result)
 	/*NOTREACHED*/
     }
     (void)printf("Test %2d: %-58s %s\n", ++test_count, test_name, result_name);
-    (void)fflush(stdout);
+    (void)(void)fflush(stdout);
     if (result == T_FAIL) {
 	++fail_count;
     }
@@ -181,6 +181,7 @@ static void test_vnacommon_lu()
 	    if (opt_v) {
 		(void)printf("Test vnacommon_lu: trial %3d size %d x %d\n",
 			trial, n, n);
+		(void)fflush(stdout);
 	    }
 
 	    /*
@@ -193,6 +194,7 @@ static void test_vnacommon_lu()
 	    }
 	    if (opt_v) {
 		cmatrix_print("a", a, n, n);
+		(void)fflush(stdout);
 	    }
 
 	    /*
@@ -204,6 +206,7 @@ static void test_vnacommon_lu()
 		cmatrix_print("LU factorization", a, n, n);
 		(void)printf("determinant %8.5f%+8.5fj\n", creal(d), cimag(d));
 		(void)printf("\n");
+		(void)fflush(stdout);
 	    }
 	    if (cabs(d) < EPS) {
 		(void)fprintf(stderr, "%s: test_vnacommon_lu: warning: "
@@ -273,6 +276,7 @@ static void test_vnacommon_mldivide()
 		if (opt_v) {
 		    (void)printf("Test vnacommon_mldivide: trial %3d size "
 			    "%d x %d\n", trial, m, n);
+		    (void)fflush(stdout);
 		}
 
 		/*
@@ -291,6 +295,7 @@ static void test_vnacommon_mldivide()
 		    cmatrix_print("a", a, m, m);
 		    cmatrix_print("b", b, m, n);
 		    cmatrix_print("t", t, m, n);
+		    (void)fflush(stdout);
 		}
 
 		/*
@@ -302,6 +307,7 @@ static void test_vnacommon_mldivide()
 		    (void)printf("determinant %8.5f%+8.5fj\n",
 			    creal(d), cimag(d));
 		    (void)printf("\n");
+		    (void)fflush(stdout);
 		}
 		if (cabs(d) < EPS) {
 		    (void)fprintf(stderr, "%s: test_vnacommon_mldivide: "
@@ -368,6 +374,7 @@ static void test_vnacommon_mrdivide()
 		if (opt_v) {
 		    (void)printf("Test vnacommon_mrdivide: trial %3d size "
 			    "%d x %d\n", trial, m, n);
+		    (void)fflush(stdout);
 		}
 
 		/*
@@ -388,6 +395,7 @@ static void test_vnacommon_mrdivide()
 		    cmatrix_print("a", a, n, n);
 		    cmatrix_print("b", b, m, n);
 		    cmatrix_print("t", t, m, n);
+		    (void)fflush(stdout);
 		}
 
 		/*
@@ -399,6 +407,7 @@ static void test_vnacommon_mrdivide()
 		    (void)printf("determinant %8.5f%+8.5fj\n",
 			    creal(d), cimag(d));
 		    (void)printf("\n");
+		    (void)fflush(stdout);
 		}
 		if (cabs(d) < EPS) {
 		    (void)fprintf(stderr, "%s: test_vnacommon_mrdivide: "
@@ -461,6 +470,7 @@ static void test_vnacommon_minverse()
 	    if (opt_v) {
 		(void)printf("Test vnacommon_minverse: trial %3d size "
 			"%d x %d\n", trial, n, n);
+		(void)fflush(stdout);
 	    }
 
 	    /*
@@ -474,6 +484,7 @@ static void test_vnacommon_minverse()
 	    }
 	    if (opt_v) {
 		cmatrix_print("a", a, n, n);
+		(void)fflush(stdout);
 	    }
 
 	    /*
@@ -485,6 +496,7 @@ static void test_vnacommon_minverse()
 		(void)printf("determinant %8.5f%+8.5fj\n",
 			creal(d), cimag(d));
 		(void)printf("\n");
+		(void)fflush(stdout);
 	    }
 	    if (cabs(d) < EPS) {
 		(void)fprintf(stderr, "%s: test_vnacommon_mldivide: warning: "
@@ -523,7 +535,7 @@ out:
 #undef A
 
 /*
- * test_qrd: test QRd decomposition
+ * test_qrd: test QR decomposition
  */
 static void test_vnacommon_qrd()
 {
@@ -545,6 +557,7 @@ static void test_vnacommon_qrd()
 		if (opt_v) {
 		    (void)printf("Test vnacommon_qrd: trial %3d "
 			    "size %d x %d\n", trial, m, n);
+		    (void)fflush(stdout);
 		}
 
 		/*
@@ -561,6 +574,7 @@ static void test_vnacommon_qrd()
 		    cmatrix_print("a",  *a, m, n);
 		    cmatrix_print("qr", *r, m, n);
 		    cmatrix_print("d",  d, 1, diagonals);
+		    (void)fflush(stdout);
 		}
 
 		/*
@@ -589,6 +603,7 @@ static void test_vnacommon_qrd()
 		}
 		if (opt_v) {
 		    cmatrix_print("q", *q, m, m);
+		    (void)fflush(stdout);
 		}
 
 		/*
@@ -609,6 +624,7 @@ static void test_vnacommon_qrd()
 		}
 		if (opt_v) {
 		    cmatrix_print("r", *r, m, n);
+		    (void)fflush(stdout);
 		}
 
 		/*
@@ -662,7 +678,7 @@ out:
 /*
  * qrsolve_helper: generate a random system of equations and solve
  */
-static void qrsolve_helper(double complex *x, double complex *a,
+static int qrsolve_helper(double complex *x, double complex *a,
 	double complex *b, int m, int n, int o)
 {
     double complex u[m][n];
@@ -684,7 +700,7 @@ static void qrsolve_helper(double complex *x, double complex *a,
     /*
      * Solve the system.  This call destroys both u and v.
      */
-    _vnacommon_qrsolve(x, &u[0][0], &v[0][0], m, n, o);
+    return _vnacommon_qrsolve(x, &u[0][0], &v[0][0], m, n, o);
 }
 
 /*
@@ -726,6 +742,7 @@ static void test_vnacommon_qrsolve()
 	    double complex a[n][n];
 	    double complex b[n][o];
 	    double complex x[n][o];
+	    int rank;
 
 	    /*
 	     * If -v, print the test header.
@@ -733,16 +750,19 @@ static void test_vnacommon_qrsolve()
 	    if (opt_v) {
 		(void)printf("Test vnacommon_qrsolve: trial %3d "
 			"size %d x %d\n", trial, n, n);
+		(void)fflush(stdout);
 	    }
 
 	    /*
 	     * Generate random matrices A and B, and solve for X.
 	     */
-	    qrsolve_helper(&x[0][0], &a[0][0], &b[0][0], n, n, o);
+	    rank = qrsolve_helper(&x[0][0], &a[0][0], &b[0][0], n, n, o);
 	    if (opt_v) {
 		cmatrix_print("a", *a, n, n);
 		cmatrix_print("b", *b, n, o);
 		cmatrix_print("x", *x, n, o);
+		(void)printf("rank %d\n", rank);
+		(void)fflush(stdout);
 	    }
 
 	    /*
@@ -764,6 +784,17 @@ static void test_vnacommon_qrsolve()
 		    }
 		}
 	    }
+
+	    /*
+	     * Check rank.
+	     */
+	    if (rank != n) {
+		if (opt_a) {
+		    assert(!"incorrect rank");
+		}
+		result = T_FAIL;
+		goto out;
+	    }
 	}
 
 	/*
@@ -775,6 +806,7 @@ static void test_vnacommon_qrsolve()
 		    double complex a[m][n];
 		    double complex b[m][o];
 		    double complex x[n][o];
+		    int rank;
 
 		    /*
 		     * If -v, print the test header.
@@ -783,16 +815,19 @@ static void test_vnacommon_qrsolve()
 			(void)printf("Test vnacommon_qrsolve: trial %3d "
 				"A size %d x %d, B size %d x %d\n",
 				trial, m, n, n, o);
+			(void)fflush(stdout);
 		    }
 
 		    /*
 		     * Generate random matrices A and B, and solve for X.
 		     */
-		    qrsolve_helper(&x[0][0], &a[0][0], &b[0][0], m, n, o);
+		    rank = qrsolve_helper(&x[0][0], &a[0][0], &b[0][0], m, n, o);
 		    if (opt_v) {
 			cmatrix_print("a", *a, m, n);
 			cmatrix_print("b", *b, n, o);
 			cmatrix_print("x", *x, n, o);
+			(void)printf("rank %d\n", rank);
+			(void)fflush(stdout);
 		    }
 
 		    /*
@@ -814,6 +849,17 @@ static void test_vnacommon_qrsolve()
 			    }
 			}
 		    }
+
+		    /*
+		     * Check rank.
+		     */
+		    if (rank != m) {
+			if (opt_a) {
+			    assert(!"incorrect rank");
+			}
+			result = T_FAIL;
+			goto out;
+		    }
 		}
 	    }
 	}
@@ -827,6 +873,7 @@ static void test_vnacommon_qrsolve()
 		    double complex a[m][n];
 		    double complex b[m][o];
 		    double complex x[n][o];
+		    int rank;
 		    double error0;
 
 		    /*
@@ -836,16 +883,19 @@ static void test_vnacommon_qrsolve()
 			(void)printf("Test vnacommon_qrsolve: trial %3d "
 				"A size %d x %d, B size %d x %d\n",
 				trial, m, n, n, o);
+			(void)fflush(stdout);
 		    }
 
 		    /*
 		     * Generate random matrices A and B, and solve for X.
 		     */
-		    qrsolve_helper(&x[0][0], &a[0][0], &b[0][0], m, n, o);
+		    rank = qrsolve_helper(&x[0][0], &a[0][0], &b[0][0], m, n, o);
 		    if (opt_v) {
 			cmatrix_print("a", *a, m, n);
 			cmatrix_print("b", *b, m, o);
 			cmatrix_print("x", *x, n, o);
+			(void)printf("rank %d\n", rank);
+			(void)fflush(stdout);
 		    }
 
 		    /*
@@ -878,6 +928,17 @@ static void test_vnacommon_qrsolve()
 			    x[j][k] = x0;	/* restore x[j][k] */
 			}
 		    }
+
+		    /*
+		     * Check rank.
+		     */
+		    if (rank != n) {
+			if (opt_a) {
+			    assert(!"incorrect rank");
+			}
+			result = T_FAIL;
+			goto out;
+		    }
 		}
 	    }
 	}
@@ -886,6 +947,141 @@ static void test_vnacommon_qrsolve()
 
 out:
     report_test_result("QR Solve", result);
+}
+
+/*
+ * qrsolve_q_helper: generate a random system of equations and solve
+ */
+static int qrsolve_q_helper(double complex *x, double complex *a,
+	double complex *b, double complex *q, int m, int n, int o)
+{
+    double complex u[m][n];
+    double complex v[m][o];
+
+    /*
+     * Generate random matrices A and B, and make copies
+     * in U and V, respectively.
+     */
+    for (int i = 0; i < m; ++i) {
+	for (int j = 0; j < n; ++j) {
+	    a[i * n + j] = u[i][j] = crandn();
+	}
+	for (int k = 0; k < o; ++k) {
+	    b[i * o + k] = v[i][k] = crandn();
+	}
+    }
+
+    /*
+     * Solve the system.  This call destroys both u and v.
+     */
+    return _vnacommon_qrsolve_q(x, &u[0][0], &v[0][0], q, m, n, o);
+}
+
+/*
+ * test_vnacommon_qrsolve_q: test QR decomposition with Q
+ */
+static void test_vnacommon_qrsolve_q()
+{
+    test_result_type result = T_SKIPPED;
+
+    for (int trial = 1; trial <= N_MATRIX_TRIALS; ++trial) {
+	for (int m = 1; m <= 5; ++m) {
+	    for (int n = 1; n <= 5; ++n) {
+		for (int o = 1; o <= 2; ++o) {
+		    double complex a[m][n];
+		    double complex b[m][o];
+		    double complex x[n][o];
+		    double complex q[m][m];
+		    int diagonals = MIN(m, n);
+		    int rank;
+
+		    /*
+		     * If -v, print the test header.
+		     */
+		    if (opt_v) {
+			(void)printf("Test vnacommon_qrsolve_q: trial %3d "
+				"size %d x %d\n", trial, m, n);
+			(void)fflush(stdout);
+		    }
+
+		    /*
+		     * Generate random matrices A and B, and solve for X.
+		     */
+		    rank = qrsolve_q_helper(*x, *a, *b, *q, m, n, o);
+		    if (opt_v) {
+			cmatrix_print("a", *a, m, n);
+			cmatrix_print("b", *b, m, o);
+			cmatrix_print("x", *x, n, o);
+			cmatrix_print("q", *q, m, m);
+			(void)printf("rank %d\n", rank);
+			(void)fflush(stdout);
+		    }
+
+		    /*
+		     * If m <= n, verify A X == B.  Otherwise, the system
+		     * is overdetermined and the equality won't hold.  We
+		     * checked that case already anyway.
+		     */
+		    if (m <= n) {
+			for (int k = 0; k < o; ++k) {
+			    for (int i = 0; i < m; ++i) {
+				double complex s = 0.0;
+
+				for (int j = 0; j < n; ++j) {
+				    s += a[i][j] * x[j][k];
+				}
+				if (cabs(s - b[i][k]) > EPS) {
+				    if (opt_a) {
+					assert(!"data miscompare");
+				    }
+				    result = T_FAIL;
+				    goto out;
+				}
+			    }
+			}
+		    }
+
+		    /*
+		     * Check rank.
+		     */
+		    if (rank != diagonals) {
+			if (opt_a) {
+			    assert(!"incorrect rank");
+			}
+			result = T_FAIL;
+			goto out;
+		    }
+
+#if 0
+		    /*
+		     * Test that Q Q' is the identity matrix.
+		     */
+		    for (int i = 0; i < m; ++i) {
+			for (int j = 0; j < m; ++j) {
+			    double complex s = 0.0;
+
+			    for (int k = 0; k < m; ++k) {
+				s += q[i][k] * conj(q[j][k]);
+			    }
+			    s -= (i == j) ? 1.0 : 0.0;
+			    if (cabs(s) > EPS) {
+				if (opt_a) {
+				    assert(!"data miscompare");
+				}
+				result = T_FAIL;
+				goto out;
+			    }
+			}
+		    }
+#endif
+		}
+	    }
+	}
+    }
+    result = T_PASS;
+
+out:
+    report_test_result("QR Solve Q", result);
 }
 
 /*
@@ -948,6 +1144,7 @@ main(int argc, char **argv)
     test_vnacommon_minverse();
     test_vnacommon_qrd();
     test_vnacommon_qrsolve();
+    test_vnacommon_qrsolve_q();
 
     exit(fail_count != 0);
     /*NOTREACHED*/

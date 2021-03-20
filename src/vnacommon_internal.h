@@ -47,6 +47,10 @@ extern void _vnacommon_qrd(complex double *a, complex double *d,
 extern int _vnacommon_qrsolve(complex double *x, complex double *a,
 	complex double *b, int m, int n, int o);
 
+/* _vnacommon_qrsolve_q: solve the system A X = B and return Q */
+extern int _vnacommon_qrsolve_q(complex double *x, complex double *a,
+	complex double *b, complex double *q, int m, int n, int o);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

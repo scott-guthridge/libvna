@@ -37,7 +37,7 @@
  * On return, the lower triangle of A (including the major diagonal)
  * contains the v_i vectors that can be used to construct Q:
  *
- *   Q = (I - 2 v1 v1')' * (I - 2 v2 v2')' + ... (I = 2 vn vn')'
+ *   Q = (I - 2 v1 v1')' * (I - 2 v2 v2')' + ... (I - 2 vn vn')'
  *
  * Since v1, v2, v3, etc. become progressively shorter, one must
  * treat the rows above as containing zeros.  We don't actually

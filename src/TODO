@@ -1,6 +1,3 @@
-- Add a test suite for vnadata
-
-- Add a test suite for vnafile
 
 - Add vnacal-T16-example.c using T-MM-SS-SM-MS standards.
   Approach: generally follow the example of vnacal-TSD-example, but
@@ -9,10 +6,17 @@
   T error matrices.  Note that vnacal-test also tests this case and
   can serve somewhat as an example.
 
+- Add debian package support
+
+- Add a test suite for vnadata
+
+- Add a test suite for vnafile
+
 - Add U-parameter (inverse T) support to vnaconv, vnadata and vnafile.
 
-- Implement auto-calibration support based on the calibration algorithm
-  for unknown standards described in "Flexible Vector Network Analyzer
+- 
+  Implement auto-calibration based on the calibration algorithm for
+  unknown standards described in "Flexible Vector Network Analyzer
   Calibration With Accuracy Bounds Using and 8-Term or a 16-Term Error
   Correction Model", Van hamme & Bossche, 1994.  This will add support
   for TRL, LRL, TRM, LRM, LRRM, UXYZ, etc. in a very general way.

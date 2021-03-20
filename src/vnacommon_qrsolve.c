@@ -36,11 +36,11 @@
  *  @n: number of columns in A, and rows in X
  *  @o: number of columns in B and X
  *
- * Solves the system of equations using QR decomposition, where A doesn't
- * have to be square.  If A has more columns than rows (underdetermined
- * case), the function finds a solution with excess variables set to zero.
- * If A has more rows than columns, (overdetermined case), the function
- * finds a solution that that minimizes error in a least-squares sense.
+ * Solves the system of equations using QR decomposition.  If A has
+ * more columns than rows (underdetermined case), the function finds a
+ * solution with excess variables set to zero.  If A has more rows than
+ * columns, (overdetermined case), the function finds a solution that
+ * that minimizes error in a least-squares sense.
  *
  * Note: both a and b are destroyed!
  *
@@ -103,9 +103,15 @@ int _vnacommon_qrsolve(complex double *x, complex double *a,
 		s += A(i, j) * X(j, k);
 	    }
 	    X(i, k) = (B(i, k) - s) / d[i];
-	    if (isfinite(cabs(d[i])) && d[i] != 0.0) {
-		++rank;
-	    }
+	}
+    }
+
+    /*
+     * Find the rank.
+     */
+    for (int i = 0; i < diagonals; ++i) {
+	if (isfinite(cabs(d[i])) && d[i] != 0.0) {
+	    ++rank;
 	}
     }
     return rank;
