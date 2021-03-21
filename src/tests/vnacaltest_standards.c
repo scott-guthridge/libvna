@@ -172,7 +172,8 @@ test_vnacal_terms_t *make_random_calibration(vnacal_t *vcp, vnacal_type_t type,
 	for (int i = 0; i < ports * ports; ++i) {
 	    s[i] = VNACAL_MATCH;
 	}
-	if (test_vnacal_calculate_measurements(ttp, tmp, s, ports, ports, NULL, 0.0) == -1) {
+	if (test_vnacal_calculate_measurements(ttp, tmp, s, ports, ports,
+		    NULL) == -1) {
 	    goto error;
 	}
 	if (ab) {
@@ -202,7 +203,8 @@ test_vnacal_terms_t *make_random_calibration(vnacal_t *vcp, vnacal_type_t type,
 	if (test_vnacal_generate_random_parameters(vcp, s, ports * ports) == -1) {
 	    goto error;
 	}
-	if (test_vnacal_calculate_measurements(ttp, tmp, s, ports, ports, NULL, 0.0) == -1) {
+	if (test_vnacal_calculate_measurements(ttp, tmp, s, ports, ports,
+		    NULL) == -1) {
 	    goto error;
 	}
 	if (ab) {
@@ -310,7 +312,7 @@ void test_vnacal_print_standard(vnacal_t *vcp, const int *s,
 		    double complex value;
 
 		    vpmrp = _vnacal_get_parameter(vcp, s[cell]);
-		    value = _vnacal_get_parameter_value(vpmrp, f);
+		    value = _vnacal_get_parameter_value_i(vpmrp, f);
 		    (void)printf("  s%d%d: %8.5f%+8.5fj\n",
 			row + 1, column + 1, creal(value), cimag(value));
 		}
@@ -324,7 +326,7 @@ void test_vnacal_print_standard(vnacal_t *vcp, const int *s,
 		double complex value;
 
 		vpmrp = _vnacal_get_parameter(vcp, s[cell]);
-		value = _vnacal_get_parameter_value(vpmrp, 0.0);
+		value = _vnacal_get_parameter_value_i(vpmrp, 0.0);
 		(void)printf("  s%d%d: %8.5f%+8.5fj\n",
 			row + 1, column + 1, creal(value), cimag(value));
 	    }
@@ -358,8 +360,7 @@ int test_vnacal_add_single_reflect(const test_vnacal_terms_t *ttp,
     vnacal_new_t *vnp = ttp->tt_vnp;
     int a_rows = VL_HAS_COLUMN_SYSTEMS(vlp) ? 1 : m_columns;
 
-    if (test_vnacal_calculate_measurements(ttp, tmp, &s11, 1, 1,
-		&port, 0.0) == -1) {
+    if (test_vnacal_calculate_measurements(ttp, tmp, &s11, 1, 1, &port) == -1) {
 	return -1;
     }
     if (tmp->tm_a_matrix != NULL) {
@@ -403,7 +404,7 @@ int test_vnacal_add_double_reflect(const test_vnacal_terms_t *ttp,
     int port_map[2] = { port1, port2 };
 
     if (test_vnacal_calculate_measurements(ttp, tmp, &s_matrix[0][0], 2, 2,
-		port_map, 0.0) == -1) {
+		port_map) == -1) {
 	return -1;
     }
     if (tmp->tm_a_matrix != NULL) {
@@ -429,10 +430,9 @@ int test_vnacal_add_double_reflect(const test_vnacal_terms_t *ttp,
  *   @tmp: test measurements structure
  *   @port1: first port
  *   @port2: second port
- *   @sigma: if non-zero, add random noise
  */
 int test_vnacal_add_through(const test_vnacal_terms_t *ttp,
-	test_vnacal_measurements_t *tmp, int port1, int port2, double sigma)
+	test_vnacal_measurements_t *tmp, int port1, int port2)
 {
     const vnacal_layout_t *vlp = &ttp->tt_layout;
     const int m_rows = VL_M_ROWS(vlp);
@@ -443,8 +443,8 @@ int test_vnacal_add_through(const test_vnacal_terms_t *ttp,
 				  { VNACAL_ONE, VNACAL_MATCH } };
     int port_map[2] = { port1, port2 };
 
-    if (test_vnacal_calculate_measurements(ttp, tmp, &s_matrix[0][0], 2, 2,
-		port_map, sigma) == -1) {
+    if (test_vnacal_calculate_measurements(ttp, tmp,
+		&s_matrix[0][0], 2, 2, port_map) == -1) {
 	return -1;
     }
     if (tmp->tm_a_matrix != NULL) {
@@ -483,7 +483,7 @@ int test_vnacal_add_line(const test_vnacal_terms_t *ttp,
     int port_map[2] = { port1, port2 };
 
     if (test_vnacal_calculate_measurements(ttp, tmp, s_2x2, 2, 2,
-		port_map, 0.0) == -1) {
+		port_map) == -1) {
 	return -1;
     }
     if (tmp->tm_a_matrix != NULL) {

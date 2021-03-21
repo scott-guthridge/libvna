@@ -1313,12 +1313,12 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 				    /*pad=*/true, 20.0 * log10(cabs(value)));
 			    if (aprecision == VNAFILE_MAX_PRECISION) {
 				(void)fprintf(fp, " %+a",
-					180.0 / PI * carg(value));
+					180.0 / M_PI * carg(value));
 			    } else {
 				(void)fprintf(fp, " %+*.*f",
 					aprecision + 2,
 					aprecision - 3,
-					180.0 / PI * carg(value));
+					180.0 / M_PI * carg(value));
 			    }
 			    break;
 
@@ -1328,12 +1328,12 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 				    /*pad=*/true, cabs(value));
 			    if (aprecision == VNAFILE_MAX_PRECISION) {
 				(void)fprintf(fp, " %+a",
-					180.0 / PI * carg(value));
+					180.0 / M_PI * carg(value));
 			    } else {
 				(void)fprintf(fp, " %+*.*f",
 					aprecision + 2,
 					aprecision - 3,
-					180.0 / PI * carg(value));
+					180.0 / M_PI * carg(value));
 			    }
 			    break;
 
@@ -1369,12 +1369,12 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 				/*pad=*/true, cabs(value));
 			if (aprecision == VNAFILE_MAX_PRECISION) {
 			    (void)fprintf(fp, " %+a",
-				    180.0 / PI * carg(value));
+				    180.0 / M_PI * carg(value));
 			} else {
 			    (void)fprintf(fp, "  %+*.*f",
 				    aprecision + 2,
 				    aprecision - 3,
-				    180.0 / PI * carg(value));
+				    180.0 / M_PI * carg(value));
 			}
 			break;
 
@@ -1401,7 +1401,7 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    r = (zr*zr + zi*zi) / zr;
 			    x = (zr*zr + zi*zi) / zi;
 			    c = -1.0 /
-				(2.0 * PI * frequency_vector[findex] * x);
+				(2.0 * M_PI * frequency_vector[findex] * x);
 			    (void)fputc(' ', fp);
 			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
 				    /*pad=*/true, r);
@@ -1424,7 +1424,7 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    zi = cimag(z);
 			    r = (zr*zr + zi*zi) / zr;
 			    x = (zr*zr + zi*zi) / zi;
-			    l = x / (2.0 * PI * frequency_vector[findex]);
+			    l = x / (2.0 * M_PI * frequency_vector[findex]);
 			    (void)fputc(' ', fp);
 			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
 				    /*pad=*/true, r);
@@ -1446,7 +1446,7 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    zr = creal(z);
 			    zi = cimag(z);
 			    c = -1.0 /
-				(2.0 * PI * frequency_vector[findex] * zi);
+				(2.0 * M_PI * frequency_vector[findex] * zi);
 			    (void)fputc(' ', fp);
 			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
 				    /*pad=*/true, zr);
@@ -1467,7 +1467,7 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    z = data[diagonal];
 			    zr = creal(z);
 			    zi = cimag(z);
-			    l = zi / (2.0 * PI * frequency_vector[findex]);
+			    l = zi / (2.0 * M_PI * frequency_vector[findex]);
 			    (void)fputc(' ', fp);
 			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
 				    /*pad=*/true, zr);

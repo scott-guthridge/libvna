@@ -34,13 +34,12 @@
 #include "vnacaltest.h"
 
 
-char *progname;
-
 #define NTRIALS		67
 
 /*
  * Command Line Options
  */
+char *progname;
 static const char options[] = "av";
 static const char *const usage[] = {
     "[-av]",

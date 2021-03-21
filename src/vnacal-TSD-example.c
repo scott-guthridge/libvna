@@ -46,6 +46,7 @@ char *progname;
 #define PI		3.14159265358979
 #define Z0		50.0			/* ohms */
 #define FC		18e+9			/* Hz */
+#define ER_EFF		8.25
 
 /*
  * ACTUAL_FILE: file containing the actual DUT s-parameters
@@ -241,7 +242,7 @@ static int vna_measure(measurement_t measurement,
 	case MEASURE_DELAY:
 	    /*
 	     * Multiply the ABCD parameters of the first error box, the
-	     * delay and the second error box, convert to s-parameters
+	     * delay and the second error box, convert to s-parameters,
 	     * and find b = s a.
 	     */
 	    multiply(port1_abcd, delay_abcd[findex], temp2);
@@ -321,12 +322,12 @@ static void get_delay_parameters(vnacal_t *vcp,
 
     /*
      * Find the ABCD and S parameters of the delay standard at each
-     * frequency.  For simplicity, we assume a lossless delay; however,
-     * gl can be given a real component to represent a lossy delay.
+     * frequency.  Here, we use a lossless delay; however, gl can be
+     * given a real component for a lossy delay.
      */
     for (int findex = 0; findex < frequencies; ++findex) {
 	double f = frequency_vector[findex];
-	double complex gl = I * PI * f / FC;
+	double complex gl = I * PI * f / FC / 2.0 / sqrt(ER_EFF);
 	double complex temp_s[2][2];
 
 	delay_abcd[findex][0][0] = ccosh(gl);

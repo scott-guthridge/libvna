@@ -17,27 +17,26 @@ libvnacaltest_a_SOURCES = vnacaltest.h vnacaltest_calibration.c \
 #
 TESTS = \
 	test-vnacommon-lu test-vnacommon-mldivide test-vnacommon-mrdivide \
-	test-vnacommon-minverse test-vnacommon-qrd test-vnacommon-qrsolve \
-	test-vnacommon-qrsolve-q \
+	test-vnacommon-minverse test-vnacommon-qr test-vnacommon-qrsolve \
+	test-vnacommon-qrsolve2 \
 	test-vnaproperty-scalar test-vnaproperty-list test-vnaproperty-map \
 	test-vnaproperty-expr \
 	test-vnacal-SOLT test-vnacal-Silvonen16 test-vnacal-random \
-	test-vnacal-apply test-vnacal-save-load \
+	test-vnacal-apply test-vnacal-save-load test-vnacal-TRL \
 	test-vnacal-compat-V2 \
 	test-vnaconv-2x2 test-vnaconv-3x3
 check_PROGRAMS = \
 	test-vnacommon-lu test-vnacommon-mldivide test-vnacommon-mrdivide \
-	test-vnacommon-minverse test-vnacommon-qrd test-vnacommon-qrsolve \
-	test-vnacommon-qrsolve-q \
+	test-vnacommon-minverse test-vnacommon-qr test-vnacommon-qrsolve \
+	test-vnacommon-qrsolve2 \
 	test-vnaproperty-scalar test-vnaproperty-list test-vnaproperty-map \
 	test-vnaproperty-expr \
 	test-vnacal-SOLT test-vnacal-Silvonen16 test-vnacal-random \
-	test-vnacal-apply test-vnacal-save-load \
+	test-vnacal-apply test-vnacal-save-load test-vnacal-TRL \
 	test-vnacal-compat-V2 \
 	test-vnaconv-2x2 test-vnaconv-3x3
 
-test_vnacommon_lu_SOURCES = test.h test.c test-vnacommon-lu.c
-test_vnacommon_lu_CFLAGS = -I..
+test_vnacommon_lu_SOURCES = test.c test-vnacommon-lu.c
 test_vnacommon_lu_LDADD = ../libvna.la -lm
 test_vnacommon_lu_LDFLAGS = -static
 
@@ -53,17 +52,17 @@ test_vnacommon_minverse_SOURCES = test.h test.c test-vnacommon-minverse.c
 test_vnacommon_minverse_LDADD = ../libvna.la -lm
 test_vnacommon_minverse_LDFLAGS = -static
 
-test_vnacommon_qrd_SOURCES = test.h test.c test-vnacommon-qrd.c
-test_vnacommon_qrd_LDADD = ../libvna.la -lm
-test_vnacommon_qrd_LDFLAGS = -static
+test_vnacommon_qr_SOURCES = test.h test.c test-vnacommon-qr.c
+test_vnacommon_qr_LDADD = ../libvna.la -lm
+test_vnacommon_qr_LDFLAGS = -static
 
 test_vnacommon_qrsolve_SOURCES = test.h test.c test-vnacommon-qrsolve.c
 test_vnacommon_qrsolve_LDADD = ../libvna.la -lm
 test_vnacommon_qrsolve_LDFLAGS = -static
 
-test_vnacommon_qrsolve_q_SOURCES = test.h test.c test-vnacommon-qrsolve-q.c
-test_vnacommon_qrsolve_q_LDADD = ../libvna.la -lm
-test_vnacommon_qrsolve_q_LDFLAGS = -static
+test_vnacommon_qrsolve2_SOURCES = test.h test.c test-vnacommon-qrsolve2.c
+test_vnacommon_qrsolve2_LDADD = ../libvna.la -lm
+test_vnacommon_qrsolve2_LDFLAGS = -static
 
 test_vnaproperty_scalar_SOURCES = test.h test.c test-vnaproperty-scalar.c
 test_vnaproperty_scalar_LDADD = ../libvna.la
@@ -112,6 +111,10 @@ test_vnacal_apply_LDFLAGS = -static
 test_vnacal_save_load_SOURCES = test.h test.c test-vnacal-save-load.c
 test_vnacal_save_load_LDADD = libvnacaltest.a ../libvna.la -lyaml -lm
 test_vnacal_save_load_LDFLAGS = -static
+
+test_vnacal_TRL_SOURCES = test.c test-vnacal-TRL.c
+test_vnacal_TRL_LDADD = libvnacaltest.a ../libvna.la -lyaml -lm
+test_vnacal_TRL_LDFLAGS = -static
 
 test_vnacal_compat_V2_SOURCES = test.h test.c test-vnacal-compat-V2.c
 test_vnacal_compat_V2_LDADD = libvnacaltest.a ../libvna.la -lyaml -lm

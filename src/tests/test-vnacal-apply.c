@@ -34,13 +34,12 @@
 #include "vnacaltest.h"
 
 
-char *progname;
-
-#define NTRIALS		67
+#define NTRIALS		50
 
 /*
  * Command Line Options
  */
+char *progname;
 static const char options[] = "av";
 static const char *const usage[] = {
     "[-av]",
@@ -139,7 +138,7 @@ static test_result_t run_vnacal_apply_trial(int trial,
 	goto out;
     }
     if (test_vnacal_calculate_measurements(ttp, tmp, s, ports, ports,
-		NULL, 0.0) == -1) {
+		NULL) == -1) {
 	result = T_FAIL;
 	goto out;
     }
@@ -192,7 +191,7 @@ static test_result_t run_vnacal_apply_trial(int trial,
 			result = T_FAIL;
 			goto out;
 		    }
-		    v = _vnacal_get_parameter_value(vpmrp, f);
+		    v = _vnacal_get_parameter_value_i(vpmrp, f);
 
 		    (void)printf(" %8.5f%+8.5fj", creal(v), cimag(v));
 		}
@@ -222,7 +221,7 @@ static test_result_t run_vnacal_apply_trial(int trial,
 		    result = T_FAIL;
 		    goto out;
 		}
-		expected = _vnacal_get_parameter_value(vpmrp, f);
+		expected = _vnacal_get_parameter_value_i(vpmrp, f);
 		actual = vnadata_get_cell(vdp, findex, s_row, s_column);
 		if (!test_isequal(actual, expected)) {
 		    if (opt_a) {

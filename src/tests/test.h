@@ -48,11 +48,11 @@ extern void test_report(test_result_t result);
 /* test_crandn: generate a 2d normally distributed random complex number */
 extern double complex test_crandn();
 
-/* crandn_nz: like test_crandn, except with magitude >= 0.1 */
-double complex crandn_nz();
+/* test_crandn_nz: like test_crandn, except with magitude >= 0.1 */
+double complex test_crandn_nz();
 
-/* crandn_nrz: like test_crand_nz, but with angle in 20-160, 200-340 degrees */
-extern double complex crandn_nrz();
+/* test_crandn_nrz: like test_crand_nz, but with angle in 20-160, 200-340 degrees */
+extern double complex test_crandn_nrz();
 
 /* test_is_equal: test if two values are equal */
 extern bool test_isequal(double complex actual, double complex expected);

@@ -52,6 +52,74 @@ vnacal_parameter_t *_vnacal_get_parameter(vnacal_t *vcp, int parameter)
 }
 
 /*
+ * _vnacal_get_parameter_frange: get frequency limits for the given parameter
+ *   @vpmrp: pointer returned from _vnacal_get_parameter
+ *   @fmin: address of double to receive minimum
+ *   @fmax: address of double to receive maximum
+ */
+void _vnacal_get_parameter_frange(vnacal_parameter_t *vpmrp,
+	double *fmin, double *fmax)
+{
+    for (;;) {
+	switch (vpmrp->vpmr_type) {
+	case VNACAL_NEW:
+	    break;
+
+	case VNACAL_SCALAR:
+	    *fmin = 0.0;
+	    *fmax = INFINITY;
+	    return;
+
+	case VNACAL_VECTOR:
+	    *fmin = vpmrp->vpmr_frequency_vector[0];
+	    *fmax = vpmrp->vpmr_frequency_vector[vpmrp->vpmr_frequencies - 1];
+	    return;
+
+	case VNACAL_UNKNOWN:
+	case VNACAL_CORRELATED:
+	    vpmrp = vpmrp->vpmr_other;
+	    continue;
+	}
+	break;
+    }
+    assert(!"unexpected parameter type");
+}
+
+/*
+ * _vnacal_get_parameter_value_i: get the value of the parameter at f
+ *   @vpmrp: pointer returned from _vnacal_get_parameter
+ *   @frequency: frequency at which to evaluate the value
+ */
+double complex _vnacal_get_parameter_value_i(vnacal_parameter_t *vpmrp,
+	double frequency)
+{
+    for (;;) {
+	switch (vpmrp->vpmr_type) {
+	case VNACAL_NEW:
+	    break;
+
+	case VNACAL_SCALAR:
+	    return vpmrp->vpmr_gamma;
+
+	case VNACAL_VECTOR:
+	    return _vnacal_rfi(vpmrp->vpmr_frequency_vector,
+		    vpmrp->vpmr_gamma_vector,
+		    vpmrp->vpmr_frequencies,
+		    MIN(vpmrp->vpmr_frequencies, VNACAL_MAX_M),
+		    &vpmrp->vpmr_segment,
+		    frequency);
+
+	case VNACAL_UNKNOWN:
+	case VNACAL_CORRELATED:
+	    vpmrp = vpmrp->vpmr_other;
+	    continue;
+	}
+	break;
+    }
+    assert(!"unexpected parameter type");
+}
+
+/*
  * _vnacal_alloc_parameter: allocate a vnacal_parameter and return index
  *   @function: name of user-called function
  *   @vcp: pointer returned from vnacal_create or vnacal_load
@@ -137,16 +205,16 @@ static void _vnacal_free_parameter(vnacal_parameter_t *vpmrp)
 	vprmcp->vprmc_first_free = parameter;
     }
     switch (vpmrp->vpmr_type) {
-    case VNACAL_VECTOR:
-	free((void *)vpmrp->vpmr_frequency_vector);
-	free((void *)vpmrp->vpmr_gamma_vector);
-	break;
-
     case VNACAL_UNKNOWN:
     case VNACAL_CORRELATED:
 	if (vpmrp->vpmr_other != NULL) {
 	    _vnacal_release_parameter(vpmrp->vpmr_other);
 	}
+	/*FALLTHROUGH*/
+
+    case VNACAL_VECTOR:
+	free((void *)vpmrp->vpmr_frequency_vector);
+	free((void *)vpmrp->vpmr_gamma_vector);
 	break;
 
     default:

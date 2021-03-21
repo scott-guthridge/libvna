@@ -893,11 +893,11 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		switch (best_vffp->vff_format) {
 		case VNAFILE_FORMAT_DB_ANGLE:
 		    value = pow(10.0, v1 / 20.0) *
-			cexp(I * PI / 180.0 * v2);
+			cexp(I * M_PI / 180.0 * v2);
 		    break;
 
 		case VNAFILE_FORMAT_MAG_ANGLE:
-		    value = v1 * cexp(I * PI / 180.0 * v2);
+		    value = v1 * cexp(I * M_PI / 180.0 * v2);
 		    break;
 
 		case VNAFILE_FORMAT_REAL_IMAG:
@@ -905,19 +905,19 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		    break;
 
 		case VNAFILE_FORMAT_PRC:
-		    value = 1.0 / (1.0 / v1 + 2.0 * PI * I * f * v2);
+		    value = 1.0 / (1.0 / v1 + 2.0 * M_PI * I * f * v2);
 		    break;
 
 		case VNAFILE_FORMAT_PRL:
-		    value = 1.0 / (1.0 / v1 - I / (2.0 * PI * I * f * v2));
+		    value = 1.0 / (1.0 / v1 - I / (2.0 * M_PI * I * f * v2));
 		    break;
 
 		case VNAFILE_FORMAT_SRC:
-		    value = v1 - I / (2.0 * PI * f * v2);
+		    value = v1 - I / (2.0 * M_PI * f * v2);
 		    break;
 
 		case VNAFILE_FORMAT_SRL:
-		    value = v1 + 2.0 * PI * I * f * v2;
+		    value = v1 + 2.0 * M_PI * I * f * v2;
 		    break;
 
 		default:

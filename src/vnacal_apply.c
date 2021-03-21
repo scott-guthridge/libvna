@@ -740,7 +740,7 @@ int _vnacal_apply_common(vnacal_apply_args_t vaa)
 		a[cell] = vaa.vaa_a_matrix[cell][findex];
 	    }
 	    determinant = _vnacommon_mrdivide(m, b, a, c_ports, c_ports);
-	    if (determinant == 0.0 || !isfinite(cabs(determinant))) {
+	    if (determinant == 0.0 || !isnormal(cabs(determinant))) {
 		_vnacal_error(vcp, VNAERR_MATH,
 			"%s: 'a' matrix is singular at frequency index %d",
 			vaa.vaa_function, findex);
@@ -805,7 +805,7 @@ int _vnacal_apply_common(vnacal_apply_args_t vaa)
 	    determinant = _vnacommon_mrdivide(s, b, a, c_ports, c_ports);
 	    break;
 	}
-	if (determinant == 0.0 || !isfinite(cabs(determinant))) {
+	if (determinant == 0.0 || !isnormal(cabs(determinant))) {
 	    _vnacal_error(vcp, VNAERR_MATH,
 		    "%s: solution is singular at frequency index %d",
 		    vaa.vaa_function, findex);

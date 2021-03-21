@@ -298,6 +298,9 @@ vnacal_new_parameter_t *_vnacal_new_get_parameter(const char *function,
     if (type == VNACAL_UNKNOWN || type == VNACAL_CORRELATED) {
 	vnprp->vnpr_unknown = true;
 	vnprp->vnpr_unknown_index = vnp->vn_unknown_parameters++;
+	if (type == VNACAL_CORRELATED) {
+	    ++vnp->vn_correlated_parameters;
+	}
 	vnprp->vnpr_correlate = ncprp_correlate;
 	*vnp->vn_unknown_parameter_anchor = vnprp;
 	vnp->vn_unknown_parameter_anchor = &vnprp->vnpr_next_unknown;

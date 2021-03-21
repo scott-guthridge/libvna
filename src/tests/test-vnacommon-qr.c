@@ -53,19 +53,17 @@ static bool opt_a = false;
 static int opt_v = 0;
 
 /*
- * test_qrd: test QR decomposition
+ * test_qr: test QR decomposition
  */
-static test_result_t test_vnacommon_qrd()
+static test_result_t test_vnacommon_qr()
 {
     test_result_t result = T_SKIPPED;
 
     for (int trial = 1; trial <= N_MATRIX_TRIALS; ++trial) {
 	for (int m = 1; m <= 5; ++m) {
 	    for (int n = 1; n <= 5; ++n) {
-		int diagonals = MIN(m, n);
 		double complex a[m][n];
 		double complex t[m][n];
-		double complex d[diagonals];
 		double complex q[m][m];
 		double complex r[m][n];
 
@@ -73,74 +71,28 @@ static test_result_t test_vnacommon_qrd()
 		 * If -v, print the test header.
 		 */
 		if (opt_v) {
-		    (void)printf("Test vnacommon_qrd: trial %3d "
+		    (void)printf("Test vnacommon_qr: trial %3d "
 			    "size %d x %d\n", trial, m, n);
 		    (void)fflush(stdout);
 		}
 
 		/*
-		 * Fill A with random numbers and copy to R.
-		 * Decompose into factored Q_n and R components.
+		 * Fill A with random numbers and copy to T.
 		 */
 		for (int i = 0; i < m; ++i) {
 		    for (int j = 0; j < n; ++j) {
-			r[i][j] = a[i][j] = test_crandn();
+			t[i][j] = a[i][j] = test_crandn();
 		    }
 		}
-		_vnacommon_qrd(*r, d, m, n);
-		if (opt_v) {
-		    test_print_cmatrix("a",  *a, m, n);
-		    test_print_cmatrix("qr", *r, m, n);
-		    test_print_cmatrix("d",  d, 1, diagonals);
-		    (void)fflush(stdout);
-		}
+
 
 		/*
-		 * Initialize q to the identity matrix.
+		 * Find the QR decomposition.
 		 */
-		for (int i = 0; i < m; ++i) {
-		    for (int j = 0; j < m; ++j) {
-			q[i][j] = (i == j) ? 1.0 : 0.0;
-		    }
-		}
-
-		/*
-		 * Form Q.
-		 */
-		for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-		    for (int i = 0; i < m; ++i) {
-			double complex s = 0.0;
-
-			for (int j = diagonal; j < m; ++j) {
-			    s += q[i][j] * r[j][diagonal];
-			}
-			for (int j = diagonal; j < m; ++j) {
-			    q[i][j] -= 2.0 * s * conj(r[j][diagonal]);
-			}
-		    }
-		}
+		_vnacommon_qr(*t, *q, *r, m, n);
 		if (opt_v) {
+		    test_print_cmatrix("a", *a, m, n);
 		    test_print_cmatrix("q", *q, m, m);
-		    (void)fflush(stdout);
-		}
-
-		/*
-		 * Form R.
-		 */
-		for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-		    r[diagonal][diagonal] = d[diagonal];
-		}
-		for (int i = 0; i < diagonals; ++i) {
-		    for (int j = 0; j < i; ++j) {
-			r[i][j] = 0.0;
-		    }
-		}
-		for (int i = n; i < m; ++i) {
-		    for (int j = 0; j < n; ++j) {
-			r[i][j] = 0.0;
-		    }
-		}
-		if (opt_v) {
 		    test_print_cmatrix("r", *r, m, n);
 		    (void)fflush(stdout);
 		}
@@ -156,6 +108,21 @@ static test_result_t test_vnacommon_qrd()
 			    s += q[i][k] * conj(q[j][k]);
 			}
 			if (!test_isequal(s, i == j ? 1.0 : 0.0)) {
+			    if (opt_a) {
+				assert(!"data miscompare");
+			    }
+			    result = T_FAIL;
+			    goto out;
+			}
+		    }
+		}
+
+		/*
+		 * Test that R is upper-triangular.
+		 */
+		for (int i = 1; i < m; ++i) {
+		    for (int j = 0; j < MIN(i, n); ++j) {
+			if (!test_isequal(r[i][j], 0.0)) {
 			    if (opt_a) {
 				assert(!"data miscompare");
 			    }
@@ -241,5 +208,5 @@ main(int argc, char **argv)
 	print_usage();
     }
     test_init_isequal();
-    exit(test_vnacommon_qrd());
+    exit(test_vnacommon_qr());
 }

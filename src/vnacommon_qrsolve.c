@@ -111,7 +111,7 @@ int _vnacommon_qrsolve(complex double *x, complex double *a,
      * Find the rank.
      */
     for (int i = 0; i < diagonals; ++i) {
-	if (isfinite(cabs(d[i])) && d[i] != 0.0) {
+	if (isnormal(cabs(d[i])) && d[i] != 0.0) {
 	    ++rank;
 	}
     }

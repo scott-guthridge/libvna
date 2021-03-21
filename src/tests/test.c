@@ -106,9 +106,9 @@ double complex test_crandn()
 }
 
 /*
- * crandn_nz: like test_crandn, except with magitude >= 0.1
+ * test_crandn_nz: like test_crandn, except with magitude >= 0.1
  */
-double complex crandn_nz()
+double complex test_crandn_nz()
 {
     double u1 = (random() + 1.0) / RAND_MAX;
     double u2 = (double)random() / RAND_MAX;
@@ -119,9 +119,9 @@ double complex crandn_nz()
 }
 
 /*
- * crandn_nrz: like test_crand_nz, but with angle in 20-160, 200-340 degrees
+ * test_crandn_nrz: like test_crand_nz, but with angle in 20-160, 200-340 degrees
  */
-double complex crandn_nrz()
+double complex test_crandn_nrz()
 {
     double u1 = (random() + 1.0) / RAND_MAX;
     double u2 = (double)random() / RAND_MAX;

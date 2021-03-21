@@ -65,35 +65,49 @@ typedef enum vnacal_parameter_type {
  * vnacal_parameter_t: internal representation of a parameter
  */
 typedef struct vnacal_parameter {
-    vnacal_parameter_type_t vpmr_type;		/* parameter type */
-    bool vpmr_deleted;				/* true if deleted */
-    int vpmr_hold_count;			/* hold count */
-    int vpmr_index;				/* position in vector */
-    int vpmr_segment;				/* for _vnacal_rfi */
-    vnacal_t *vpmr_vcp;				/* back pointer to vnacal_t */
+    /* parameter type */
+    vnacal_parameter_type_t vpmr_type;
+
+    /* true if vnacal_delete_parameter called */
+    bool vpmr_deleted;
+
+    /* reference count */
+    int vpmr_hold_count;
+
+    /* index into vprmc_vector */
+    int vpmr_index;
+
+    /* start position for _vnacal_rfi */
+    int vpmr_segment;
+
+    /* back pointer to vnacal_t */
+    vnacal_t *vpmr_vcp;
+
+    /* type-specific members */
     union {
-	double complex scalar;			/* simple gamma value */
+	double complex scalar;
 	struct {
-	    int frequencies;			/* number of frequencies */
-	    double *frequency_vector;		/* vector of frequencies */
-	    double complex *gamma_vector;	/* vector of gamma values */
+	    int frequencies;
+	    double *frequency_vector;
+	    double complex *gamma_vector;
+	    struct {
+		struct vnacal_parameter *other;
+		union {
+		    struct {
+			double sigma;
+		    } correlated;
+		} u;
+	    } unknown;
 	} vector;
-	struct {
-	    struct vnacal_parameter *other;
-	    union {
-		struct {
-		    double sigma;
-		} correlated;
-	    } u;
-	} unknown;
     } u;
+
 } vnacal_parameter_t;
 #define vpmr_gamma		u.scalar
 #define vpmr_frequencies	u.vector.frequencies
 #define vpmr_frequency_vector	u.vector.frequency_vector
 #define vpmr_gamma_vector	u.vector.gamma_vector
-#define vpmr_other		u.unknown.other
-#define vpmr_sigma		u.unknown.u.correlated.sigma
+#define vpmr_other		u.vector.unknown.other
+#define vpmr_sigma		u.vector.unknown.u.correlated.sigma
 
 /*
  * VNACAL_GET_PARAMETER_TYPE: access the parameter type
@@ -168,6 +182,18 @@ typedef struct vnacal_calibration {
 } vnacal_calibration_t;
 
 /*
+ * vnacal_new_m_error_t: measurement error
+ */
+typedef struct vnacal_new_m_error {
+    /* standard deviation of measurement noise */
+    double vnme_noise;
+
+    /* standard deviation of measurement tracking error */
+    double vnme_tracking;
+
+} vnacal_new_m_error_t;
+
+/*
  * vnacal_new_parameter_t: a parameter used in a new calibration
  */
 typedef struct vnacal_new_parameter {
@@ -203,6 +229,7 @@ typedef struct vnacal_new_parameter {
 
 } vnacal_new_parameter_t;
 
+#define vnpr_known_value	u.known_value
 #define vnpr_unknown_index	u.vnpr_unknown.unknown_index
 #define vnpr_correlate		u.vnpr_unknown.correlate
 #define vnpr_next_unknown	u.vnpr_unknown.next_unknown
@@ -223,39 +250,39 @@ typedef struct vnacal_new_parameter_hash {
 } vnacal_new_parameter_hash_t;
 
 /*
- * vnacal_new_term_t: single term of an equation
+ * vnacal_new_coefficient_t: single coefficient of an equation
  */
-typedef struct vnacal_new_term {
+typedef struct vnacal_new_coefficient {
     /* column in expanded coefficient matrix, or -1 for "b" vector */
-    int vnt_coefficient;
+    int vnc_coefficient;
 
     /* multiply by -1 */
-    bool vnt_negative;
+    bool vnc_negative;
 
     /* index into vnm_m_matrix or -1 if no m */
-    int vnt_measurement;
+    int vnc_m_cell;
 
     /* index into vnm_s_matrix or -1 if no s */
-    int vnt_sparameter;
+    int vnc_s_cell;
 
     /* next term in equation */
-    struct vnacal_new_term *vnt_next;
+    struct vnacal_new_coefficient *vnc_next;
 
-} vnacal_new_term_t;
+} vnacal_new_coefficient_t;
 
 /*
  * vnacal_new_equation_t: equation generated from a measured standard
  */
 typedef struct vnacal_new_equation {
     /* associated measured calibration standard */
-    struct vnacal_new_measurement *vne_vcsp;
+    struct vnacal_new_measurement *vne_vnmp;
 
     /* equation row and column */
     int vne_row;
     int vne_column;
 
     /* linked list of terms */
-    vnacal_new_term_t *vne_term_list;
+    vnacal_new_coefficient_t *vne_coefficient_list;
 
     /* next equation in system */
     struct vnacal_new_equation *vne_next;
@@ -314,14 +341,23 @@ struct vnacal_new {
     /* number of frequencies */
     int vn_frequencies;
 
-    /* constant zero parameter */
-    vnacal_new_parameter_t *vn_zero;
+    /* vector of frequencies */
+    double *vn_frequency_vector;
+
+    /* true if the frequency vector has been set */
+    bool vn_frequencies_valid;
 
     /* hash table of parameters used here */
     vnacal_new_parameter_hash_t vn_parameter_hash;
 
+    /* constant zero parameter */
+    vnacal_new_parameter_t *vn_zero;
+
     /* number of unknown parameters */
     int vn_unknown_parameters;
+
+    /* number of unknown correlated parameters */
+    int vn_correlated_parameters;
 
     /* linked list of unknown parameters */
     vnacal_new_parameter_t *vn_unknown_parameter_list;
@@ -329,23 +365,20 @@ struct vnacal_new {
     /* point where next unknown parameter should be linked */
     vnacal_new_parameter_t **vn_unknown_parameter_anchor;
 
-    /* vector (entry per frequency) of vectors of unknown parameter values */
-    double complex **vn_unknown_parameter_vector;
-
-    /* vector of frequencies */
-    double *vn_frequency_vector;
-
-    /* true if the frequency vector has been set */
-    bool vn_frequencies_valid;
-
     /* system impedance of the VNA ports (currently assumed all the same) */
     double complex vn_z0;
+
+    /* vector of measurement error values */
+    vnacal_new_m_error_t *vn_m_error_vector;
 
     /* number of linear systems */
     int vn_systems;
 
     /* vector of linear systems of equations */
     vnacal_new_system_t *vn_system_vector;
+
+    /* total number of equations */
+    int vn_equations;
 
     /* maximum number of equations in any system */
     int vn_max_equations;
@@ -358,6 +391,9 @@ struct vnacal_new {
 
     /* solved error parameters */
     vnacal_calibration_t *vn_calibration;
+
+    /* vector of RMS error of the solutions by frequency */
+    double *vn_rms_error_vector;
 
     /* next and previous elements in list of vnacal_new_t structure */
     list_t vn_next;
@@ -469,7 +505,7 @@ extern void _vnacal_new_free_parameter_hash(
 	vnacal_new_parameter_hash_t *vnphp);
 
 /* free a vnacal_new_measurement_t structure */
-extern void _vnacal_new_free_standard(vnacal_new_measurement_t *vnmp);
+extern void _vnacal_new_free_measurement(vnacal_new_measurement_t *vnmp);
 
 /* _vnacal_new_check_all_frequency_ranges: check f range of all parameters */
 extern int _vnacal_new_check_all_frequency_ranges(const char *function,
@@ -520,8 +556,8 @@ extern void _vnacal_release_parameter(vnacal_parameter_t *vpmrp);
 extern void _vnacal_get_parameter_frange(vnacal_parameter_t *vpmrp,
 	double *fmin, double *fmax);
 
-/* _vnacal_get_parameter_value: get the value of the parameter at frequency */
-extern double complex _vnacal_get_parameter_value(vnacal_parameter_t *vpmrp,
+/* _vnacal_get_parameter_value_i: get the value of the parameter at frequency */
+extern double complex _vnacal_get_parameter_value_i(vnacal_parameter_t *vpmrp,
 	double frequency);
 
 /* _vnacal_setup_parameter_collection: allocate the parameter collection */

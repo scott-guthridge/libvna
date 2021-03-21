@@ -102,6 +102,19 @@ extern int vnacal_new_set_frequency_vector(vnacal_new_t *vnp,
 extern int vnacal_new_set_z0(vnacal_new_t *vnp, double complex z0);
 
 /*
+ * vnacal_new_set_m_error: set VNA measurement error by frequency
+ *   @vnp: pointer to vnacal_new_t structure
+ *   @frequency_vector: vector of frequency points
+ *   @frequencies: number of frequencies
+ *   @noise_error_vector: vector of standard deviation of noise floor
+ *   @tracking_error_vector: vector of standard deviation of tracking error
+ */
+extern int vnacal_new_set_m_error(vnacal_new_t *vnp,
+	const double *frequency_vector, int frequencies,
+	const double *noise_error_vector,
+	const double *tracking_error_vector);
+
+/*
  * vnacal_new_add_single_reflect: add a single reflect on the given port
  *   @vnp: pointer to vnacal_new_t structure
  *   @a: matrix of measured voltages leaving the VNA
@@ -306,6 +319,15 @@ extern int vnacal_make_unknown_parameter(vnacal_t *vcp, int initial_guess);
  */
 extern int vnacal_make_correlated_parameter(vnacal_t *vcp, int other,
 	double sigma);
+
+/*
+ * vnacal_get_parameter_value: evaluate a parameter at a given frequency
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @parameter: index of parameter
+ *   @frequency: frequency at which to evaluate parameter
+ */
+extern double complex vnacal_get_parameter_value(vnacal_t *vcp,
+	int parameter, double frequency);
 
 /*
  * vnacal_delete_parameter: delete the parameter with given index

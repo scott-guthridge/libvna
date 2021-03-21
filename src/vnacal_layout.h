@@ -87,17 +87,37 @@ typedef struct vnacal_layout {
 #define VL_M_COLUMNS(vlp)	((vlp)->vl_m_columns)
 
 /*
+ * VL_M_PORTS: return the number of VNA ports
+ *   @vlp: pointer to vnacal_layout_t structure
+ */
+#define VL_M_PORTS(vlp)		MAX((vlp)->vl_m_rows, (vlp)->vl_m_columns)
+
+/*
  * VL_S_ROWS, VL_S_COLUMNS: return the dimensions of the s-parameter matrix
  *   @vlp: pointer to vnacal_layout_t structure
  */
-#define VL_S_ROWS(vlp)		MAX((vlp)->vl_m_rows, (vlp)->vl_m_columns)
-#define VL_S_COLUMNS(vlp)	MAX((vlp)->vl_m_rows, (vlp)->vl_m_columns)
+#define VL_S_ROWS(vlp)		VL_M_PORTS(vlp)
+#define VL_S_COLUMNS(vlp)	VL_M_PORTS(vlp)
 
 /*
  * VL_ERROR_TERMS: return the total number of error terms
  *   @vlp: pointer to vnacal_layout_t structure
  */
 #define VL_ERROR_TERMS(vlp)	((vlp)->vl_error_terms)
+
+/*
+ * VNACAL_IS_T: test if we're using T parameters
+ *   @type: error term type
+ */
+#define VNACAL_IS_T(type) \
+    ((type) == VNACAL_T8 || (type) == VNACAL_TE10 || (type) == VNACAL_T16)
+
+/*
+ * VL_IS_T: test if we're using T parameters
+ *   @type: error term type
+ */
+#define	VL_IS_T(vlp) \
+	VNACAL_IS_T((vlp)->vl_type)
 
 /*
  * VNACAL_IS_UE14: test if type is VNACAL_UE14 or _VNACAL_E12_UE14

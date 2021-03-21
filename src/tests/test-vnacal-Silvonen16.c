@@ -34,13 +34,10 @@
 #include "vnacaltest.h"
 
 
-char *progname;
-
-#define NTRIALS		67
-
 /*
  * Command Line Options
  */
+char *progname;
 static const char options[] = "av";
 static const char *const usage[] = {
     "[-av]",
@@ -396,7 +393,7 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
 	    break;
 
 	case T:
-	    if (test_vnacal_add_through(ttp, tmp, 1, 2, 0.0) == -1) {
+	    if (test_vnacal_add_through(ttp, tmp, 1, 2) == -1) {
 		result = T_FAIL;
 		goto out;
 	    }

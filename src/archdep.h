@@ -19,6 +19,10 @@
 
 #define _GNU_SOURCE	/* for declaration of vasprintf on Linux */
 
+#ifndef M_PI
+#define M_PI		3.1415926535897932384626433832795
+#endif /* M_PI */
+
 #ifndef MAX
 #define MAX(a, b)       ((a) >= (b) ? (a) : (b))
 #endif /* MAX */

@@ -29,47 +29,46 @@
 #include "vnacommon_internal.h"
 
 /*
- * _vnacommon_qrsolve_q: solve the system A X = B and return Q
- *  @x:	nxo result matrix
+ * _vnacommon_qr: find the QR decomposition of A
  *  @a: mxn serialized coefficient matrix (destroyed)
- *  @b: mxo constant term matrix (destroyed)
  *  @q: mxm matrix to receive Q
- *  @m: number of rows in A and B
- *  @n: number of columns in A, and rows in X
- *  @o: number of columns in B and X
+ *  @r: mxn matrix to receive R
+ *  @m: number of rows in A
+ *  @n: number of columns in A
  *
- * Solves the system of equations using QR decomposition and returns the
- * Q matrix.  If A has more columns than rows (underdetermined case),
- * the function finds a solution with excess variables set to zero.
- * If A has more rows than columns, (overdetermined case), the function
- * finds a solution that that minimizes error in a least-squares sense.
- *
- * Note: both a and b are destroyed!
+ * Note: a is destroyed!
  *
  * Returns the rank.
  */
-int _vnacommon_qrsolve_q(complex double *x, complex double *a,
-	complex double *b, complex double *q, int m, int n, int o)
+int _vnacommon_qr(complex double *a, complex double *q, complex double *r,
+	int m, int n)
 {
     int diagonals = MIN(m, n);
-    int rank;
+    complex double d[diagonals];
+    int rank = 0;
 
 #define Q(i, j)		((q)[(i) * m + (j)])
+#define R(i, j)		((r)[(i) * n + (j)])
 #define A(i, j)		((a)[(i) * n + (j)])
 
     /*
-     * Use _vnacommon_qrsolve to solve the system.  On return, the
-     * lower triangle of the "a" matrix contains the vectors we need
-     * to build Q.
+     * Find the QR decomposition of A.  On return the lower triangle
+     * of A is replaced with the v_i vectors used to construct Q, the
+     * upper triangle (above the diagonal) contains the portion of R
+     * above the major diagonal, and d contains the major diagonal
+     * of R.
      */
-    rank = _vnacommon_qrsolve(x, a, b, m, n, o);
+    _vnacommon_qrd(a, d, m, n);
 
     /*
-     * Initialize q to the identity matrix.
+     * Initialize q to the identity matrix, and r to zero.
      */
     for (int i = 0; i < m; ++i) {
 	for (int j = 0; j < m; ++j) {
 	    Q(i, j) = (i == j) ? 1.0 : 0.0;
+	}
+	for (int j = 0; j < n; ++j) {
+	    R(i, j) = 0.0;
 	}
     }
 
@@ -89,7 +88,25 @@ int _vnacommon_qrsolve_q(complex double *x, complex double *a,
 	}
     }
 
+    /*
+     * Form R.
+     */
+    for (int i = 0; i < diagonals; ++i) {
+	R(i, i) = d[i];
+	(void)memcpy((void *)&R(i, i + 1), (void *)&A(i, i + 1),
+		(n - i - 1) * sizeof(double complex));
+    }
+
+    /*
+     * Find the rank.
+     */
+    for (int i = 0; i < diagonals; ++i) {
+	if (isnormal(cabs(d[i])) && d[i] != 0.0) {
+	    ++rank;
+	}
+    }
     return rank;
 }
 #undef A
+#undef R
 #undef Q

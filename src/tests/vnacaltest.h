@@ -65,11 +65,17 @@ extern bool opt_a;
 /* opt_v: test output verbosity */
 extern int opt_v;
 
+/* test_vnacal_sigma_n: standard deviation of noise to add to measurements */
+extern double test_vnacal_sigma_n;
+
+/* test_vnacal_sigma_t: standard deviation of tracking error to add to meas. */
+extern double test_vnacal_sigma_t;
+
 /* test_vnacal_generate_error_terms: generate random error terms */
 extern test_vnacal_terms_t *test_vnacal_generate_error_terms(
 	vnacal_t *vcp, vnacal_type_t type, int m_rows, int m_columns,
-	int frequencies, const double *frequency_vector,
-	double sigma, bool ab);
+	int frequencies, const double *frequency_vector, double sigma,
+	bool ab);
 
 /* test_vnacal_print_error_terms: show the generated error terms */
 extern void test_vnacal_print_error_terms(const test_vnacal_terms_t *ttp);
@@ -106,7 +112,7 @@ extern int test_vnacal_add_double_reflect(const test_vnacal_terms_t *ttp,
 
 /* test_vnacal_add_through: measure a through standard */
 extern int test_vnacal_add_through(const test_vnacal_terms_t *ttp,
-        test_vnacal_measurements_t *tmp, int port1, int port2, double sigma);
+        test_vnacal_measurements_t *tmp, int port1, int port2);
 
 /* test_vnacal_add_line: measure a line standard between the given ports */
 extern int test_vnacal_add_line(const test_vnacal_terms_t *ttp,
@@ -123,7 +129,7 @@ extern int test_vnacal_calculate_measurements(
 	const test_vnacal_terms_t *ttp,
         test_vnacal_measurements_t *tmp,
         const int *s_matrix, int s_matrix_rows, int s_matrix_columns,
-        const int *port_map, double sigma);
+        const int *port_map);
 
 /* test_vnacal_print_measurements: print the measured values */
 extern void test_vnacal_print_measurements(test_vnacal_measurements_t *tmp,

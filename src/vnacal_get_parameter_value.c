@@ -29,70 +29,59 @@
 #include <string.h>
 #include "vnacal_internal.h"
 
-/*
- * _vnacal_get_parameter_frange: get frequency limits for the given parameter
- *   @vpmrp: pointer returned from _vnacal_get_parameter
- *   @fmin: address of double to receive minimum
- *   @fmax: address of double to receive maximum
- */
-void _vnacal_get_parameter_frange(vnacal_parameter_t *vpmrp,
-	double *fmin, double *fmax)
-{
-    for (;;) {
-	switch (vpmrp->vpmr_type) {
-	case VNACAL_NEW:
-	    break;
-
-	case VNACAL_SCALAR:
-	    *fmin = 0.0;
-	    *fmax = INFINITY;
-	    return;
-
-	case VNACAL_VECTOR:
-	    *fmin = vpmrp->vpmr_frequency_vector[0];
-	    *fmax = vpmrp->vpmr_frequency_vector[vpmrp->vpmr_frequencies - 1];
-	    return;
-
-	case VNACAL_UNKNOWN:
-	case VNACAL_CORRELATED:
-	    vpmrp = vpmrp->vpmr_other;
-	    continue;
-	}
-	break;
-    }
-    assert(!"unexpected parameter type");
-}
 
 /*
- * _vnacal_get_parameter_value: get the value of the parameter at f
- *   @vpmrp: pointer returned from _vnacal_get_parameter
- *   @frequency: frequency at which to evaluate the value
+ * vnacal_get_parameter_value: evaluate a parameter at a given frequency
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @parameter: index of parameter
+ *   @frequency: frequency at which to evaluate parameter
  */
-double complex _vnacal_get_parameter_value(vnacal_parameter_t *vpmrp,
+double complex vnacal_get_parameter_value(vnacal_t *vcp, int parameter,
 	double frequency)
 {
-    for (;;) {
-	switch (vpmrp->vpmr_type) {
-	case VNACAL_NEW:
-	    break;
+    vnacal_parameter_t *vpmrp;
+    double fmin, fmax;
+    double lower, upper;
 
-	case VNACAL_SCALAR:
-	    return vpmrp->vpmr_gamma;
+    if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
+	errno = EINVAL;
+	return HUGE_VAL;
+    }
+    if ((vpmrp = _vnacal_get_parameter(vcp, parameter)) == NULL) {
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_get_parameter_value: "
+		"invalid parameter");
+	return HUGE_VAL;
+    }
+    switch (vpmrp->vpmr_type) {
+    case VNACAL_SCALAR:
+	return vpmrp->vpmr_gamma;
 
-	case VNACAL_VECTOR:
-	    return _vnacal_rfi(vpmrp->vpmr_frequency_vector,
-		    vpmrp->vpmr_gamma_vector,
-		    vpmrp->vpmr_frequencies,
-		    MIN(vpmrp->vpmr_frequencies, VNACAL_MAX_M),
-		    &vpmrp->vpmr_segment,
-		    frequency);
-
-	case VNACAL_UNKNOWN:
-	case VNACAL_CORRELATED:
-	    vpmrp = vpmrp->vpmr_other;
-	    continue;
+    case VNACAL_UNKNOWN:
+    case VNACAL_CORRELATED:
+	if (vpmrp->vpmr_frequency_vector == NULL) {
+	    _vnacal_error(vcp, VNAERR_USAGE, "vnacal_get_parameter_value: "
+		    "unknown parameter value");
+	    return HUGE_VAL;
 	}
 	break;
+
+    default:
+	break;
     }
-    assert(!"unexpected parameter type");
+    fmin = vpmrp->vpmr_frequency_vector[0];
+    fmax = vpmrp->vpmr_frequency_vector[vpmrp->vpmr_frequencies - 1];
+    lower = (1.0 - VNACAL_F_EXTRAPOLATION) * fmin;
+    upper = (1.0 + VNACAL_F_EXTRAPOLATION) * fmax;
+    if (frequency < lower || frequency > upper) {
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_get_parameter_value: "
+		"frequency %e must be between %e and %e\n",
+		frequency, fmin, fmax);
+	return HUGE_VAL;
+    }
+    return _vnacal_rfi(vpmrp->vpmr_frequency_vector,
+	    vpmrp->vpmr_gamma_vector,
+	    vpmrp->vpmr_frequencies,
+	    MIN(vpmrp->vpmr_frequencies, VNACAL_MAX_M),
+	    &vpmrp->vpmr_segment,
+	    frequency);
 }

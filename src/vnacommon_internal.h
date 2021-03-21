@@ -43,17 +43,31 @@ extern double complex _vnacommon_mrdivide(double complex *x,
 /* _vnacommon_minverse: find X = A^-1, X nxn, A nxn (A destroyed) */
 extern double complex _vnacommon_minverse(complex double *x, complex double *a,
 	int n);
+
 /* _vnacommon_qrd: find the QR decomposition of A, destroying A */
 extern void _vnacommon_qrd(complex double *a, complex double *d,
 	int rows, int columns);
+
+/* _vnacommon_qr: find the QR decomposition of A */
+extern int _vnacommon_qr(complex double *a, complex double *q,
+	complex double *r, int m, int n);
 
 /* _vnacommon_qrsolve: solve the system A X = B, destroying A and B */
 extern int _vnacommon_qrsolve(complex double *x, complex double *a,
 	complex double *b, int m, int n, int o);
 
-/* _vnacommon_qrsolve_q: solve the system A X = B and return Q */
-extern int _vnacommon_qrsolve_q(complex double *x, complex double *a,
-	complex double *b, complex double *q, int m, int n, int o);
+/* _vnacommon_qrsolve2: solve the system Q R X = B */
+extern void _vnacommon_qrsolve2(double complex *x, const double complex *q,
+	const double complex *r, const double complex *b,
+	const int m, const int n, const int o);
+
+/* _vnacommon_spline_calc: find natural cubic spline coefficients */
+extern int _vnacommon_spline_calc(int n, const double *x_vector,
+	const double *y_vector, double (*c_vector)[3]);
+
+/* _vnacommon_spline_eval: evaluate the spline at x */
+extern double _vnacommon_spline_eval(int n, const double *x_vector,
+	const double *y_vector, const double (*c_vector)[3], double x);
 
 #ifdef __cplusplus
 } /* extern "C" */

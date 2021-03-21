@@ -16,8 +16,8 @@ include_HEADERS = vnacal.h vnaconv.h vnadata.h vnaerr.h vnafile.h
 lib_LTLIBRARIES = libvna.la
 libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnacal_delete_parameter.c vnacal_apply.c vnacal_new_add_common.c \
-	vnacal_new_parameter.c vnacal_new_solve.c \
-	vnacal_new.c vnacal_create.c vnacal_calibration.c \
+	vnacal_new_parameter.c vnacal_new_set_measurement_error.c \
+	vnacal_new_solve.c vnacal_new.c vnacal_create.c vnacal_calibration.c \
 	vnacal_make_correlated_parameter.c vnacal_make_scalar_parameter.c \
 	vnacal_make_unknown_parameter.c vnacal_make_vector_parameter.c \
 	vnacal_add_calibration.c vnacal_delete_calibration.c \
@@ -27,7 +27,8 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnacal_set_dprecision.c vnacal_set_fprecision.c vnacal_parameter.c \
 	vnacommon_internal.h vnacommon_lu.c vnacommon_mmultiply.c \
 	vnacommon_minverse.c vnacommon_mldivide.c vnacommon_mrdivide.c \
-	vnacommon_qrd.c vnacommon_qrsolve.c vnacommon_qrsolve_q.c \
+	vnacommon_qrd.c vnacommon_qr.c vnacommon_qrsolve.c \
+	vnacommon_qrsolve2.c vnacommon_spline.c \
 	vnaerr_internal.h vnaerr_verror.c \
 	vnaconv_internal.h vnaconv_atob.c vnaconv_atog.c vnaconv_atoh.c \
 	vnaconv_atos.c vnaconv_atot.c vnaconv_atoy.c vnaconv_atoz.c \
@@ -65,10 +66,12 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 dist_man_MANS = vnacal.3 vnacal_new.3 vnacal_parameter.3 vnaconv.3 \
 	vnadata.3 vnaerr.3 vnafile.3
 
+
 #
 # Examples
 #
 noinst_PROGRAMS = vnacal-SOLT-example vnacal-TSD-example \
+		  vnacal-TRL-example \
 		  vnaconv-example vnadata-example vnafile-example
 
 #vnaproperty_example_SOURCES = vnaproperty-example.c
@@ -82,6 +85,10 @@ vnacal_SOLT_example_LDFLAGS = -static
 vnacal_TSD_example_SOURCES = vnacal-TSD-example.c
 vnacal_TSD_example_LDADD = libvna.la -lyaml -lm
 vnacal_TSD_example_LDFLAGS = -static
+
+vnacal_TRL_example_SOURCES = vnacal-TRL-example.c
+vnacal_TRL_example_LDADD = libvna.la -lyaml -lm
+vnacal_TRL_example_LDFLAGS = -static
 
 vnaconv_example_SOURCES = vnaconv-example.c
 vnaconv_example_LDADD = libvna.la -lm
@@ -97,22 +104,29 @@ vnafile_example_LDFLAGS = -static
 
 dist_doc_DATA = MwT-1F.s2p vnacal-SOLT-example.c vnacal-SOLT-example.gnuplot \
 	vnacal-TSD-example.c vnacal-TSD-example.gnuplot \
+	vnacal-TRL-example.c vnacal-TRL-example.gnuplot \
 	vnaconv-example.c vnadata-example.c vnafile-example.c \
 	vnafile-example.ts
 
 vnacal-SOLT-example.out: vnacal-SOLT-example
 	./vnacal-SOLT-example > "$@"
 
-plot1: vnacal-SOLT-example.out vnacal-SOLT-example.gnuplot
+plot-SOLT: vnacal-SOLT-example.out vnacal-SOLT-example.gnuplot
 	$(GNUPLOT) vnacal-SOLT-example.gnuplot
 
 vnacal-TSD-example.out: vnacal-TSD-example
 	./vnacal-TSD-example > "$@"
 
-plot2: vnacal-TSD-example.out vnacal-TSD-example.gnuplot
+vnacal-TRL-example.out: vnacal-TRL-example
+	./vnacal-TRL-example > "$@"
+
+plot-TSD: vnacal-TSD-example.out vnacal-TSD-example.gnuplot
 	$(GNUPLOT) vnacal-TSD-example.gnuplot
 
-plot: plot1
+plot-TRL: vnacal-TRL-example.out vnacal-TRL-example.gnuplot
+	$(GNUPLOT) vnacal-TRL-example.gnuplot
+
+plot: plot-SOLT
 
 .3.pdf:
 	$(PDFROFF) -t -e -man --no-toc-relocation $< > "$@"
@@ -122,5 +136,5 @@ pdfman: vnacal.pdf vnacal_new.pdf vnacal_parameter.pdf vnaconv.pdf \
 
 clean-local:
 	rm -f example.vnacal vnacal-SOLT-example.out vnacal-TSD-example.out \
-		vnacal-test.vnacal vnacal.pdf vnaconv.pdf vnadata.pdf \
+		vnacal-TRL-example.out vnacal.pdf vnaconv.pdf vnadata.pdf \
 		vnafile.pdf

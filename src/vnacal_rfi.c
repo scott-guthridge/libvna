@@ -44,19 +44,20 @@
 
 /*
  * _vnacal_rfi: apply rational function interpolation
- *   @xp:      vector of x points
- *   @yp:      vector of y points
- *   @n:       length of xp and yp
- *   @m:       order (number of points that determine the interpolation)
- *   @segment: left x index that bounds x (used as hint on entry)
- *   @x:       dependent variable to interpolate
+ *   @xp:         vector of x points
+ *   @yp:         vector of y points
+ *   @n:          length of xp and yp
+ *   @m:          order (number of points that determine the interpolation)
+ *   @ip_segment: addr of left x index that bounds x (used as hint on entry)
+ *   @x:          dependent variable to interpolate
  */
 double complex _vnacal_rfi(const double *xp, double complex *yp,
-	int n, int m, int *segment, double x)
+	int n, int m, int *ip_segment, double x)
 {
     int base;
     int nearest;
     int cur;
+    int segment = *ip_segment;
     double complex y;
     double complex c[m], d[m];
 
@@ -71,26 +72,26 @@ double complex _vnacal_rfi(const double *xp, double complex *yp,
     }
 
     /*
-     * Bound *segment to 0 .. n-2 to establish the invariant that
-     * both *segment and *segment + 1 are in-bounds.
+     * Bound segment to 0 .. n-2 to establish the invariant that
+     * both segment and segment + 1 are in-bounds.
      */
-    if (*segment < 0) {
-	*segment = 0;
-    } else if (*segment > n - 2) {
-	*segment = n - 2;
+    if (segment < 0) {
+	segment = 0;
+    } else if (segment > n - 2) {
+	segment = n - 2;
     }
 
     /*
-     * Using *segment as a hint, find the segment that bounds x
+     * Using segment as a hint, find the segment that bounds x
      * if any segment does.
      */
-    if (x < xp[*segment]) {
-	while (*segment > 0 && x < xp[*segment]) {
-	    --*segment;
+    if (x < xp[segment]) {
+	while (segment > 0 && x < xp[segment]) {
+	    --segment;
 	}
     } else {
-	while (*segment < n - 2 && x > xp[*segment + 1]) {
-	    ++*segment;
+	while (segment < n - 2 && x > xp[segment + 1]) {
+	    ++segment;
 	}
     }
 
@@ -101,18 +102,18 @@ double complex _vnacal_rfi(const double *xp, double complex *yp,
     {
 	double dx1, dx2;
 
-	dx1 = fabs(x - xp[*segment]);
+	dx1 = fabs(x - xp[segment]);
 	if (dx1 <= EPS) {
-	    return yp[*segment];
+	    return yp[segment];
 	}
-	dx2 = fabs(x - xp[*segment + 1]);
+	dx2 = fabs(x - xp[segment + 1]);
 	if (dx2 <= EPS) {
-	    return yp[*segment + 1];
+	    return yp[segment + 1];
 	}
 	if (dx1 <= dx2 || m < 2) {
-	    nearest = *segment;
+	    nearest = segment;
 	} else {
-	    nearest = *segment + 1;
+	    nearest = segment + 1;
 	}
     }
 
@@ -122,7 +123,7 @@ double complex _vnacal_rfi(const double *xp, double complex *yp,
     if (m & 1) {
 	base = nearest - ((m - 1) / 2);
     } else {
-	base = *segment - ((m / 2) - 1);
+	base = segment - ((m / 2) - 1);
     }
     if (base < 0) {
 	base = 0;
@@ -168,5 +169,6 @@ double complex _vnacal_rfi(const double *xp, double complex *yp,
 	}
     }
 done:
+    *ip_segment = segment;
     return y;
 }

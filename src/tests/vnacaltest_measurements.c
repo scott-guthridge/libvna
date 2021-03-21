@@ -29,6 +29,16 @@
 #include "vnacaltest.h"
 
 /*
+ * test_vnacal_sigma_n: standard deviation of noise to add to measurements
+ */
+double test_vnacal_sigma_n = 0.0;
+
+/*
+ * test_vnacal_sigma_t: standard deviation of tracking error to add to meas.
+ */
+double test_vnacal_sigma_t = 0.0;
+
+/*
  * test_vnacal_alloc_measurements: allocate test measurements
  *   @type: error term type
  *   @m_rows: number of rows in the measurement matrix
@@ -301,7 +311,7 @@ static int calc_m(const vnacal_layout_t *vlp, const double complex *e,
 		}
 	    }
 	    determinant = _vnacommon_mrdivide(m, b, a, m_rows, m_columns);
-	    if (determinant == 0.0 || !isfinite(cabs(determinant))) {
+	    if (determinant == 0.0 || !isnormal(cabs(determinant))) {
 		errno = EDOM;
 		return -1;
 	    }
@@ -600,7 +610,7 @@ static int calc_measurements_helper(const test_vnacal_terms_t *ttp,
 	     * If the same unknown is seen again on subsequent calls,
 	     * use the same value as before.
 	     */
-	    s[s_cell] = _vnacal_get_parameter_value(vpmrp, f);
+	    s[s_cell] = _vnacal_get_parameter_value_i(vpmrp, f);
 	    port_used[s_row] = true;
 	    port_used[s_column] = true;
 	    cell_defined[s_cell] = true;
@@ -640,12 +650,11 @@ static int calc_measurements_helper(const test_vnacal_terms_t *ttp,
  *   @s_matrix_rows: rows in s_matrix
  *   @s_matrix_columns: columns in s_matrix
  *   @port_map: map from standard port to VNA port
- *   @sigma: if non-zero, add random noise with given sigma
  */
 int test_vnacal_calculate_measurements(const test_vnacal_terms_t *ttp,
 	test_vnacal_measurements_t *tmp,
 	const int *s_matrix, int s_matrix_rows, int s_matrix_columns,
-	const int *port_map, double sigma)
+	const int *port_map)
 {
     const vnacal_layout_t *vlp = &ttp->tt_layout;
     const int m_rows = VL_M_ROWS(vlp);
@@ -734,11 +743,12 @@ int test_vnacal_calculate_measurements(const test_vnacal_terms_t *ttp,
 	}
 
 	/*
-	 * If sigma is non-zero, add random noise.
+	 * Add random measurement error if configured.
 	 */
-	if (sigma != 0.0) {
+	if (test_vnacal_sigma_n != 0.0 || test_vnacal_sigma_t != 0.0) {
 	    for (int cell = 0; cell < b_rows * b_columns; ++cell) {
-		m[cell] += sigma * test_crandn();
+		m[cell] += test_vnacal_sigma_t * m[cell] * test_crandn();
+		m[cell] += test_vnacal_sigma_n * test_crandn();
 	    }
 	}
 

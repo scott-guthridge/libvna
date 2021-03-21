@@ -33,7 +33,6 @@
  * gen_e_terms: generate random error terms
  *   @vlp: pointer to vnacal_layout_t structure
  *   @e: error term vector
- *   @sigma: standard deviation of error (if 0.0, VNA is perfect)
  */
 static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 	double sigma)
@@ -523,7 +522,7 @@ void test_vnacal_print_error_terms(const test_vnacal_terms_t *ttp)
 		    (void)printf("  us%d%d: %8.5f%+8.5fj\n",
 			    i + 1, i + 1, creal(us[i]), cimag(us[i]));
 		}
-		if (VL_TYPE(vlp) == VNACAL_TE10) {
+		if (VL_TYPE(vlp) == VNACAL_UE10) {
 		    const int el_rows    = VL_EL_ROWS(vlp);
 		    const int el_columns = VL_EL_COLUMNS(vlp);
 		    int term = 0;

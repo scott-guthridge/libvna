@@ -115,17 +115,6 @@ vnacal_new_t *vnacal_new_alloc(vnacal_t *vcp, vnacal_type_t type,
     vnp->vn_vcp = vcp;
     _vnacal_layout(&vnp->vn_layout, type, m_rows, m_columns);
     vnp->vn_frequencies = frequencies;
-    if (_vnacal_new_init_parameter_hash(__func__,
-		&vnp->vn_parameter_hash) == -1) {
-	vnacal_new_free(vnp);
-	return NULL;
-    }
-    vnp->vn_unknown_parameter_anchor = &vnp->vn_unknown_parameter_list;
-    if ((vnp->vn_zero = _vnacal_new_get_parameter(__func__, vnp,
-		    VNACAL_ZERO)) == NULL) {
-	vnacal_new_free(vnp);
-	return NULL;
-    }
     if ((vnp->vn_frequency_vector = calloc(frequencies,
 		    sizeof(double))) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYSTEM,
@@ -133,7 +122,23 @@ vnacal_new_t *vnacal_new_alloc(vnacal_t *vcp, vnacal_type_t type,
 	vnacal_new_free(vnp);
 	return NULL;
     }
+    vnp->vn_frequencies_valid = false;
+    if (_vnacal_new_init_parameter_hash(__func__,
+		&vnp->vn_parameter_hash) == -1) {
+	vnacal_new_free(vnp);
+	return NULL;
+    }
+    if ((vnp->vn_zero = _vnacal_new_get_parameter(__func__, vnp,
+		    VNACAL_ZERO)) == NULL) {
+	vnacal_new_free(vnp);
+	return NULL;
+    }
+    vnp->vn_unknown_parameters = 0;
+    vnp->vn_correlated_parameters = 0;
+    vnp->vn_unknown_parameter_list = NULL;
+    vnp->vn_unknown_parameter_anchor = &vnp->vn_unknown_parameter_list;
     vnp->vn_z0 = VNADATA_DEFAULT_Z0;
+    vnp->vn_m_error_vector = NULL;
     vnp->vn_systems = systems;
     if ((vnp->vn_system_vector = calloc(systems,
 		    sizeof(vnacal_new_system_t))) == NULL) {
@@ -147,7 +152,12 @@ vnacal_new_t *vnacal_new_alloc(vnacal_t *vcp, vnacal_type_t type,
 
 	vnsp->vns_equation_anchor = &vnsp->vns_equation_list;
     }
+    vnp->vn_equations = 0;
+    vnp->vn_max_equations = 0;
+    vnp->vn_measurement_list = NULL;
     vnp->vn_measurement_anchor = &vnp->vn_measurement_list;
+    vnp->vn_calibration = NULL;
+    vnp->vn_rms_error_vector = NULL;
 
     /*
      * Link this structure onto the vnacal_t structure.
@@ -224,10 +234,10 @@ int vnacal_new_set_z0(vnacal_new_t *vnp, double complex z0)
 }
 
 /*
- * _vnacal_new_free_standard: free the memory for an vnacal_new_t structure
+ * _vnacal_new_free_measurement: free the memory for an vnacal_new_measurement_t
  *   @vnmp: structure to free
  */
-void _vnacal_new_free_standard(vnacal_new_measurement_t *vnmp)
+void _vnacal_new_free_measurement(vnacal_new_measurement_t *vnmp)
 {
     if (vnmp != NULL) {
 	vnacal_new_t *vnp = vnmp->vnm_ncp;
@@ -256,12 +266,8 @@ void vnacal_new_free(vnacal_new_t *vnp)
 	vnacal_new_measurement_t *vnmp;
 
 	remque((void *)&vnp->vn_next);
-	if (vnp->vn_unknown_parameter_vector != NULL) {
-	    for (int findex = 0; findex < vnp->vn_frequencies; ++findex) {
-		free((void *)vnp->vn_unknown_parameter_vector[findex]);
-	    }
-	    free((void *)vnp->vn_unknown_parameter_vector);
-	}
+	_vnacal_calibration_free(vnp->vn_calibration);
+
 	for (int i = 0; i < vnp->vn_systems; ++i) {
 	    vnacal_new_system_t *vnsp = &vnp->vn_system_vector[i];
 
@@ -269,23 +275,23 @@ void vnacal_new_free(vnacal_new_t *vnp)
 		vnacal_new_equation_t *vnep = vnsp->vns_equation_list;
 
 		vnsp->vns_equation_list = vnep->vne_next;
-		while (vnep->vne_term_list != NULL) {
-		    vnacal_new_term_t *vntp = vnep->vne_term_list;
+		while (vnep->vne_coefficient_list != NULL) {
+		    vnacal_new_coefficient_t *vncp = vnep->vne_coefficient_list;
 
-		    vnep->vne_term_list = vntp->vnt_next;
-		    free((void *)vntp);
+		    vnep->vne_coefficient_list = vncp->vnc_next;
+		    free((void *)vncp);
 		}
 		free((void *)vnep);
 	    }
 	}
 	free((void *)vnp->vn_system_vector);
-	_vnacal_new_free_parameter_hash(&vnp->vn_parameter_hash);
-	free((void *)vnp->vn_frequency_vector);
 	while ((vnmp = vnp->vn_measurement_list) != NULL) {
 	    vnp->vn_measurement_list = vnmp->vnm_next;
-	    _vnacal_new_free_standard(vnmp);
+	    _vnacal_new_free_measurement(vnmp);
 	}
-	_vnacal_calibration_free(vnp->vn_calibration);
+	free((void *)vnp->vn_m_error_vector);
+	_vnacal_new_free_parameter_hash(&vnp->vn_parameter_hash);
+	free((void *)vnp->vn_frequency_vector);
 	vnp->vn_magic = -1;
 	free((void *)vnp);
     }
