@@ -66,37 +66,6 @@ static double complex crandn()
 }
 
 /*
- * cmatrix_multiply: find C = A x B
- *   @c: serialized result matrix, m x o
- *   @a: serialized A matrix, m x n
- *   @b: serialized B matrix, n x o
- *   @m: first dimension of C and A
- *   @n: second dimension of A, first dimension of B
- *   @o: second dimension of C and B
- */
-static void cmatrix_multiply(double complex *c, const double complex *a,
-	const double complex *b, int m, int n, int o)
-{
-#define A(i, j) (a[(i) * n + (j)])
-#define B(i, j) (b[(i) * o + (j)])
-#define C(i, j) (c[(i) * o + (j)])
-
-    for (int i = 0; i < m; ++i) {
-	for (int k = 0; k < o; ++k) {
-	    double complex s = 0.0;
-
-	    for (int j = 0; j < n; ++j) {
-		s += A(i, j) * B(j, k);
-	    }
-	    C(i, k) = s;
-	}
-    }
-}
-#undef A
-#undef B
-#undef C
-
-/*
  * cmatrix_print: print an m by n serialized complex matrix
  */
 static void cmatrix_print(const char *tag, double complex *a, int m, int n)
@@ -290,7 +259,7 @@ static void test_vnacommon_mldivide()
 			T(i, j) = crandn();	/* m x n */
 		    }
 		}
-		cmatrix_multiply(b, a, t, m, m, n);
+		_vnacommon_mmultiply(b, a, t, m, m, n);
 		if (opt_v) {
 		    cmatrix_print("a", a, m, m);
 		    cmatrix_print("b", b, m, n);
@@ -390,7 +359,7 @@ static void test_vnacommon_mrdivide()
 			T(i, j) = crandn();	/* m x n */
 		    }
 		}
-		cmatrix_multiply(b, t, a, m, n, n);
+		_vnacommon_mmultiply(b, t, a, m, n, n);
 		if (opt_v) {
 		    cmatrix_print("a", a, n, n);
 		    cmatrix_print("b", b, m, n);
@@ -509,7 +478,7 @@ static void test_vnacommon_minverse()
 	     * Find T = A * X and check that the result is the
 	     * identity matrix.
 	     */
-	    cmatrix_multiply(t, a, x, n, n, n);
+	    _vnacommon_mmultiply(t, a, x, n, n, n);
 	    for (int i = 0; i < n; ++i) {
 		for (int j = 0; j < n; ++j) {
 		    double dy = cabs((i == j ? 1.0 : 0.0) - T(i, j));
@@ -651,7 +620,7 @@ static void test_vnacommon_qrd()
 		/*
 		 * Test that Q R == A
 		 */
-		cmatrix_multiply(*t, *q, *r, m, m, n);
+		_vnacommon_mmultiply(*t, *q, *r, m, m, n);
 		for (int i = 0; i < m; ++i) {
 		    for (int j = 0; j < n; ++j) {
 			double dy;

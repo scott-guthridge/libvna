@@ -101,37 +101,6 @@ static int isequal(double complex x, double complex y)
 }
 
 /*
- * cmatrix_multiply: find C = A x B
- *   @c: serialized result matrix, m x o
- *   @a: serialized A matrix, m x n
- *   @b: serialized B matrix, n x o
- *   @m: first dimension of C and A
- *   @n: second dimension of A, first dimension of B
- *   @o: second dimension of C and B
- */
-static void cmatrix_multiply(double complex *c, const double complex *a,
-	const double complex *b, int m, int n, int o)
-{
-#define A(i, j) (a[(i) * n + (j)])
-#define B(i, j) (b[(i) * o + (j)])
-#define C(i, j) (c[(i) * o + (j)])
-
-    for (int i = 0; i < m; ++i) {
-	for (int k = 0; k < o; ++k) {
-	    double complex s = 0.0;
-
-	    for (int j = 0; j < n; ++j) {
-		s += A(i, j) * B(j, k);
-	    }
-	    C(i, k) = s;
-	}
-    }
-}
-#undef A
-#undef B
-#undef C
-
-/*
  * error_fn: error reporting function
  *   @category: error category
  *   @message: error message
@@ -2202,7 +2171,7 @@ static int calc_measurements(const test_terms_t *ttp, test_measurements_t *tmp,
 		a[a_cell] = crandn();
 		a_matrix[a_cell][findex] = a[a_cell];
 	    }
-	    cmatrix_multiply(b, m, a, b_rows, b_columns, b_columns);
+	    _vnacommon_mmultiply(b, m, a, b_rows, b_columns, b_columns);
 	    for (int b_cell = 0; b_cell < b_rows * b_columns; ++b_cell) {
 		b_matrix[b_cell][findex] = b[b_cell];
 	    }

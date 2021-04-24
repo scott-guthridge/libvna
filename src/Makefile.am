@@ -23,8 +23,8 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnacal_error.c vnacal_find_calibration.c vnacal_free.c vnacal_get.c \
 	vnacal_load.c vnacal_property.c vnacal_rfi.c vnacal_save.c \
 	vnacal_set_dprecision.c vnacal_set_fprecision.c vnacal_parameter.c \
-	vnacommon_internal.h vnacommon_lu.c vnacommon_minverse.c \
-	vnacommon_mldivide.c vnacommon_mrdivide.c \
+	vnacommon_internal.h vnacommon_lu.c vnacommon_mmultiply.c \
+	vnacommon_minverse.c vnacommon_mldivide.c vnacommon_mrdivide.c \
 	vnacommon_qrd.c vnacommon_qrsolve.c vnacommon_qrsolve_q.c \
 	vnaerr_internal.h vnaerr_verror.c \
 	vnaconv_internal.h vnaconv_atob.c vnaconv_atog.c vnaconv_atoh.c \

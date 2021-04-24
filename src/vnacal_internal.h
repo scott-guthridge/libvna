@@ -19,7 +19,6 @@
 #ifndef _VNACAL_INTERNAL_H
 #define _VNACAL_INTERNAL_H
 
-#include <stdio.h>
 #include "vnacal.h"
 #include "vnacommon_internal.h"
 #include "vnaerr_internal.h"
