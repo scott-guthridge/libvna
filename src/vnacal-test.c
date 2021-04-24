@@ -19,13 +19,16 @@
 #include "archdep.h"
 
 #include <assert.h>
+#include <complex.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include "vnacal_internal.h"
 
 

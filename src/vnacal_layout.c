@@ -19,13 +19,13 @@
 #include "archdep.h"
 
 #include <assert.h>
+#include <complex.h>
+#include <errno.h>
 #include <math.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <stdio.h>
-#include <unistd.h>
 #include "vnacal_internal.h"
 
 

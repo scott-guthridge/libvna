@@ -24,6 +24,7 @@
  */
 
 #include <assert.h>
+#include <complex.h>
 #include <errno.h>
 #include <math.h>
 #include <stdio.h>

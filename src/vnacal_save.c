@@ -19,6 +19,7 @@
 #include "archdep.h"
 
 #include <assert.h>
+#include <complex.h>
 #include <ctype.h>
 #include <errno.h>
 #include <math.h>

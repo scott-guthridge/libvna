@@ -18,6 +18,7 @@
 
 #include "archdep.h"
 
+#include <complex.h>
 #include <math.h>
 #include <string.h>
 #include "vnacommon_internal.h"

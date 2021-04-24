@@ -18,6 +18,7 @@
 
 #include "archdep.h"
 
+#include <complex.h>
 #include <errno.h>
 #include <math.h>
 #include <stdarg.h>
