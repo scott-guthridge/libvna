@@ -44,5 +44,6 @@ AC_CONFIG_FILES([
     rpm/Makefile
     rpm/libvna.spec
     src/Makefile
+    src/tests/Makefile
 ])
 AC_OUTPUT

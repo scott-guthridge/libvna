@@ -7,6 +7,8 @@ GNUPLOT= gnuplot
 PDFROFF= pdfroff
 SUFFIXES= .3 .pdf
 
+SUBDIRS= . tests
+
 #
 # Library
 #
@@ -62,37 +64,6 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 #
 dist_man_MANS = vnacal.3 vnacal_new.3 vnacal_parameter.3 vnaconv.3 \
 	vnadata.3 vnaerr.3 vnafile.3
-
-#
-# Tests
-#
-TESTS = vnacommon-test vnaproperty-test vnaconv-test vnacal-test
-check_PROGRAMS = vnacommon-test vnaproperty-test vnaconv-test vnacal-test
-
-vnacommon_test_SOURCES = vnacommon-test.c
-vnacommon_test_LDADD = libvna.la -lm
-vnacommon_test_LDFLAGS = -static
-
-vnaproperty_test_SOURCES = vnaproperty-test.c
-vnaproperty_test_LDADD = libvna.la
-vnaproperty_test_LDFLAGS = -static
-
-vnaconv_test_SOURCES = vnaconv-test.c
-vnaconv_test_LDADD = libvna.la -lm
-vnaconv_test_LDFLAGS = -static
-
-#vnadata_test_SOURCES = vnadata-test.c
-#vnadata_test_LDADD = libvna.la -lm
-#vnadata_test_LDFLAGS = -static
-
-vnacal_test_SOURCES = vnacal-test.c
-vnacal_test_LDADD = libvna.la -lyaml -lm
-vnacal_test_LDFLAGS = -static
-
-#vnafile_test_SOURCES = vnafile-test.c
-#vnafile_test_LDADD = libvna.la -lm
-#vnafile_test_LDFLAGS = -static
-
 
 #
 # Examples
