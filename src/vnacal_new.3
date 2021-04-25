@@ -18,7 +18,7 @@
 .TH VNACAL_NEW 3 "FEB 2021" GNU
 .nh
 .SH NAME
-vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new_add_single_reflect, vnacal_new_add_single_reflect_m, vnacal_new_add_double_reflect, vnacal_new_add_double_reflect_m, vnacal_new_add_line, vnacal_new_add_line_m, vnacal_new_add_through, vnacal_new_add_through_m, vnacal_new_add_mapped_matrix, vnacal_new_add_mapped_matrix_m, vnacal_new_solve, vnacal_new_free \- find error parameters from measured standards
+vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new_add_single_reflect, vnacal_new_add_single_reflect_m, vnacal_new_add_double_reflect, vnacal_new_add_double_reflect_m, vnacal_new_add_through, vnacal_new_add_through_m, vnacal_new_add_line, vnacal_new_add_line_m, vnacal_new_add_mapped_matrix, vnacal_new_add_mapped_matrix_m, vnacal_new_solve, vnacal_new_free \- find error parameters from measured standards
 .\"
 .SH SYNOPSIS
 .B #include <vnacal.h>
@@ -79,24 +79,6 @@ vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new
 .in -4n
 .\"
 .PP
-.BI "int vnacal_new_add_line(vnacal_new_t *" vnp ,
-.in +4n
-.BI "double complex *const *" a ", int " a_rows ", int " a_columns ,
-.br
-.BI "double complex *const *" b ", int " b_rows ", int " b_columns ,
-.br
-.BI "const int *" s_2x2 ", int " port1 ", int " port2 );
-.in -4n
-.\"
-.PP
-.BI "int vnacal_new_add_line_m(vnacal_new_t *" vnp ,
-.in +4n
-.BI "double complex *const *" m ", int " m_rows ", int " m_columns ,
-.br
-.BI "const int *" s_2x2 ", int " port1 ", int " port2 );
-.in -4n
-.\"
-.PP
 .BI "int vnacal_new_add_through(vnacal_new_t *" vnp ,
 .in +4n
 .BI "double complex *const *" a ", int " a_rows ", int " a_columns ,
@@ -115,11 +97,29 @@ vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new
 .in -4n
 .\"
 .PP
+.BI "int vnacal_new_add_line(vnacal_new_t *" vnp ,
+.in +4n
+.BI "double complex *const *" a ", int " a_rows ", int " a_columns ,
+.br
+.BI "double complex *const *" b ", int " b_rows ", int " b_columns ,
+.br
+.BI "const int *" s_2x2 ", int " port1 ", int " port2 );
+.in -4n
+.\"
+.PP
+.BI "int vnacal_new_add_line_m(vnacal_new_t *" vnp ,
+.in +4n
+.BI "double complex *const *" m ", int " m_rows ", int " m_columns ,
+.br
+.BI "const int *" s_2x2 ", int " port1 ", int " port2 );
+.in -4n
+.\"
+.PP
 .BI "int vnacal_new_add_mapped_matrix(vnacal_new_t *" vnp ,
 .in +4n
-.BI "double complex *const *" a ", int " a_rows, int " a_columns ,
+.BI "double complex *const *" a ", int " a_rows ", int " a_columns ,
 .br
-.BI "double complex *const *" b ", int " b_rows, int " b_columns ,
+.BI "double complex *const *" b ", int " b_rows ", int " b_columns ,
 .br
 .BI "const int *" s ", int " s_rows ", int " s_columns ,
 .br
@@ -390,15 +390,15 @@ reflect standards with parameter handles \fIs11\fP and \fIs22\fP, on
 VNA ports \fIport1\fP and \fIport2\fP, respectively.
 The s12 and s21 parameters of the standard must be zero.
 .PP
+\fBvnacal_new_add_through\fP() and \fBvnacal_new_add_through_m\fP()
+add the measurement of a perfect through standard (s11 = 0, s12 = 1,
+s21 = 1, s22 = 0) between \fIport1\fP and \fIport2\fP.
+.PP
 \fBvnacal_new_add_line\fP() and \fBvnacal_new_add_line_m\fP() add the
 measurement of an arbitrary 2x2 standard on VNA ports \fIport1\fP and
 \fIport2\fP.
 The \fIs_2x2\fP argument is a pointer to the first element of a 2x2
 matrix of parameter handles.
-.PP
-\fBvnacal_new_add_through\fP() and \fBvnacal_new_add_through_m\fP()
-add the measurement of a perfect through standard (s11 = 0, s12 = 1,
-s21 = 1, s22 = 0) between \fIport1\fP and \fIport2\fP.
 .PP
 \fBvnacal_new_add_mapped_matrix\fP() and
 \fBvnacal_new_add_mapped_matrix_m\fP() add the measurement of an arbitrary
@@ -411,11 +411,11 @@ connected to the respective ports of the standard.
 It may be \s-2NULL\s+2 if the number of VNA ports is equal to the
 number of ports of the standard and the ports are connected in order.
 .PP
-\fBvnacal_new_solve\fP() uses the added measurements to solve for the
-error parameters.  It returns 0 on success.
-After calling \fBvnacal_new_solve\fP(), it's allowed to add additional
-measurements and call it again, for example if it fails due to an
-insufficient number of measurements.
+\fBvnacal_new_solve\fP() uses the added measurements to solve for
+the error parameters.  It returns 0 on success.
+After calling \fBvnacal_new_solve\fP(), it is permitted to add additional
+measurements and repeat the call, for example if \fBvnacal_new_solve\fP()
+fails due to an insufficient number of measurements.
 .PP
 \fBvnacal_new_free\fP() frees the \fBvnacal_t\fP structure, the contained
 frequency vector, added measurements and error terms.

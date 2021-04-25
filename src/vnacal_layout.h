@@ -147,7 +147,7 @@ typedef struct vnacal_layout {
  *
  * The sub-matrices are named based on their coefficients:
  *	Ts terms have only S coefficients.
- *	Ti terms have only 1 or 0 (identity matrix) as their coefficients
+ *	Ti terms have only 1 or 0 (identity matrix) coefficients
  *	Tx terms have both M and S coefficients
  *	Tm terms have only M coefficients.
  *
