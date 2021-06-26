@@ -18,7 +18,7 @@
 
 /*
  * Example of "through", "reflect", "line" (TRL) calibration in 10-term T
- * and E parameters, where the reflection parameter and through parameter
+ * and E parameters, where the reflection parameter and line parameter
  * are only partially known.
  */
 
@@ -92,7 +92,7 @@ char *progname;
 #define RL		707.4e-12		/* henries */
 
 /*
- * Errors in the Through Standard
+ * Errors in the Line Standard
  */
 #define LINE_LOSS	0.5 			/* dB/mm */
 #define PHASE_ERROR	10.			/* degrees */
