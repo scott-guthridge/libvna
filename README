@@ -85,6 +85,7 @@ Creating a new release (for git developers only)
     Create an annotated tag.  Example:
 	git tag -a v0.0.3 -m "v0.0.3"
     Push to github
+	git push
 	git push --tags
 
 
