@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "src/archdep.h"
+#include "archdep.h"
 
 #include <assert.h>
 #include <complex.h>

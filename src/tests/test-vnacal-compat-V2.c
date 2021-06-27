@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "src/archdep.h"
+#include "archdep.h"
 
 #include <assert.h>
 #include <complex.h>
@@ -29,7 +29,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include "src/vnacal_internal.h"
+#include "vnacal_internal.h"
 #include "test.h"
 #include "vnacaltest.h"
 
@@ -52,6 +52,12 @@ static const char *const help[] = {
 };
 bool opt_a = false;
 int  opt_v = 0;
+
+/*
+ * filename: test file name
+ */
+static const char file[] = "compat-V2.vnacal";
+static const char *pathname = file;
 
 /*
  * error_fn: error reporting function
@@ -232,7 +238,7 @@ static test_result_t test_vnacal_compat_V2()
     /*
      * Load the old format save file.
      */
-    if ((vcp = vnacal_load("compat-V2.vnacal", error_fn, NULL)) == NULL) {
+    if ((vcp = vnacal_load(pathname, error_fn, NULL)) == NULL) {
 	(void)fprintf(stderr, "%s: vnacal_load: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
@@ -325,6 +331,8 @@ static void print_usage()
 int
 main(int argc, char **argv)
 {
+    char *srcdir = NULL;
+
     /*
      * Parse Options
      */
@@ -351,6 +359,30 @@ main(int argc, char **argv)
 	}
 	break;
     }
+
+    /*
+     * If srcdir is defined in the environment, incorporate it into
+     * pathname.
+     */
+    if ((srcdir = getenv("srcdir")) != NULL) {
+	char *cp;
+
+	if ((cp = malloc(strlen(srcdir) + 1 +
+			sizeof(file))) == NULL) {
+	    (void)fprintf(stderr, "%s: malloc: %s\n",
+		    progname, strerror(errno));
+	    exit(99);
+	}
+	pathname = cp;
+	(void)strcpy(cp, srcdir);
+	cp += strlen(cp);
+	*cp++ = '/';
+	(void)strcpy(cp, file);
+    }
+
+    /*
+     * Set the compare precision and run the test.
+     */
     test_init_isequal();
     if (test_isequal_eps < 0.00001) {	/* file has 6 digits precision */
 	test_isequal_eps = 0.00001;

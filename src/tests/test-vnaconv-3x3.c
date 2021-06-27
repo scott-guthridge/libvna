@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "src/archdep.h"
+#include "archdep.h"
 
 #include <assert.h>
 #include <complex.h>
@@ -29,7 +29,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include "src/vnaconv_internal.h"
+#include "vnaconv_internal.h"
 #include "test.h"
 
 

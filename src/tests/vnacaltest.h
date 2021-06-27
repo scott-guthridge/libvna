@@ -20,7 +20,7 @@
 #define _TEST_VNACAL_H
 
 #include <stdbool.h>
-#include "src/vnacal_internal.h"
+#include "vnacal_internal.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -102,7 +102,8 @@ vnafile_example_SOURCES = vnafile-example.c
 vnafile_example_LDADD = libvna.la -lm
 vnafile_example_LDFLAGS = -static
 
-dist_doc_DATA = MwT-1F.s2p vnacal-SOLT-example.c vnacal-SOLT-example.gnuplot \
+dist_doc_DATA = BFCV-4085+_Plus25DegC.s2p MwT-1F.s2p \
+	vnacal-SOLT-example.c vnacal-SOLT-example.gnuplot \
 	vnacal-TSD-example.c vnacal-TSD-example.gnuplot \
 	vnacal-TRL-example.c vnacal-TRL-example.gnuplot \
 	vnaconv-example.c vnadata-example.c vnafile-example.c \
