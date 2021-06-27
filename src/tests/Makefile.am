@@ -138,4 +138,4 @@ test_vnacal_compat_V2_LDFLAGS = -static
 #vnafile_test_LDFLAGS = -static
 
 clean-local:
-	rm -f vnacal-test.vnacal
+	rm -f test-vnacal.vnacal
