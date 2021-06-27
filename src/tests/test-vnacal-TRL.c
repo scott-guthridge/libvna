@@ -117,14 +117,13 @@ static test_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
     double complex l_guess[TRL_FREQUENCIES];	/* guess for line */
     int r_unknown = -1, l_unknown = -1;
 
-
     /*
      * If -v, print the test header.
      */
     if (opt_v != 0) {
-	(void)printf("Test vnacal TRL calibration trial %d\n", trial);
+	(void)printf("Test vnacal TRL calibration trial %d type %-4s TRL\n",
+		trial, _vnacal_type_to_name(type));
     }
-
 
     /*
      * Create the calibration structure.
@@ -350,7 +349,6 @@ out:
     }
     test_vnacal_free_measurements(tmp);
     test_vnacal_free_error_terms(ttp);
-    vnacal_new_free(vnp);
     vnacal_free(vcp);
     return result;
 }
