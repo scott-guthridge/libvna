@@ -18,43 +18,51 @@
 
 #include "archdep.h"
 
+#include <ctype.h>
 #include <errno.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include "vnadata_internal.h"
 
 
 /*
- * vnadata_set_z0: set the z0 value for the given port
- *   @vdp:  a pointer to the vnadata_t structure
- *   @port: port number (zero-based)
- *   @z0:   new value
+ * MAX_FORMAT: maximum length of a format specifier
  */
-int vnadata_set_z0(vnadata_t *vdp, int port, double complex z0)
-{
-    vnadata_internal_t *vdip;
-    int ports;
+#define MAX_FORMAT	5
 
-    if (vdp == NULL) {
-	errno = EINVAL;
-	return -1;
-    }
-    vdip = VDP_TO_VDIP(vdp);
-    if (vdip->vdi_magic != VDI_MAGIC) {
-	errno = EINVAL;
-	return -1;
-    }
-    ports = MAX(vdp->vd_rows, vdp->vd_columns);
-    if (port < 0 || port > ports) {
-	_vnadata_error(vdip, VNAERR_USAGE,
-		"vnadata_set_z0: invalid port index: %d", port);
-	return -1;
-    }
-    if (vdip->vdi_flags & VF_PER_F_Z0) {
-	if (_vnadata_convert_to_z0(vdip) == -1) {
+/*
+ * _vnadata_update_format_string: regenerate vdi_format_string
+ *   @vdip:   internal parameter matrix
+ */
+int _vnadata_update_format_string(vnadata_internal_t *vdip)
+{
+    char *new_string = NULL;
+    char *cur;
+
+    free((void *)vdip->vdi_format_string);
+    vdip->vdi_format_string = NULL;
+    if (vdip->vdi_format_count != 0) {
+	if ((new_string = malloc(vdip->vdi_format_count *
+			(MAX_FORMAT + 1))) == NULL) {
+	    _vnadata_error(vdip, VNAERR_SYSTEM,
+		    "malloc: %s", strerror(errno));
 	    return -1;
 	}
+	cur = new_string;
+	for (int i = 0;;) {
+	    const char *name;
+
+	    name = _vnadata_format_to_name(&vdip->vdi_format_vector[i]);
+	    (void)strcpy(cur, name);
+	    cur += strlen(cur);
+	    if (++i >= vdip->vdi_format_count) {
+		break;
+	    }
+	    *cur++ = ',';
+	}
+	*cur = '\000';
+	vdip->vdi_format_string = new_string;
     }
-    vdip->vdi_z0_vector[port] = z0;
     return 0;
 }

@@ -26,13 +26,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "vnafile_internal.h"
+#include "vnadata_internal.h"
 
 
 /*
- * native_record_type_t: type of record returned from scan_line
+ * npd_record_type_t: type of record returned from scan_line
  */
-typedef enum native_record_type {
+typedef enum npd_record_type {
     T_KVERSION,
     T_KROWS,
     T_KCOLUMNS,
@@ -43,26 +43,26 @@ typedef enum native_record_type {
     T_KZ0,
     T_DATA,
     T_EOF
-} native_record_type_t;
+} npd_record_type_t;
 
 /*
- * native_scan_state_t: scanner state
+ * npd_scan_state_t: scanner state
  */
-typedef struct native_scan_state {
-    vnafile_t		       *nss_vfp;
+typedef struct npd_scan_state {
+    vnadata_internal_t	       *nss_vdip;
     FILE		       *nss_fp;
     const char		       *nss_filename;
     bool			nss_start_of_line;
     int				nss_line;
     int				nss_char;
-    native_record_type_t	nss_record_type;
+    npd_record_type_t		nss_record_type;
     size_t			nss_text_size;
     size_t			nss_text_allocation;
     size_t			nss_field_count;
     size_t			nss_field_allocation;
     char		       *nss_text;
     int		               *nss_fields;
-} native_scan_state_t;
+} npd_scan_state_t;
 
 /*
  * GET_CHAR: read the next character
@@ -84,16 +84,16 @@ typedef struct native_scan_state {
  *   @nssp: scanner state
  *   @c:    character to add
  */
-static int add_char(native_scan_state_t *nssp, char c)
+static int add_char(npd_scan_state_t *nssp, char c)
 {
-    vnafile_t *vfp = nssp->nss_vfp;
+    vnadata_internal_t *vdip = nssp->nss_vdip;
 
     if (nssp->nss_text_size >= nssp->nss_text_allocation) {
 	size_t new_allocation = MAX(81, 2 * nssp->nss_text_allocation);
 	char *cp;
 
 	if ((cp = realloc(nssp->nss_text, new_allocation)) == NULL) {
-	    _vnafile_error(vfp, VNAERR_SYSTEM,
+	    _vnadata_error(vdip, VNAERR_SYSTEM,
 		    "realloc: %s", strerror(errno));
 	    return -1;
 	}
@@ -108,9 +108,9 @@ static int add_char(native_scan_state_t *nssp, char c)
  * start_field: start a new field
  *   @nssp: scanner state
  */
-static int start_field(native_scan_state_t *nssp)
+static int start_field(npd_scan_state_t *nssp)
 {
-    vnafile_t *vfp = nssp->nss_vfp;
+    vnadata_internal_t *vdip = nssp->nss_vdip;
 
     if (nssp->nss_field_count >= nssp->nss_field_allocation) {
 	size_t new_allocation = MAX(9, 2 * nssp->nss_field_allocation);
@@ -118,7 +118,7 @@ static int start_field(native_scan_state_t *nssp)
 
 	ip = realloc(nssp->nss_fields, new_allocation * sizeof(int));
 	if (ip == NULL) {
-	    _vnafile_error(vfp, VNAERR_SYSTEM,
+	    _vnadata_error(vdip, VNAERR_SYSTEM,
 		    "realloc: %s", strerror(errno));
 	    return -1;
 	}
@@ -134,7 +134,7 @@ static int start_field(native_scan_state_t *nssp)
  * end_field: end the current field
  *   @nssp: scanner state
  */
-static void end_field(native_scan_state_t *nssp)
+static void end_field(npd_scan_state_t *nssp)
 {
     add_char(nssp, '\000');
     ++nssp->nss_field_count;
@@ -144,9 +144,9 @@ static void end_field(native_scan_state_t *nssp)
  * scan_line: scan an input line
  *   @nssp: scanner state
  */
-static int scan_line(native_scan_state_t *nssp)
+static int scan_line(npd_scan_state_t *nssp)
 {
-    vnafile_t *vfp = nssp->nss_vfp;
+    vnadata_internal_t *vdip = nssp->nss_vdip;
 
     /*
      * Start a new line.
@@ -156,7 +156,7 @@ static int scan_line(native_scan_state_t *nssp)
     for (;;) {
 	/*
 	 * Handle delayed advancement to the next line.  We do this
-	 * so that nss_line remains accurate in _vnafile_load_native.
+	 * so that nss_line remains accurate in _vnadata_load_npd.
 	 */
 	if (nssp->nss_start_of_line) {
 	    assert(nssp->nss_char == '\n');
@@ -317,7 +317,7 @@ static int scan_line(native_scan_state_t *nssp)
 	default:
 	    break;
 	}
-	_vnafile_error(vfp, VNAERR_SYNTAX,
+	_vnadata_error(vdip, VNAERR_SYNTAX,
 		"%s (line %d) error: unrecognized keyword: %s",
 		nssp->nss_filename, nssp->nss_line, FIELD(nssp, 0));
 	return -1;
@@ -367,20 +367,20 @@ static bool convert_double(const char *field, double *value)
  *   @nssp:  scanner state
  *   @value: address to receive value
  */
-static int expect_nnint_arg(native_scan_state_t *nssp, int *value)
+static int expect_nnint_arg(npd_scan_state_t *nssp, int *value)
 {
-    vnafile_t *vfp = nssp->nss_vfp;
+    vnadata_internal_t *vdip = nssp->nss_vdip;
     int temp;
 
     if (nssp->nss_field_count != 2) {
-	_vnafile_error(vfp, VNAERR_SYNTAX,
+	_vnadata_error(vdip, VNAERR_SYNTAX,
 		"%s (line %d) error: one argument expected after %s",
 		nssp->nss_filename, nssp->nss_line,
 		&FIELD(nssp, 0)[2]);
 	return -1;
     }
     if (!convert_int(FIELD(nssp, 1), &temp) || temp < 0) {
-	_vnafile_error(vfp, VNAERR_SYNTAX,
+	_vnadata_error(vdip, VNAERR_SYNTAX,
 		"%s (line %d) error: non-negative integer expected after %s",
 		nssp->nss_filename, nssp->nss_line,
 		FIELD(nssp, 0));
@@ -391,17 +391,16 @@ static int expect_nnint_arg(native_scan_state_t *nssp, int *value)
 }
 
 /*
- * _vnafile_load_native: load matrix data in libvna native format
- *   @vfp: pointer to the structure returned from vnafile_alloc
+ * _vnadata_load_npd: load matrix data in libvna NPD format
+ *   @vdp: a pointer to the vnadata_t structure
  *   @fp: file pointer
  *   @filename: filename used in error messages and to intuit the file type
- *   @vdp: output data (reshaped as needed)
- *   @parameter_type: convert parameters to this type (any if VPT_UNDEF)
+ *   @type: convert parameters to this type (any if VPT_UNDEF)
  */
-int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
-	vnadata_t *vdp)
+int _vnadata_load_npd(vnadata_internal_t *vdip, FILE *fp, const char *filename)
 {
-    native_scan_state_t nss;
+    vnadata_t *vdp = &vdip->vdi_vd;
+    npd_scan_state_t nss;
     int rows = -1;
     int columns = -1;
     int ports = -1;
@@ -413,14 +412,14 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
     int best_field = -1;
     int best_drows = -1;
     int best_dcolumns = -1;
-    vnadata_parameter_type_t best_parameter_type = VPT_UNDEF;
+    vnadata_parameter_type_t best_type = VPT_UNDEF;
     int parameter_line = -1;
     bool fz0 = false;
     double complex *z0_vector = NULL;
-    const vnafile_format_t *best_vffp = NULL;
+    const vnadata_format_descriptor_t *best_vfdp = NULL;
 
     (void)memset((void *)&nss, 0, sizeof(nss));
-    nss.nss_vfp			= vfp;
+    nss.nss_vdip		= vdip;
     nss.nss_fp			= fp;
     nss.nss_filename		= filename;
     nss.nss_start_of_line	= true;
@@ -439,14 +438,14 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	switch (nss.nss_record_type) {
 	case T_KVERSION:
 	    if (nss.nss_field_count < 2) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"argument expected after %s",
 			nss.nss_filename, nss.nss_line,
 			FIELD(&nss, 0));
 		goto out;
 	    }
 	    if (strcmp(FIELD(&nss, 1), "1.0") != 0) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"unsupported version %s",
 			nss.nss_filename, nss.nss_line, FIELD(&nss, 0));
 		goto out;
@@ -493,13 +492,13 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 
 	case T_KPARAMETERS:
 	    if (nss.nss_field_count != 2) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"at least one argument expected after %s",
 			nss.nss_filename, nss.nss_line,
 			FIELD(&nss, 0));
 		goto out;
 	    }
-	    if (vnafile_set_format(vfp, FIELD(&nss, 1)) == -1) {
+	    if (vnadata_set_format(vdp, FIELD(&nss, 1)) == -1) {
 		goto out;
 	    }
 	    parameter_line = nss.nss_line;
@@ -515,15 +514,15 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		if (expect_nnint_arg(&nss, &temp) == -1) {
 		    goto out;
 		}
-		if (temp > VNAFILE_MAX_PRECISION) {
-		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		if (temp > VNADATA_MAX_PRECISION) {
+		    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s may not exceed %d",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, 0),
-			    VNAFILE_MAX_PRECISION);
+			    VNADATA_MAX_PRECISION);
 		    goto out;
 		}
-		vfp->vf_fprecision = temp;
+		vdip->vdi_fprecision = temp;
 	    }
 	    if (scan_line(&nss) == -1) {
 		goto out;
@@ -537,15 +536,15 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		if (expect_nnint_arg(&nss, &temp) == -1) {
 		    goto out;
 		}
-		if (temp > VNAFILE_MAX_PRECISION) {
-		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		if (temp > VNADATA_MAX_PRECISION) {
+		    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s may not exceed %d",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, 0),
-			    VNAFILE_MAX_PRECISION);
+			    VNADATA_MAX_PRECISION);
 		    goto out;
 		}
-		vfp->vf_dprecision = temp;
+		vdip->vdi_dprecision = temp;
 	    }
 	    if (scan_line(&nss) == -1) {
 		goto out;
@@ -555,7 +554,7 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 
 	case T_KZ0:
 	    if (ports < 0) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"rows and columns must come before #:z0",
 			nss.nss_filename, nss.nss_line);
 		goto out;
@@ -569,7 +568,7 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		continue;
 	    }
 	    if (nss.nss_field_count != 1 + 2 * ports) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"expected %d fields after z0",
 			nss.nss_filename, nss.nss_line,
 			2 * ports);
@@ -578,7 +577,7 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	    if (z0_vector == NULL) {
 		if ((z0_vector = calloc(ports,
 				sizeof(double complex))) == NULL) {
-		    _vnafile_error(vfp, VNAERR_SYSTEM,
+		    _vnadata_error(vdip, VNAERR_SYSTEM,
 			    "calloc: %s", strerror(errno));
 		    goto out;
 		}
@@ -588,7 +587,7 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		char *cp;
 
 		if (!convert_double(FIELD(&nss, 1 + 2 * port), &re)) {
-		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s: expected a numeric argument",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, 1 + 2 * port));
@@ -600,7 +599,7 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		    }
 		}
 		if (!convert_double(FIELD(&nss, 2 + 2 * port), &im)) {
-		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s: expected a numeric argument",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, 2 + 2 * port));
@@ -620,25 +619,25 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	break;
     }
     if (rows < 0) {
-	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		"required keyword #:rows missing",
 		nss.nss_filename, nss.nss_line);
 	goto out;
     }
     if (columns < 0) {
-	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		"required keyword #:columns missing",
 		nss.nss_filename, nss.nss_line);
 	goto out;
     }
     if (frequencies < 0) {
-	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		"required keyword #:frequencies missing",
 		nss.nss_filename, nss.nss_line);
 	goto out;
     }
     if (parameter_line == -1) {
-	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		"required keyword #:parameters missing",
 		nss.nss_filename, nss.nss_line);
 	goto out;
@@ -655,9 +654,9 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
     /*
      * Find the best parameter for the requested type.
      */
-    for (int i = 0; i < vfp->vf_format_count; ++i) {
-	const vnafile_format_t *vffp = &vfp->vf_format_vector[i];
-	vnadata_parameter_type_t parameter_type;
+    for (int i = 0; i < vdip->vdi_format_count; ++i) {
+	const vnadata_format_descriptor_t *vfdp = &vdip->vdi_format_vector[i];
+	vnadata_parameter_type_t type;
 	int drows = rows, dcolumns = columns;
 	int fields = 2 * drows * dcolumns;
 	int quality = 0;
@@ -667,20 +666,20 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	 * and determine the parameter type.  Determine the dimensions
 	 * of the data matrix and the number of fields.
 	 */
-	parameter_type = vffp->vff_parameter;
-	switch (vffp->vff_parameter) {
+	type = vfdp->vfd_parameter;
+	switch (vfdp->vfd_parameter) {
 	case VPT_UNDEF:
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "%s parameter with no type",
 		    nss.nss_filename, parameter_line,
-		    vnadata_get_typename(vffp->vff_parameter));
+		    vnadata_get_type_name(vfdp->vfd_parameter));
 	    goto out;
 
 	case VPT_S:
-	    switch (vffp->vff_format) {
-	    case VNAFILE_FORMAT_IL:
-	    case VNAFILE_FORMAT_RL:
-	    case VNAFILE_FORMAT_VSWR:
+	    switch (vfdp->vfd_format) {
+	    case VNADATA_FORMAT_IL:
+	    case VNADATA_FORMAT_RL:
+	    case VNADATA_FORMAT_VSWR:
 		fields = diagonals;
 		break;
 
@@ -692,10 +691,10 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	case VPT_Z:
 	case VPT_Y:
 	    if (rows != columns) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"%s parameters require a square matrix",
 			nss.nss_filename, nss.nss_line,
-			vnadata_get_typename(vffp->vff_parameter));
+			vnadata_get_type_name(vfdp->vfd_parameter));
 		goto out;
 	    }
 	    break;
@@ -706,10 +705,10 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	case VPT_A:
 	case VPT_B:
 	    if (rows != 2 || columns != 2) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"%s parameters require a 2x2 matrix",
 			nss.nss_filename, nss.nss_line,
-			_vnafile_format_to_name(vffp));
+			_vnadata_format_to_name(vfdp));
 		goto out;
 	    }
 	    break;
@@ -730,15 +729,15 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	 * are always better than Zin.  Then we fine tune based on
 	 * the amount of math we have to do convert the parameter.
 	 */
-	if (vffp->vff_parameter != VPT_ZIN) {
-	    switch (vffp->vff_format) {
-	    case VNAFILE_FORMAT_REAL_IMAG:
+	if (vfdp->vfd_parameter != VPT_ZIN) {
+	    switch (vfdp->vfd_format) {
+	    case VNADATA_FORMAT_REAL_IMAG:
 		quality = 6;	/* no conversion */
 		break;
-	    case VNAFILE_FORMAT_MAG_ANGLE:
+	    case VNADATA_FORMAT_MAG_ANGLE:
 		quality = 5;	/* complex trig */
 		break;
-	    case VNAFILE_FORMAT_DB_ANGLE:
+	    case VNADATA_FORMAT_DB_ANGLE:
 		quality = 4;	/* exponentiation and complex trig */
 		break;
 	    default:
@@ -746,17 +745,17 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		break;
 	    }
 	} else {
-	    switch (vffp->vff_format) {
-	    case VNAFILE_FORMAT_REAL_IMAG:
+	    switch (vfdp->vfd_format) {
+	    case VNADATA_FORMAT_REAL_IMAG:
 		quality = 3;	/* no conversion */
 		break;
-	    case VNAFILE_FORMAT_PRC:
-	    case VNAFILE_FORMAT_PRL:
-	    case VNAFILE_FORMAT_SRC:
-	    case VNAFILE_FORMAT_SRL:
+	    case VNADATA_FORMAT_PRC:
+	    case VNADATA_FORMAT_PRL:
+	    case VNADATA_FORMAT_SRC:
+	    case VNADATA_FORMAT_SRL:
 		quality = 2;	/* multiplication and division */
 		break;
-	    case VNAFILE_FORMAT_MAG_ANGLE:
+	    case VNADATA_FORMAT_MAG_ANGLE:
 		quality = 1;	/* trigonometry */
 		break;
 	    default:
@@ -766,16 +765,16 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	}
 	if (quality > best_quality) {
 	    best_quality = quality;
-	    best_vffp = vffp;
-	    best_parameter_type = parameter_type;
+	    best_vfdp = vfdp;
+	    best_type = type;
 	    best_drows = drows;
 	    best_dcolumns = dcolumns;
 	    best_field = n_fields;
 	}
 	n_fields += fields;
     }
-    if (best_vffp == NULL) {
-	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+    if (best_vfdp == NULL) {
+	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		"file contains no parameter we can load",
 		nss.nss_filename, nss.nss_line);
 	goto out;
@@ -784,22 +783,21 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
     /*
      * Set-up the output matrix.
      */
-    if (vnadata_init(vdp, frequencies, best_drows, best_dcolumns,
-		best_parameter_type) == -1) {
+    if (vnadata_init(vdp, best_type, best_drows, best_dcolumns,
+		frequencies) == -1) {
 	goto out;
-	_vnafile_error(vfp, VNAERR_SYSTEM,
+	_vnadata_error(vdip, VNAERR_SYSTEM,
 		"vnadata_init: %s", strerror(errno));
     }
     if (z0_vector != NULL) {
 	if (vnadata_set_z0_vector(vdp, z0_vector) == -1) {
-	    _vnafile_error(vfp, VNAERR_SYSTEM,
+	    _vnadata_error(vdip, VNAERR_SYSTEM,
 		    "vnadata_set_z0_vector: %s", strerror(errno));
 	    goto out;
 	}
     } else if (fz0) {
-	assert(z0_vector == NULL);
 	if ((z0_vector = calloc(ports, sizeof(double complex))) == NULL) {
-	    _vnafile_error(vfp, VNAERR_SYSTEM,
+	    _vnadata_error(vdip, VNAERR_SYSTEM,
 		    "calloc: %s", strerror(errno));
 	    goto out;
 	}
@@ -813,34 +811,34 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 
 	if (nss.nss_record_type != T_DATA) {
 	    if (nss.nss_record_type == T_EOF) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"expected %d data lines; found only %d",
 			nss.nss_filename, nss.nss_line,
 			frequencies, findex + 1);
 		goto out;
 	    }
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "expected a data line: found %s",
 		    nss.nss_filename, nss.nss_line,
 		    FIELD(&nss, 0));
 	    goto out;
 	}
 	if (nss.nss_field_count != n_fields) {
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "expected %d fields; found %d",
 		    nss.nss_filename, nss.nss_line,
 		    n_fields, (int)nss.nss_field_count);
 	    goto out;
 	}
 	if (!convert_double(FIELD(&nss, 0), &f)) {
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "%s: number expected",
 		    nss.nss_filename, nss.nss_line,
 		    FIELD(&nss, 0));
 	    goto out;
 	}
 	if (vnadata_set_frequency(vdp, findex, f) == -1) {
-	    _vnafile_error(vfp, VNAERR_SYSTEM,
+	    _vnadata_error(vdip, VNAERR_SYSTEM,
 		    "vnadata_set_frequency: %s", strerror(errno));
 	    goto out;
 	}
@@ -849,14 +847,14 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		double re, im;
 
 		if (!convert_double(FIELD(&nss, 1 + 2 * port), &re)) {
-		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s: number expected",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, 1 + 2 * port));
 		    goto out;
 		}
 		if (!convert_double(FIELD(&nss, 2 + 2 * port), &im)) {
-		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s: number expected",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, 2 + 2 * port));
@@ -865,7 +863,7 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		z0_vector[port] = re + I * im;
 	    }
 	    if (vnadata_set_fz0_vector(vdp, findex, z0_vector) == -1) {
-		_vnafile_error(vfp, VNAERR_SYSTEM,
+		_vnadata_error(vdip, VNAERR_SYSTEM,
 			"vnadata_set_fz0_vector: %s", strerror(errno));
 		goto out;
 	    }
@@ -876,48 +874,48 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 		double v1, v2;
 		double complex value;
 
-		if (!convert_double(FIELD(&nss, best_field + 2 * cell), &v1)) {
-		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		if (!convert_double(FIELD(&nss,
+				best_field + 2 * cell), &v1)) {
+		    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s: number expected",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, best_field + cell));
 		    goto out;
 		}
-		if (!convert_double(FIELD(&nss, best_field + 2 * cell + 1),
-			    &v2)) {
-		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		if (!convert_double(FIELD(&nss,
+				best_field + 2 * cell + 1), &v2)) {
+		    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "%s: number expected",
 			    nss.nss_filename, nss.nss_line,
 			    FIELD(&nss, best_field + cell + 1));
 		    goto out;
 		}
-		switch (best_vffp->vff_format) {
-		case VNAFILE_FORMAT_DB_ANGLE:
-		    value = pow(10.0, v1 / 20.0) *
-			cexp(I * M_PI / 180.0 * v2);
+		switch (best_vfdp->vfd_format) {
+		case VNADATA_FORMAT_DB_ANGLE:
+		    value = pow(10.0, v1 / 20.0) * cexp(I * M_PI / 180.0 * v2);
 		    break;
 
-		case VNAFILE_FORMAT_MAG_ANGLE:
+		case VNADATA_FORMAT_MAG_ANGLE:
 		    value = v1 * cexp(I * M_PI / 180.0 * v2);
 		    break;
 
-		case VNAFILE_FORMAT_REAL_IMAG:
+		case VNADATA_FORMAT_REAL_IMAG:
 		    value = v1 + I * v2;
 		    break;
 
-		case VNAFILE_FORMAT_PRC:
+		case VNADATA_FORMAT_PRC:
 		    value = 1.0 / (1.0 / v1 + 2.0 * M_PI * I * f * v2);
 		    break;
 
-		case VNAFILE_FORMAT_PRL:
+		case VNADATA_FORMAT_PRL:
 		    value = 1.0 / (1.0 / v1 - I / (2.0 * M_PI * I * f * v2));
 		    break;
 
-		case VNAFILE_FORMAT_SRC:
+		case VNADATA_FORMAT_SRC:
 		    value = v1 - I / (2.0 * M_PI * f * v2);
 		    break;
 
-		case VNAFILE_FORMAT_SRL:
+		case VNADATA_FORMAT_SRL:
 		    value = v1 + 2.0 * M_PI * I * f * v2;
 		    break;
 
@@ -933,7 +931,7 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 	}
     }
     if (nss.nss_record_type != T_EOF) {
-	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		"extra lines at end of input",
 		nss.nss_filename, nss.nss_line);
 	goto out;

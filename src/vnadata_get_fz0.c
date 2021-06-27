@@ -45,12 +45,14 @@ double complex vnadata_get_fz0(const vnadata_t *vdp, int findex, int port)
 	return HUGE_VAL;
     }
     if (findex < 0 || findex > vdp->vd_frequencies) {
-	errno = EINVAL;
+	_vnadata_error(vdip, VNAERR_USAGE,
+		"vnadata_get_fz0: frequency index: %d: out of bounds", findex);
 	return HUGE_VAL;
     }
     ports = MAX(vdp->vd_rows, vdp->vd_columns);
     if (port < 0 || port > ports) {
-	errno = EINVAL;
+	_vnadata_error(vdip, VNAERR_USAGE,
+		"vnadata_get_fz0: port index: %d: out of bounds", port);
 	return HUGE_VAL;
     }
     if (vdip->vdi_flags & VF_PER_F_Z0) {

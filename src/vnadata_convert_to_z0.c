@@ -39,6 +39,8 @@ int _vnadata_convert_to_z0(vnadata_internal_t *vdip)
 	if (vdip->vdi_p_allocation > 0) {
 	    if ((clfp = calloc(vdip->vdi_p_allocation,
 			    sizeof(double complex))) == NULL) {
+		_vnadata_error(vdip, VNAERR_SYSTEM,
+			"calloc: %s", strerror(errno));
 		return -1;
 	    }
 	    for (int port = 0; port < vdip->vdi_p_allocation; ++port) {

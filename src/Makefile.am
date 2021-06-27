@@ -12,7 +12,7 @@ SUBDIRS= . tests
 #
 # Library
 #
-include_HEADERS = vnacal.h vnaconv.h vnadata.h vnaerr.h vnafile.h
+include_HEADERS = vnacal.h vnaconv.h vnadata.h vnaerr.h
 lib_LTLIBRARIES = libvna.la
 libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnacal_delete_parameter.c vnacal_apply.c vnacal_new_add_common.c \
@@ -49,14 +49,19 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnaconv_ztoa.c vnaconv_ztob.c vnaconv_ztog.c vnaconv_ztoh.c \
 	vnaconv_ztos.c vnaconv_ztosn.c vnaconv_ztot.c vnaconv_ztoy.c \
 	vnaconv_ztoyn.c vnaconv_ztozi.c vnaconv_ztozin.c \
-	vnadata_internal.h vnadata_add_frequency.c vnadata_alloc.c \
-	vnadata_convert.c vnadata_convert_to_fz0.c vnadata_convert_to_z0.c \
-	vnadata_get_fz0.c vnadata_get_fz0_vector.c vnadata_get_typename.c \
-	vnadata_get_z0.c vnadata_get_z0_vector.c vnadata_set_all_z0.c \
-	vnadata_set_fz0.c vnadata_set_fz0_vector.c vnadata_set_z0.c \
-	vnadata_set_z0_vector.c \
-	vnafile_internal.h vnafile.c vnafile_load.c vnafile_load_native.c \
-	vnafile_load_touchstone.c vnafile_save.c \
+	vnadata_add_frequency.c vnadata_alloc.c vnadata_convert.c \
+	vnadata_convert_to_fz0.c vnadata_convert_to_z0.c \
+	vnadata_format_to_name.c vnadata_get_dprecision.c \
+	vnadata_get_filetype.c vnadata_get_format.c vnadata_get_fprecision.c \
+	vnadata_get_fz0.c vnadata_get_fz0_vector.c vnadata_get_type_name.c \
+	vnadata_get_z0.c vnadata_get_z0_vector.c vnadata_has_fz0.c \
+	vnadata_internal.h \
+	vnadata_load.c vnadata_load_npd.c vnadata_load_touchstone.c \
+	vnadata_parse_filename.c vnadata_save.c vnadata_set_all_z0.c \
+	vnadata_set_dprecision.c vnadata_set_filetype.c vnadata_set_format.c \
+	vnadata_set_fprecision.c vnadata_set_fz0.c vnadata_set_fz0_vector.c \
+	vnadata_set_simple_format.c vnadata_set_z0.c vnadata_set_z0_vector.c \
+	vnadata_update_format_string.c \
 	vnaproperty.h vnaproperty_internal.h vnaproperty.c
 
 
@@ -64,15 +69,14 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 # Man pages
 #
 dist_man_MANS = vnacal.3 vnacal_new.3 vnacal_parameter.3 vnaconv.3 \
-	vnadata.3 vnaerr.3 vnafile.3
-
+	vnadata.3 vnaerr.3
 
 #
 # Examples
 #
 noinst_PROGRAMS = vnacal-SOLT-example vnacal-TSD-example \
 		  vnacal-TRL-example \
-		  vnaconv-example vnadata-example vnafile-example
+		  vnaconv-example vnadata-example convert-parameters
 
 #vnaproperty_example_SOURCES = vnaproperty-example.c
 #vnaproperty_example_LDADD = libvna.la
@@ -98,16 +102,16 @@ vnadata_example_SOURCES = vnadata-example.c
 vnadata_example_LDADD = libvna.la -lm
 vnadata_example_LDFLAGS = -static
 
-vnafile_example_SOURCES = vnafile-example.c
-vnafile_example_LDADD = libvna.la -lm
-vnafile_example_LDFLAGS = -static
+convert_parameters_SOURCES = convert-parameters.c
+convert_parameters_LDADD = libvna.la -lm
+convert_parameters_LDFLAGS = -static
 
 dist_doc_DATA = BFCV-4085+_Plus25DegC.s2p MwT-1F.s2p \
 	vnacal-SOLT-example.c vnacal-SOLT-example.gnuplot \
 	vnacal-TSD-example.c vnacal-TSD-example.gnuplot \
 	vnacal-TRL-example.c vnacal-TRL-example.gnuplot \
-	vnaconv-example.c vnadata-example.c vnafile-example.c \
-	vnafile-example.ts
+	vnaconv-example.c vnadata-example.c vnadata-example.npd \
+	convert-parameters.c convert-parameters.ts
 
 vnacal-SOLT-example.out: vnacal-SOLT-example
 	./vnacal-SOLT-example > "$@"
@@ -133,9 +137,9 @@ plot: plot-SOLT
 	$(PDFROFF) -t -e -man --no-toc-relocation $< > "$@"
 
 pdfman: vnacal.pdf vnacal_new.pdf vnacal_parameter.pdf vnaconv.pdf \
-	vnadata.pdf vnaerr.pdf vnafile.pdf
+	vnadata.pdf vnaerr.pdf
 
 clean-local:
 	rm -f example.vnacal vnacal-SOLT-example.out vnacal-TSD-example.out \
-		vnacal-TRL-example.out vnacal.pdf vnaconv.pdf vnadata.pdf \
-		vnafile.pdf
+		vnacal-TRL-example.out vnacal.pdf vnacal_new.pdf \
+		vnacal_parameter.pdf vnaconv.pdf vnadata.pdf vnaerr.pdf

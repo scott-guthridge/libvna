@@ -25,28 +25,34 @@
 
 
 /*
- * vnadata_get_z0_vector: return the z0 vector
- *   @vdp:  a pointer to the vnadata_t structure
+ * vnadata_get_type_name: convert parameter type to name
+ *   @type: parameter type
  */
-const double complex *vnadata_get_z0_vector(const vnadata_t *vdp)
+const char *vnadata_get_type_name(vnadata_parameter_type_t type)
 {
-    vnadata_internal_t *vdip;
-
-    if (vdp == NULL) {
-	errno = EINVAL;
-	return NULL;
+    switch (type) {
+    case VPT_UNDEF:
+	return "undefined";
+    case VPT_S:
+	return "S";
+    case VPT_Z:
+	return "Z";
+    case VPT_Y:
+	return "Y";
+    case VPT_H:
+	return "H";
+    case VPT_G:
+	return "G";
+    case VPT_A:
+	return "A";
+    case VPT_B:
+	return "B";
+    case VPT_T:
+	return "T";
+    case VPT_ZIN:
+	return "Zin";
+    default:
+	break;
     }
-    vdip = VDP_TO_VDIP(vdp);
-    if (vdip->vdi_magic != VDI_MAGIC) {
-	errno = EINVAL;
-	return NULL;
-    }
-    if (vdip->vdi_flags & VF_PER_F_Z0) {
-	_vnadata_error(vdip, VNAERR_USAGE,
-		"vnadata_get_z0_vector: per-frequency z0 values are in-use: "
-		"use vnadata_get_fz0_vector instead");
-	errno = EINVAL;
-	return NULL;
-    }
-    return vdip->vdi_z0_vector;
+    return NULL;
 }

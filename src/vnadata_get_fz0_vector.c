@@ -43,7 +43,9 @@ const double complex *vnadata_get_fz0_vector(const vnadata_t *vdp, int findex)
 	return NULL;
     }
     if (findex < 0 || findex > vdp->vd_frequencies) {
-	errno = EINVAL;
+	_vnadata_error(vdip, VNAERR_USAGE,
+		"vnadata_get_fz0_vector: frequency index: %d: out of bounds",
+		findex);
 	return NULL;
     }
     if (vdip->vdi_flags & VF_PER_F_Z0) {

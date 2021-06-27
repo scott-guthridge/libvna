@@ -46,7 +46,8 @@ int vnadata_set_fz0_vector(vnadata_t *vdp, int findex,
 	return -1;
     }
     if (findex < 0 || findex > vdp->vd_frequencies) {
-	errno = EINVAL;
+	_vnadata_error(vdip, VNAERR_USAGE,
+		"vnadata_set_fz0_vector: invalid frequency index: %d", findex);
 	return -1;
     }
     ports = MAX(vdp->vd_rows, vdp->vd_columns);

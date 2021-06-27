@@ -404,9 +404,7 @@ static void apply_calibration()
     /*
      * Allocate a vnadata_t structure to receive the computed S parameters.
      */
-    if ((s_matrix = vnadata_alloc()) == NULL) {
-	(void)fprintf(stderr, "example: vnadata_alloc: %s\n",
-		strerror(errno));
+    if ((s_matrix = vnadata_alloc(error_fn, /*error_arg=*/NULL)) == NULL) {
 	exit(7);
     }
 

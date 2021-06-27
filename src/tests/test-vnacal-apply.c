@@ -146,7 +146,7 @@ static libt_result_t run_vnacal_apply_trial(int trial,
     /*
      * Create a vnadata_t structure to hold the result.
      */
-    if ((vdp = vnadata_alloc()) == NULL) {
+    if ((vdp = vnadata_alloc(error_fn, NULL)) == NULL) {
 	result = T_FAIL;
 	goto out;
     }
@@ -2301,9 +2301,7 @@ static libt_result_t test_vnacal_apply_helper(int trial, int frequencies,
 	 * vnacal_apply function.
 	 */
 	if (map == NULL && vrows == drows && vcolumns == dcolumns) {
-	    if ((output_matrix = vnadata_alloc()) == NULL)  {
-		(void)fprintf(stderr, "%s: vnadata_alloc: %s\n",
-			progname, strerror(errno));
+	    if ((output_matrix = vnadata_alloc(error_fn, NULL)) == NULL)  {
 		result = T_FAIL;
 		goto out;
 	    }
@@ -2362,9 +2360,7 @@ static libt_result_t test_vnacal_apply_helper(int trial, int frequencies,
     /*
      * Get the computed S-parameters.
      */
-    if ((output_matrix = vnadata_alloc()) == NULL)  {
-	(void)fprintf(stderr, "%s: vnadata_alloc: %s\n",
-		progname, strerror(errno));
+    if ((output_matrix = vnadata_alloc(error_fn, NULL)) == NULL)  {
 	result = T_FAIL;
 	goto out;
     }

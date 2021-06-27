@@ -28,6 +28,7 @@ Makefile.in
 /stamp-h1
 /test-driver
 rpm/libvna.spec
+src/convert-parameters
 src/cscope.out
 src/SOLT.vnacal
 src/tests/test-suite.log
@@ -49,6 +50,7 @@ src/tests/test-vnacommon-qrsolve
 src/tests/test-vnacommon-qrsolve2
 src/tests/test-vnaconv-2x2
 src/tests/test-vnaconv-3x3
+src/tests/test-vnadata-basic
 src/tests/test-vnaproperty-expr
 src/tests/test-vnaproperty-list
 src/tests/test-vnaproperty-map
@@ -69,5 +71,3 @@ src/vnaconv.pdf
 src/vnadata-example
 src/vnadata.pdf
 src/vnaerr.pdf
-src/vnafile-example
-src/vnafile.pdf

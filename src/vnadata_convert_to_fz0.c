@@ -39,6 +39,8 @@ int _vnadata_convert_to_fz0(vnadata_internal_t *vdip)
 	if (vdip->vdi_f_allocation > 0) {
 	    clfpp = calloc(vdip->vdi_f_allocation, sizeof(double complex *));
 	    if (clfpp == NULL) {
+		_vnadata_error(vdip, VNAERR_SYSTEM, "calloc: %s",
+			strerror(errno));
 		return -1;
 	    }
 	    if (vdip->vdi_p_allocation > 0) {
@@ -46,6 +48,8 @@ int _vnadata_convert_to_fz0(vnadata_internal_t *vdip)
 			++findex) {
 		    if ((clfpp[findex] = calloc(vdip->vdi_p_allocation,
 				    sizeof(double complex))) == NULL) {
+			_vnadata_error(vdip, VNAERR_SYSTEM,
+				"calloc: %s", strerror(errno));
 			while (--findex >= 0) {
 			    free((void *)clfpp[findex]);
 			}

@@ -18,22 +18,22 @@
 
 /*
  * Network parameter converter: converts between network parameter
- * types and between Touchstone 1, Touchstone 2 and native file format.
+ * types and between Touchstone 1, Touchstone 2 and NPD file format.
  * The file type is based on filename extension using ".s1p", ".s2p",
  * ".s3p", etc.  for Touchstone 1, ".ts" for Touchstone 2, and ".npd"
- * or other for native format.
+ * or other for NPD format.
  *
  * Example:
  *     Convert 4x4 network data from a Touchstone 1 file to Z parameters
  *     in magnitude/angle format, saving as Touchstone 2.
  *
- *     vnafile-example -f zma data.s4p data.ts
+ *     npd-convert -f zma data.s4p data.ts
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <vnafile.h>
+#include <vnadata.h>
 
 
 static char *progname;
@@ -85,7 +85,6 @@ static void error_fn(vnaerr_category_t category, const char *message,
  */
 int main(int argc, char **argv)
 {
-    vnafile_t *vfp;
     vnadata_t *vdp;
     const char *f_opt = NULL;
 
@@ -115,22 +114,27 @@ int main(int argc, char **argv)
 	(void)fprintf(stderr, usage, progname);
 	exit(2);
     }
-    vdp = vnadata_alloc();
-    if ((vfp = vnafile_load(argv[0], VNAFILE_AUTO,
-		    error_fn, NULL, vdp)) == NULL) {
+    if ((vdp = vnadata_alloc(error_fn, NULL)) == NULL) {
 	exit(3);
     }
-    /* Let vnafile_save get the file type from the filename. */
-    vnafile_set_file_type(vfp, VNAFILE_AUTO);
-    if (f_opt != NULL) {
-	if (vnafile_set_format(vfp, f_opt) == -1) {
-	    exit(4);
-	}
+    if (vnadata_load(vdp, argv[0]) == -1) {
+	exit(4);
     }
-    if (vnafile_save(vfp, argv[1], vdp) == -1) {
+    /*
+     * Set the filetype back to auto so that saving to a .ts file forces
+     * Touchstone 2 format.
+     */
+    if (vnadata_set_filetype(vdp, VNADATA_FILETYPE_AUTO) == -1) {
 	exit(5);
     }
+    if (f_opt != NULL) {
+	if (vnadata_set_format(vdp, f_opt) == -1) {
+	    exit(6);
+	}
+    }
+    if (vnadata_save(vdp, argv[1]) == -1) {
+	exit(7);
+    }
     vnadata_free(vdp);
-    vnafile_free(vfp);
     exit(0);
 }

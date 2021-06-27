@@ -32,7 +32,7 @@
 #include <string.h>
 #include <vnacal.h>
 #include <vnaconv.h>
-#include <vnafile.h>
+#include <vnadata.h>
 
 char *progname;
 
@@ -499,7 +499,6 @@ static void make_calibration()
 static void apply_calibration()
 {
     vnacal_t *vcp = NULL;
-    vnafile_t *vfp = NULL;
     vnadata_t *vdp_actual = NULL;
     vnadata_t *vdp_corrected = NULL;
     int frequencies = 0;
@@ -533,17 +532,14 @@ static void apply_calibration()
      * Allocate a vnadata_t structure to hold the actual s-parameters
      * of the DUT.
      */
-    if ((vdp_actual = vnadata_alloc()) == NULL) {
-	(void)fprintf(stderr, "%s: vnadata_alloc: %s\n",
-		progname, strerror(errno));
+    if ((vdp_actual = vnadata_alloc(error_fn, /*error_arg*/NULL)) == NULL) {
 	exit(10);
     }
 
     /*
      * Load the actual S-parameters.
      */
-    if ((vfp = vnafile_load(ACTUAL_FILE, VNAFILE_AUTO,
-		    error_fn, /*error_arg*/NULL, vdp_actual)) == NULL) {
+    if (vnadata_load(vdp_actual, ACTUAL_FILE) == -1) {
 	exit(11);
     }
 
@@ -555,8 +551,6 @@ static void apply_calibration()
 		progname, ACTUAL_FILE, strerror(errno));
 	exit(12);
     }
-    vnafile_free(vfp);
-    vfp = NULL;
 
     /*
      * Use our simulated VNA to measure the DUT with errors.
@@ -568,9 +562,7 @@ static void apply_calibration()
     /*
      * Allocate a vnadata_t structure to receive the computed S parameters.
      */
-    if ((vdp_corrected = vnadata_alloc()) == NULL) {
-	(void)fprintf(stderr, "example: vnadata_alloc: %s\n",
-		strerror(errno));
+    if ((vdp_corrected = vnadata_alloc(error_fn, /*error_arg*/NULL)) == NULL) {
 	exit(13);
     }
 

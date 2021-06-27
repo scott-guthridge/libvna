@@ -190,7 +190,7 @@ int vnacal_new_set_frequency_vector(vnacal_new_t *vnp,
     for (int i = 0; i < vnp->vn_frequencies; ++i) {
 	if (isnan(frequency_vector[i]) || frequency_vector[i] < 0.0) {
 	    _vnacal_error(vcp, VNAERR_USAGE,
-		    "vnacal_new_set_frequency_vector: invalid frequency, %f",
+		    "vnacal_new_set_frequency_vector: invalid frequency: %f",
 		    frequency_vector[i]);
 	    return -1;
 	}

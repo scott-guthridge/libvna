@@ -25,7 +25,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include "vnafile_internal.h"
+#include "vnadata_internal.h"
 
 
 /*
@@ -51,12 +51,12 @@ static void print_value(FILE *fp, int precision, bool plus, bool pad,
 
     /*
      * Bound the minimum precision to 1 digit.  If precision is
-     * VNAFILE_MAX_PRECISION, write hexadecimal floating point format.
+     * VNADATA_MAX_PRECISION, write hexadecimal floating point format.
      */
     if (precision < 1) {
 	precision = 1;
 
-    } else if (precision == VNAFILE_MAX_PRECISION) {
+    } else if (precision == VNADATA_MAX_PRECISION) {
 	fprintf(fp, "%a", value);
 	return;
     }
@@ -153,17 +153,16 @@ finished:
 }
 
 /*
- * _vnafile_convert: convert the input matrix to the given type
- *   @vfp: pointer to the structure returned from vnafile_alloc
- *   @conversions: cached conversions
- *   @vdp: input data
- *   @type: desired type
+ * convert_input: convert the input matrix to the given type
  *   @function: function name (for error messages)
+ *   @vdip:   internal parameter matrix
+ *   @conversions: cached conversions
+ *   @type: desired type
  */
-static int _vnafile_convert(vnafile_t *vfp,
-	vnadata_t **conversions, const vnadata_t *vdp,
-	vnadata_parameter_type_t type, const char *function)
+static int convert_input(const char *function, vnadata_internal_t *vdip,
+	vnadata_t **conversions, vnadata_parameter_type_t type)
 {
+    vnadata_t *vdp = &vdip->vdi_vd;
     vnadata_t *target = NULL;
 
     if (conversions[type] != NULL) {
@@ -172,22 +171,11 @@ static int _vnafile_convert(vnafile_t *vfp,
     if (type == vnadata_get_type(vdp)) {
 	return 0;
     }
-    if ((target = vnadata_alloc()) == NULL) {
-	_vnafile_error(vfp, VNAERR_SYSTEM,
-		"vnadata_alloc: %s", strerror(errno));
+    if ((target = vnadata_alloc(vdip->vdi_error_fn,
+		    vdip->vdi_error_arg)) == NULL) {
 	return -1;
     }
     if (vnadata_convert(vdp, target, type) == -1) {
-	if (errno == EINVAL) {
-	    _vnafile_error(vfp, VNAERR_USAGE,
-		    "%s: cannot convert from %s to %s",
-		function, vnadata_get_typename(vnadata_get_type(vdp)),
-		vnadata_get_typename(type));
-	    vnadata_free(target);
-	    return -1;
-	}
-	_vnafile_error(vfp, VNAERR_SYSTEM,
-		"vnadata_convert: %s", strerror(errno));
 	vnadata_free(target);
 	return -1;
     }
@@ -196,68 +184,14 @@ static int _vnafile_convert(vnafile_t *vfp,
 }
 
 /*
- * _vnafile_find_type: try to determine the file format from the filename
- *   @filename: input or output filename
- */
-vnafile_type_t _vnafile_find_type(const char *filename, int *ports)
-{
-    const char *suffix;
-
-    /*
-     * Set *ports to the default of unknown (-1).
-     */
-    if (ports != NULL) {
-	*ports = -1;
-    }
-
-    /*
-     * If there's no file extension, default to native format.
-     */
-    if ((suffix = strrchr(filename, '.')) == NULL) {
-	return VNAFILE_NATIVE;
-    }
-    ++suffix;
-
-    /*
-     * If the file has a suffix of .ts, assume touchstone 2.
-     */
-    if (strcasecmp(suffix, "ts") == 0) {
-	return VNAFILE_TOUCHSTONE2;
-    }
-
-    /*
-     * If the file has a suffix matching s[0-9]+p, assume touchstone 1.
-     */
-    if (suffix[0] == 's') {
-	const char *cp = suffix + 1;
-
-	if (isdigit(*cp)) {
-	    do {
-		++cp;
-	    } while (isdigit(*cp));
-	    if (cp[0] == 'p' && cp[1] == '\000') {
-		if (ports != NULL) {
-		    *ports = atoi(&suffix[1]);
-		}
-		return VNAFILE_TOUCHSTONE1;
-	    }
-	}
-    }
-
-    /*
-     * None of the above.  Default to native.
-     */
-    return VNAFILE_NATIVE;
-}
-
-/*
- * print_native_header: print header for native file format
- *   @vfp: pointer to the structure returned from vnafile_alloc
+ * print_npd_header: print header for NPD format
+ *   @vdip:   internal parameter matrix
  *   @fp: file pointer
  *   @vdp: input data
  */
-static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
+static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 {
+    vnadata_t *vdp = &vdip->vdi_vd;
     int rows, columns, ports, diagonals;
     int output_fields = 1;
     int current_field = 0;
@@ -265,22 +199,26 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
     int port_width, port_pair_width;
     int parameter_width = 0;
     char parameter_buf[3 + 2 * 3 * sizeof(int) + 1];
-    const double complex *z0_vector = vnadata_get_z0_vector(vdp);
+    const double complex *z0_vector = NULL;
+
+    /*
+     * Set z0_vector if we're not using per-frequency z0 values.
+     */
+    if (!(vdip->vdi_flags & VF_PER_F_Z0)) {
+	z0_vector = vdip->vdi_z0_vector;
+    }
 
     /*
      * Get the number of rows and columns.  We have to do a little
      * munging here if the vdp's parameter type is Zin because a Zin
-     * vector is really a diagonal matrix stored as a vector.  We want
-     * the dimensions of the matrix, not the vector here.
+     * vector is really a diagonal matrix stored as a row vector.  We
+     * want to report the dimensions of the underlying matrix, not the
+     * vector.
      */
     rows    = vnadata_get_rows(vdp);
     columns = vnadata_get_columns(vdp);
     if (vdp->vd_type == VPT_ZIN) {
-	if (rows == 1) {
-	    rows = columns;
-	} else if (columns == 1) {
-	    columns = rows;
-	}
+	rows = columns;
     }
     ports     = MAX(rows, columns);
     diagonals = MIN(rows, columns);
@@ -309,14 +247,15 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
     if (z0_vector == NULL) {
 	output_fields += 2 * ports;
     }
-    for (int format = 0; format < vfp->vf_format_count; ++format) {
-	const vnafile_format_t *vffp = &vfp->vf_format_vector[format];
+    for (int format = 0; format < vdip->vdi_format_count; ++format) {
+	const vnadata_format_descriptor_t *vfdp =
+	    &vdip->vdi_format_vector[format];
 
-	switch (vffp->vff_format) {
-	case VNAFILE_FORMAT_DB_ANGLE:
-	case VNAFILE_FORMAT_MAG_ANGLE:
-	case VNAFILE_FORMAT_REAL_IMAG:
-	    if (vffp->vff_parameter != VPT_ZIN) {
+	switch (vfdp->vfd_format) {
+	case VNADATA_FORMAT_DB_ANGLE:
+	case VNADATA_FORMAT_MAG_ANGLE:
+	case VNADATA_FORMAT_REAL_IMAG:
+	    if (vfdp->vfd_parameter != VPT_ZIN) {
 		output_fields += 2 * rows * columns;
 		parameter_width = MAX(parameter_width, 1 + port_pair_width);
 	    } else {
@@ -325,25 +264,25 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 	    }
 	    break;
 
-	case VNAFILE_FORMAT_PRC:
-	case VNAFILE_FORMAT_PRL:
-	case VNAFILE_FORMAT_SRC:
-	case VNAFILE_FORMAT_SRL:
+	case VNADATA_FORMAT_PRC:
+	case VNADATA_FORMAT_PRL:
+	case VNADATA_FORMAT_SRC:
+	case VNADATA_FORMAT_SRL:
 	    output_fields += 2 * diagonals;
 	    parameter_width = MAX(parameter_width, 3 + port_width);
 	    break;
 
-	case VNAFILE_FORMAT_IL:
+	case VNADATA_FORMAT_IL:
 	    output_fields += rows * columns - diagonals;
 	    parameter_width = MAX(parameter_width, 2 + port_pair_width);
 	    break;
 
-	case VNAFILE_FORMAT_RL:
+	case VNADATA_FORMAT_RL:
 	    output_fields += diagonals;
 	    parameter_width = MAX(parameter_width, 2 + port_width);
 	    break;
 
-	case VNAFILE_FORMAT_VSWR:
+	case VNADATA_FORMAT_VSWR:
 	    output_fields += diagonals;
 	    parameter_width = MAX(parameter_width, 4 + port_width);
 	    break;
@@ -358,12 +297,12 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
     /*
      * Print the preamble.
      */
-    (void)fprintf(fp, "# NPD\n");
+    (void)fprintf(fp, "#NPD\n");
     (void)fprintf(fp, "#:version 1.0\n");
     (void)fprintf(fp, "#:rows %d\n", rows);
     (void)fprintf(fp, "#:columns %d\n", columns);
     (void)fprintf(fp, "#:frequencies %d\n", vnadata_get_frequencies(vdp));
-    (void)fprintf(fp, "#:parameters %s\n", vfp->vf_format_string);
+    (void)fprintf(fp, "#:parameters %s\n", vdip->vdi_format_string);
     (void)fprintf(fp, "#:z0");
     if (z0_vector == NULL) {
 	(void)fprintf(fp, " PER-FREQUENCY\n");
@@ -372,17 +311,17 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 	    double complex z0 = z0_vector[port];
 
 	    (void)fputc(' ', fp);
-	    print_value(fp, vfp->vf_dprecision, /*plus=*/false, /*pad=*/false,
+	    print_value(fp, vdip->vdi_dprecision, /*plus=*/false, /*pad=*/false,
 		    creal(z0));
 	    (void)fputc(' ', fp);
-	    print_value(fp, vfp->vf_dprecision, /*plus=*/true, /*pad=*/false,
+	    print_value(fp, vdip->vdi_dprecision, /*plus=*/true, /*pad=*/false,
 		    cimag(z0));
 	    (void)fputc('j', fp);
 	}
 	(void)fputc('\n', fp);
     }
-    (void)fprintf(fp, "#:fprecision %d\n", vfp->vf_fprecision);
-    (void)fprintf(fp, "#:dprecision %d\n", vfp->vf_dprecision);
+    (void)fprintf(fp, "#:fprecision %d\n", vdip->vdi_fprecision);
+    (void)fprintf(fp, "#:dprecision %d\n", vdip->vdi_dprecision);
     (void)fprintf(fp, "#\n");
 
     /*
@@ -401,8 +340,9 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 		    parameter_buf);
 	}
     }
-    for (int format = 0; format < vfp->vf_format_count; ++format) {
-	const vnafile_format_t *vffp = &vfp->vf_format_vector[format];
+    for (int format = 0; format < vdip->vdi_format_count; ++format) {
+	const vnadata_format_descriptor_t *vfdp =
+	    &vdip->vdi_format_vector[format];
 	const char *name;
 	const char *const *type_vector;
 	static const char *st_types[] = {
@@ -423,24 +363,24 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 	static const char *ab_types[] = {
 	    "v-ratio", "ohms", "seimens", "i-ratio", NULL
 	};
-	switch (vffp->vff_format) {
-	case VNAFILE_FORMAT_DB_ANGLE:
-	case VNAFILE_FORMAT_MAG_ANGLE:
-	case VNAFILE_FORMAT_REAL_IMAG:
+	switch (vfdp->vfd_format) {
+	case VNADATA_FORMAT_DB_ANGLE:
+	case VNADATA_FORMAT_MAG_ANGLE:
+	case VNADATA_FORMAT_REAL_IMAG:
 	    /*
 	     * Handle Zin.
 	     */
-	    if (vffp->vff_parameter == VPT_ZIN) {
+	    if (vfdp->vfd_parameter == VPT_ZIN) {
 		for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
 		    (void)sprintf(parameter_buf, "Zin%d", diagonal + 1);
 		    (void)fprintf(fp, "# field %*d: %-*s",
 			field_width, ++current_field,
 			parameter_width, parameter_buf);
-		    switch (vffp->vff_format) {
-		    case VNAFILE_FORMAT_REAL_IMAG:
+		    switch (vfdp->vfd_format) {
+		    case VNADATA_FORMAT_REAL_IMAG:
 			(void)fprintf(fp, " real      (ohms)\n");
 			break;
-		    case VNAFILE_FORMAT_MAG_ANGLE:
+		    case VNADATA_FORMAT_MAG_ANGLE:
 			(void)fprintf(fp, " magnitude (ohms)\n");
 			break;
 		    default:
@@ -450,11 +390,11 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 		    (void)fprintf(fp, "# field %*d: %-*s",
 			field_width, ++current_field,
 			parameter_width, parameter_buf);
-		    switch (vffp->vff_format) {
-		    case VNAFILE_FORMAT_REAL_IMAG:
+		    switch (vfdp->vfd_format) {
+		    case VNADATA_FORMAT_REAL_IMAG:
 			(void)fprintf(fp, " imaginary (ohms)\n");
 			break;
-		    case VNAFILE_FORMAT_MAG_ANGLE:
+		    case VNADATA_FORMAT_MAG_ANGLE:
 			(void)fprintf(fp, " angle     (degrees)\n");
 			break;
 		    default:
@@ -467,7 +407,7 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 	    /*
 	     * Handle matrix types.
 	     */
-	    switch (vffp->vff_parameter) {
+	    switch (vfdp->vfd_parameter) {
 	    case VPT_S:
 		name = "S";
 		type_vector = st_types;
@@ -527,14 +467,14 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 		    (void)fprintf(fp, "# field %*d: %-*s",
 			field_width, ++current_field,
 			parameter_width, parameter_buf);
-		    switch (vffp->vff_format) {
-		    case VNAFILE_FORMAT_REAL_IMAG:
+		    switch (vfdp->vfd_format) {
+		    case VNADATA_FORMAT_REAL_IMAG:
 			(void)fprintf(fp, " real      (%s)\n", type);
 			break;
-		    case VNAFILE_FORMAT_MAG_ANGLE:
+		    case VNADATA_FORMAT_MAG_ANGLE:
 			(void)fprintf(fp, " magnitude (%s)\n", type);
 			break;
-		    case VNAFILE_FORMAT_DB_ANGLE:
+		    case VNADATA_FORMAT_DB_ANGLE:
 			(void)fprintf(fp, " magnitude (dB)\n");
 			break;
 		    default:
@@ -544,12 +484,12 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 		    (void)fprintf(fp, "# field %*d: %-*s",
 			field_width, ++current_field,
 			parameter_width, parameter_buf);
-		    switch (vffp->vff_format) {
-		    case VNAFILE_FORMAT_REAL_IMAG:
+		    switch (vfdp->vfd_format) {
+		    case VNADATA_FORMAT_REAL_IMAG:
 			(void)fprintf(fp, " imaginary (%s)\n", type);
 			break;
-		    case VNAFILE_FORMAT_MAG_ANGLE:
-		    case VNAFILE_FORMAT_DB_ANGLE:
+		    case VNADATA_FORMAT_MAG_ANGLE:
+		    case VNADATA_FORMAT_DB_ANGLE:
 			(void)fprintf(fp, " angle     (degrees)\n");
 			break;
 		    default:
@@ -560,8 +500,8 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 	    }
 	    break;
 
-	case VNAFILE_FORMAT_PRC:
-	    assert(vffp->vff_parameter == VPT_ZIN);
+	case VNADATA_FORMAT_PRC:
+	    assert(vfdp->vfd_parameter == VPT_ZIN);
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
                 (void)sprintf(parameter_buf, "PRC%d", diagonal + 1);
                 (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
@@ -573,8 +513,8 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
             }
             break;
 
-	case VNAFILE_FORMAT_PRL:
-	    assert(vffp->vff_parameter == VPT_ZIN);
+	case VNADATA_FORMAT_PRL:
+	    assert(vfdp->vfd_parameter == VPT_ZIN);
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
                 (void)sprintf(parameter_buf, "PRL%d", diagonal + 1);
                 (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
@@ -586,8 +526,8 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
             }
             break;
 
-	case VNAFILE_FORMAT_SRC:
-	    assert(vffp->vff_parameter == VPT_ZIN);
+	case VNADATA_FORMAT_SRC:
+	    assert(vfdp->vfd_parameter == VPT_ZIN);
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
                 (void)sprintf(parameter_buf, "SRC%d", diagonal + 1);
                 (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
@@ -599,8 +539,8 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
             }
             break;
 
-	case VNAFILE_FORMAT_SRL:
-	    assert(vffp->vff_parameter == VPT_ZIN);
+	case VNADATA_FORMAT_SRL:
+	    assert(vfdp->vfd_parameter == VPT_ZIN);
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
                 (void)sprintf(parameter_buf, "SRL%d", diagonal + 1);
                 (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
@@ -612,8 +552,8 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
             }
             break;
 
-	case VNAFILE_FORMAT_IL:
-	    assert(vffp->vff_parameter == VPT_S);
+	case VNADATA_FORMAT_IL:
+	    assert(vfdp->vfd_parameter == VPT_S);
 	    for (int row = 0; row < rows; ++row) {
 		for (int column = 0; column < columns; ++column) {
 		    if (row == column) {
@@ -633,8 +573,8 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 	    }
             break;
 
-	case VNAFILE_FORMAT_RL:
-	    assert(vffp->vff_parameter == VPT_S);
+	case VNADATA_FORMAT_RL:
+	    assert(vfdp->vfd_parameter == VPT_S);
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
                 (void)sprintf(parameter_buf, "RL%d", diagonal + 1);
                 (void)fprintf(fp, "# field %*d: %-*s magnitude (dB)\n",
@@ -643,8 +583,8 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
             }
             break;
 
-	case VNAFILE_FORMAT_VSWR:
-	    assert(vffp->vff_parameter == VPT_S);
+	case VNADATA_FORMAT_VSWR:
+	    assert(vfdp->vfd_parameter == VPT_S);
             for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
                 (void)sprintf(parameter_buf, "VSWR%d", diagonal + 1);
                 (void)fprintf(fp, "# field %*d: %-*s\n",
@@ -663,27 +603,30 @@ static void print_native_header(vnafile_t *vfp, FILE *fp, const vnadata_t *vdp)
 
 /*
  * print_touchstone_header: print header for touchstone formats
- *   @vfp: pointer to the structure returned from vnafile_alloc
+ *   @vdip:   internal parameter matrix
  *   @fp: file pointer
  *   @vdp: input data
  *   @z0_touchstone: the first system impedance (before normalization)
  */
-static void print_touchstone_header(vnafile_t *vfp, FILE *fp,
-	const vnadata_t *vdp, double z0_touchstone)
+static void print_touchstone_header(vnadata_internal_t *vdip, FILE *fp,
+	double z0_touchstone)
 {
-    vnafile_format_t *vffp = &vfp->vf_format_vector[0];
+    vnadata_t *vdp = &vdip->vdi_vd;
+    vnadata_format_descriptor_t *vfdp = &vdip->vdi_format_vector[0];
     char parameter_name;
     const char *format;
     int ports = vnadata_get_rows(vdp);
-    const double complex *z0_vector = vnadata_get_z0_vector(vdp);
+    const double complex *z0_vector;
 
-    assert(vfp->vf_format_count == 1);
-    assert(vfp->vf_type == VNAFILE_TOUCHSTONE1 ||
-	   vfp->vf_type == VNAFILE_TOUCHSTONE2);
-    if (vfp->vf_type == VNAFILE_TOUCHSTONE2) {
+    assert(vdip->vdi_filetype == VNADATA_FILETYPE_TOUCHSTONE1 ||
+	   vdip->vdi_filetype == VNADATA_FILETYPE_TOUCHSTONE2);
+    assert(vdip->vdi_format_count == 1);
+    assert(!(vdip->vdi_flags & VF_PER_F_Z0));
+    z0_vector = vdip->vdi_z0_vector;
+    if (vdip->vdi_filetype == VNADATA_FILETYPE_TOUCHSTONE2) {
 	(void)fprintf(fp, "[Version] 2.0\n");
     }
-    switch (vffp->vff_parameter) {
+    switch (vfdp->vfd_parameter) {
     case VPT_S:
 	parameter_name = 'S';
 	break;
@@ -703,14 +646,14 @@ static void print_touchstone_header(vnafile_t *vfp, FILE *fp,
 	abort();
 	/*NOTREACHED*/
     }
-    switch (vffp->vff_format) {
-    case VNAFILE_FORMAT_DB_ANGLE:
+    switch (vfdp->vfd_format) {
+    case VNADATA_FORMAT_DB_ANGLE:
 	format = "DB";
 	break;
-    case VNAFILE_FORMAT_MAG_ANGLE:
+    case VNADATA_FORMAT_MAG_ANGLE:
 	format = "MA";
 	break;
-    case VNAFILE_FORMAT_REAL_IMAG:
+    case VNADATA_FORMAT_REAL_IMAG:
 	format = "RI";
 	break;
     default:
@@ -718,10 +661,10 @@ static void print_touchstone_header(vnafile_t *vfp, FILE *fp,
 	/*NOTREACHED*/
     }
     (void)fprintf(fp, "# Hz %c %s R ", parameter_name, format);
-    (void)print_value(fp, vfp->vf_dprecision, /*plus=*/false, /*pad=*/false,
+    (void)print_value(fp, vdip->vdi_dprecision, /*plus=*/false, /*pad=*/false,
 	    z0_touchstone);
     (void)fputc('\n', fp);
-    if (vfp->vf_type == VNAFILE_TOUCHSTONE2) {
+    if (vdip->vdi_filetype == VNADATA_FILETYPE_TOUCHSTONE2) {
 	bool mixed_z0 = false;
 
 	(void)fprintf(fp, "[Number of Ports] %d\n", ports);
@@ -740,7 +683,7 @@ static void print_touchstone_header(vnafile_t *vfp, FILE *fp,
 	    (void)fprintf(fp, "[Reference]");
 	    for (int i = 0; i < ports; ++i) {
 		(void)fprintf(fp, " ");
-		(void)print_value(fp, vfp->vf_dprecision, /*plus=*/false,
+		(void)print_value(fp, vdip->vdi_dprecision, /*plus=*/false,
 			/*pad=*/false, creal(z0_vector[i]));
 	    }
 	    (void)fputc('\n', fp);
@@ -752,38 +695,44 @@ static void print_touchstone_header(vnafile_t *vfp, FILE *fp,
 /*
  * Function Names
  */
-static const char vnafile_check_name[] = "vnafile_check";
-static const char vnafile_fsave_name[] = "vnafile_fsave";
-static const char vnafile_save_name[] = "vnafile_save";
+static const char vnadata_check_name[] = "vnadata_cksave";
+static const char vnadata_fsave_name[] = "vnadata_fsave";
+static const char vnadata_save_name[] = "vnadata_save";
 
 /*
- * vnafile_save_common: common save routine
- *   @vfp: pointer to the structure returned from vnafile_alloc
+ * vnadata_save_common: common save routine
+ *   @vdp: a pointer to the vnadata_t structure
  *   @fp: file pointer
  *   @filename: filename used in error messages and to intuit the file type
- *   @vdp: input data
  *   @function: function name (for error messages)
  */
-static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
-	const vnadata_t *vdp, const char *function)
+static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
+	const char *function)
 {
+    vnadata_internal_t *vdip;
+    vnadata_parameter_type_t type;
     int rows, columns, ports, diagonals, frequencies;
+    bool promote_ts2 = false;
     int aprecision;
     int rc = -1;
-    bool auto_type = false;
     const double *frequency_vector;
-    const double complex *z0_vector;
-    double z0_touchstone;
+    const double complex *z0_vector = NULL;
+    double z0_touchstone = 50.0;
     vnadata_t *conversions[VPT_NTYPES];
 
     /*
      * Validate pointer.
      */
-    if (vfp == NULL || vfp->vf_magic != VF_MAGIC) {
+    if (vdp == NULL) {
 	errno = EINVAL;
 	return -1;
     }
-    aprecision = MAX(vfp->vf_dprecision, 3);
+    vdip = VDP_TO_VDIP(vdp);
+    if (vdip->vdi_magic != VDI_MAGIC) {
+	errno = EINVAL;
+	return -1;
+    }
+    aprecision = MAX(vdip->vdi_dprecision, 3);
 
     /*
      * Init conversions to NULL.
@@ -794,81 +743,110 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
      * Validate parameters.  These errors are for the application
      * developer, not the end user, so show the function name.
      */
-    if (function == vnafile_fsave_name && fp == NULL) {
-	_vnafile_error(vfp, VNAERR_USAGE,
+    if (function == vnadata_fsave_name && fp == NULL) {
+	_vnadata_error(vdip, VNAERR_USAGE,
 		"%s: error: NULL file pointer", function);
 	goto out;
     }
     if (filename == NULL) {
-	_vnafile_error(vfp, VNAERR_USAGE,
+	_vnadata_error(vdip, VNAERR_USAGE,
 		"%s: error: NULL filename", function);
 	goto out;
     }
-    if (vdp == NULL) {
-	_vnafile_error(vfp, VNAERR_USAGE,
-		"%s: error: NULL vdp", function);
+
+    /*
+     * Get the characteristics of network parameter data and make sure
+     * the parameter type is known.  For VPT_ZIN, the data are stored
+     * as a row vector, but they really represent a diagonal matrix --
+     * set diagonals accordingly.
+     */
+    type = vdp->vd_type;
+    if (type == VPT_UNDEF) {
+	_vnadata_error(vdip, VNAERR_USAGE,
+		"%s: cannot save with unknown network parameter data type",
+		function);
+	goto out;
+    }
+    rows             = vdp->vd_rows;
+    columns          = vdp->vd_columns;
+    ports            = MAX(rows, columns);
+    if (type != VPT_ZIN) {
+	diagonals    = MIN(rows, columns);
+    } else {
+	diagonals    = columns;
+    }
+    frequencies      = vdp->vd_frequencies;
+    frequency_vector = vdp->vd_frequency_vector;
+
+    /*
+     * If any dimension is zero, fail.
+     */
+    if (rows == 0 || columns == 0) {
+	_vnadata_error(vdip, VNAERR_USAGE,
+		"%s: invalid data dimensions: %d x %d",
+		function, rows, columns);
+	goto out;
+    }
+    if (frequencies == 0) {
+	_vnadata_error(vdip, VNAERR_USAGE,
+		"%s: at least one frequency is required for save",
+		function);
 	goto out;
     }
 
     /*
-     * Get the characteristics of the underlying s-parameter matrix.
+     * Get simple z0 information.
      */
-    rows             = vnadata_get_rows(vdp);
-    columns          = vnadata_get_columns(vdp);
-    if (vdp->vd_type == VPT_ZIN) {
-	if (rows == 1) {
-	    rows = columns;
-	} else if (columns == 1) {
-	    columns = rows;
+    if (!(vdip->vdi_flags & VF_PER_F_Z0)) {
+	z0_vector = vdip->vdi_z0_vector;
+	z0_touchstone = creal(z0_vector[0]);
+    }
+
+    /*
+     * Set the file type.  If we can determine that the type is Touchstone
+     * or NPD from the filename, use the determined type.  There's a
+     * special-case here in that we allow Touchstone 1 format to be
+     * saved with a ".ts" suffix, but will auto-promote it to Touchstone
+     * 2 below if necessary.  If we can't determine the filetype from
+     * the filename, but already have a filetype, keep the current type.
+     * If all else fails, default to the native NPD format.
+     */
+    {
+	vnadata_filetype_t filetype = _vnadata_parse_filename(filename, NULL);
+
+	if (filetype == VNADATA_FILETYPE_TOUCHSTONE2 &&
+		vdip->vdi_filetype == VNADATA_FILETYPE_TOUCHSTONE1) {
+	    promote_ts2 = true;
+	} else if (filetype != VNADATA_FILETYPE_AUTO) {
+	    vdip->vdi_filetype = filetype;
+	} else if (vdip->vdi_filetype == VNADATA_FILETYPE_AUTO) {
+	    vdip->vdi_filetype = VNADATA_FILETYPE_NPD;
 	}
     }
-    ports            = MAX(rows, columns);
-    diagonals        = MIN(rows, columns);
-    frequencies      = vnadata_get_frequencies(vdp);
-    frequency_vector = vnadata_get_frequency_vector(vdp);
-    z0_vector        = vnadata_get_z0_vector(vdp);
-    z0_touchstone    = z0_vector != NULL ? creal(z0_vector[0]) : 50.0;
-    switch (vfp->vf_type) {
-    case VNAFILE_AUTO:
-	vfp->vf_type = _vnafile_find_type(filename, NULL);
-	auto_type = true;
-	break;
-
-    case VNAFILE_NATIVE:
-    case VNAFILE_TOUCHSTONE1:
-    case VNAFILE_TOUCHSTONE2:
-	break;
-
-    default:
-	_vnafile_error(vfp, VNAERR_USAGE, "%s: error: invalid type (%d)",
-		function, vfp->vf_type);
-	goto out;
-    }
 
     /*
-     * Enforce additional restrictions by file type.
+     * If no formats have been given, default to "ri".
      */
-    switch (vfp->vf_type) {
-    case VNAFILE_TOUCHSTONE1:
-    case VNAFILE_TOUCHSTONE2:
-	/*
-	 * Touchstone format supports only square matrices with at
-	 * least one port.
-	 */
-	if (rows != columns || ports < 1) {
-	    _vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
-		    "cannot save %d x %d matrix in touchstone format",
-		    function, rows, columns);
+    if (vdip->vdi_format_count == 0) {
+	if (_vnadata_set_simple_format(vdip, type,
+		    VNADATA_FORMAT_REAL_IMAG) == -1) {
 	    goto out;
 	}
+    }
 
+    /*
+     * Check the compatibility of filetype, parameter type and format.
+     */
+    switch (vdip->vdi_filetype) {
+    case VNADATA_FILETYPE_TOUCHSTONE1:
+    case VNADATA_FILETYPE_TOUCHSTONE2:
 	/*
-	 * Touchstone format supports only one parameter type.
+	 * Touchstone format supports only one format.
 	 */
-	if (vfp->vf_format_count > 1) {
-	    _vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
-		    "only a single parameter type may be used in "
-		    "touchstone format", function);
+	if (vdip->vdi_format_count > 1) {
+	    _vnadata_error(vdip, VNAERR_USAGE, "%s: "
+		    "only a single format may be specified in "
+		    "Touchstone file type", function);
 	    goto out;
 	}
 
@@ -877,14 +855,17 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	 * and only DB, MA and RI formats.
 	 */
 	{
-	    vnafile_format_t *vffp = &vfp->vf_format_vector[0];
-	    vnadata_parameter_type_t parameter = vffp->vff_parameter;
+	    vnadata_format_descriptor_t *vfdp = &vdip->vdi_format_vector[0];
+	    vnadata_parameter_type_t fptype = vfdp->vfd_parameter;
 	    bool bad = false;
 
-	    if (parameter == VPT_UNDEF) {
-		parameter = vdp->vd_type;
+	    if (fptype == VPT_UNDEF) {
+		fptype = type;
 	    }
-	    switch (parameter) {
+	    switch (fptype) {
+	    case VPT_UNDEF:
+		break;
+
 	    case VPT_S:
 	    case VPT_Z:
 	    case VPT_Y:
@@ -895,50 +876,62 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	    default:
 		bad = true;
 	    }
-	    switch (vffp->vff_format) {
-	    case VNAFILE_FORMAT_DB_ANGLE:
-	    case VNAFILE_FORMAT_MAG_ANGLE:
-	    case VNAFILE_FORMAT_REAL_IMAG:
+	    switch (vfdp->vfd_format) {
+	    case VNADATA_FORMAT_DB_ANGLE:
+	    case VNADATA_FORMAT_MAG_ANGLE:
+	    case VNADATA_FORMAT_REAL_IMAG:
 		break;
 
 	    default:
 		bad = true;
 	    }
 	    if (bad) {
-		_vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
-			"cannot save parameter %s in touchstone format",
-			function, _vnafile_format_to_name(vffp));
+		_vnadata_error(vdip, VNAERR_USAGE, "%s: %s format "
+			"cannot be saved in Touchstone file type",
+			function, _vnadata_format_to_name(vfdp));
 		goto out;
 	    }
 	}
 
 	/*
-	 * Touchstone doesn't support frequency-dependent system impedances.
+	 * Touchstone format supports only square matrices with at least
+	 * one port.
 	 */
-	if (z0_vector == NULL) {
-	    _vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
-		    "cannot save frequency-dependent system impedances in "
-		    "touchstone format", function);
+	if (rows != columns || ports < 1) {
+	    _vnadata_error(vdip, VNAERR_USAGE, "%s: "
+		    "cannot save %d x %d matrix in Touchstone file type",
+		    function, rows, columns);
 	    goto out;
 	}
 
 	/*
-	 * Touchstone doesn't support complex system impedances.
+	 * Touchstone doesn't support frequency-dependent system
+	 * impedances.
+	 */
+	if (z0_vector == NULL) {
+	    _vnadata_error(vdip, VNAERR_USAGE, "%s: "
+		    "cannot save frequency-dependent reference impedances "
+		    "in Touchstone file type", function);
+	    goto out;
+	}
+
+	/*
+	 * Touchstone requires references to be real and positive.
 	 */
 	for (int i = 0; i < ports; ++i) {
-	    if (cimag(z0_vector[i]) != 0.0) {
-		_vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
-			"cannot save complex system impedances in "
-			"touchstone format", function);
+	    if (cimag(z0_vector[i]) != 0.0 || creal(z0_vector[i]) <= 0.0) {
+		_vnadata_error(vdip, VNAERR_USAGE, "%s: "
+			"references must be be real and positive in "
+			"Touchstone file type", function);
 		goto out;
 	    }
 	}
 
 	/*
-	 * Finished with Touchstone 2.  If Touchstone 1, apply yet
+	 * Finished with Touchstone 2.	If Touchstone 1, apply yet
 	 * more constraints.
 	 */
-	if (vfp->vf_type == VNAFILE_TOUCHSTONE2) {
+	if (vdip->vdi_filetype == VNADATA_FILETYPE_TOUCHSTONE2) {
 	    break;
 	}
 
@@ -946,13 +939,13 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	 * Touchstone 1 doesn't support more than four ports.
 	 */
 	if (ports > 4) {
-	    if (auto_type) {
-		vfp->vf_type = VNAFILE_TOUCHSTONE2;
+	    if (promote_ts2) {
+		vdip->vdi_filetype = VNADATA_FILETYPE_TOUCHSTONE2;
 		break;
 	    }
-	    _vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
+	    _vnadata_error(vdip, VNAERR_USAGE, "%s: "
 		    "cannot save a system with more than four ports in "
-		    "touchstone 1 format", function);
+		    "Touchstone 1 file type", function);
 	    goto out;
 	}
 
@@ -962,69 +955,95 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	 */
 	for (int i = 1; i < ports; ++i) {
 	    if (z0_vector[i] != z0_vector[0]) {
-		if (auto_type) {
-		    vfp->vf_type = VNAFILE_TOUCHSTONE2;
+		if (promote_ts2) {
+		    vdip->vdi_filetype = VNADATA_FILETYPE_TOUCHSTONE2;
+		    i = ports;
 		    break;
 		}
-		_vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
-			"cannot save ports with different system impedances "
-			"in touchstone 1 format", function);
+		_vnadata_error(vdip, VNAERR_USAGE, "%s: "
+			"cannot save ports with different reference "
+			"impedances in touchstone 1 format", function);
 		goto out;
 	    }
 	}
 	break;
 
-    case VNAFILE_NATIVE:
-	/*
-	 * For native format, disallow nonsensical use of dB for values
-	 * that are neither power nor root power.  Unfortunately,
-	 * Touchstone allows this, defining dB as 20*log10(cabs(value)),
-	 * even for parameters in units of ohms or seimens.
-	 */
-	for (int i = 0; i < vfp->vf_format_count; ++i) {
-	    vnafile_format_t *vffp = &vfp->vf_format_vector[i];
-	    vnadata_parameter_type_t parameter = vffp->vff_parameter;
+    case VNADATA_FILETYPE_NPD:
+	for (int i = 0; i < vdip->vdi_format_count; ++i) {
+	    const vnadata_format_descriptor_t *vfdp =
+		&vdip->vdi_format_vector[i];
+	    vnadata_parameter_type_t fptype = vfdp->vfd_parameter;
 
-	    if (parameter == VPT_UNDEF) {
-		parameter = vdp->vd_type;
+	    /*
+	     * For NPD format, disallow nonsensical use of dB
+	     * for values that are neither power nor root power.
+	     * Touchstone, on the other hand, allows this, defining dB
+	     * as 20*log10(cabs(value)), even for parameters in units
+	     * of ohms or seimens.
+	     */
+	    if (fptype == VPT_UNDEF) {
+		fptype = type;
 	    }
-	    if (vffp->vff_format == VNAFILE_FORMAT_DB_ANGLE &&
-		    parameter != VPT_S && parameter != VPT_T) {
-		_vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
-			"%s: in native format, only power or root-power "
+	    if (vfdp->vfd_format == VNADATA_FORMAT_DB_ANGLE &&
+		    !_VNADATA_IS_POWER(fptype)) {
+		_vnadata_error(vdip, VNAERR_USAGE, "%s: "
+			"%s: in NPD format, only power or root-power "
 			"parameters can be displayed in dB",
-			function, _vnafile_format_to_name(vffp));
+			function, _vnadata_format_to_name(vfdp));
 		goto out;
 	    }
-	}
-	break;
 
-    default:
-	abort();
-	/*NOTREACHED*/
-    }
-
-    /*
-     * If the matrix has no off diagonal elements, make sure return loss
-     * is not requested.
-     */
-    if (ports < 2) {
-	for (int i = 0; i < vfp->vf_format_count; ++i) {
-	    vnafile_format_t *vffp = &vfp->vf_format_vector[i];
-
-	    if (vffp->vff_format == VNAFILE_FORMAT_RL) {
-		_vnafile_error(vfp, VNAERR_USAGE, "%s: error: "
+	    /*
+	     * If return loss is requested, make sure the matrix has
+	     * off-diagonal elements.
+	     */
+	    if (vfdp->vfd_format == VNADATA_FORMAT_RL && ports < 2) {
+		_vnadata_error(vdip, VNAERR_USAGE, "%s: "
 			"return loss requires at least one "
 			"off-diagonal element", function);
 		goto out;
 	    }
 	}
+	break;
+
+    case VNADATA_FILETYPE_AUTO:
+	abort();
+	/*NOTREACHED*/
     }
 
     /*
-     * If touchstone 1, normalize all system impedances to 1
+     * For each parameter, make sure the parameter data is convertible
+     * to the required type.
      */
-    if (vfp->vf_type == VNAFILE_TOUCHSTONE1 && z0_vector[0] != 1.0) {
+    for (int i = 0; i < vdip->vdi_format_count; ++i) {
+	const vnadata_format_descriptor_t *vfdp = &vdip->vdi_format_vector[i];
+	vnadata_parameter_type_t fptype = vfdp->vfd_parameter;
+
+	if (fptype == VPT_UNDEF) {
+	    fptype = type;
+	}
+	if (_VNADATA_IS_MATRIX(fptype) && !_VNADATA_IS_MATRIX(type)) {
+	    _vnadata_error(vdip, VNAERR_USAGE, "%s: cannot convert "
+		    "%s parameters for format %s",
+		    function, vnadata_get_type_name(type),
+		    _vnadata_format_to_name(vfdp));
+	    goto out;
+	}
+    }
+
+    /*
+     * If vnadata_cksave, we're done.
+     */
+    if (function == vnadata_check_name) {
+	rc = 0;
+	goto out;
+    }
+
+    /*
+     * If touchstone 1, normalize all system impedances to 1.
+     */
+    if (vdip->vdi_filetype == VNADATA_FILETYPE_TOUCHSTONE1 &&
+	    z0_vector[0] != 1.0) {
 	vnadata_t *vdp_copy;
 	vnadata_parameter_type_t target_type;
 
@@ -1032,21 +1051,21 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	 * If the input type is S or T, make a writeable copy.	Otherwise,
 	 * convert to S using the existing z0.
 	 */
-	if ((vdp_copy = vnadata_alloc()) == NULL) {
-	    _vnafile_error(vfp, VNAERR_SYSTEM,
-		    "vnadata_alloc: %s", strerror(errno));
+	if ((vdp_copy = vnadata_alloc(vdip->vdi_error_fn,
+			vdip->vdi_error_arg)) == NULL) {
 	    goto out;
 	}
-	target_type = vnadata_get_type(vdp) == VPT_T ? VPT_T : VPT_S;
+	switch (vnadata_get_type(vdp)) {
+	case VPT_S:
+	default:
+	    target_type = VPT_S;
+	    break;
+
+	case VPT_T:
+	    target_type = VPT_T;
+	    break;
+	}
 	if (vnadata_convert(vdp, vdp_copy, target_type) == -1) {
-	    if (errno == EINVAL) {
-		_vnafile_error(vfp, VNAERR_USAGE,
-			"%s: cannot convert type to %s",
-			function, target_type == VPT_T ? "T" : "S");
-	    } else {
-		_vnafile_error(vfp, VNAERR_SYSTEM,
-			"vnadata_convert: %s", strerror(errno));
-	    }
 	    vnadata_free(vdp_copy);
 	    goto out;
 	}
@@ -1055,42 +1074,41 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	 * Set all z0's to 1.
 	 */
 	if (vnadata_set_all_z0(vdp_copy, 1.0) == -1) {
-	    _vnafile_error(vfp, VNAERR_SYSTEM,
+	    _vnadata_error(vdip, VNAERR_SYSTEM,
 		    "vnadata_set_all_z0: %s", strerror(errno));
 	    vnadata_free(vdp_copy);
 	    goto out;
 	}
 
 	/*
-	 * Save the copy in the conversions array so that it gets
-	 * freed at out.  Replace vdp and z0_vector.
+	 * Save the copy in the conversions array so that it gets freed
+	 * at out.  Replace vdp and z0_vector.	Even if we need the
+	 * original type, we have to convert it from out new matrix in
+	 * order to normalize impedances.
 	 */
 	conversions[target_type] = vdp_copy;
 	vdp = vdp_copy;
-	z0_vector = vnadata_get_z0_vector(vdp);
-    }
-
-    /*
-     * Perform all the needed conversions.  We do this up-front so
-     * that on error, we won't yet have touched the output file.
-     */
-    for (int i = 0; i < vfp->vf_format_count; ++i) {
-	vnafile_format_t *vffp = &vfp->vf_format_vector[i];
-
-	if (vffp->vff_parameter != VPT_UNDEF) {
-	    if (_vnafile_convert(vfp, conversions, vdp, vffp->vff_parameter,
-			function) == -1) {
-		goto out;
-	    }
+	type = vdp->vd_type;
+	vdip = VDP_TO_VDIP(vdp);
+	if (!(vdip->vdi_flags & VF_PER_F_Z0)) {
+	    z0_vector = vdip->vdi_z0_vector;
+	} else {
+	    assert(z0_vector == NULL);
 	}
     }
 
     /*
-     * If vnafile_check, we're done.
+     * Perform all the needed conversions.
      */
-    if (function == vnafile_check_name) {
-	rc = 0;
-	goto out;
+    for (int i = 0; i < vdip->vdi_format_count; ++i) {
+	vnadata_format_descriptor_t *vfdp = &vdip->vdi_format_vector[i];
+
+	if (vfdp->vfd_parameter != VPT_UNDEF) {
+	    if (convert_input(function, vdip, conversions,
+			vfdp->vfd_parameter) == -1) {
+		goto out;
+	    }
+	}
     }
 
     /*
@@ -1101,27 +1119,27 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
     {
 	bool changed = false;
 
-	for (int i = 0; i < vfp->vf_format_count; ++i) {
-	    vnafile_format_t *vffp = &vfp->vf_format_vector[i];
+	for (int i = 0; i < vdip->vdi_format_count; ++i) {
+	    vnadata_format_descriptor_t *vfdp = &vdip->vdi_format_vector[i];
 
-	    if (vffp->vff_parameter == VPT_UNDEF) {
-		vffp->vff_parameter = vdp->vd_type;
+	    if (vfdp->vfd_parameter == VPT_UNDEF) {
+		vfdp->vfd_parameter = type;
 		changed = true;
 	    }
 	}
 	if (changed) {
-	    if (_vnafile_update_format_string(vfp) == -1) {
+	    if (_vnadata_update_format_string(vdip) == -1) {
 		goto out;
 	    }
 	}
     }
 
     /*
-     * If vnafile_save, open the output file.
+     * If vnadata_save, open the output file.
      */
-    if (function == vnafile_save_name) {
+    if (function == vnadata_save_name) {
 	if ((fp = fopen(filename, "w")) == NULL) {
-	    _vnafile_error(vfp, VNAERR_SYSTEM, "fopen: %s: %s",
+	    _vnadata_error(vdip, VNAERR_SYSTEM, "fopen: %s: %s",
 		    filename, strerror(errno));
 	    goto out;
 	}
@@ -1130,14 +1148,14 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
     /*
      * Print the file header.
      */
-    switch (vfp->vf_type) {
-    case VNAFILE_NATIVE:
-	print_native_header(vfp, fp, vdp);
+    switch (vdip->vdi_filetype) {
+    case VNADATA_FILETYPE_TOUCHSTONE1:
+    case VNADATA_FILETYPE_TOUCHSTONE2:
+	print_touchstone_header(vdip, fp, z0_touchstone);
 	break;
 
-    case VNAFILE_TOUCHSTONE1:
-    case VNAFILE_TOUCHSTONE2:
-	print_touchstone_header(vfp, fp, vdp, z0_touchstone);
+    case VNADATA_FILETYPE_NPD:
+	print_npd_header(vdip, fp);
 	break;
 
     default:
@@ -1152,7 +1170,7 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	/*
 	 * Print the frequency.
 	 */
-	print_value(fp, vfp->vf_fprecision, /*plus=*/false, /*pad=*/true,
+	print_value(fp, vdip->vdi_fprecision, /*plus=*/false, /*pad=*/true,
 		vnadata_get_frequency(vdp, findex));
 
 	/*
@@ -1166,10 +1184,10 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 		double complex z0 = fz0_vector[port];
 
 		(void)fputc(' ', fp);
-		print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+		print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 			/*pad=*/true, creal(z0));
 		(void)fputc(' ', fp);
-		print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+		print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 			/*pad=*/true, cimag(z0));
 	    }
 	}
@@ -1177,31 +1195,32 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 	/*
 	 * For each parameter...
 	 */
-	for (int format = 0; format < vfp->vf_format_count; ++format) {
-	    const vnafile_format_t *vffp = &vfp->vf_format_vector[format];
+	for (int format = 0; format < vdip->vdi_format_count; ++format) {
+	    const vnadata_format_descriptor_t *vfdp =
+		&vdip->vdi_format_vector[format];
 	    const vnadata_t *matrix = NULL;
 	    const double complex *data = NULL;
 	    bool last_arg;
 	    bool done = false;
 
 	    /*
-	     * Get the needed matrix.
+	     * Get the required matrix.
 	     */
-	    assert(vffp->vff_parameter != VPT_UNDEF);
-	    if (vffp->vff_parameter == vdp->vd_type) {
+	    assert(vfdp->vfd_parameter != VPT_UNDEF);
+	    if (vfdp->vfd_parameter == type) {
 		matrix = vdp;
 	    } else {
-		matrix = conversions[vffp->vff_parameter];
+		matrix = conversions[vfdp->vfd_parameter];
 	    }
 	    assert(matrix != NULL);
 
 	    /*
 	     * Print
 	     */
-	    switch (vffp->vff_parameter) {
+	    switch (vfdp->vfd_parameter) {
 	    case VPT_S:
-		switch (vffp->vff_format) {
-		case VNAFILE_FORMAT_IL:
+		switch (vfdp->vfd_format) {
+		case VNADATA_FORMAT_IL:
 		    for (int row = 0; row < rows; ++row) {
 			for (int column = 0; column < columns; ++column) {
 			    double complex value;
@@ -1212,9 +1231,9 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    value = vnadata_get_cell(matrix, findex, row,
 				    column);
 			    (void)fputc(' ', fp);
-			    last_arg = format == vfp->vf_format_count - 1 &&
+			    last_arg = format == vdip->vdi_format_count - 1 &&
 				row == rows - 1 && column == columns - 1;
-			    print_value(fp, vfp->vf_dprecision,
+			    print_value(fp, vdip->vdi_dprecision,
 				    /*plus=*/true, /*pad=*/!last_arg,
 				    -20.0 * log10(cabs(value)));
 			}
@@ -1222,23 +1241,23 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 		    done = true;
 		    break;
 
-		case VNAFILE_FORMAT_RL:
+		case VNADATA_FORMAT_RL:
 		    for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
 			double complex value;
 
 			value = vnadata_get_cell(matrix, findex, diagonal,
 				diagonal);
 			(void)fputc(' ', fp);
-			last_arg = format == vfp->vf_format_count - 1 &&
+			last_arg = format == vdip->vdi_format_count - 1 &&
 			    diagonal == diagonals - 1;
-			print_value(fp, vfp->vf_dprecision,
+			print_value(fp, vdip->vdi_dprecision,
 				/*plus=*/true, /*pad=*/!last_arg,
 				-20.0 * log10(cabs(value)));
 		    }
 		    done = true;
 		    break;
 
-		case VNAFILE_FORMAT_VSWR:
+		case VNADATA_FORMAT_VSWR:
 		    for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
 			double complex sxx;
 			double a;
@@ -1249,9 +1268,9 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			a = cabs(sxx);
 			vswr = (1.0 + a) / fabs(1.0 - a);
 			(void)fputc(' ', fp);
-			last_arg = format == vfp->vf_format_count - 1 &&
+			last_arg = format == vdip->vdi_format_count - 1 &&
 			    diagonal == diagonals - 1;
-			print_value(fp, vfp->vf_dprecision,
+			print_value(fp, vdip->vdi_dprecision,
 				/*plus=*/false, /*pad=*/!last_arg, vswr);
 		    }
 		    done = true;
@@ -1275,28 +1294,30 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 		for (int row = 0; row < rows; ++row) {
 		    for (int column = 0; column < columns; ++column) {
 			double complex value;
+			vnadata_filetype_t filetype = vdip->vdi_filetype;
 
 			/*
 			 * In Touchstone formats, break the line after
 			 * every four columns, and, except for two-port,
 			 * after every row.
 			 */
-			if ((vfp->vf_type == VNAFILE_TOUCHSTONE1 ||
-			     vfp->vf_type == VNAFILE_TOUCHSTONE2) &&
+			if ((filetype == VNADATA_FILETYPE_TOUCHSTONE1 ||
+			     filetype == VNADATA_FILETYPE_TOUCHSTONE2) &&
 			     ((column  != 0 && column % 4 == 0) ||
 			      (ports != 2 && row != 0 && column == 0))) {
 			    (void)fputc('\n', fp);
-			    for (int i = 0; i < vfp->vf_fprecision + 5; ++i)
+			    for (int i = 0; i < vdip->vdi_fprecision + 5; ++i)
 				(void)fputc(' ', fp);
 			}
 
 			/*
-			 * Format based on vff_format.
+			 * Format based on vfd_format.
 			 *
 			 * Special case the 2x2 matrix in Touchstone 1
 			 * which prints in column major order.
 			 */
-			if (vfp->vf_type == VNAFILE_TOUCHSTONE1 && ports == 2) {
+			if (filetype == VNADATA_FILETYPE_TOUCHSTONE1 &&
+				ports == 2) {
 			    assert(rows == columns);
 			    value = vnadata_get_cell(matrix, findex,
 				    column, row);
@@ -1304,12 +1325,12 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    value = vnadata_get_cell(matrix, findex,
 				    row, column);
 			}
-			switch (vffp->vff_format) {
-			case VNAFILE_FORMAT_DB_ANGLE:
+			switch (vfdp->vfd_format) {
+			case VNADATA_FORMAT_DB_ANGLE:
 			    (void)fputc(' ', fp);
-			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/true, 20.0 * log10(cabs(value)));
-			    if (aprecision == VNAFILE_MAX_PRECISION) {
+			    if (aprecision == VNADATA_MAX_PRECISION) {
 				(void)fprintf(fp, " %+a",
 					180.0 / M_PI * carg(value));
 			    } else {
@@ -1320,11 +1341,12 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    }
 			    break;
 
-			case VNAFILE_FORMAT_MAG_ANGLE:
+			case VNADATA_FORMAT_MAG_ANGLE:
 			    (void)fprintf(fp, "  ");
-			    print_value(fp, vfp->vf_dprecision, /*plus=*/false,
+			    print_value(fp, vdip->vdi_dprecision,
+				    /*plus=*/false,
 				    /*pad=*/true, cabs(value));
-			    if (aprecision == VNAFILE_MAX_PRECISION) {
+			    if (aprecision == VNADATA_MAX_PRECISION) {
 				(void)fprintf(fp, " %+a",
 					180.0 / M_PI * carg(value));
 			    } else {
@@ -1335,14 +1357,14 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    }
 			    break;
 
-			case VNAFILE_FORMAT_REAL_IMAG:
-			    last_arg = format == vfp->vf_format_count - 1 &&
+			case VNADATA_FORMAT_REAL_IMAG:
+			    last_arg = format == vdip->vdi_format_count - 1 &&
 				row == rows - 1 && column == columns - 1;
 			    (void)fputc(' ', fp);
-			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/true, creal(value));
 			    (void)fputc(' ', fp);
-			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/!last_arg, cimag(value));
 			    break;
 
@@ -1360,12 +1382,12 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 		    double complex value;
 
 		    value = data[diagonal];
-		    switch (vffp->vff_format) {
-		    case VNAFILE_FORMAT_MAG_ANGLE:
+		    switch (vfdp->vfd_format) {
+		    case VNADATA_FORMAT_MAG_ANGLE:
 			(void)fprintf(fp, "  ");
-			print_value(fp, vfp->vf_dprecision, /*plus=*/false,
+			print_value(fp, vdip->vdi_dprecision, /*plus=*/false,
 				/*pad=*/true, cabs(value));
-			if (aprecision == VNAFILE_MAX_PRECISION) {
+			if (aprecision == VNADATA_MAX_PRECISION) {
 			    (void)fprintf(fp, " %+a",
 				    180.0 / M_PI * carg(value));
 			} else {
@@ -1376,18 +1398,18 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			}
 			break;
 
-		    case VNAFILE_FORMAT_REAL_IMAG:
-			last_arg = format == vfp->vf_format_count - 1 &&
+		    case VNADATA_FORMAT_REAL_IMAG:
+			last_arg = format == vdip->vdi_format_count - 1 &&
 			    diagonal == diagonals - 1;
 			(void)fputc(' ', fp);
-			print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+			print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				/*pad=*/true, creal(value));
 			(void)fputc(' ', fp);
-			print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+			print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				/*pad=*/!last_arg, cimag(value));
 			break;
 
-		    case VNAFILE_FORMAT_PRC:
+		    case VNADATA_FORMAT_PRC:
 			{
 			    double complex z;
 			    double zr, zi;
@@ -1401,17 +1423,17 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    c = -1.0 /
 				(2.0 * M_PI * frequency_vector[findex] * x);
 			    (void)fputc(' ', fp);
-			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/true, r);
 			    (void)fputc(' ', fp);
-			    last_arg = format == vfp->vf_format_count - 1 &&
+			    last_arg = format == vdip->vdi_format_count - 1 &&
 				diagonal == diagonals - 1;
-			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/!last_arg, c);
 			}
 			break;
 
-		    case VNAFILE_FORMAT_PRL:
+		    case VNADATA_FORMAT_PRL:
 			{
 			    double complex z;
 			    double zr, zi;
@@ -1424,17 +1446,17 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    x = (zr*zr + zi*zi) / zi;
 			    l = x / (2.0 * M_PI * frequency_vector[findex]);
 			    (void)fputc(' ', fp);
-			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/true, r);
 			    (void)fputc(' ', fp);
-			    last_arg = format == vfp->vf_format_count - 1 &&
+			    last_arg = format == vdip->vdi_format_count - 1 &&
 				diagonal == diagonals - 1;
-			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/!last_arg, l);
 			}
 			break;
 
-		    case VNAFILE_FORMAT_SRC:
+		    case VNADATA_FORMAT_SRC:
 			{
 			    double complex z;
 			    double zr, zi;
@@ -1446,17 +1468,17 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    c = -1.0 /
 				(2.0 * M_PI * frequency_vector[findex] * zi);
 			    (void)fputc(' ', fp);
-			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/true, zr);
 			    (void)fputc(' ', fp);
-			    last_arg = format == vfp->vf_format_count - 1 &&
+			    last_arg = format == vdip->vdi_format_count - 1 &&
 				diagonal == diagonals - 1;
-			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/!last_arg, c);
 			}
 			break;
 
-		    case VNAFILE_FORMAT_SRL:
+		    case VNADATA_FORMAT_SRL:
 			{
 			    double complex z;
 			    double zr, zi;
@@ -1467,12 +1489,12 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			    zi = cimag(z);
 			    l = zi / (2.0 * M_PI * frequency_vector[findex]);
 			    (void)fputc(' ', fp);
-			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/true, zr);
 			    (void)fputc(' ', fp);
-			    last_arg = format == vfp->vf_format_count - 1 &&
+			    last_arg = format == vdip->vdi_format_count - 1 &&
 				diagonal == diagonals - 1;
-			    print_value(fp, vfp->vf_dprecision, /*plus=*/true,
+			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/!last_arg, l);
 			}
 			break;
@@ -1495,16 +1517,16 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
     /*
      * If Touchstone 2, add the End keyword.
      */
-    if (vfp->vf_type == VNAFILE_TOUCHSTONE2) {
+    if (vdip->vdi_filetype == VNADATA_FILETYPE_TOUCHSTONE2) {
 	(void)fprintf(fp, "[End]\n");
     }
 
     /*
-     * If vnafile_save, close the output file.
+     * If vnadata_save, close the output file.
      */
-    if (function == vnafile_save_name) {
+    if (function == vnadata_save_name) {
 	if (fclose(fp) == -1) {
-	    _vnafile_error(vfp, VNAERR_SYSTEM, "fclose: %s: %s",
+	    _vnadata_error(vdip, VNAERR_SYSTEM, "fclose: %s: %s",
 		    filename, strerror(errno));
 	    fp = NULL;
 	    goto out;
@@ -1514,7 +1536,7 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
     rc = 0;
 
 out:
-    if (function == vnafile_save_name && fp != NULL) {
+    if (function == vnadata_save_name && fp != NULL) {
 	(void)fclose(fp);
 	fp = NULL;
     }
@@ -1526,38 +1548,32 @@ out:
 }
 
 /*
- * vnafile_check: check that parameters are valid for save
- *   @vfp: pointer to the structure returned from vnafile_alloc
+ * vnadata_cksave: check that the given parameters and format are valid for save
+ *   @vdp: a pointer to the vnadata_t structure
  *   @filename: file to save
- *   @vdp: input data
  */
-int vnafile_check(vnafile_t *vfp, const char *filename,
-	const vnadata_t *vdp)
+int vnadata_cksave(vnadata_t *vdp, const char *filename)
 {
-    return vnafile_save_common(vfp, NULL, filename, vdp, vnafile_check_name);
+    return vnadata_save_common(vdp, NULL, filename, vnadata_check_name);
 }
 
 /*
- * vnafile_fsave: save network parameters to a file pointer
- *   @vfp: pointer to the structure returned from vnafile_alloc
+ * vnadata_fsave: save network parameters to a file pointer
+ *   @vdp: a pointer to the vnadata_t structure
  *   @fp: file pointer
  *   @filename: filename used in error messages and to intuit the file type
- *   @vdp: input data
  */
-int vnafile_fsave(vnafile_t *vfp, FILE *fp, const char *filename,
-	const vnadata_t *vdp)
+int vnadata_fsave(vnadata_t *vdp, FILE *fp, const char *filename)
 {
-    return vnafile_save_common(vfp, fp, filename, vdp, vnafile_fsave_name);
+    return vnadata_save_common(vdp, fp, filename, vnadata_fsave_name);
 }
 
 /*
- * vnafile_save: save network parameters to filename
- *   @vfp: pointer to the structure returned from vnafile_alloc
+ * vnadata_save: save network parameters to filename
+ *   @vdp: a pointer to the vnadata_t structure
  *   @filename: file to save
- *   @vdp: input data
  */
-int vnafile_save(vnafile_t *vfp, const char *filename,
-	const vnadata_t *vdp)
+int vnadata_save(vnadata_t *vdp, const char *filename)
 {
-    return vnafile_save_common(vfp, NULL, filename, vdp, vnafile_save_name);
+    return vnadata_save_common(vdp, NULL, filename, vnadata_save_name);
 }

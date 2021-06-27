@@ -18,23 +18,22 @@
 
 #include "archdep.h"
 
+#include <ctype.h>
 #include <errno.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include "vnadata_internal.h"
 
 
 /*
- * vnadata_set_fz0: set the z0 value for the given frequency and port
- *   @vdp:    a pointer to the vnadata_t structure
- *   @findex: frequency index
- *   @port:   port number (zero-based)
- *   @z0:     new value
+ * vnadata_set_fprecision: set the frequency value precision
+ *   @vdp: a pointer to the vnadata_t structure
+ *   @precision: precision in decimal places (1..n) or VNADATA_MAX_PRECISION
  */
-int vnadata_set_fz0(vnadata_t *vdp, int findex, int port, double complex z0)
+int vnadata_set_fprecision(vnadata_t *vdp, int precision)
 {
     vnadata_internal_t *vdip;
-    int ports;
 
     if (vdp == NULL) {
 	errno = EINVAL;
@@ -45,22 +44,11 @@ int vnadata_set_fz0(vnadata_t *vdp, int findex, int port, double complex z0)
 	errno = EINVAL;
 	return -1;
     }
-    if (findex < 0 || findex > vdp->vd_frequencies) {
-	_vnadata_error(vdip, VNAERR_USAGE,
-		"vnadata_set_fz0: invalid frequency index: %d", findex);
+    if (precision < 1) {
+	_vnadata_error(vdip, VNAERR_USAGE, "vnadata_set_fprecision: "
+		"invalid precision: %d", precision);
 	return -1;
     }
-    ports = MAX(vdp->vd_rows, vdp->vd_columns);
-    if (port < 0 || port > ports) {
-	_vnadata_error(vdip, VNAERR_USAGE,
-		"vnadata_set_fz0: invalid port index: %d", port);
-	return -1;
-    }
-    if (!(vdip->vdi_flags & VF_PER_F_Z0)) {
-	if (_vnadata_convert_to_fz0(vdip) == -1) {
-	    return -1;
-	}
-    }
-    vdip->vdi_z0_vector_vector[findex][port] = z0;
+    vdip->vdi_fprecision = precision;
     return 0;
 }

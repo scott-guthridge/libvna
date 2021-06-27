@@ -18,23 +18,25 @@
 
 #include "archdep.h"
 
+#include <ctype.h>
 #include <errno.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include "vnadata_internal.h"
 
 
 /*
- * vnadata_set_fz0: set the z0 value for the given frequency and port
- *   @vdp:    a pointer to the vnadata_t structure
- *   @findex: frequency index
- *   @port:   port number (zero-based)
- *   @z0:     new value
+ * vnadata_set_filetype: set the file type
+ *   @vdp: a pointer to the vnadata_t structure
+ *   @type: file type
+ *
+ *   The default type is VNADATA_FILETYPE_AUTO where the library tries
+ *   to intuit the type from the filename.
  */
-int vnadata_set_fz0(vnadata_t *vdp, int findex, int port, double complex z0)
+int vnadata_set_filetype(vnadata_t *vdp, vnadata_filetype_t filetype)
 {
     vnadata_internal_t *vdip;
-    int ports;
 
     if (vdp == NULL) {
 	errno = EINVAL;
@@ -45,22 +47,19 @@ int vnadata_set_fz0(vnadata_t *vdp, int findex, int port, double complex z0)
 	errno = EINVAL;
 	return -1;
     }
-    if (findex < 0 || findex > vdp->vd_frequencies) {
+    switch (filetype) {
+    case VNADATA_FILETYPE_AUTO:
+    case VNADATA_FILETYPE_TOUCHSTONE1:
+    case VNADATA_FILETYPE_TOUCHSTONE2:
+    case VNADATA_FILETYPE_NPD:
+	break;
+
+    default:
 	_vnadata_error(vdip, VNAERR_USAGE,
-		"vnadata_set_fz0: invalid frequency index: %d", findex);
+		"vnadata_set_filetype: invalid filetype");
 	return -1;
     }
-    ports = MAX(vdp->vd_rows, vdp->vd_columns);
-    if (port < 0 || port > ports) {
-	_vnadata_error(vdip, VNAERR_USAGE,
-		"vnadata_set_fz0: invalid port index: %d", port);
-	return -1;
-    }
-    if (!(vdip->vdi_flags & VF_PER_F_Z0)) {
-	if (_vnadata_convert_to_fz0(vdip) == -1) {
-	    return -1;
-	}
-    }
-    vdip->vdi_z0_vector_vector[findex][port] = z0;
+    vdip->vdi_filetype = filetype;
+
     return 0;
 }

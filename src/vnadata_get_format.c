@@ -18,41 +18,30 @@
 
 #include "archdep.h"
 
+#include <ctype.h>
 #include <errno.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include "vnadata_internal.h"
 
 
 /*
- * vnadata_get_typename: convert parameter type to name
- *   @type: parameter type
+ * vnadata_get_format: return the current format string
+ *   @vdp: a pointer to the vnadata_t structure
  */
-const char *vnadata_get_typename(vnadata_parameter_type_t type)
+const char *vnadata_get_format(const vnadata_t *vdp)
 {
-    switch (type) {
-    case VPT_UNDEF:
-	return "undefined";
-    case VPT_S:
-	return "S";
-    case VPT_Z:
-	return "Z";
-    case VPT_Y:
-	return "Y";
-    case VPT_T:
-	return "T";
-    case VPT_H:
-	return "H";
-    case VPT_G:
-	return "G";
-    case VPT_A:
-	return "A";
-    case VPT_B:
-	return "B";
-    case VPT_ZIN:
-	return "Zin";
-    default:
-	break;
+    vnadata_internal_t *vdip;
+
+    if (vdp == NULL) {
+	errno = EINVAL;
+	return NULL;
     }
-    return NULL;
+    vdip = VDP_TO_VDIP(vdp);
+    if (vdip->vdi_magic != VDI_MAGIC) {
+	errno = EINVAL;
+	return NULL;
+    }
+    return vdip->vdi_format_string;
 }

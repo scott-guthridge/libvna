@@ -31,7 +31,7 @@
 #include <string.h>
 #include <vnacal.h>
 #include <vnaconv.h>
-#include <vnafile.h>
+#include <vnadata.h>
 
 char *progname;
 
@@ -180,20 +180,16 @@ typedef struct dut_info {
 static void dut_setup(dut_info_type *dutp)
 {
     vnadata_t *vdp_actual = NULL;
-    vnafile_t *vfp = NULL;
     int frequencies;
 
     /*
      * Load the actual S-parameters.  Note that this is just for the
      * simulated VNA.  Normally, we wouldn't know these.
      */
-    if ((vdp_actual = vnadata_alloc()) == NULL) {
-	(void)fprintf(stderr, "%s: vnadata_alloc: %s\n",
-		progname, strerror(errno));
+    if ((vdp_actual = vnadata_alloc(error_fn, /*error_arg*/NULL)) == NULL) {
 	exit(20);
     }
-    if ((vfp = vnafile_load(ACTUAL_FILE, VNAFILE_AUTO,
-		    error_fn, /*error_arg*/NULL, vdp_actual)) == NULL) {
+    if (vnadata_load(vdp_actual, ACTUAL_FILE) == -1) {
 	exit(21);
     }
     if (vnadata_convert(vdp_actual, vdp_actual, VPT_S) == -1) {
@@ -201,8 +197,6 @@ static void dut_setup(dut_info_type *dutp)
 		progname, ACTUAL_FILE, strerror(errno));
 	exit(22);
     }
-    vnafile_free(vfp);
-    vfp = NULL;
 
     /*
      * Find the subrange of frequencies within C_FMIN..C_FMAX and fill
@@ -486,7 +480,7 @@ static void make_calibration()
     /*
      * Create the calibration container.
      */
-    if ((vcp = vnacal_create(error_fn, /*error_arg=*/NULL)) == NULL) {
+    if ((vcp = vnacal_create(error_fn, /*error_arg*/NULL)) == NULL) {
 	exit(2);
     }
 
@@ -685,7 +679,7 @@ static void apply_calibration()
      * Load the calibration file.
      */
     if ((vcp = vnacal_load("TRL.vnacal", error_fn,
-		    /*error_arg=*/NULL)) == NULL) {
+		    /*error_arg*/NULL)) == NULL) {
 	exit(10);
     }
 
@@ -705,9 +699,7 @@ static void apply_calibration()
     /*
      * Allocate a vnadata_t structure to receive the corrected S parameters.
      */
-    if ((vdp_corrected = vnadata_alloc()) == NULL) {
-	(void)fprintf(stderr, "example: vnadata_alloc: %s\n",
-		strerror(errno));
+    if ((vdp_corrected = vnadata_alloc(error_fn, /*error_arg*/NULL)) == NULL) {
 	exit(11);
     }
 

@@ -45,11 +45,14 @@ double complex vnadata_get_z0(const vnadata_t *vdp, int port)
     }
     ports = MAX(vdp->vd_rows, vdp->vd_columns);
     if (port < 0 || port > ports) {
-	errno = EINVAL;
+	_vnadata_error(vdip, VNAERR_USAGE,
+		"vnadata_get_z0: port index: %d: out of bounds", port);
 	return HUGE_VAL;
     }
     if (vdip->vdi_flags & VF_PER_F_Z0) {
-	errno = EINVAL;
+	_vnadata_error(vdip, VNAERR_USAGE,
+		"vnadata_get_z0: per-frequency z0 values are in-use: "
+		"vnadata_get_fz0 instead");
 	return HUGE_VAL;
     }
     return vdip->vdi_z0_vector[port];

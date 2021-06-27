@@ -59,29 +59,29 @@ vnadata-example.c:
 	./vnadata-example
 
 
-vnafile-example:
+convert-parameters:
     Program to convert between network parameter types and between
-    touchstone and native file formats.
+    touchstone and NPD file formats.
 
     Build:
-	cc -o vnafile-example vnafile-example.c -lvna -lm
+	cc -o convert-parameters convert-parameters.c -lvna -lm
 
     Usage:
-	./vnafile-example [-f format] input-file output-file
+	./convert-parameters [-f format] input-file output-file
 	Run with -\? for the full usage text.
 
     Convert the sample Touchstone 2 data file from S parameters
     to T parameters, saving in magnitude-angle format.
 
-	./vnafile-example -f Tma vnafile-example.ts out.ts
+	./convert-parameters -f Tma convert-parameters.ts out.ts
 
     Convert from Touchstone 2 to Touchstone 1.
 
-	./vnafile-example vnafile-example.ts out.s2p
+	./convert-parameters convert-parameters.ts out.s2p
 
     Convert the sample data file to insertion loss, return loss
-    and VSWR, saving in native format.
+    and VSWR, saving in NPD format.
 
-	./vnafile-example -f IL,RL,VSWR vnafile-example.ts out.npd
+	./convert-parameters -f IL,RL,VSWR convert-parameters.ts out.npd
 
 

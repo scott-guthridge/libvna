@@ -679,8 +679,8 @@ int _vnacal_apply_common(vnacal_apply_args_t vaa)
     /*
      * Set up the output matrix.
      */
-    if (vnadata_init(vaa.vaa_s_parameters, vaa.vaa_frequencies,
-		c_ports, c_ports, VPT_S) == -1) {
+    if (vnadata_init(vaa.vaa_s_parameters, VPT_S, c_ports, c_ports,
+		vaa.vaa_frequencies) == -1) {
 	_vnacal_error(vcp, VNAERR_SYSTEM, "vnadata_init: %s",
 		strerror(errno));
 	return -1;

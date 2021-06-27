@@ -21,60 +21,52 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "vnadata_internal.h"
 
+/*
+ * _vnadata_error report an error
+ *   @vdip: pointer to vnadata_internal_t
+ *   @category: category of error
+ *   @format: printf format string
+ */
+void _vnadata_error(const vnadata_internal_t *vdip, vnaerr_category_t category,
+	const char *format, ...)
+{
+    va_list ap;
+
+    va_start(ap, format);
+    _vnaerr_verror(vdip->vdi_error_fn, vdip->vdi_error_arg,
+	    category, format, ap);
+    va_end(ap);
+}
 
 /*
- * _vnadata_validate: validate the dimensions vs. type
- *   @rows: number of rows in the parameter matrix
- *   @columns: number of columns in the parameter matrix
- *   @type: parameter type
+ * _vnadata_bounds_error: internal function to report bounds error
+ *   @function: name of calling function
+ *   @vdp: pointer to vnacal_data_t structure
+ *   @what: name of parameter
+ *   @value: value of parameter
  */
-static int _vnadata_validate(int rows, int columns,
-	vnadata_parameter_type_t type)
+void _vnadata_bounds_error(const char *function, const vnadata_t *vdp,
+	const char *what, int value)
 {
-    switch (type) {
-    /* generic */
-    case VPT_UNDEF:
-    case VPT_S:
-	break;
+    vnadata_internal_t *vdip;
 
-    /* square only */
-    case VPT_Z:
-    case VPT_Y:
-	if (rows != columns) {
-	    errno = EINVAL;
-	    return -1;
-	}
-	break;
-
-    /* two-port only */
-    case VPT_T:
-    case VPT_H:
-    case VPT_G:
-    case VPT_A:
-    case VPT_B:
-	if (rows != 2 || columns != 2) {
-	    errno = EINVAL;
-	    return -1;
-	}
-	break;
-
-    /* vector only */
-    case VPT_ZIN:
-	if (rows != 1 && columns != 1) {
-	    errno = EINVAL;
-	    return -1;
-	}
-	break;
-
-    default:
+    if (vdp == NULL) {
 	errno = EINVAL;
-	return -1;
+	return;
     }
-    return 0;
+    vdip = VDP_TO_VDIP(vdp);
+    if (vdip->vdi_magic != VDI_MAGIC) {
+	errno = EINVAL;
+	return;
+    }
+    _vnadata_error(vdip, VNAERR_USAGE, "%s: invalid %s: %d",
+	    function, what, value);
 }
 
 /*
@@ -94,6 +86,8 @@ int _vnadata_extend_p(vnadata_internal_t *vdip, int new_p_allocation)
 		clfp = realloc(vdip->vdi_z0_vector_vector[findex],
 			new_p_allocation * sizeof(double complex));
 		if (clfp == NULL) {
+		    _vnadata_error(vdip, VNAERR_SYSTEM,
+			    "realloc: %s", strerror(errno));
 		    return -1;
 		}
 		for (int i = old_p_allocation; i < new_p_allocation; ++i) {
@@ -107,6 +101,8 @@ int _vnadata_extend_p(vnadata_internal_t *vdip, int new_p_allocation)
 	    clfp = realloc(vdip->vdi_z0_vector,
 		    new_p_allocation * sizeof(double complex));
 	    if (clfp == NULL) {
+		_vnadata_error(vdip, VNAERR_SYSTEM,
+			"realloc: %s", strerror(errno));
 		return -1;
 	    }
 	    for (int i = old_p_allocation; i < new_p_allocation; ++i) {
@@ -135,6 +131,8 @@ int _vnadata_extend_m(vnadata_internal_t *vdip, int new_m_allocation)
 
 	    if ((clfp = realloc(vdp->vd_data[findex], new_m_allocation *
 			    sizeof(double complex))) == NULL) {
+		_vnadata_error(vdip, VNAERR_SYSTEM,
+			"realloc: %s", strerror(errno));
 		return -1;
 	    }
 	    (void)memset((void *)&clfp[old_m_allocation], 0,
@@ -167,6 +165,8 @@ int _vnadata_extend_f(vnadata_internal_t *vdip, int new_f_allocation)
 	lfp = realloc(vdp->vd_frequency_vector,
 		new_f_allocation * sizeof(double));
 	if (lfp == NULL) {
+	    _vnadata_error(vdip, VNAERR_SYSTEM,
+		    "realloc: %s", strerror(errno));
 	    return -1;
 	}
 	(void)memset((void *)&lfp[old_f_allocation], 0,
@@ -179,6 +179,8 @@ int _vnadata_extend_f(vnadata_internal_t *vdip, int new_f_allocation)
 	if (vdip->vdi_flags & VF_PER_F_Z0) {
 	    if ((clfpp = realloc(vdip->vdi_z0_vector_vector, new_f_allocation *
 			    sizeof(double complex *))) == NULL) {
+		_vnadata_error(vdip, VNAERR_SYSTEM,
+			"realloc: %s", strerror(errno));
 		return -1;
 	    }
 	    vdip->vdi_z0_vector_vector = clfpp;
@@ -190,6 +192,8 @@ int _vnadata_extend_f(vnadata_internal_t *vdip, int new_f_allocation)
 	clfpp = realloc(vdp->vd_data, new_f_allocation *
 		sizeof(double complex *));
 	if (clfpp == NULL) {
+	    _vnadata_error(vdip, VNAERR_SYSTEM,
+		    "realloc: %s", strerror(errno));
 	    return -1;
 	}
 	(void)memset((void *)&clfpp[old_f_allocation], 0,
@@ -207,6 +211,8 @@ int _vnadata_extend_f(vnadata_internal_t *vdip, int new_f_allocation)
 		if ((vdip->vdi_z0_vector_vector[findex] =
 			    calloc(vdip->vdi_p_allocation,
 				sizeof(double complex))) == NULL) {
+		    _vnadata_error(vdip, VNAERR_SYSTEM,
+			    "calloc: %s", strerror(errno));
 		    return -1;
 		}
 		for (int i = 0; i < vdip->vdi_p_allocation; ++i) {
@@ -216,6 +222,8 @@ int _vnadata_extend_f(vnadata_internal_t *vdip, int new_f_allocation)
 	    if (vdip->vdi_m_allocation != 0) {
 		if ((vdp->vd_data[findex] = calloc(vdip->vdi_m_allocation,
 				sizeof(double complex))) == NULL) {
+		    _vnadata_error(vdip, VNAERR_SYSTEM,
+			    "calloc: %s", strerror(errno));
 		    if (vdip->vdi_flags & VF_PER_F_Z0) {
 			free((void *)vdip->vdi_z0_vector_vector[findex]);
 			vdip->vdi_z0_vector_vector[findex] = NULL;
@@ -233,26 +241,110 @@ int _vnadata_extend_f(vnadata_internal_t *vdip, int new_f_allocation)
 /*
  * vnadata_alloc: allocate an empty vnadata_t structure
  */
-vnadata_t *vnadata_alloc()
+vnadata_t *vnadata_alloc(vnaerr_error_fn_t *error_fn, void *error_arg)
 {
     vnadata_internal_t *vdip;
 
     if ((vdip = malloc(sizeof(vnadata_internal_t))) == NULL) {
+	if (error_fn != NULL) {
+	    int saved_errno = errno;
+	    char message[80];
+
+	    (void)snprintf(message, sizeof(message), "malloc: %s",
+		    strerror(errno));
+	    message[sizeof(message)-1] = '\000';
+	    errno = saved_errno;
+	    (*error_fn)(VNAERR_SYSTEM, message, error_arg);
+	    errno = saved_errno;
+	}
 	return NULL;
     }
     (void)memset((void *)vdip, 0, sizeof(vnadata_internal_t));
     vdip->vdi_magic = VDI_MAGIC;
+    vdip->vdi_error_fn = error_fn;
+    vdip->vdi_error_arg = error_arg;
+    vdip->vdi_filetype = VNADATA_FILETYPE_AUTO;
+    vdip->vdi_format_vector = NULL;
+    vdip->vdi_format_count = 0;
+    vdip->vdi_format_string = NULL;
+    vdip->vdi_fprecision = 7;
+    vdip->vdi_dprecision = 6;
 
     return &vdip->vdi_vd;
 }
 
 /*
- * vnadata_resize: redefine the dimensions and type
+ * validate_type: validate consistency of parameter type, rows and columns
+ *   @function: name of calling function for error messages
+ *   @vdip: pointer to vnadata_internal_t structure
+ *   @type: parameter type
+ *   @rows: number of matrix rows
+ *   @columns: number of matrix columns
+ */
+static int validate_type(const char *function, vnadata_internal_t *vdip,
+	vnadata_parameter_type_t type, int rows, int columns)
+{
+    /*
+     * Check the internal consistency of the parameter and matrix
+     * dimensions.
+     */
+    switch (type) {
+	/* generic */
+    case VPT_UNDEF:
+    case VPT_S:
+	break;
+
+	/* square only */
+    case VPT_Z:
+    case VPT_Y:
+	if (rows != columns) {
+	    _vnadata_error(vdip, VNAERR_USAGE,
+		    "%s: invalid data dimensions: %d x %d: must be square",
+		    function, rows, columns);
+	    return -1;
+	}
+	break;
+
+	/* two-port only */
+    case VPT_T:
+    case VPT_H:
+    case VPT_G:
+    case VPT_A:
+    case VPT_B:
+	if (rows != 2 || columns != 2) {
+	    _vnadata_error(vdip, VNAERR_USAGE,
+		    "%s: invalid data dimensions: %d x %d: must be 2 x 2",
+		    function, rows, columns);
+	    return -1;
+	}
+	break;
+
+	/* vector only */
+    case VPT_ZIN:
+	if (rows != 1) {
+	    _vnadata_error(vdip, VNAERR_USAGE,
+		    "%s: invalid data dimensions: %d x %d: "
+		    "expected row vector for Zin",
+		    function, rows, columns);
+	    return -1;
+	}
+	break;
+
+    default:
+	_vnadata_error(vdip, VNAERR_USAGE,
+		"%s: invalid parameter type: %d", function, (int)type);
+	return -1;
+    }
+    return 0;
+}
+
+/*
+ * vnadata_resize: redefine the dimensions and parameter type
  *   @vdp: pointer to vnacal_data_t structure
- *   @frequencies: new number of frequencies
+ *   @type: new network parameter data type
  *   @rows: new number of rows
  *   @columns: new number of columns
- *   @type: new parameter type
+ *   @frequencies: new number of frequencies
  *
  * Note:
  *   Increasing the number of frequencies or the number of rows is
@@ -263,8 +355,8 @@ vnadata_t *vnadata_alloc()
  *   Cells beyond the current frequencies, cells or ports values
  *   are always filled with initial values.
  */
-int vnadata_resize(vnadata_t *vdp, int frequencies, int rows, int columns,
-	vnadata_parameter_type_t type)
+int vnadata_resize(vnadata_t *vdp, vnadata_parameter_type_t type,
+	int rows, int columns, int frequencies)
 {
     vnadata_internal_t *vdip;
     int old_ports, new_ports;
@@ -273,7 +365,7 @@ int vnadata_resize(vnadata_t *vdp, int frequencies, int rows, int columns,
     /*
      * Check parameters
      */
-    if (vdp == NULL || frequencies < 0 || rows < 0 || columns < 0) {
+    if (vdp == NULL) {
 	errno = EINVAL;
 	return -1;
     }
@@ -282,7 +374,22 @@ int vnadata_resize(vnadata_t *vdp, int frequencies, int rows, int columns,
 	errno = EINVAL;
 	return -1;
     }
-    if (_vnadata_validate(rows, columns, type) == -1) {
+    if (rows < 0) {
+	_vnadata_error(vdip, VNAERR_USAGE,
+	    "vnadata_resize: rows cannot be negative: %d", rows);
+	return -1;
+    }
+    if (columns < 0) {
+	_vnadata_error(vdip, VNAERR_USAGE,
+	    "vnadata_resize: columns cannot be negative: %d", columns);
+	return -1;
+    }
+    if (frequencies < 0) {
+	_vnadata_error(vdip, VNAERR_USAGE,
+	    "vnadata_resize: frequencies cannot be negative: %d", frequencies);
+	return -1;
+    }
+    if (validate_type(__func__, vdip, type, rows, columns) == -1) {
 	return -1;
     }
     old_ports = MAX(vdp->vd_rows, vdp->vd_columns);
@@ -360,7 +467,7 @@ int vnadata_resize(vnadata_t *vdp, int frequencies, int rows, int columns,
     }
 
     /*
-     * Set the new type and dimensions.
+     * Set the new network parameter data type and dimensions.
      */
     vdp->vd_type	= type;
     vdp->vd_frequencies = frequencies;
@@ -372,23 +479,23 @@ int vnadata_resize(vnadata_t *vdp, int frequencies, int rows, int columns,
 
 /*
  * vnadata_init: resize and initialize a vnadata_t structure
- *   @frequencies: number of frequency points
+ *   @type: network parameter data type (see above)
  *   @rows: number of matrix rows
  *   @columns: number of matrix columns
- *   @type: matrix type (see above)
+ *   @frequencies: number of frequency points
  */
-int vnadata_init(vnadata_t *vdp, int frequencies, int rows,
-	int columns, vnadata_parameter_type_t type)
+int vnadata_init(vnadata_t *vdp, vnadata_parameter_type_t type,
+	int rows, int columns, int frequencies)
 {
-    (void)vnadata_resize(vdp, 0, 0, 0, VPT_UNDEF);
+    (void)vnadata_resize(vdp, VPT_UNDEF, 0, 0, 0);
     (void)vnadata_set_all_z0(vdp, VNADATA_DEFAULT_Z0);
-    return vnadata_resize(vdp, frequencies, rows, columns, type);
+    return vnadata_resize(vdp, type, rows, columns, frequencies);
 }
 
 /*
  * vnadata_set_type: change the parameter type without conversion
  *   @vdp: a pointer to the vnadata_t structure
- *   @type: new parameter type
+ *   @type: new network parameter data type
  */
 int vnadata_set_type(vnadata_t *vdp, vnadata_parameter_type_t type)
 {
@@ -403,7 +510,8 @@ int vnadata_set_type(vnadata_t *vdp, vnadata_parameter_type_t type)
 	errno = EINVAL;
 	return -1;
     }
-    if (_vnadata_validate(vdp->vd_rows, vdp->vd_columns, type) == -1) {
+    if (validate_type(__func__, vdip,
+		type, vdp->vd_rows, vdp->vd_columns) == -1) {
 	return -1;
     }
     vdp->vd_type = type;
@@ -420,6 +528,9 @@ void vnadata_free(vnadata_t *vdp)
 	vnadata_internal_t *vdip = VDP_TO_VDIP(vdp);
 
 	assert(vdip->vdi_magic == VDI_MAGIC);
+	vdip->vdi_magic = -1;
+        free((void *)vdip->vdi_format_string);
+	free((void *)vdip->vdi_format_vector);
 	if (vdip->vdi_flags & VF_PER_F_Z0) {
 	    for (int findex = 0; findex < vdip->vdi_f_allocation; ++findex) {
 		free((void *)vdip->vdi_z0_vector_vector[findex]);

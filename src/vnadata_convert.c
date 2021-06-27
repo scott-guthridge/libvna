@@ -183,9 +183,9 @@ typedef enum conversion_code {
     N1YtoI = MAKE_CODE(DIM_NxN | Z0_YES | CONV_xtoI,  1),
 
     /*
-     * Group NxN_yes_x2I: MxN to Zin vector
+     * Group MxN_yes_x2I: MxN to Zin vector
      */
-    M1StoI = MAKE_CODE(DIM_ANY | Z0_YES | CONV_xtoI,  0),
+    A1StoI = MAKE_CODE(DIM_ANY | Z0_YES | CONV_xtoI,  0),
 
     /*
      * Input and output types the same -- no conversion.
@@ -201,11 +201,24 @@ typedef enum conversion_code {
  * conversion_table: map a vnadata_parameter_type_t pair to conversion_code_t
  *   Row index is a member of vnadata_parameter_type_t describing the type
  *   of the input matrix.  Column index is the new type.
+ *   
+ *   Name format: [ANTV][01]conversion
+ *	A: any dimensions
+ *	N: NxN
+ *	T: 2x2
+ *	V: row vector
+ *
+ *	0: no    z0 argument
+ *	1: needs z0 argument
+ *
+ *	xtoy	convert x to y, with I == Zin
+ *	same	no conversion; just copy
+ *
  */
 static const conversion_code_t conversion_table[VPT_NTYPES][VPT_NTYPES] = {
      /*  -       S       Z       Y       T       H       G       A       B       I  */
 /*-*/{ ASAME,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL },
-/*S*/{ INVAL,  ASAME, N1StoZ, N1StoY, T0StoT, T1StoH, T1StoG, T1StoA, T1StoB, M1StoI },
+/*S*/{ INVAL,  ASAME, N1StoZ, N1StoY, T0StoT, T1StoH, T1StoG, T1StoA, T1StoB, A1StoI },
 /*Z*/{ INVAL, N1ZtoS,  NSAME, N0ZtoY, T1ZtoT, T0ZtoH, T0ZtoG, T0ZtoA, T0ZtoB, N1ZtoI },
 /*Y*/{ INVAL, N1YtoS, N1YtoI,  NSAME, T1YtoT, T0YtoH, T0YtoG, T0YtoA, T0YtoB, N1YtoI },
 /*T*/{ INVAL, T0TtoS, T1TtoZ, T1TtoY,  TSAME, T1TtoH, T1TtoG, T1TtoA, T1TtoB, T1TtoI },
@@ -326,7 +339,7 @@ static void (*group_NxN_yes_xtoI[])(const double complex *in,
  */
 static void (*group_MxN_yes_xtoI[])(const double complex *in,
 	double complex *out, const double complex *z0, int m, int n) = {
-    [GET_INDEX(M1StoI)] = vnaconv_stozimn,
+    [GET_INDEX(A1StoI)] = vnaconv_stozimn,
 };
 
 /*
@@ -360,9 +373,7 @@ int vnadata_convert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
     /*
      * Sanity check the arguments.
      */
-    if (vdp_out == NULL || vdp_in == NULL ||
-	    vdp_in->vd_type < 0 || vdp_in->vd_type >= VPT_NTYPES ||
-	    newtype < 0 || newtype >= VPT_NTYPES) {
+    if (vdp_in == NULL) {
 	errno = EINVAL;
 	return -1;
     }
@@ -371,13 +382,26 @@ int vnadata_convert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
 	errno = EINVAL;
 	return -1;
     }
+    if (vdp_out == NULL) {
+	_vnadata_error(vdip_in, VNAERR_USAGE,
+		"vnadata_convert: vdp_out cannot be NULL");
+	return -1;
+    }
+    if (newtype < 0 || newtype >= VPT_NTYPES) {
+	_vnadata_error(vdip_in, VNAERR_USAGE,
+		"vnadata_convert: invalid new type: %d", (int)newtype);
+	return -1;
+    }
 
     /*
      * Look-up the conversion.  Fail if it's invalid.
      */
     conversion = conversion_table[vdp_in->vd_type][newtype];
     if (conversion == INVAL) {
-	errno = EINVAL;
+	_vnadata_error(vdip_in, VNAERR_USAGE,
+		"vnadata_convert: cannot convert from %s to %s",
+		vnadata_get_type_name(vdp_in->vd_type),
+		vnadata_get_type_name(newtype));
 	return -1;
     }
     group = GET_GROUP(conversion);
@@ -392,21 +416,27 @@ int vnadata_convert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
 
     case DIM_VEC:
 	if (vdp_in->vd_rows != 1 && vdp_in->vd_columns != 1) {
-	    errno = EINVAL;
+	    _vnadata_error(vdip_in, VNAERR_USAGE, "vnadata_convert: "
+		    "invalid input dimensions: %d x %d: must be vector",
+		    vdp_in->vd_rows, vdp_in->vd_columns);
 	    return -1;
 	}
 	break;
 
     case DIM_2x2:
 	if (vdp_in->vd_rows != 2 || vdp_in->vd_columns != 2) {
-	    errno = EINVAL;
+	    _vnadata_error(vdip_in, VNAERR_USAGE, "vnadata_convert: "
+		    "invalid input dimensions: %d x %d: must be 2x2",
+		    vdp_in->vd_rows, vdp_in->vd_columns);
 	    return -1;
 	}
 	break;
 
     case DIM_NxN:
 	if (vdp_in->vd_rows != vdp_in->vd_columns) {
-	    errno = EINVAL;
+	    _vnadata_error(vdip_in, VNAERR_USAGE, "vnadata_convert: "
+		    "invalid input dimensions: %d x %d: must be square",
+		    vdp_in->vd_rows, vdp_in->vd_columns);
 	    return -1;
 	}
 	break;
@@ -424,7 +454,6 @@ int vnadata_convert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
 	int new_rows    = vdp_in->vd_rows;
 	int new_columns = vdp_in->vd_columns;
 	int rc;
-	const double complex *z0_vector;
 
 	/*
 	 * If converting from matrix to vector, make it a row vector
@@ -438,28 +467,40 @@ int vnadata_convert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
 	}
 
 	/*
-	 * Set up the output matrix.
+	 * Set up the output matrix.  Transfer everything over except
+	 * for error_fn and error_arg.
 	 */
-	rc = vnadata_init(vdp_out, vdp_in->vd_frequencies,
-		new_rows, new_columns, VPT_UNDEF);
+	rc = vnadata_init(vdp_out, VPT_UNDEF, new_rows, new_columns,
+		vdp_in->vd_frequencies);
 	if (rc == -1) {
 	    return -1;
 	}
-	vnadata_set_frequency_vector(vdp_out,
-		vnadata_get_frequency_vector(vdp_in));
-	if ((z0_vector = vnadata_get_z0_vector(vdp_in)) != NULL) {
-	    if (vnadata_set_z0_vector(vdp_out, z0_vector) == -1) {
+	vnadata_set_frequency_vector(vdp_out, vdp_in->vd_frequency_vector);
+	if (!(vdip_in->vdi_flags & VF_PER_F_Z0)) {
+	    if (vnadata_set_z0_vector(vdp_out, vdip_in->vdi_z0_vector) == -1) {
 		return -1;
 	    }
 	} else {
-	    int frequencies = vnadata_get_frequencies(vdp_in);
+	    int frequencies = vdp_in->vd_frequencies;
 
 	    for (int findex = 0; findex < frequencies; ++findex) {
 		if (vnadata_set_fz0_vector(vdp_out, findex,
-			    vnadata_get_fz0_vector(vdp_in, findex)) == -1) {
+			    vdip_in->vdi_z0_vector_vector[findex]) == -1) {
 		    return -1;
 		}
 	    }
+	}
+	if (vnadata_set_filetype(vdp_out, vdip_in->vdi_filetype) == -1) {
+	    return -1;
+	}
+	if (vnadata_set_format(vdp_out, vdip_in->vdi_format_string) == -1) {
+	    return -1;
+	}
+	if (vnadata_set_fprecision(vdp_out, vdip_in->vdi_fprecision) == -1) {
+	    return -1;
+	}
+	if (vnadata_set_dprecision(vdp_out, vdip_in->vdi_dprecision) == -1) {
+	    return -1;
 	}
     }
 

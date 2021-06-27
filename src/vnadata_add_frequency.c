@@ -41,13 +41,14 @@ int vnadata_add_frequency(vnadata_t *vdp, double frequency)
 	errno = EINVAL;
 	return -1;
     }
-    if (frequency < 0.0) {
-	errno = EINVAL;
-	return -1;
-    }
     vdip = VDP_TO_VDIP(vdp);
     if (vdip->vdi_magic != VDI_MAGIC) {
 	errno = EINVAL;
+	return -1;
+    }
+    if (frequency < 0.0) {
+	_vnadata_error(vdip, VNAERR_USAGE,
+		"vnadata_add_frequency: invalid frequency: %f", frequency);
 	return -1;
     }
 

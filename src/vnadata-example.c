@@ -29,6 +29,21 @@
 #define L	796e-9		/* Henries */
 #define C	318e-12		/* Farads */
 
+/*
+ * error_fn: error printing function for the library
+ *   @category: category of error (ignored here)
+ *   @message: single line error message without a newline
+ *   @error_arg: passed through to the error function (unused here)
+ */
+static void error_fn(vnaerr_category_t category, const char *message,
+	void *error_arg)
+{
+    (void)fprintf(stderr, "example: %s\n", message);
+}
+
+/*
+ * main
+ */
 int main(int argc, char **argv)
 {
     vnadata_t *vdp;
@@ -37,9 +52,8 @@ int main(int argc, char **argv)
     /*
      * Set up Z-parameter matrix for an L-C divider.
      */
-    if ((vdp = vnadata_alloc_and_init(N, 2, 2, VPT_Z)) == NULL) {
-	(void)fprintf(stderr, "%s: vnadata_alloc_and_init: %s\n",
-		argv[0], strerror(errno));
+    if ((vdp = vnadata_alloc_and_init(error_fn, /*error_arg*/NULL,
+		    VPT_Z, 2, 2, N)) == NULL) {
 	exit(1);
     }
     for (int findex = 0; findex < N; ++findex) {
@@ -48,8 +62,6 @@ int main(int argc, char **argv)
 	double complex z[2][2];
 
 	if (vnadata_set_frequency(vdp, findex, f) == -1) {
-	    (void)fprintf(stderr, "%s: vnadata_set_frequency: %s\n",
-		    argv[0], strerror(errno));
 	    exit(2);
 	}
 	z[0][0] = 1.0 / (C * s) + L * s;
@@ -57,19 +69,50 @@ int main(int argc, char **argv)
 	z[1][0] = z[0][1];
 	z[1][1] = z[0][1];
 	if (vnadata_set_matrix(vdp, findex, &z[0][0]) == -1) {
-	    (void)fprintf(stderr, "%s: vnadata_set_matrix: %s\n",
-		    argv[0], strerror(errno));
 	    exit(3);
 	}
     }
 
     /*
-     * Convert to S-parameters.
+     * Save the parameters in Z real-imaginary, S dB, and Zin magnitude-angle formats.
+     */
+    if (vnadata_set_format(vdp, "Zri,SdB,Zinma") == -1) {
+	exit(4);
+    }
+    if (vnadata_save(vdp, "vnadata-example.npd") == -1) {
+	exit(5);
+    }
+
+    /*
+     * Print the Z parameters.
+     */
+    (void)printf("z-parameters (real-imaginary)\n");
+    (void)printf("-------------------------\n");
+    for (int findex = 0; findex < N; ++findex) {
+	double f = vnadata_get_frequency(vdp, findex);
+
+	(void)printf("f %7.2f MHz\n", f / 1.0e+6);
+	for (int row = 0; row < 2; ++row) {
+	    for (int column = 0; column < 2; ++column) {
+		double complex value;
+
+		value = vnadata_get_cell(vdp, findex, row, column);
+		(void)printf("  %6.1f %6.1f%s",
+			creal(value), cimag(value),
+			column < 1 ? "," : "");
+	    }
+	    (void)printf("\n");
+	}
+	(void)printf("\n");
+    }
+    (void)printf("\n");
+
+
+    /*
+     * Convert to S-parameters and print.
      */
     if (vnadata_convert(vdp, vdp, VPT_S) == -1) {
-	(void)fprintf(stderr, "%s: vnadata_convert: %s\n",
-		argv[0], strerror(errno));
-	exit(4);
+	exit(6);
     }
     (void)printf("s-parameters (dB-degrees)\n");
     (void)printf("-------------------------\n");
@@ -93,12 +136,10 @@ int main(int argc, char **argv)
     (void)printf("\n");
 
     /*
-     * Convert to impedance into each port.
+     * Convert to impedance into each port and print.
      */
     if (vnadata_convert(vdp, vdp, VPT_ZIN) == -1) {
-	(void)fprintf(stderr, "%s: vnadata_convert: %s\n",
-		argv[0], strerror(errno));
-	exit(5);
+	exit(7);
     }
     (void)printf("input-impedances (ohms-degrees)\n");
     (void)printf("------------------------------\n");

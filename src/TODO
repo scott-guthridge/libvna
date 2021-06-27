@@ -1,4 +1,18 @@
-- Document vnacal_new_set_m_error.  First, do a little more evaluation
+- Merge the vnafile_t structure into vnadata_t.
+
+    - Eliminate vnadata_check_save and do the checks instead in
+      vnadata_set_format and vnadata_set_filetype.  If the data type or
+      dimensions are changed, can simply clear out the format information.
+      Alternatively, can check if the new type is compatible with the
+      format, but if not, it may create a situation the user can't get
+      out of.. can't change the format due to type/dim; can't change
+      type/dim because of the type.
+
+    - Initialize the format information to NULL and deal with the
+      default Sri format in save.
+
+
+- Document vnacal_new_set_m_error.  First, do more evaluation
   on whether or not weighting the equations improves accuracy.
 
 - Add functions to set the error threshold and to retrieve errors.
@@ -6,8 +20,6 @@
     int vnacal_new_set_error_limit(vnp, double limit) - scalar
 
   Normalize the errors to 1 standard deviation.
-
-- Merge the vnafile_t structure into vnadata_t.
 
 - Add vnacal-T16-example.c using T-MM-SS-SM-MS standards.
   Approach: generally follow the example of vnacal-TSD-example, but

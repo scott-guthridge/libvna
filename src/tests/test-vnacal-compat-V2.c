@@ -248,7 +248,7 @@ static libt_result_t test_vnacal_compat_V2()
     /*
      * Create a vnadata_t structure to hold the result.
      */
-    if ((vdp = vnadata_alloc()) == NULL) {
+    if ((vdp = vnadata_alloc(error_fn, NULL)) == NULL) {
 	result = T_FAIL;
 	goto out;
     }

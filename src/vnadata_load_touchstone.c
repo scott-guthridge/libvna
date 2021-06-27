@@ -27,7 +27,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include "vnafile_internal.h"
+#include "vnadata_internal.h"
 
 
 /*
@@ -102,7 +102,7 @@ typedef enum ts_flags {
  * ts_parser_state_t: touchstone parser state
  */
 typedef struct ts_parser_state {
-    vnafile_t *tps_vfp;
+    vnadata_internal_t *tps_vdip;
     FILE *tps_fp;
     const char *tps_filename;
     int tps_line;
@@ -317,7 +317,7 @@ static bool convert_double(ts_parser_state_t *tpsp)
  */
 static int next_token(ts_parser_state_t *tpsp, uint32_t flags)
 {
-    vnafile_t *vfp = tpsp->tps_vfp;
+    vnadata_internal_t *vdip = tpsp->tps_vdip;
     int saved_errno;
 
     for (;;) {
@@ -369,7 +369,7 @@ static int next_token(ts_parser_state_t *tpsp, uint32_t flags)
 	    }
 	    end_text(tpsp);
 	    if (tpsp->tps_char != ']') {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"missing closing brace of keyword",
 			tpsp->tps_filename, tpsp->tps_line);
 		tpsp->tps_token = T_ERROR;
@@ -469,7 +469,7 @@ static int next_token(ts_parser_state_t *tpsp, uint32_t flags)
 	    default:
 		break;
 	    }
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "unknown keyword [%s]",
 		    tpsp->tps_filename, tpsp->tps_line,
 		    tpsp->tps_text);
@@ -610,11 +610,11 @@ static int next_token(ts_parser_state_t *tpsp, uint32_t flags)
 	 * Otherwise, we have an unexpected character.
 	 */
 	if (isprint(tpsp->tps_char)) {
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "unexpected character '%c'",
 		    tpsp->tps_filename, tpsp->tps_line, tpsp->tps_char);
 	} else {
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "unexpected character '\\x%02x'",
 		    tpsp->tps_filename, tpsp->tps_line, tpsp->tps_char);
 	}
@@ -632,7 +632,7 @@ static int next_token(ts_parser_state_t *tpsp, uint32_t flags)
  */
 static int parse_data_line(ts_parser_state_t *tpsp)
 {
-    vnafile_t *vfp = tpsp->tps_vfp;
+    vnadata_internal_t *vdip = tpsp->tps_vdip;
     tpsp->tps_value_count = 0;
 
     assert(tpsp->tps_token == T_DOUBLE);
@@ -648,7 +648,7 @@ static int parse_data_line(ts_parser_state_t *tpsp)
 	    }
 	    if ((lfp = realloc(tpsp->tps_value_vector,
 			    new_allocation * sizeof(double))) == NULL) {
-		_vnafile_error(vfp, VNAERR_SYSTEM,
+		_vnadata_error(vdip, VNAERR_SYSTEM,
 			"realloc: %s", strerror(errno));
 		return -1;
 	    }
@@ -669,7 +669,7 @@ static int parse_data_line(ts_parser_state_t *tpsp)
     if (tpsp->tps_token == T_EOF) {
 	return 0;
     }
-    _vnafile_error(vfp, VNAERR_SYNTAX,
+    _vnadata_error(vdip, VNAERR_SYNTAX,
 	    "%s (line %d) error: unexpected token %s",
 	    tpsp->tps_filename, tpsp->tps_line, get_token_name(tpsp));
     return -1;
@@ -706,16 +706,16 @@ static void convert_value_pair(ts_parser_state_t *tpsp,
 /*
  * load_touchstone1: load Touchstone version 1
  *   @tpsp: touchstone parser state structure
- *   @vdp: vnadata_t structure to receive network parameter data
  */
-static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
+static int load_touchstone1(ts_parser_state_t *tpsp)
 {
-    vnafile_t *vfp = tpsp->tps_vfp;
+    vnadata_internal_t *vdip = tpsp->tps_vdip;
+    vnadata_t *vdp = &vdip->vdi_vd;
     int findex, row, column;
     bool maybe4ports = false;
 
     if (tpsp->tps_token != T_DOUBLE) {
-	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		"expected a frequency value; found %s",
 		tpsp->tps_filename, tpsp->tps_line,
 		get_token_name(tpsp));
@@ -725,7 +725,7 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 	return -1;
 
     if (tpsp->tps_value_count % 2 == 0 || tpsp->tps_value_count < 3) {
-	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		"first Touchstone V1 data line must have a odd number "
 		"greater than 1 of fields",
 	    tpsp->tps_filename, tpsp->tps_line);
@@ -737,7 +737,7 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
     if (tpsp->tps_parameter_type == VPT_H ||
 	    tpsp->tps_parameter_type == VPT_G) {
 	if (tpsp->tps_value_count != 9) {
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "expected 9 fields; found %d",
 		tpsp->tps_filename, tpsp->tps_line, (int)tpsp->tps_value_count);
 	    return -1;
@@ -751,9 +751,9 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
     } else {
 	tpsp->tps_ports = (tpsp->tps_value_count - 1) / 2;
     }
-    if (vnadata_init(vdp, 0, tpsp->tps_ports, tpsp->tps_ports,
-		tpsp->tps_parameter_type) == -1) {
-	_vnafile_error(vfp, VNAERR_SYSTEM,
+    if (vnadata_init(vdp, tpsp->tps_parameter_type,
+		tpsp->tps_ports, tpsp->tps_ports, /*frequencies*/0) == -1) {
+	_vnadata_error(vdip, VNAERR_SYSTEM,
 		"realloc: %s", strerror(errno));
 	return -1;
     }
@@ -772,14 +772,14 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 		    tpsp->tps_frequency_multiplier *
 		    tpsp->tps_value_vector[0] <= vnadata_get_frequency(vdp,
 			findex - 1)) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"frequencies must be in increasing order",
 			tpsp->tps_filename, tpsp->tps_line);
 		return -1;
 	    }
 	    if (vnadata_add_frequency(vdp, tpsp->tps_frequency_multiplier *
 			tpsp->tps_value_vector[0]) == -1) {
-		_vnafile_error(vfp, VNAERR_SYSTEM,
+		_vnadata_error(vdip, VNAERR_SYSTEM,
 			"realloc: %s", strerror(errno));
 		return -1;
 	    }
@@ -833,10 +833,10 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 		    vdp->vd_data[findex][1] = d12;
 		    vdp->vd_data[findex][2] = d21;
 		    tpsp->tps_ports = 4;
-		    if (vnadata_resize(vdp, findex + 1,
+		    if (vnadata_resize(vdp, tpsp->tps_parameter_type,
 				tpsp->tps_ports, tpsp->tps_ports,
-				tpsp->tps_parameter_type) == -1) {
-			_vnafile_error(vfp, VNAERR_SYSTEM,
+				findex + 1) == -1) {
+			_vnadata_error(vdip, VNAERR_SYSTEM,
 				"realloc: %s", strerror(errno));
 			return -1;
 		    }
@@ -844,7 +844,7 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 		    row = 1;
 		    goto nxn_next_row;
 		}
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"expected 9 fields; found %d",
 		    tpsp->tps_filename, tpsp->tps_line,
 		    (int)tpsp->tps_value_count);
@@ -864,14 +864,14 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 		    tpsp->tps_frequency_multiplier *
 		    tpsp->tps_value_vector[0] <= vnadata_get_frequency(vdp,
 			findex - 1)) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"frequencies must be in increasing order",
 			tpsp->tps_filename, tpsp->tps_line);
 		return -1;
 	    }
 	    if (vnadata_add_frequency(vdp, tpsp->tps_frequency_multiplier *
 			tpsp->tps_value_vector[0]) == -1) {
-		_vnafile_error(vfp, VNAERR_SYSTEM,
+		_vnadata_error(vdip, VNAERR_SYSTEM,
 			"realloc: %s", strerror(errno));
 		return -1;
 	    }
@@ -885,7 +885,7 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 	    /* remaining rows */
 	    for (row = 1; row < tpsp->tps_ports; ++row) {
 		if (tpsp->tps_token != T_DOUBLE) {
-		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "unexpected token %s",
 			    tpsp->tps_filename, tpsp->tps_line,
 			    get_token_name(tpsp));
@@ -896,7 +896,7 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 
 	    nxn_next_row:
 		if (tpsp->tps_value_count != 2 * tpsp->tps_ports) {
-		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "expected %d fields; found %d",
 			tpsp->tps_filename, tpsp->tps_line,
 			2 * tpsp->tps_ports, (int)tpsp->tps_value_count);
@@ -920,7 +920,7 @@ static int load_touchstone1(ts_parser_state_t *tpsp, vnadata_t *vdp)
 		if (tpsp->tps_value_count == 5)
 		    goto parse_noise_data;
 
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"expected %d fields; found %d",
 		    tpsp->tps_filename, tpsp->tps_line,
 		    1 + 2 * tpsp->tps_ports, (int)tpsp->tps_value_count);
@@ -939,7 +939,7 @@ parse_noise_data:
 	    return -1;
 
 	if (tpsp->tps_value_count != 5) {
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "expected 5 noise fields; found %d",
 		tpsp->tps_filename, tpsp->tps_line,
 		(int)tpsp->tps_value_count);
@@ -949,7 +949,7 @@ parse_noise_data:
     return 0;
 }
 
-#define VNAFILE_LOAD_INITIAL_TEXT_ALLOCATION	64
+#define VNADATA_LOAD_INITIAL_TEXT_ALLOCATION	64
 
 /*
  * Two-port order
@@ -966,12 +966,12 @@ parse_noise_data:
 static int parse_value_pair(ts_parser_state_t *tpsp, int nexpected,
 	double complex *result)
 {
-    vnafile_t *vfp = tpsp->tps_vfp;
+    vnadata_internal_t *vdip = tpsp->tps_vdip;
     double v[2];
 
     for (int i = 0; i < 2; ++i) {
 	if (tpsp->tps_token != T_DOUBLE) {
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "expected %d value pairs",
 		    tpsp->tps_filename, tpsp->tps_line, nexpected);
 	    return -1;
@@ -986,15 +986,15 @@ static int parse_value_pair(ts_parser_state_t *tpsp, int nexpected,
 }
 
 /*
- * _vnafile_load_touchstone
- *   @vfp: pointer to the structure returned from vnafile_alloc
+ * _vnadata_load_touchstone
+ *   @vdp: a pointer to the vnadata_t structure
  *   @fp: file pointer
  *   @filename: filename used in error messages and to intuit the file type
- *   @vdp: output data (reshaped as needed)
  */
-int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
-	vnadata_t *vdp)
+int _vnadata_load_touchstone(vnadata_internal_t *vdip, FILE *fp,
+	const char *filename)
 {
+    vnadata_t *vdp = &vdip->vdi_vd;
     ts_parser_state_t tps;
     int version = 1;
     int two_port_order  = -1;
@@ -1010,7 +1010,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
      * Initialize the parser
      */
     (void)memset((void *)&tps, 0, sizeof(tps));
-    tps.tps_vfp				= vfp;
+    tps.tps_vdip			= vdip;
     tps.tps_fp				= fp;
     tps.tps_filename			= filename;
     tps.tps_line			= 1;
@@ -1025,12 +1025,12 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
     tps.tps_data_format			= 'M';
     tps.tps_z0				= 50.0;	/* Touchstone default */
     tps.tps_ports			= -1;
-    if ((tps.tps_text = malloc(VNAFILE_LOAD_INITIAL_TEXT_ALLOCATION)) == NULL) {
-	_vnafile_error(vfp, VNAERR_SYSTEM,
+    if ((tps.tps_text = malloc(VNADATA_LOAD_INITIAL_TEXT_ALLOCATION)) == NULL) {
+	_vnadata_error(vdip, VNAERR_SYSTEM,
 		"malloc: %s", strerror(errno));
 	goto out;
     }
-    tps.tps_text_allocation = VNAFILE_LOAD_INITIAL_TEXT_ALLOCATION;
+    tps.tps_text_allocation = VNADATA_LOAD_INITIAL_TEXT_ALLOCATION;
     next_char(&tps);
     if (next_token(&tps, F_NONE) == -1)
 	goto out;
@@ -1043,7 +1043,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 	    goto out;
 	}
 	if (tps.tps_token != T_WORD) {
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "expected version number; found %s",
 		tps.tps_filename, tps.tps_line, get_token_name(&tps));
 	    goto out;
@@ -1052,13 +1052,13 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 	    version = 2;
 
 	} else if (strcmp(tps.tps_text, "1.0") == 0) {
-	    _vnafile_error(vfp, VNAERR_WARNING, "%s (line %d) warning: "
+	    _vnadata_error(vdip, VNAERR_WARNING, "%s (line %d) warning: "
 		    "file contains dubious [Version] 1.0 line",
 		    tps.tps_filename, tps.tps_line);
 	    version = 1;
 
 	} else {
-	    _vnafile_error(vfp, VNAERR_VERSION, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_VERSION, "%s (line %d) error: "
 		    "unsupported Touchstone version %s",
 		    tps.tps_filename, tps.tps_line, tps.tps_text);
 	    goto out;
@@ -1072,7 +1072,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
      * Parse the option line.
      */
     if (tps.tps_token != T_OPTION) {
-	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		"expected # option line; found %s",
 	    tps.tps_filename, tps.tps_line, get_token_name(&tps));
 	goto out;
@@ -1178,7 +1178,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 		goto out;
 	    }
 	    if (tps.tps_token != T_DOUBLE) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"expected an impedance value after R",
 		    tps.tps_filename, tps.tps_line);
 		goto out;
@@ -1193,7 +1193,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 	    break;
 
 	default:
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "unexpected token \"%s\" in option line",
 		tps.tps_filename, tps.tps_line, get_token_name(&tps));
 	    goto out;
@@ -1215,7 +1215,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 		goto out;
 	    }
 	    if (tps.tps_token != T_INT || tps.u.tps_int < 0) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"expected a positive integer after [Number of Ports]",
 		    tps.tps_filename, tps.tps_line);
 		goto out;
@@ -1224,11 +1224,11 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 	    if (tps.tps_ports != 2 &&
 		    (tps.tps_parameter_type == VPT_G ||
 		     tps.tps_parameter_type == VPT_H)) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"parameter type %s is incompatible with "
 			"[Number of Ports] %d",
 			tps.tps_filename, tps.tps_line,
-			vnadata_get_typename(tps.tps_parameter_type),
+			vnadata_get_type_name(tps.tps_parameter_type),
 			tps.tps_ports);
 		goto out;
 	    }
@@ -1249,7 +1249,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 		    strcmp(tps.tps_text, "21_12") == 0) {
 		two_port_order = T21_12;
 	    } else {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"expected 12_21 or 21_12 after [Two-Port Order]",
 		    tps.tps_filename, tps.tps_line);
 		goto out;
@@ -1264,7 +1264,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 		goto out;
 	    }
 	    if (tps.tps_token != T_INT) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"expected a positive integer after "
 			"[Number of Frequencies]",
 		    tps.tps_filename, tps.tps_line);
@@ -1281,7 +1281,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 		goto out;
 	    }
 	    if (tps.tps_token != T_INT || tps.u.tps_int < 0) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"expected a positive integer after "
 			"[Number of Noise Frequencies]",
 		    tps.tps_filename, tps.tps_line);
@@ -1295,14 +1295,14 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 
 	case T_KW_REFERENCE:
 	    if (tps.tps_ports < 0) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"[Number of Ports] must appear before [Reference]",
 		    tps.tps_filename, tps.tps_line);
 		goto out;
 	    }
 	    if ((reference = calloc(tps.tps_ports,
 			    sizeof(double complex))) == NULL) {
-		_vnafile_error(vfp, VNAERR_SYSTEM,
+		_vnadata_error(vdip, VNAERR_SYSTEM,
 			"calloc: %s", strerror(errno));
 		goto out;
 	    }
@@ -1311,7 +1311,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 	    }
 	    for (int i = 0; i < tps.tps_ports; ++i) {
 		if (tps.tps_token != T_DOUBLE) {
-		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "expected %d values(s) after [Reference]",
 			tps.tps_filename, tps.tps_line, tps.tps_ports);
 		    goto out;
@@ -1337,7 +1337,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 		    strcmp(tps.tps_text, "LOWER") == 0) {
 		matrix_format = 'L';
 	    } else {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"expected Full, Upper or Lower after [Matrix Format]",
 		    tps.tps_filename, tps.tps_line);
 		goto out;
@@ -1348,7 +1348,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 	    continue;
 
 	case T_KW_MIXED_MODE_ORDER:
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "[Mixed-Mode Order] not yet supported",
 		tps.tps_filename, tps.tps_line);
 	    goto out;
@@ -1371,32 +1371,32 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
     }
 
     /*
-     * Update the vnafile structure.
+     * Update the vnadata structure.
      */
     {
-	vnafile_format_type_t format_type;
+	vnadata_format_t format_type;
 
 	/* set the file type */
-	vfp->vf_type = (version == 2) ?
-	    VNAFILE_TOUCHSTONE2 : VNAFILE_TOUCHSTONE1;
+	vdip->vdi_filetype = (version == 2) ?
+	    VNADATA_FILETYPE_TOUCHSTONE2 : VNADATA_FILETYPE_TOUCHSTONE1;
 
 	/* set the format string */
 	switch (tps.tps_data_format) {
 	case 'D':
-	    format_type = VNAFILE_FORMAT_DB_ANGLE;
+	    format_type = VNADATA_FORMAT_DB_ANGLE;
 	    break;
 	case 'M':
-	    format_type = VNAFILE_FORMAT_MAG_ANGLE;
+	    format_type = VNADATA_FORMAT_MAG_ANGLE;
 	    break;
 	case 'R':
-	    format_type = VNAFILE_FORMAT_REAL_IMAG;
+	    format_type = VNADATA_FORMAT_REAL_IMAG;
 	    break;
 	default:
 	    abort();
 	}
-	if (_vnafile_set_simple_format(vfp, tps.tps_parameter_type,
+	if (_vnadata_set_simple_format(vdip, tps.tps_parameter_type,
 		    format_type) == -1) {
-	    _vnafile_error(vfp, VNAERR_SYSTEM,
+	    _vnadata_error(vdip, VNAERR_SYSTEM,
 		    "malloc: %s", strerror(errno));
 	    goto out;
 	}
@@ -1412,7 +1412,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
      */
     if (version == 1 && tps.tps_ports == -1 && number_of_frequencies == -1
 	    && two_port_order == -1) {
-	rc = load_touchstone1(&tps, vdp);
+	rc = load_touchstone1(&tps);
 	goto expect_eof;
     }
 
@@ -1420,7 +1420,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
      * Expect [Network Data].
      */
     if (tps.tps_token != T_KW_NETWORK_DATA) {
-	_vnafile_error(vfp, VNAERR_SYNTAX,
+	_vnadata_error(vdip, VNAERR_SYNTAX,
 		"%s (line %d) error: unexpected token %s",
 	    tps.tps_filename, tps.tps_line, get_token_name(&tps));
 	goto out;
@@ -1433,25 +1433,25 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
      * Make sure all required parameters were given.
      */
     if (tps.tps_ports < 0) {
-	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		"[Number of Ports] must appear before [Network Data]",
 		tps.tps_filename, tps.tps_line);
 	goto out;
     }
     if (number_of_frequencies < 0) {
-	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		"[Number of Frequencies] must appear before [Network Data]",
 		tps.tps_filename, tps.tps_line);
 	goto out;
     }
     if (tps.tps_ports == 2 && two_port_order == -1) {
-	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		"[Two-Port Order] must appear before [Network Data]",
 		tps.tps_filename, tps.tps_line);
 	goto out;
 
     } else if (tps.tps_ports != 2 && two_port_order != -1) {
-	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		"[Two-Port Order] may not be used with [Number of Ports] %d",
 		tps.tps_filename, two_port_order_line, tps.tps_ports);
 	goto out;
@@ -1460,9 +1460,9 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
     /*
      * Set up the output matrix.
      */
-    if (vnadata_init(vdp, number_of_frequencies, tps.tps_ports,
-		tps.tps_ports, tps.tps_parameter_type) == -1) {
-	_vnafile_error(vfp, VNAERR_SYSTEM,
+    if (vnadata_init(vdp, tps.tps_parameter_type, tps.tps_ports,
+		tps.tps_ports, number_of_frequencies) == -1) {
+	_vnadata_error(vdip, VNAERR_SYSTEM,
 		"realloc: %s", strerror(errno));
 	goto out;
     }
@@ -1486,14 +1486,14 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
     }
     for (int findex = 0; findex < number_of_frequencies; ++findex) {
 	if (tps.tps_token != T_DOUBLE) {
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "expected frequency",
 		    tps.tps_filename, tps.tps_line);
 	    goto out;
 	}
 	if (findex != 0 &&
 		tps.u.tps_double <= vnadata_get_frequency(vdp, findex - 1)) {
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "frequencies must be in increasing order",
 		    tps.tps_filename, tps.tps_line);
 	    goto out;
@@ -1561,7 +1561,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 	double f_prev = -1.0;
 
 	if (tps.tps_token != T_KW_NOISE_DATA) {
-	    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		    "expected [Noise Data]",
 		    tps.tps_filename, tps.tps_line);
 	    goto out;
@@ -1571,13 +1571,13 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 	}
 	for (int i = 0; i < number_of_noise_frequencies; ++i) {
 	    if (tps.tps_token != T_DOUBLE || tps.u.tps_double < 0.0) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"expected non-negative noise frequency",
 			tps.tps_filename, tps.tps_line);
 		goto out;
 	    }
 	    if (i > 0 && tps.u.tps_double < f_prev) {
-		_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"noise frequencies be increasing",
 			tps.tps_filename, tps.tps_line);
 		goto out;
@@ -1588,7 +1588,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 	    }
 	    for (int j = 0; j < 4; ++j) {
 		if (tps.tps_token != T_DOUBLE) {
-		    _vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    _vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			    "expected five noise parameters",
 			    tps.tps_filename, tps.tps_line);
 		    goto out;
@@ -1608,7 +1608,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
 	    goto out;
 
     } else {
-	_vnafile_error(vfp, VNAERR_WARNING,
+	_vnadata_error(vdip, VNAERR_WARNING,
 		"%s (line %d) warning: expected [End] keyword",
 		tps.tps_filename, tps.tps_line);
     }
@@ -1618,7 +1618,7 @@ int _vnafile_load_touchstone(vnafile_t *vfp, FILE *fp, const char *filename,
      */
 expect_eof:
     if (tps.tps_token != T_EOF) {
-	_vnafile_error(vfp, VNAERR_SYNTAX, "%s (line %d) error: "
+	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 		"extra token(s) at end of file: %s",
 		tps.tps_filename, tps.tps_line, get_token_name(&tps));
 	goto out;

@@ -52,9 +52,9 @@ vnaerr_error_fn_t \- vector network analyzer library error reporting
 .\"
 .SH DESCRIPTION
 The \fBvnacal_calset_alloc\fP(), \fBvnacal_create\fP(),
-\fBvnacal_load\fP(), and \fBvnafile_alloc\fP(), \fBvnafile_load\fP(),
-and \fBvnafile_fload\fP() functions take an optional function pointer,
-\fIerror_fn\fP, which the library calls to report detailed error messages.
+\fBvnacal_load\fP(), and \fBvnadata_alloc\fP() functions take an optional
+function pointer, \fIerror_fn\fP, which the library calls to report
+detailed error messages.
 .PP
 The \fIcategory\fP argument to \fIerror_fn\fP() broadly classifies
 the error.
@@ -86,14 +86,14 @@ combination of arguments.  The message begins with the name of the
 libvna function that followed by a description of the problem.
 Example:
 .sp
-\(lqvnafile_set_file_type: -7: invalid type\(rq
+\(lqvnadata_set_file_type: -7: invalid type\(rq
 .IP "\s-2VNAERR_VERSION\s+2"
-A file given to \fBvnacal_load\fP() or \fBvnafile_load\fP() has a
+A file given to \fBvnacal_load\fP() or \fBvnadata_load\fP() has a
 version number unknown to the library.  Example:
 .sp
 mycalfile.vnacal (line 1) error: unsupported version 9.0
 .IP "\s-2VNAERR_SYNTAX\s+2"
-A file given to \fBvnacal_load\fP() or \fBvnafile_load\fP() contains
+A file given to \fBvnacal_load\fP() or \fBvnadata_load\fP() contains
 a syntax error, has missing or conflicting information, or is otherwise
 not well-formed.  Example:
 .sp
@@ -145,4 +145,4 @@ returning failure from a library function.
 .\"
 .SH "SEE ALSO"
 .BR vnacal "(3), " vnacal_new "(3), " vnaconv "(3), " vnadata "(3),"
-.BR vnafile "(3), " vnacal_parameter "(3)"
+.BR vnacal_parameter "(3)"
