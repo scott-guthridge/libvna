@@ -26,7 +26,7 @@
 /*
  * vnaconv_ttoy: convert t-parameters to y-parameters
  */
-void vnaconv_ttoy(const vnaconv_array2_t *t, complex (*y)[2],
+void vnaconv_ttoy(const double complex (*t)[2], double complex (*y)[2],
 	       const double complex *z0)
 {
     const double complex t11 = t[0][0];

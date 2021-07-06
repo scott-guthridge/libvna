@@ -25,7 +25,7 @@
 /*
  * vnaconv_htoa: convert h-parameters to b-parameters
  */
-void vnaconv_htob(const vnaconv_array2_t *h, double complex (*b)[2])
+void vnaconv_htob(const double complex (*h)[2], double complex (*b)[2])
 {
     const double complex h11 = h[0][0];
     const double complex h12 = h[0][1];

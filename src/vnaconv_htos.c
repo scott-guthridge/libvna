@@ -25,7 +25,7 @@
 /*
  * vnaconv_htos: convert h-parameters to s-parameters
  */
-void vnaconv_htos(const vnaconv_array2_t *h, complex (*s)[2],
+void vnaconv_htos(const double complex (*h)[2], double complex (*s)[2],
 	       const double complex *z0)
 {
     const double complex h11 = h[0][0];

@@ -219,7 +219,7 @@ static const conversion_code_t conversion_table[VPT_NTYPES][VPT_NTYPES] = {
 /*
  * group_2x2_no_xtoy: 2-port to 2-port conversion functions without z0
  */
-static void (*group_2x2_no_xtoy[])(const vnaconv_array2_t *in,
+static void (*group_2x2_no_xtoy[])(const double complex (*in)[2],
 	double complex (*out)[2]) = {
     [GET_INDEX(T0StoT)] = vnaconv_stot,
     [GET_INDEX(T0ZtoH)] = vnaconv_ztoh,
@@ -256,7 +256,7 @@ static void (*group_2x2_no_xtoy[])(const vnaconv_array2_t *in,
 /*
  * group_2x2_yes_xtoy: 2-port to 2-port conversion functions with z0
  */
-static void (*group_2x2_yes_xtoy[])(const vnaconv_array2_t *in,
+static void (*group_2x2_yes_xtoy[])(const double complex (*in)[2],
 	double complex (*out)[2], const double complex *z0) = {
     [GET_INDEX(T1StoH)] = vnaconv_stoh,
     [GET_INDEX(T1StoG)] = vnaconv_stog,
@@ -283,7 +283,7 @@ static void (*group_2x2_yes_xtoy[])(const vnaconv_array2_t *in,
 /*
  * group_2x2_yes_xtoI: 2-port to Zin vector conversion functions with z0
  */
-static void (*group_2x2_yes_xtoI[])(const vnaconv_array2_t *in,
+static void (*group_2x2_yes_xtoI[])(const double complex (*in)[2],
 	double complex *out, const double complex *z0) = {
     [GET_INDEX(T1TtoI)] = vnaconv_ttozi,
     [GET_INDEX(T1HtoI)] = vnaconv_htozi,
@@ -486,11 +486,11 @@ int vnadata_convert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
     switch (group) {
     case DIM_2x2 | Z0_NO  | CONV_xtoy:
 	{
-	    void (*fn)(const vnaconv_array2_t *in, double complex (*out)[2]);
+	    void (*fn)(const double complex (*in)[2], double complex (*out)[2]);
 
 	    fn = group_2x2_no_xtoy[index];
 	    for (int findex = 0; findex < vdp_in->vd_frequencies; ++findex) {
-		(*fn)((const vnaconv_array2_t *)vdp_in->vd_data[findex],
+		(*fn)((const double complex (*)[2])vdp_in->vd_data[findex],
 			(double complex (*)[2])vdp_out->vd_data[findex]);
 	    }
 	}
@@ -498,12 +498,12 @@ int vnadata_convert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
 
     case DIM_2x2 | Z0_YES | CONV_xtoy:
 	{
-	    void (*fn)(const vnaconv_array2_t *in, double complex (*out)[2],
+	    void (*fn)(const double complex (*in)[2], double complex (*out)[2],
 		    const double complex *z0);
 
 	    fn = group_2x2_yes_xtoy[index];
 	    for (int findex = 0; findex < vdp_in->vd_frequencies; ++findex) {
-		(*fn)((const vnaconv_array2_t *)vdp_in->vd_data[findex],
+		(*fn)((const double complex (*)[2])vdp_in->vd_data[findex],
 			(double complex (*)[2])vdp_out->vd_data[findex],
 			get_fz0_vector(vdip_in, findex));
 	    }
@@ -512,12 +512,12 @@ int vnadata_convert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
 
     case DIM_2x2 | Z0_YES | CONV_xtoI:
 	{
-	    void (*fn)(const vnaconv_array2_t *in, double complex *out,
+	    void (*fn)(const double complex (*in)[2], double complex *out,
 		    const double complex *z0);
 
 	    fn = group_2x2_yes_xtoI[index];
 	    for (int findex = 0; findex < vdp_in->vd_frequencies; ++findex) {
-		(*fn)((const vnaconv_array2_t *)vdp_in->vd_data[findex],
+		(*fn)((const double complex (*)[2])vdp_in->vd_data[findex],
 			     vdp_out->vd_data[findex],
 			     get_fz0_vector(vdip_in, findex));
 	    }

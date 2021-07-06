@@ -26,7 +26,7 @@
 /*
  * vnaconv_ytoh: convert y-parameters to h-parameters
  */
-void vnaconv_ytoh(const vnaconv_array2_t *y, double complex (*h)[2])
+void vnaconv_ytoh(const double complex (*y)[2], double complex (*h)[2])
 {
     const double complex y11 = y[0][0];
     const double complex y12 = y[0][1];

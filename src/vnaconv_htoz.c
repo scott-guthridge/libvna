@@ -25,7 +25,7 @@
 /*
  * vnaconv_htoz: convert h-parameters to z-parameters
  */
-void vnaconv_htoz(const vnaconv_array2_t *h, double complex (*z)[2])
+void vnaconv_htoz(const double complex (*h)[2], double complex (*z)[2])
 {
     const double complex h11 = h[0][0];
     const double complex h12 = h[0][1];

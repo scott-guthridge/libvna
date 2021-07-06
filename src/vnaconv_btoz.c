@@ -26,7 +26,7 @@
 /*
  * vnaconv_btoz: convert b-parameters to z-parameters
  */
-void vnaconv_btoz(const vnaconv_array2_t *b, double complex (*z)[2])
+void vnaconv_btoz(const double complex (*b)[2], double complex (*z)[2])
 {
     const double complex b11 = b[0][0];
     const double complex b12 = b[0][1];

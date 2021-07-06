@@ -26,7 +26,7 @@
 /*
  * vnaconv_gtoh: convert g-parameters to h-parameters
  */
-void vnaconv_gtoh(const vnaconv_array2_t *g, double complex (*h)[2])
+void vnaconv_gtoh(const double complex (*g)[2], double complex (*h)[2])
 {
     const double complex g11 = g[0][0];
     const double complex g12 = g[0][1];

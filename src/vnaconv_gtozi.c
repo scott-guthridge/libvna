@@ -26,7 +26,7 @@
 /*
  * vnaconv_gtozi: calculate the two-port input port impedances
  */
-void vnaconv_gtozi(const vnaconv_array2_t *g, double complex *zi,
+void vnaconv_gtozi(const double complex (*g)[2], double complex *zi,
 	const double complex *z0)
 {
     const double complex g11 = g[0][0];

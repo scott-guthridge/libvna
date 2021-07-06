@@ -26,7 +26,7 @@
 /*
  * vnaconv_btot: convert b-parameters to t-parameters
  */
-void vnaconv_btot(const vnaconv_array2_t *b, complex (*t)[2],
+void vnaconv_btot(const double complex (*b)[2], double complex (*t)[2],
 	       const double complex *z0)
 {
     const double complex b11 = b[0][0];

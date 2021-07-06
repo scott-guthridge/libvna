@@ -26,7 +26,7 @@
 /*
  * vnaconv_stoz: convert s-parameters to z-parameters
  */
-void vnaconv_stoz(const vnaconv_array2_t *s, complex (*z)[2],
+void vnaconv_stoz(const double complex (*s)[2], double complex (*z)[2],
 	       const double complex *z0)
 {
     const double complex s11 = s[0][0];

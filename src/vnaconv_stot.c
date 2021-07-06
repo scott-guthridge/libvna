@@ -26,7 +26,7 @@
 /*
  * vnaconv_stot: convert s-parameters to t-parameters
  */
-void vnaconv_stot(const vnaconv_array2_t *s, double complex (*t)[2])
+void vnaconv_stot(const double complex (*s)[2], double complex (*t)[2])
 {
     const double complex s11 = s[0][0];
     const double complex s12 = s[0][1];

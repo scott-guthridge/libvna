@@ -26,7 +26,7 @@
 /*
  * vnaconv_ztoa: convert z-parameters to a-parameters
  */
-void vnaconv_ztoa(const vnaconv_array2_t *z, double complex (*a)[2])
+void vnaconv_ztoa(const double complex (*z)[2], double complex (*a)[2])
 {
     const double complex z11 = z[0][0];
     const double complex z12 = z[0][1];

@@ -26,7 +26,7 @@
 /*
  * vnaconv_ztoy: convert z-parameters to y-parameters
  */
-void vnaconv_ztoy(const vnaconv_array2_t *z, double complex (*y)[2])
+void vnaconv_ztoy(const double complex (*z)[2], double complex (*y)[2])
 {
     const double complex z11 = z[0][0];
     const double complex z12 = z[0][1];

@@ -26,7 +26,7 @@
 /*
  * vnaconv_ztog: convert z-parameters to g-parameters
  */
-void vnaconv_ztog(const vnaconv_array2_t *z, double complex (*g)[2])
+void vnaconv_ztog(const double complex (*z)[2], double complex (*g)[2])
 {
     const double complex z11 = z[0][0];
     const double complex z12 = z[0][1];

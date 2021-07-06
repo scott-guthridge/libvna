@@ -26,7 +26,7 @@
 /*
  * vnaconv_btoh: convert b-parameters to h-parameters
  */
-void vnaconv_btoh(const vnaconv_array2_t *b, double complex (*h)[2])
+void vnaconv_btoh(const double complex (*b)[2], double complex (*h)[2])
 {
     const double complex b11 = b[0][0];
     const double complex b12 = b[0][1];

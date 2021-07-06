@@ -26,7 +26,7 @@
 /*
  * vnaconv_ytog: convert y-parameters to g-parameters
  */
-void vnaconv_ytog(const vnaconv_array2_t *y, double complex (*g)[2])
+void vnaconv_ytog(const double complex (*y)[2], double complex (*g)[2])
 {
     const double complex y11 = y[0][0];
     const double complex y12 = y[0][1];

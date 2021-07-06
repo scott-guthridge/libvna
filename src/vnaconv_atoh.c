@@ -26,7 +26,7 @@
 /*
  * vnaconv_atoh: convert a-parameters to h-parameters
  */
-void vnaconv_atoh(const vnaconv_array2_t *a, double complex (*h)[2])
+void vnaconv_atoh(const double complex (*a)[2], double complex (*h)[2])
 {
     const double complex a11 = a[0][0];
     const double complex a12 = a[0][1];
