@@ -1044,13 +1044,11 @@ static int vnafile_save_common(vnafile_t *vfp, FILE *fp, const char *filename,
 			"%s: cannot convert type to %s",
 			function, target_type == VPT_T ? "T" : "S");
 	    } else {
-		;
 		_vnafile_error(vfp, VNAERR_SYSTEM,
 			"vnadata_convert: %s", strerror(errno));
 	    }
 	    vnadata_free(vdp_copy);
 	    goto out;
-
 	}
 
 	/*

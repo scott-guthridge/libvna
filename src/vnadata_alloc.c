@@ -60,6 +60,7 @@ static int _vnadata_validate(int rows, int columns,
 	    errno = EINVAL;
 	    return -1;
 	}
+	break;
 
     /* vector only */
     case VPT_ZIN:

@@ -712,6 +712,7 @@ int _vnafile_load_native(vnafile_t *vfp, FILE *fp, const char *filename,
 			_vnafile_format_to_name(vffp));
 		goto out;
 	    }
+	    break;
 
 	case VPT_ZIN:
 	    drows = 1;
