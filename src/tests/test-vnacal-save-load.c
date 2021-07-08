@@ -30,8 +30,8 @@
 #include <unistd.h>
 #endif
 #include "vnacal_internal.h"
-#include "test.h"
-#include "vnacaltest.h"
+#include "libt.h"
+#include "libt_vnacal.h"
 
 
 /*
@@ -72,7 +72,7 @@ static const char property3_value[] = "αβγδεζηθικλμνξοπρστυ�
 /*
  * run_vnacal_save_load_trial
  */
-static test_result_t run_vnacal_save_load_trial(int trial)
+static libt_result_t run_vnacal_save_load_trial(int trial)
 {
     static const int dimension_table[][2] = {
 	{ 1, 1 }, { 1, 2 }, { 1, 3 }, { 1, 4 }, { 2, 2 },
@@ -82,12 +82,12 @@ static test_result_t run_vnacal_save_load_trial(int trial)
 	VNACAL_T8, VNACAL_U8, VNACAL_TE10, VNACAL_UE10,
 	VNACAL_T16, VNACAL_U16, VNACAL_UE14, VNACAL_E12
     };
-    test_vnacal_terms_t *ttp_table[8] =
+    libt_vnacal_terms_t *ttp_table[8] =
         { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
     vnacal_t *vcp = NULL;
     const int types = sizeof(type_table) / sizeof(vnacal_type_t);
     const int dimensions = sizeof(dimension_table) / sizeof(int [2]);
-    test_result_t result = T_FAIL;
+    libt_result_t result = T_FAIL;
     const char *cp_temp;
 
     /*
@@ -134,7 +134,7 @@ static test_result_t run_vnacal_save_load_trial(int trial)
 	    m_columns = dimension_table[dindex][0];
 	    break;
 	}
-	if ((ttp_table[tindex] = make_random_calibration(vcp, type,
+	if ((ttp_table[tindex] = libt_vnacal_make_random_calibration(vcp, type,
 			m_rows, m_columns, frequencies, /*ab*/false)) == NULL) {
 	    result = T_FAIL;
 	    goto out;
@@ -275,7 +275,7 @@ static test_result_t run_vnacal_save_load_trial(int trial)
 	    result = T_FAIL;
 	    goto out;
 	}
-	if (test_vnacal_validate_calibration(ttp_table[tindex], calp) == -1) {
+	if (libt_vnacal_validate_calibration(ttp_table[tindex], calp) == -1) {
 	    result = T_FAIL;
 	    goto out;
 	}
@@ -392,7 +392,7 @@ static test_result_t run_vnacal_save_load_trial(int trial)
 
 out:
     for (int tindex = 0; tindex < types; ++tindex) {
-	test_vnacal_free_error_terms(ttp_table[tindex]);
+	libt_vnacal_free_error_terms(ttp_table[tindex]);
     }
     vnacal_free(vcp);
     return result;
@@ -401,9 +401,9 @@ out:
 /*
  * test_vnacal_save_load
  */
-static test_result_t test_vnacal_save_load()
+static libt_result_t test_vnacal_save_load()
 {
-    test_result_t result = T_FAIL;
+    libt_result_t result = T_FAIL;
 
     for (int trial = 0; trial < 5; ++trial) {
 	result = run_vnacal_save_load_trial(trial);
@@ -413,7 +413,7 @@ static test_result_t test_vnacal_save_load()
     result = T_PASS;
 
 out:
-    test_report(result);
+    libt_report(result);
     return result;
 }
 
@@ -465,9 +465,9 @@ main(int argc, char **argv)
 	}
 	break;
     }
-    test_init_isequal();
-    if (test_isequal_eps < 0.00001) {	/* save uses 6 digits by default */
-	test_isequal_eps = 0.00001;
+    libt_isequal_init();
+    if (libt_isequal_eps < 0.00001) {	/* save uses 6 digits by default */
+	libt_isequal_eps = 0.00001;
     }
     exit(test_vnacal_save_load());
 }

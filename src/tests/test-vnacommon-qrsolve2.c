@@ -30,7 +30,7 @@
 #include <unistd.h>
 #endif
 #include "vnacommon_internal.h"
-#include "test.h"
+#include "libt.h"
 
 
 #define N_MATRIX_TRIALS	100
@@ -68,10 +68,10 @@ static int qrsolve2_helper(double complex *x, double complex *a,
      */
     for (int i = 0; i < m; ++i) {
 	for (int j = 0; j < n; ++j) {
-	    a[i * n + j] = u[i][j] = test_crandn();
+	    a[i * n + j] = u[i][j] = libt_crandn();
 	}
 	for (int k = 0; k < o; ++k) {
-	    b[i * o + k] = test_crandn();
+	    b[i * o + k] = libt_crandn();
 	}
     }
 
@@ -80,10 +80,10 @@ static int qrsolve2_helper(double complex *x, double complex *a,
      */
     rank = _vnacommon_qr(*u, *q, *r, m, n);
     if (opt_v) {
-	test_print_cmatrix("a", a, m, n);
-	test_print_cmatrix("q", *q, m, m);
-	test_print_cmatrix("r", *r, m, n);
-	test_print_cmatrix("x", x, n, o);
+	libt_print_cmatrix("a", a, m, n);
+	libt_print_cmatrix("q", *q, m, m);
+	libt_print_cmatrix("r", *r, m, n);
+	libt_print_cmatrix("x", x, n, o);
 	(void)printf("rank %d\n", rank);
 	(void)fflush(stdout);
     }
@@ -122,9 +122,9 @@ static double find_axb_error(const double complex *a, const double complex *x,
 /*
  * Test vnacommon_qrsolve2.
  */
-static test_result_t test_vnacommon_qrsolve2()
+static libt_result_t test_vnacommon_qrsolve2()
 {
-    test_result_t result = T_SKIPPED;
+    libt_result_t result = T_SKIPPED;
 
     for (int trial = 1; trial <= N_MATRIX_TRIALS; ++trial) {
 	/*
@@ -161,7 +161,7 @@ static test_result_t test_vnacommon_qrsolve2()
 		    for (int j = 0; j < n; ++j) {
 			s += a[i][j] * x[j][k];
 		    }
-		    if (!test_isequal(s, b[i][k])) {
+		    if (!libt_isequal(s, b[i][k])) {
 			if (opt_a) {
 			    assert(!"data miscompare");
 			}
@@ -220,7 +220,7 @@ static test_result_t test_vnacommon_qrsolve2()
 			    for (int j = 0; j < n; ++j) {
 				s += a[i][j] * x[j][k];
 			    }
-			    if (!test_isequal(s, b[i][k])) {
+			    if (!libt_isequal(s, b[i][k])) {
 				if (opt_a) {
 				    assert(!"data miscompare");
 				}
@@ -320,7 +320,7 @@ static test_result_t test_vnacommon_qrsolve2()
     result = T_PASS;
 
 out:
-    test_report(result);;
+    libt_report(result);;
     return result;
 }
 
@@ -374,6 +374,6 @@ main(int argc, char **argv)
     if (argc != 0) {
 	print_usage();
     }
-    test_init_isequal();
+    libt_isequal_init();
     exit(test_vnacommon_qrsolve2());
 }

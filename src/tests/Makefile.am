@@ -12,10 +12,10 @@ AM_CFLAGS= -I$(top_srcdir)/src
 #
 # vnacaltest library
 #
-noinst_LIBRARIES = libvnacaltest.a
-libvnacaltest_a_SOURCES = vnacaltest.h vnacaltest_calibration.c \
-	vnacaltest_measurements.c vnacaltest_properties.c \
-	vnacaltest_standards.c vnacaltest_terms.c
+noinst_LIBRARIES = libt.a
+libt_a_SOURCES = libt.h libt.c libt_vnacal.h libt_vnacal_calibration.c \
+	libt_vnacal_measurements.c libt_vnacal_properties.c \
+	libt_vnacal_standards.c libt_vnacal_terms.c
 
 #
 # Test Data Files
@@ -46,96 +46,92 @@ check_PROGRAMS = \
 	test-vnacal-compat-V2 \
 	test-vnaconv-2x2 test-vnaconv-3x3
 
-test_vnacommon_lu_SOURCES = test.c test-vnacommon-lu.c
-test_vnacommon_lu_LDADD = $(top_builddir)/src/libvna.la -lm
+test_vnacommon_lu_SOURCES = test-vnacommon-lu.c
+test_vnacommon_lu_LDADD = libt.a $(top_builddir)/src/libvna.la -lm
 test_vnacommon_lu_LDFLAGS = -static
 
-test_vnacommon_mldivide_SOURCES = test.h test.c test-vnacommon-mldivide.c
-test_vnacommon_mldivide_LDADD = $(top_builddir)/src/libvna.la -lm
+test_vnacommon_mldivide_SOURCES = test-vnacommon-mldivide.c
+test_vnacommon_mldivide_LDADD = libt.a $(top_builddir)/src/libvna.la -lm
 test_vnacommon_mldivide_LDFLAGS = -static
 
-test_vnacommon_mrdivide_SOURCES = test.h test.c test-vnacommon-mrdivide.c
-test_vnacommon_mrdivide_LDADD = $(top_builddir)/src/libvna.la -lm
+test_vnacommon_mrdivide_SOURCES = test-vnacommon-mrdivide.c
+test_vnacommon_mrdivide_LDADD = libt.a $(top_builddir)/src/libvna.la -lm
 test_vnacommon_mrdivide_LDFLAGS = -static
 
-test_vnacommon_minverse_SOURCES = test.h test.c test-vnacommon-minverse.c
-test_vnacommon_minverse_LDADD = $(top_builddir)/src/libvna.la -lm
+test_vnacommon_minverse_SOURCES = test-vnacommon-minverse.c
+test_vnacommon_minverse_LDADD = libt.a $(top_builddir)/src/libvna.la -lm
 test_vnacommon_minverse_LDFLAGS = -static
 
-test_vnacommon_qr_SOURCES = test.h test.c test-vnacommon-qr.c
-test_vnacommon_qr_LDADD = $(top_builddir)/src/libvna.la -lm
+test_vnacommon_qr_SOURCES = test-vnacommon-qr.c
+test_vnacommon_qr_LDADD = libt.a $(top_builddir)/src/libvna.la -lm
 test_vnacommon_qr_LDFLAGS = -static
 
-test_vnacommon_qrsolve_SOURCES = test.h test.c test-vnacommon-qrsolve.c
-test_vnacommon_qrsolve_LDADD = $(top_builddir)/src/libvna.la -lm
+test_vnacommon_qrsolve_SOURCES = test-vnacommon-qrsolve.c
+test_vnacommon_qrsolve_LDADD = libt.a $(top_builddir)/src/libvna.la -lm
 test_vnacommon_qrsolve_LDFLAGS = -static
 
-test_vnacommon_qrsolve2_SOURCES = test.h test.c test-vnacommon-qrsolve2.c
-test_vnacommon_qrsolve2_LDADD = $(top_builddir)/src/libvna.la -lm
+test_vnacommon_qrsolve2_SOURCES = test-vnacommon-qrsolve2.c
+test_vnacommon_qrsolve2_LDADD = libt.a $(top_builddir)/src/libvna.la -lm
 test_vnacommon_qrsolve2_LDFLAGS = -static
 
-test_vnaproperty_scalar_SOURCES = test.h test.c test-vnaproperty-scalar.c
-test_vnaproperty_scalar_LDADD = $(top_builddir)/src/libvna.la
+test_vnaproperty_scalar_SOURCES = test-vnaproperty-scalar.c
+test_vnaproperty_scalar_LDADD = libt.a $(top_builddir)/src/libvna.la
 test_vnaproperty_scalar_LDFLAGS = -static
 
-test_vnaproperty_list_SOURCES = test.h test.c test-vnaproperty-list.c
-test_vnaproperty_list_LDADD = $(top_builddir)/src/libvna.la
+test_vnaproperty_list_SOURCES = test-vnaproperty-list.c
+test_vnaproperty_list_LDADD = libt.a $(top_builddir)/src/libvna.la
 test_vnaproperty_list_LDFLAGS = -static
 
-test_vnaproperty_map_SOURCES = test.h test.c test-vnaproperty-map.c
-test_vnaproperty_map_LDADD = $(top_builddir)/src/libvna.la
+test_vnaproperty_map_SOURCES = test-vnaproperty-map.c
+test_vnaproperty_map_LDADD = libt.a $(top_builddir)/src/libvna.la
 test_vnaproperty_map_LDFLAGS = -static
 
-test_vnaproperty_expr_SOURCES = test.h test.c test-vnaproperty-expr.c
-test_vnaproperty_expr_LDADD = $(top_builddir)/src/libvna.la
+test_vnaproperty_expr_SOURCES = test-vnaproperty-expr.c
+test_vnaproperty_expr_LDADD = libt.a $(top_builddir)/src/libvna.la
 test_vnaproperty_expr_LDFLAGS = -static
 
-test_vnaconv_2x2_SOURCES = test.h test.c test-vnaconv-2x2.c
-test_vnaconv_2x2_LDADD = $(top_builddir)/src/libvna.la -lm
+test_vnaconv_2x2_SOURCES = test-vnaconv-2x2.c
+test_vnaconv_2x2_LDADD = libt.a $(top_builddir)/src/libvna.la -lm
 test_vnaconv_2x2_LDFLAGS = -static
 
-test_vnaconv_3x3_SOURCES = test.h test.c test-vnaconv-3x3.c
-test_vnaconv_3x3_LDADD = $(top_builddir)/src/libvna.la -lm
+test_vnaconv_3x3_SOURCES = test-vnaconv-3x3.c
+test_vnaconv_3x3_LDADD = libt.a $(top_builddir)/src/libvna.la -lm
 test_vnaconv_3x3_LDFLAGS = -static
 
-#vnadata_test_SOURCES = test.h test.c vnadata-test.c
+#vnadata_test_SOURCES = libt.h libt.c vnadata-libt.c
 #vnadata_test_LDADD = $(top_builddir)/src/libvna.la -lm
 #vnadata_test_LDFLAGS = -static
 
-test_vnacal_SOLT_SOURCES = test.h test.c test-vnacal-SOLT.c
-test_vnacal_SOLT_LDADD = libvnacaltest.a $(top_builddir)/src/libvna.la -lyaml -lm
+test_vnacal_SOLT_SOURCES = test-vnacal-SOLT.c
+test_vnacal_SOLT_LDADD = libt.a $(top_builddir)/src/libvna.la -lyaml -lm
 test_vnacal_SOLT_LDFLAGS = -static
 
-test_vnacal_Silvonen16_SOURCES = test.h test.c test-vnacal-Silvonen16.c
-test_vnacal_Silvonen16_LDADD = libvnacaltest.a $(top_builddir)/src/libvna.la -lyaml -lm
+test_vnacal_Silvonen16_SOURCES = test-vnacal-Silvonen16.c
+test_vnacal_Silvonen16_LDADD = libt.a $(top_builddir)/src/libvna.la -lyaml -lm
 test_vnacal_Silvonen16_LDFLAGS = -static
 
-test_vnacal_random_SOURCES = test.h test.c test-vnacal-random.c
-test_vnacal_random_LDADD = libvnacaltest.a $(top_builddir)/src/libvna.la -lyaml -lm
+test_vnacal_random_SOURCES = test-vnacal-random.c
+test_vnacal_random_LDADD = libt.a $(top_builddir)/src/libvna.la -lyaml -lm
 test_vnacal_random_LDFLAGS = -static
 
-test_vnacal_apply_SOURCES = test.h test.c test-vnacal-apply.c
-test_vnacal_apply_LDADD = libvnacaltest.a $(top_builddir)/src/libvna.la -lyaml -lm
+test_vnacal_apply_SOURCES = test-vnacal-apply.c
+test_vnacal_apply_LDADD = libt.a $(top_builddir)/src/libvna.la -lyaml -lm
 test_vnacal_apply_LDFLAGS = -static
 
-test_vnacal_save_load_SOURCES = test.h test.c test-vnacal-save-load.c
-test_vnacal_save_load_LDADD = libvnacaltest.a $(top_builddir)/src/libvna.la \
+test_vnacal_save_load_SOURCES = test-vnacal-save-load.c
+test_vnacal_save_load_LDADD = libt.a $(top_builddir)/src/libvna.la \
 	-lyaml -lm
 test_vnacal_save_load_LDFLAGS = -static
 
-test_vnacal_TRL_SOURCES = test.c test-vnacal-TRL.c
-test_vnacal_TRL_LDADD = libvnacaltest.a $(top_builddir)/src/libvna.la \
+test_vnacal_TRL_SOURCES = test-vnacal-TRL.c
+test_vnacal_TRL_LDADD = libt.a $(top_builddir)/src/libvna.la \
 	-lyaml -lm
 test_vnacal_TRL_LDFLAGS = -static
 
-test_vnacal_compat_V2_SOURCES = test.h test.c test-vnacal-compat-V2.c
-test_vnacal_compat_V2_LDADD = libvnacaltest.a $(top_builddir)/src/libvna.la \
+test_vnacal_compat_V2_SOURCES = test-vnacal-compat-V2.c
+test_vnacal_compat_V2_LDADD = libt.a $(top_builddir)/src/libvna.la \
 	-lyaml -lm
 test_vnacal_compat_V2_LDFLAGS = -static
-
-#vnafile_test_SOURCES = test.h test.c vnafile-test.c
-#vnafile_test_LDADD = $(top_builddir)/src/libvna.la -lm
-#vnafile_test_LDFLAGS = -static
 
 clean-local:
 	rm -f test-vnacal.vnacal

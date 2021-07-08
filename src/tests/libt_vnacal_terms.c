@@ -25,8 +25,8 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
-#include "test.h"
-#include "vnacaltest.h"
+#include "libt.h"
+#include "libt_vnacal.h"
 
 
 /*
@@ -59,29 +59,29 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 	    for (int ts_term = 0; ts_term < ts_terms; ++ts_term) {
 		ts[ts_term] = 1.0;
 		if (sigma != 0.0) {
-		    ts[ts_term] += sigma * test_crandn();
+		    ts[ts_term] += sigma * libt_crandn();
 		}
 	    }
 	    for (int ti_term = 0; ti_term < ti_terms; ++ti_term) {
 		ti[ti_term] = 0.0;
 		if (sigma != 0.0) {
-		    ti[ti_term] += sigma * test_crandn();
+		    ti[ti_term] += sigma * libt_crandn();
 		}
 	    }
 	    for (int tx_term = 0; tx_term < tx_terms; ++tx_term) {
 		tx[tx_term] = 0.0;
 		if (sigma != 0.0) {
-		    tx[tx_term] += sigma * test_crandn();
+		    tx[tx_term] += sigma * libt_crandn();
 		}
 	    }
 	    for (int tm_term = 0; tm_term < tm_terms; ++tm_term) {
 		tm[tm_term] = 1.0;
 		if (sigma != 0.0 && tm_term != 0) {
-		    tm[tm_term] += sigma * test_crandn();
+		    tm[tm_term] += sigma * libt_crandn();
 		}
 	    }
 	    for (int term = 0; term < el_terms; ++term) {
-		el[term] = test_crandn();
+		el[term] = libt_crandn();
 	    }
 	}
 	break;
@@ -104,29 +104,29 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 	    for (int um_term = 0; um_term < um_terms; ++um_term) {
 		um[um_term] = 1.0;
 		if (sigma != 0.0 && um_term != unity_offset) {
-		    um[um_term] += sigma * test_crandn();
+		    um[um_term] += sigma * libt_crandn();
 		}
 	    }
 	    for (int ui_term = 0; ui_term < ui_terms; ++ui_term) {
 		ui[ui_term] = 0.0;
 		if (sigma != 0.0) {
-		    ui[ui_term] += sigma * test_crandn();
+		    ui[ui_term] += sigma * libt_crandn();
 		}
 	    }
 	    for (int ux_term = 0; ux_term < ux_terms; ++ux_term) {
 		ux[ux_term] = 0.0;
 		if (sigma != 0.0) {
-		    ux[ux_term] += sigma * test_crandn();
+		    ux[ux_term] += sigma * libt_crandn();
 		}
 	    }
 	    for (int us_term = 0; us_term < us_terms; ++us_term) {
 		us[us_term] = 1.0;
 		if (sigma != 0.0) {
-		    us[us_term] += sigma * test_crandn();
+		    us[us_term] += sigma * libt_crandn();
 		}
 	    }
 	    for (int term = 0; term < el_terms; ++term) {
-		el[term] = test_crandn();
+		el[term] = libt_crandn();
 	    }
 	}
 	break;
@@ -154,7 +154,7 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 
 		    ts[ts_cell] = (ts_row == ts_column) ? 1.0 : 0.0;
 		    if (sigma != 0.0) {
-			ts[ts_cell] += sigma * test_crandn();
+			ts[ts_cell] += sigma * libt_crandn();
 		    }
 		}
 	    }
@@ -164,7 +164,7 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 
 		    ti[ti_cell] = 0.0;
 		    if (sigma != 0.0) {
-			ti[ti_cell] += sigma * test_crandn();
+			ti[ti_cell] += sigma * libt_crandn();
 		    }
 		}
 	    }
@@ -174,7 +174,7 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 
 		    tx[tx_cell] = 0.0;
 		    if (sigma != 0.0) {
-			tx[tx_cell] += sigma * test_crandn();
+			tx[tx_cell] += sigma * libt_crandn();
 		    }
 		}
 	    }
@@ -185,7 +185,7 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 
 		    tm[tm_cell] = (tm_row == tm_column) ? 1.0 : 0.0;
 		    if (sigma != 0.0 && tm_cell != 0) {
-			tm[tm_cell] += sigma * test_crandn();
+			tm[tm_cell] += sigma * libt_crandn();
 		    }
 		}
 	    }
@@ -215,7 +215,7 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 
 		    um[um_cell] = (um_row == um_column) ? 1.0 : 0.0;
 		    if (sigma != 0.0 && um_cell != 0) {
-			um[um_cell] += sigma * test_crandn();
+			um[um_cell] += sigma * libt_crandn();
 		    }
 		}
 	    }
@@ -225,7 +225,7 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 
 		    ui[ui_cell] = 0.0;
 		    if (sigma != 0.0) {
-			ui[ui_cell] += sigma * test_crandn();
+			ui[ui_cell] += sigma * libt_crandn();
 		    }
 		}
 	    }
@@ -235,7 +235,7 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 
 		    ux[ux_cell] = 0.0;
 		    if (sigma != 0.0) {
-			ux[ux_cell] += sigma * test_crandn();
+			ux[ux_cell] += sigma * libt_crandn();
 		    }
 		}
 	    }
@@ -245,7 +245,7 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 
 		    us[us_cell] = (us_row == us_column) ? 1.0 : 0.0;
 		    if (sigma != 0.0) {
-			us[us_cell] += sigma * test_crandn();
+			us[us_cell] += sigma * libt_crandn();
 		    }
 		}
 	    }
@@ -271,30 +271,30 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 		for (int um_term = 0; um_term < um_terms; ++um_term) {
 		    um[um_term] = 1.0;
 		    if (sigma != 0.0 && um_term != unity_offset) {
-			um[um_term] += sigma * test_crandn();
+			um[um_term] += sigma * libt_crandn();
 		    }
 		}
 		for (int ui_term = 0; ui_term < ui_terms; ++ui_term) {
 		    ui[ui_term] = 0.0;
 		    if (sigma != 0.0) {
-			ui[ui_term] += sigma * test_crandn();
+			ui[ui_term] += sigma * libt_crandn();
 		    }
 		}
 		for (int ux_term = 0; ux_term < ux_terms; ++ux_term) {
 		    ux[ux_term] = 0.0;
 		    if (sigma != 0.0) {
-			ux[ux_term] += sigma * test_crandn();
+			ux[ux_term] += sigma * libt_crandn();
 		    }
 		}
 		for (int us_term = 0; us_term < us_terms; ++us_term) {
 		    us[us_term] = 1.0;
 		    if (sigma != 0.0) {
-			us[us_term] += sigma * test_crandn();
+			us[us_term] += sigma * libt_crandn();
 		    }
 		}
 	    }
 	    for (int term = 0; term < el_terms; ++term) {
-		el[term] = test_crandn();
+		el[term] = libt_crandn();
 	    }
 	}
 	break;
@@ -313,19 +313,19 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 		for (int el_term = 0; el_term < el_terms; ++el_term) {
 		    el[el_term] = 0.0;
 		    if (sigma != 0.0) {
-			el[el_term] += sigma * test_crandn();
+			el[el_term] += sigma * libt_crandn();
 		    }
 		}
 		for (int er_term = 0; er_term < er_terms; ++er_term) {
 		    er[er_term] = 1.0;
 		    if (sigma != 0.0) {
-			er[er_term] += sigma * test_crandn();
+			er[er_term] += sigma * libt_crandn();
 		    }
 		}
 		for (int em_term = 0; em_term < em_terms; ++em_term) {
 		    em[em_term] = 0.0;
 		    if (sigma != 0.0) {
-			em[em_term] += sigma * test_crandn();
+			em[em_term] += sigma * libt_crandn();
 		    }
 		}
 	    }
@@ -338,7 +338,7 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 }
 
 /*
- * test_vnacal_generate_error_terms: generate random error terms
+ * libt_vnacal_generate_error_terms: generate random error terms
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @type: error term type
  *   @m_rows: number of VNA ports that detect signal
@@ -347,17 +347,17 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
  *   @frequency_vector: optional vector of specific frequencies
  *   @stdev: standard deviation from perfect
  */
-test_vnacal_terms_t *test_vnacal_generate_error_terms(vnacal_t *vcp,
+libt_vnacal_terms_t *libt_vnacal_generate_error_terms(vnacal_t *vcp,
 	vnacal_type_t type, int m_rows, int m_columns, int frequencies,
 	const double *frequency_vector, double sigma, bool ab)
 {
-    test_vnacal_terms_t *ttp = NULL;
+    libt_vnacal_terms_t *ttp = NULL;
     vnacal_layout_t *vlp;
 
     /*
      * Create the error terms structure.
      */
-    if ((ttp = malloc(sizeof(test_vnacal_terms_t))) == NULL) {
+    if ((ttp = malloc(sizeof(libt_vnacal_terms_t))) == NULL) {
 	(void)fprintf(stderr, "%s: malloc: %s\n", progname, strerror(errno));
 	exit(99);
     }
@@ -367,7 +367,7 @@ test_vnacal_terms_t *test_vnacal_generate_error_terms(vnacal_t *vcp,
     ttp->tt_frequencies = frequencies;
     if ((ttp->tt_frequency_vector = calloc(frequencies,
 		    sizeof(double))) == NULL) {
-	test_vnacal_free_error_terms(ttp);
+	libt_vnacal_free_error_terms(ttp);
 	return NULL;
     }
     if (frequency_vector != NULL) {
@@ -387,7 +387,7 @@ test_vnacal_terms_t *test_vnacal_generate_error_terms(vnacal_t *vcp,
     }
     if ((ttp->tt_error_term_vector = calloc(frequencies,
 		    sizeof(double complex *))) == NULL) {
-	test_vnacal_free_error_terms(ttp);
+	libt_vnacal_free_error_terms(ttp);
 	return NULL;
     }
     for (int findex = 0; findex < frequencies; ++findex) {
@@ -395,7 +395,7 @@ test_vnacal_terms_t *test_vnacal_generate_error_terms(vnacal_t *vcp,
 
 	if ((clfp = calloc(VL_ERROR_TERMS(vlp),
 			sizeof(double complex))) == NULL) {
-	    test_vnacal_free_error_terms(ttp);
+	    libt_vnacal_free_error_terms(ttp);
 	    return NULL;
 	}
 	ttp->tt_error_term_vector[findex] = clfp;
@@ -409,14 +409,14 @@ test_vnacal_terms_t *test_vnacal_generate_error_terms(vnacal_t *vcp,
 		    frequencies)) == NULL) {
 	(void)fprintf(stderr, "%s: vnacal_new_alloc: %s\n",
 		progname, strerror(errno));
-	test_vnacal_free_error_terms(ttp);
+	libt_vnacal_free_error_terms(ttp);
 	return NULL;
     }
     if (vnacal_new_set_frequency_vector(ttp->tt_vnp,
 		ttp->tt_frequency_vector) == -1) {
 	(void)fprintf(stderr, "%s: vnacal_new_set_frequency_vector: %s\n",
 		progname, strerror(errno));
-	test_vnacal_free_error_terms(ttp);
+	libt_vnacal_free_error_terms(ttp);
 	return NULL;
     }
 
@@ -424,16 +424,16 @@ test_vnacal_terms_t *test_vnacal_generate_error_terms(vnacal_t *vcp,
      * If verbose, show the error terms.
      */
     if (opt_v >= 2) {
-	test_vnacal_print_error_terms(ttp);
+	libt_vnacal_print_error_terms(ttp);
     }
     return ttp;
 }
 
 /*
- * test_vnacal_print_error_terms: show the generated error terms
+ * libt_vnacal_print_error_terms: show the generated error terms
  *   @ttp: pointer to test error terms structure
  */
-void test_vnacal_print_error_terms(const test_vnacal_terms_t *ttp)
+void libt_vnacal_print_error_terms(const libt_vnacal_terms_t *ttp)
 {
     const vnacal_layout_t *vlp = &ttp->tt_layout;
 
@@ -736,10 +736,10 @@ void test_vnacal_print_error_terms(const test_vnacal_terms_t *ttp)
 }
 
 /*
- * test_vnacal_free_error_terms: free test error terms
+ * libt_vnacal_free_error_terms: free test error terms
  *   @ttp: pointer to test error terms structure
  */
-void test_vnacal_free_error_terms(test_vnacal_terms_t *ttp)
+void libt_vnacal_free_error_terms(libt_vnacal_terms_t *ttp)
 {
     if (ttp != NULL) {
 	vnacal_new_free(ttp->tt_vnp);

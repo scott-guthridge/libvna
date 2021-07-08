@@ -24,17 +24,17 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
-#include "test.h"
+#include "libt.h"
 
 /*
- * test_isequal_eps: maximum allowed normalized error in test_isequal
+ * libt_isequal_eps: maximum allowed normalized error in libt_isequal
  */
-double test_isequal_eps = 0.0;
+double libt_isequal_eps = 0.0;
 
 /*
- * test_init_isequal: initialize test_isequal_eps based on machine precision
+ * libt_isequal_init: initialize libt_isequal_eps based on machine precision
  */
-void test_init_isequal()
+void libt_isequal_init()
 {
     double eps = 0.5;
 
@@ -49,20 +49,20 @@ void test_init_isequal()
     /*
      * Set eps to half the available precision.
      */
-    test_isequal_eps = sqrt(eps);
+    libt_isequal_eps = sqrt(eps);
 }
 
 /*
- * test_isequal: test if actual and expected are approximately equal
+ * libt_isequal: test if actual and expected are approximately equal
  */
-bool test_isequal(double complex actual, double complex expected)
+bool libt_isequal(double complex actual, double complex expected)
 {
     double d = cabs(expected);
 
     if (d < 1.0) {
 	d = 1.0;
     }
-    if (cabs(actual - expected) / d > test_isequal_eps) {
+    if (cabs(actual - expected) / d > libt_isequal_eps) {
 	printf("data miscompare: %f%+fj != %f%+fj (%f)\n",
 		creal(actual), cimag(actual), creal(expected), cimag(expected),
 		cabs(actual - expected) / d);
@@ -72,9 +72,9 @@ bool test_isequal(double complex actual, double complex expected)
 }
 
 /*
- * test_isequal_label: test if actual and expected are approximately equal
+ * libt_isequal_label: test if actual and expected are approximately equal
  */
-bool test_isequal_label(double complex actual, double complex expected,
+bool libt_isequal_label(double complex actual, double complex expected,
 	const char *label)
 {
     double d = cabs(expected);
@@ -82,7 +82,7 @@ bool test_isequal_label(double complex actual, double complex expected,
     if (d < 1.0) {
 	d = 1.0;
     }
-    if (cabs(actual - expected) / d > test_isequal_eps) {
+    if (cabs(actual - expected) / d > libt_isequal_eps) {
 	printf("%s: %f%+fj != %f%+fj (%f)\n", label,
 		creal(actual), cimag(actual), creal(expected), cimag(expected),
 		cabs(actual - expected) / d);
@@ -92,10 +92,10 @@ bool test_isequal_label(double complex actual, double complex expected,
 }
 
 /*
- * test_crandn: generate a random complex number where real and imaginary parts
+ * libt_crandn: generate a random complex number where real and imaginary parts
  *	are normally distributed with zero mean and unit standard deviation
  */
-double complex test_crandn()
+double complex libt_crandn()
 {
     double u1 = (random() + 1.0) / RAND_MAX;	/* Box Muller method */
     double u2 = (double)random() / RAND_MAX;
@@ -106,9 +106,9 @@ double complex test_crandn()
 }
 
 /*
- * test_crandn_nz: like test_crandn, except with magitude >= 0.1
+ * libt_crandn_nz: like libt_crandn, except with magitude >= 0.1
  */
-double complex test_crandn_nz()
+double complex libt_crandn_nz()
 {
     double u1 = (random() + 1.0) / RAND_MAX;
     double u2 = (double)random() / RAND_MAX;
@@ -119,9 +119,9 @@ double complex test_crandn_nz()
 }
 
 /*
- * test_crandn_nrz: like test_crand_nz, but with angle in 20-160, 200-340 degrees
+ * libt_crandn_nrz: like libt_crandn_nz, angle in 20-160, 200-340 degrees
  */
-double complex test_crandn_nrz()
+double complex libt_crandn_nrz()
 {
     double u1 = (random() + 1.0) / RAND_MAX;
     double u2 = (double)random() / RAND_MAX;
@@ -144,9 +144,9 @@ double complex test_crandn_nrz()
 }
 
 /*
- * test_print_cmatrix: print an m by n serialized complex matrix
+ * libt_print_cmatrix: print an m by n serialized complex matrix
  */
-void test_print_cmatrix(const char *tag, double complex *a, int m, int n)
+void libt_print_cmatrix(const char *tag, double complex *a, int m, int n)
 {
     (void)printf("%s:\n", tag);
     for (int i = 0; i < m; ++i) {
@@ -161,7 +161,7 @@ void test_print_cmatrix(const char *tag, double complex *a, int m, int n)
 }
 
 /* report the result of the test to stdout */
-void test_report(test_result_t result)
+void libt_report(libt_result_t result)
 {
     const char *result_string;
 

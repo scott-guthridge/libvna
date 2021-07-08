@@ -30,8 +30,8 @@
 #include <unistd.h>
 #endif
 #include "vnacal_internal.h"
-#include "test.h"
-#include "vnacaltest.h"
+#include "libt.h"
+#include "libt_vnacal.h"
 
 
 #define NTRIALS		67
@@ -222,11 +222,11 @@ static const double complex compat_V2_expected[4][CV2_F] = {
 /*
  * test_vnacal_compat_e2: test compatibility load of old E term format
  */
-static test_result_t test_vnacal_compat_V2()
+static libt_result_t test_vnacal_compat_V2()
 {
     vnacal_t *vcp = NULL;
     vnadata_t *vdp = NULL;
-    test_result_t result = T_FAIL;
+    libt_result_t result = T_FAIL;
 
     /*
      * If -v, print the test header.
@@ -290,7 +290,7 @@ static test_result_t test_vnacal_compat_V2()
 
 		expected = compat_V2_expected[s_cell][findex];
 		actual = vnadata_get_cell(vdp, findex, s_row, s_column);
-		if (!test_isequal(actual, expected)) {
+		if (!libt_isequal(actual, expected)) {
 		    if (opt_a) {
 			assert(!"data miscompare");
 		    }
@@ -305,7 +305,7 @@ static test_result_t test_vnacal_compat_V2()
 out:
     vnadata_free(vdp);
     vnacal_free(vcp);
-    test_report(result);
+    libt_report(result);
     return result;
 }
 
@@ -383,9 +383,9 @@ main(int argc, char **argv)
     /*
      * Set the compare precision and run the test.
      */
-    test_init_isequal();
-    if (test_isequal_eps < 0.00001) {	/* file has 6 digits precision */
-	test_isequal_eps = 0.00001;
+    libt_isequal_init();
+    if (libt_isequal_eps < 0.00001) {	/* file has 6 digits precision */
+	libt_isequal_eps = 0.00001;
     }
     exit(test_vnacal_compat_V2());
 }

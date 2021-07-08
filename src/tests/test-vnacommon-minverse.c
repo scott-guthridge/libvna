@@ -30,7 +30,7 @@
 #include <unistd.h>
 #endif
 #include "vnacommon_internal.h"
-#include "test.h"
+#include "libt.h"
 
 
 #define N_MATRIX_TRIALS	100
@@ -55,13 +55,13 @@ static int opt_v = 0;
 /*
  * test_vnacommon_minverse: test matrix inverse
  */
-static test_result_t test_vnacommon_minverse()
+static libt_result_t test_vnacommon_minverse()
 {
     static const int sizes[] = { 1, 2, 3, 5 };
     double complex a[5 * 5];
     double complex t[5 * 5];
     double complex x[5 * 5];
-    test_result_t result = T_SKIPPED;
+    libt_result_t result = T_SKIPPED;
 
 #define A(i, j) (a[(i) * n + (j)])
 #define T(i, j) (t[(i) * n + (j)])
@@ -85,12 +85,12 @@ static test_result_t test_vnacommon_minverse()
 	     */
 	    for (int i = 0; i < n; ++i) {
 		for (int j = 0; j < n; ++j) {
-		    A(i, j) = test_crandn();	/* n x n */
+		    A(i, j) = libt_crandn();	/* n x n */
 		    T(i, j) = A(i, j);
 		}
 	    }
 	    if (opt_v) {
-		test_print_cmatrix("a", a, n, n);
+		libt_print_cmatrix("a", a, n, n);
 		(void)fflush(stdout);
 	    }
 
@@ -99,13 +99,13 @@ static test_result_t test_vnacommon_minverse()
 	     */
 	    d = _vnacommon_minverse(x, t, n);
 	    if (opt_v) {
-		test_print_cmatrix("x", x, n, n);
+		libt_print_cmatrix("x", x, n, n);
 		(void)printf("determinant %8.5f%+8.5fj\n",
 			creal(d), cimag(d));
 		(void)printf("\n");
 		(void)fflush(stdout);
 	    }
-	    if (cabs(d) < test_isequal_eps) {
+	    if (cabs(d) < libt_isequal_eps) {
 		(void)fprintf(stderr, "%s: test_vnacommon_mldivide: warning: "
 			"skipping nearly singular test matrix\n",
 			progname);
@@ -119,7 +119,7 @@ static test_result_t test_vnacommon_minverse()
 	    _vnacommon_mmultiply(t, a, x, n, n, n);
 	    for (int i = 0; i < n; ++i) {
 		for (int j = 0; j < n; ++j) {
-		    if (!test_isequal(T(i, j), i == j ? 1.0 : 0.0)) {
+		    if (!libt_isequal(T(i, j), i == j ? 1.0 : 0.0)) {
 			if (opt_a) {
 			    assert(!"data miscompare");
 			}
@@ -133,7 +133,7 @@ static test_result_t test_vnacommon_minverse()
     result = T_PASS;
 
 out:
-    test_report(result);;
+    libt_report(result);;
     return result;
 }
 #undef X
@@ -190,6 +190,6 @@ main(int argc, char **argv)
     if (argc != 0) {
 	print_usage();
     }
-    test_init_isequal();
+    libt_isequal_init();
     exit(test_vnacommon_minverse());
 }

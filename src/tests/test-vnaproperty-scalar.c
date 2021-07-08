@@ -28,7 +28,7 @@
 #include <unistd.h>
 #endif
 #include "vnaproperty_internal.h"
-#include "test.h"
+#include "libt.h"
 
 
 /*
@@ -49,14 +49,14 @@ static bool opt_v = false;
 /*
  * test_vnaproperty_scalar
  */
-static test_result_t test_vnaproperty_scalar()
+static libt_result_t test_vnaproperty_scalar()
 {
     vnaproperty_t *scalar;
     const char *value;
     static const char text1[] = "abcdefghijklmnopqrstuvwxyz";
     static const char text2[] = "0123456789";
     char buf[64];
-    test_result_t result = T_SKIPPED;
+    libt_result_t result = T_SKIPPED;
 
     (void)strcpy(buf, text1);
     scalar = vnaproperty_scalar_alloc(buf);
@@ -126,7 +126,7 @@ static test_result_t test_vnaproperty_scalar()
     result = T_PASS;
 
 out:
-    test_report(result);;
+    libt_report(result);;
     return result;
 }
 

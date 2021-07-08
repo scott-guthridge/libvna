@@ -30,7 +30,7 @@
 #include <unistd.h>
 #endif
 #include "vnaconv_internal.h"
-#include "test.h"
+#include "libt.h"
 
 
 #define Z1	z0[0]
@@ -106,9 +106,9 @@ static int opt_v = 0;
  */
 #define TEST_EQUAL(x, y, label) \
     if (opt_a) { \
-	assert(test_isequal_label((x), (y), (label))); \
+	assert(libt_isequal_label((x), (y), (label))); \
     } else { \
-	if (!test_isequal_label((x), (y), (label))) { \
+	if (!libt_isequal_label((x), (y), (label))) { \
 	    result = T_FAIL; \
 	    goto out; \
 	} \
@@ -117,9 +117,9 @@ static int opt_v = 0;
 /*
  * test_conversions_2x2: test parameter conversions
  */
-static test_result_t test_conversions_2x2()
+static libt_result_t test_conversions_2x2()
 {
-    test_result_t result = T_SKIPPED;
+    libt_result_t result = T_SKIPPED;
 
     for (int trial = 0; trial < 10000; ++trial) {
 	double k1i, k2i;
@@ -139,18 +139,18 @@ static test_result_t test_conversions_2x2()
 	double complex xi[2];
 	double complex zi[2];
 
-	Z1  = test_crandn();
-	Z2  = test_crandn();
+	Z1  = libt_crandn();
+	Z2  = libt_crandn();
 	z1c = conj(Z1);
 	z2c = conj(Z2);
 	k1i = sqrt(fabs(creal(Z1)));
 	k2i = sqrt(fabs(creal(Z2)));
-	a1  = test_crandn();
-	a2  = test_crandn();
-	S11 = test_crandn();
-	S12 = test_crandn();
-	S21 = test_crandn();
-	S22 = test_crandn();
+	a1  = libt_crandn();
+	a2  = libt_crandn();
+	S11 = libt_crandn();
+	S12 = libt_crandn();
+	S21 = libt_crandn();
+	S22 = libt_crandn();
 	b1 = S11 * a1 + S12 * a2;
 	b2 = S22 * a2 + S21 * a1;
 	v1 = k1i * (z1c * a1 + Z1 * b1) / creal(Z1);
@@ -172,21 +172,21 @@ static test_result_t test_conversions_2x2()
 	    (void)printf("v2 %9.5f%+9.5fj  i2 %9.5f%+9.5fj\n",
 		creal(v2), cimag(v2), creal(i2), cimag(i2));
 	    (void)printf("\n");
-	    test_print_cmatrix("s", *s, 2, 2);
+	    libt_print_cmatrix("s", *s, 2, 2);
 	}
 	TEST_EQUAL(S11 * a1 + S12 * a2, b1, "S11,S12");
 	TEST_EQUAL(S21 * a1 + S22 * a2, b2, "S21,S22");
 
 	vnaconv_stot(s, t);
 	if (opt_v) {
-	    test_print_cmatrix("t", *t, 2, 2);
+	    libt_print_cmatrix("t", *t, 2, 2);
 	}
 	TEST_EQUAL(T11 * a2 + T12 * b2, b1, "stot: T11,T12");
 	TEST_EQUAL(T21 * a2 + T22 * b2, a1, "stot: T22,T22");
 
 	vnaconv_stoz(s, z, z0);
 	if (opt_v) {
-	    test_print_cmatrix("z", *z, 2, 2);
+	    libt_print_cmatrix("z", *z, 2, 2);
 	}
 	TEST_EQUAL(Z11 * i1 + Z12 * i2, v1, "stoz: Z11,Z12");
 	TEST_EQUAL(Z21 * i1 + Z22 * i2, v2, "stoz: Z21,Z22");
@@ -198,7 +198,7 @@ static test_result_t test_conversions_2x2()
 
 	vnaconv_stoy(s, y, z0);
 	if (opt_v) {
-	    test_print_cmatrix("y", *y, 2, 2);
+	    libt_print_cmatrix("y", *y, 2, 2);
 	}
 	TEST_EQUAL(Y11 * v1 + Y12 * v2, i1, "stoy: Y11,Y12");
 	TEST_EQUAL(Y21 * v1 + Y22 * v2, i2, "stoy: Y21,Y22");
@@ -210,35 +210,35 @@ static test_result_t test_conversions_2x2()
 
 	vnaconv_stoh(s, h, z0);
 	if (opt_v) {
-	    test_print_cmatrix("h", *h, 2, 2);
+	    libt_print_cmatrix("h", *h, 2, 2);
 	}
 	TEST_EQUAL(H11 * i1 + H12 * v2, v1, "stoh: H11,H12");
 	TEST_EQUAL(H21 * i1 + H22 * v2, i2, "stoh: H21,H22");
 
 	vnaconv_stog(s, g, z0);
 	if (opt_v) {
-	    test_print_cmatrix("g", *g, 2, 2);
+	    libt_print_cmatrix("g", *g, 2, 2);
 	}
 	TEST_EQUAL(G11 * v1 + G12 * i2, i1, "stog: G11,G12");
 	TEST_EQUAL(G21 * v1 + G22 * i2, v2, "stog: G21,G22");
 
 	vnaconv_stoa(s, a, z0);
 	if (opt_v) {
-	    test_print_cmatrix("a", *a, 2, 2);
+	    libt_print_cmatrix("a", *a, 2, 2);
 	}
 	TEST_EQUAL(A11 * v2 + A12 * -i2, v1, "stoa: A11,A12");
 	TEST_EQUAL(A21 * v2 + A22 * -i2, i1, "stob: A21,A22");
 
 	vnaconv_stob(s, b, z0);
 	if (opt_v) {
-	    test_print_cmatrix("b", *b, 2, 2);
+	    libt_print_cmatrix("b", *b, 2, 2);
 	}
 	TEST_EQUAL(B11 * v1 + B12 * i1,  v2, "stob: B11,B12");
 	TEST_EQUAL(B21 * v1 + B22 * i1, -i2, "stob: B21,B22");
 
 	vnaconv_stozi(s, zi, z0);
 	if (opt_v) {
-	    test_print_cmatrix("zi", zi, 2, 1);
+	    libt_print_cmatrix("zi", zi, 2, 1);
 	}
 
 	(void)memset((void *)xi, 0, sizeof(xi));
@@ -655,7 +655,7 @@ static test_result_t test_conversions_2x2()
     result = T_PASS;
 
 out:
-    test_report(result);;
+    libt_report(result);;
     return result;
 }
 
@@ -709,6 +709,6 @@ main(int argc, char **argv)
     if (argc != 0) {
 	print_usage();
     }
-    test_init_isequal();
+    libt_isequal_init();
     exit(test_conversions_2x2());
 }

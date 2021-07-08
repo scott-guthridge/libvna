@@ -28,7 +28,7 @@
 #include <unistd.h>
 #endif
 #include "vnaproperty_internal.h"
-#include "test.h"
+#include "libt.h"
 
 
 /*
@@ -49,14 +49,14 @@ static bool opt_v = false;
 /*
  * test_vnaproperty_expr
  */
-static test_result_t test_vnaproperty_expr()
+static libt_result_t test_vnaproperty_expr()
 {
     vnaproperty_t *root = NULL;
     vnaproperty_type_t type;
     int count;
     const char *value;
     const char **keys;
-    test_result_t result = T_SKIPPED;
+    libt_result_t result = T_SKIPPED;
 
     if (vnaproperty_expr_set(&root, ".=scalar-only") == -1) {
 	(void)printf("%s: vnaproperty_expr_set: %s\n",
@@ -268,7 +268,7 @@ static test_result_t test_vnaproperty_expr()
 out:
     vnaproperty_free(root);
     root = NULL;
-    test_report(result);;
+    libt_report(result);;
     return result;
 }
 

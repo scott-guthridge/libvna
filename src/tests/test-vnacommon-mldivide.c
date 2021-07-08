@@ -30,7 +30,7 @@
 #include <unistd.h>
 #endif
 #include "vnacommon_internal.h"
-#include "test.h"
+#include "libt.h"
 
 
 #define N_MATRIX_TRIALS	100
@@ -55,14 +55,14 @@ static int opt_v = 0;
 /*
  * test_vnacommon_mldivide: test matrix left division
  */
-static test_result_t test_vnacommon_mldivide()
+static libt_result_t test_vnacommon_mldivide()
 {
     static const int sizes[] = { 1, 2, 3, 5 };
     double complex x[5 * 5];
     double complex a[5 * 5];
     double complex b[5 * 5];
     double complex t[5 * 5];
-    test_result_t result = T_SKIPPED;
+    libt_result_t result = T_SKIPPED;
 
 #define A(i, j) (a[(i) * m + (j)])
 #define B(i, j) (b[(i) * n + (j)])
@@ -89,17 +89,17 @@ static test_result_t test_vnacommon_mldivide()
 		 */
 		for (int i = 0; i < m; ++i) {
 		    for (int j = 0; j < m; ++j) {
-			A(i, j) = test_crandn();	/* m x m */
+			A(i, j) = libt_crandn();	/* m x m */
 		    }
 		    for (int j = 0; j < n; ++j) {
-			T(i, j) = test_crandn();	/* m x n */
+			T(i, j) = libt_crandn();	/* m x n */
 		    }
 		}
 		_vnacommon_mmultiply(b, a, t, m, m, n);
 		if (opt_v) {
-		    test_print_cmatrix("a", a, m, m);
-		    test_print_cmatrix("b", b, m, n);
-		    test_print_cmatrix("t", t, m, n);
+		    libt_print_cmatrix("a", a, m, m);
+		    libt_print_cmatrix("b", b, m, n);
+		    libt_print_cmatrix("t", t, m, n);
 		    (void)fflush(stdout);
 		}
 
@@ -108,13 +108,13 @@ static test_result_t test_vnacommon_mldivide()
 		 */
 		d = _vnacommon_mldivide(x, a, b, m, n);
 		if (opt_v) {
-		    test_print_cmatrix("x", x, m, n);
+		    libt_print_cmatrix("x", x, m, n);
 		    (void)printf("determinant %8.5f%+8.5fj\n",
 			    creal(d), cimag(d));
 		    (void)printf("\n");
 		    (void)fflush(stdout);
 		}
-		if (cabs(d) < test_isequal_eps) {
+		if (cabs(d) < libt_isequal_eps) {
 		    (void)fprintf(stderr, "%s: test_vnacommon_mldivide: "
 			    "warning: skipping nearly singular test matrix\n",
 			    progname);
@@ -126,7 +126,7 @@ static test_result_t test_vnacommon_mldivide()
 		 */
 		for (int i = 0; i < m; ++i) {
 		    for (int j = 0; j < n; ++j) {
-			if (!test_isequal(X(i, j), T(i, j))) {
+			if (!libt_isequal(X(i, j), T(i, j))) {
 			    if (opt_a) {
 				assert(!"data miscompare");
 			    }
@@ -141,7 +141,7 @@ static test_result_t test_vnacommon_mldivide()
     result = T_PASS;
 
 out:
-    test_report(result);;
+    libt_report(result);;
     return result;
 }
 #undef A
@@ -199,6 +199,6 @@ main(int argc, char **argv)
     if (argc != 0) {
 	print_usage();
     }
-    test_init_isequal();
+    libt_isequal_init();
     exit(test_vnacommon_mldivide());
 }

@@ -30,8 +30,8 @@
 #include <unistd.h>
 #endif
 #include "vnacal_internal.h"
-#include "test.h"
-#include "vnacaltest.h"
+#include "libt.h"
+#include "libt_vnacal.h"
 
 
 #define NTRIALS		67
@@ -73,14 +73,14 @@ static void error_fn(vnaerr_category_t category, const char *message, void *arg)
  *   @frequencies: number of test frequenciens
  *   @ab: true: use a, b matrices; false: use m matrix
  */
-static test_result_t run_vnacal_new_random_trial(int trial,
+static libt_result_t run_vnacal_new_random_trial(int trial,
 	vnacal_type_t type, int m_rows, int m_columns,
 	int frequencies, bool ab)
 {
     vnacal_t *vcp = NULL;
-    test_vnacal_terms_t *ttp = NULL;
+    libt_vnacal_terms_t *ttp = NULL;
     bool add_all_match;
-    test_result_t result = T_FAIL;
+    libt_result_t result = T_FAIL;
 
     /*
      * If -v, print the test header.
@@ -88,7 +88,7 @@ static test_result_t run_vnacal_new_random_trial(int trial,
     if (opt_v != 0) {
 	int standards;
 
-	standards = test_vnacal_calc_needed_standards(type, m_rows, m_columns,
+	standards = libt_vnacal_calc_needed_standards(type, m_rows, m_columns,
 		&add_all_match);
 	(void)printf("Test vnacal_new: trial %3d size %d x %d "
 		"type %-4s %s %2d random standards%s\n",
@@ -109,7 +109,7 @@ static test_result_t run_vnacal_new_random_trial(int trial,
     /*
      * Make the calibration, solve and check.
      */
-    if ((ttp = make_random_calibration(vcp, type, m_rows, m_columns,
+    if ((ttp = libt_vnacal_make_random_calibration(vcp, type, m_rows, m_columns,
 		    frequencies, ab)) == NULL) {
 	result = T_FAIL;
 	goto out;
@@ -117,7 +117,7 @@ static test_result_t run_vnacal_new_random_trial(int trial,
     result = T_PASS;
 
 out:
-    test_vnacal_free_error_terms(ttp);
+    libt_vnacal_free_error_terms(ttp);
     vnacal_free(vcp);
     return result;
 }
@@ -125,14 +125,14 @@ out:
 /*
  * test_vnacal_new_random: test vnacal_new_* with random multi-port standards
  */
-static test_result_t test_vnacal_new_random()
+static libt_result_t test_vnacal_new_random()
 {
     static const int sizes[] = { 1, 2, 3, 4 };
     static const vnacal_type_t types[] = {
 	VNACAL_T8, VNACAL_U8, VNACAL_TE10, VNACAL_UE10, VNACAL_T16, VNACAL_U16,
 	VNACAL_UE14, VNACAL_E12
     };
-    test_result_t result = T_FAIL;
+    libt_result_t result = T_FAIL;
 
     for (int trial = 1; trial <= 12; ++trial) {
         for (int si = 0; si < sizeof(sizes) / sizeof(int); ++si) {
@@ -168,7 +168,7 @@ static test_result_t test_vnacal_new_random()
     result = T_PASS;
 
 out:
-    test_report(result);
+    libt_report(result);
     return result;
 }
 
@@ -220,6 +220,6 @@ main(int argc, char **argv)
 	}
 	break;
     }
-    test_init_isequal();
+    libt_isequal_init();
     exit(test_vnacal_new_random());
 }

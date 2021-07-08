@@ -25,8 +25,8 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
-#include "test.h"
-#include "vnacaltest.h"
+#include "libt.h"
+#include "libt_vnacal.h"
 
 /*
  * DIVROUND: divide and round up
@@ -36,16 +36,16 @@
 #endif /* DIVROUND */
 
 /*
- * test_vnacal_generate_random_parameters: generate n random scalar parameters
+ * libt_vnacal_generate_random_parameters: generate n random scalar parameters
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @vector: caller-supplied vector to fill with parameter indices
  *   @n: number of parameters to generate
  */
-int test_vnacal_generate_random_parameters(vnacal_t *vcp, int *vector, int n)
+int libt_vnacal_generate_random_parameters(vnacal_t *vcp, int *vector, int n)
 {
     for (int i = 0; i < n; ++i) {
 	if ((vector[i] = vnacal_make_scalar_parameter(vcp,
-			test_crandn())) == -1) {
+			libt_crandn())) == -1) {
 	    while (--i >= 0) {
 		(void)vnacal_delete_parameter(vcp, vector[i]);
 	    }
@@ -56,7 +56,7 @@ int test_vnacal_generate_random_parameters(vnacal_t *vcp, int *vector, int n)
 }
 
 /*
- * test_vnacal_calc_needed_standards: calculate the number standards needed
+ * libt_vnacal_calc_needed_standards: calculate the number standards needed
  *   @type: error term type
  *   @m_rows: rows in the measurement matrix
  *   @m_columns: columns in the measurement matrix
@@ -65,7 +65,7 @@ int test_vnacal_generate_random_parameters(vnacal_t *vcp, int *vector, int n)
  * This function may sometimes overestimate T8, U8, T16 and U16 where
  * we add an extra standard.
  */
-int test_vnacal_calc_needed_standards(vnacal_type_t type,
+int libt_vnacal_calc_needed_standards(vnacal_type_t type,
 	int m_rows, int m_columns, bool *add_all_match)
 {
     const int ports = MAX(m_rows, m_columns);
@@ -122,7 +122,7 @@ int test_vnacal_calc_needed_standards(vnacal_type_t type,
 }
 
 /*
- * make_random_calibration: make a random calibration
+ * libt_vnacal_make_random_calibration: make a random calibration
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @type: error term type
  *   @m_rows: number of VNA ports that detect signal
@@ -130,21 +130,22 @@ int test_vnacal_calc_needed_standards(vnacal_type_t type,
  *   @frequencies: number of test frequenciens
  *   @ab: true: use a, b matrices; false: use m matrix
  */
-test_vnacal_terms_t *make_random_calibration(vnacal_t *vcp, vnacal_type_t type,
-	int m_rows, int m_columns, int frequencies, bool ab)
+libt_vnacal_terms_t *libt_vnacal_make_random_calibration(vnacal_t *vcp,
+	vnacal_type_t type, int m_rows, int m_columns, int frequencies,
+	bool ab)
 {
-    test_vnacal_terms_t *ttp = NULL;
+    libt_vnacal_terms_t *ttp = NULL;
     const int ports = MAX(m_rows, m_columns);
     bool add_all_match;
     int standards;
-    test_vnacal_measurements_t *tmp = NULL;
+    libt_vnacal_measurements_t *tmp = NULL;
 
     /*
      * Generate random error parameters.
      */
-    if ((ttp = test_vnacal_generate_error_terms(vcp, type, m_rows, m_columns,
+    if ((ttp = libt_vnacal_generate_error_terms(vcp, type, m_rows, m_columns,
 		    frequencies, NULL, 1.0, false)) == NULL) {
-	(void)fprintf(stderr, "%s: test_vnacal_generate_error_terms: %s\n",
+	(void)fprintf(stderr, "%s: libt_vnacal_generate_error_terms: %s\n",
 		progname, strerror(errno));
 	goto error;
     }
@@ -152,13 +153,13 @@ test_vnacal_terms_t *make_random_calibration(vnacal_t *vcp, vnacal_type_t type,
     /*
      * Calculate the number of standards needed.
      */
-    standards = test_vnacal_calc_needed_standards(type, m_rows, m_columns,
+    standards = libt_vnacal_calc_needed_standards(type, m_rows, m_columns,
 	    &add_all_match);
 
     /*
      * Allocate the measurements matrices.
      */
-    if ((tmp = test_vnacal_alloc_measurements(type, m_rows, m_columns,
+    if ((tmp = libt_vnacal_alloc_measurements(type, m_rows, m_columns,
 		    frequencies, ab)) == NULL) {
 	goto error;
     }
@@ -172,7 +173,7 @@ test_vnacal_terms_t *make_random_calibration(vnacal_t *vcp, vnacal_type_t type,
 	for (int i = 0; i < ports * ports; ++i) {
 	    s[i] = VNACAL_MATCH;
 	}
-	if (test_vnacal_calculate_measurements(ttp, tmp, s, ports, ports,
+	if (libt_vnacal_calculate_measurements(ttp, tmp, s, ports, ports,
 		    NULL) == -1) {
 	    goto error;
 	}
@@ -200,11 +201,12 @@ test_vnacal_terms_t *make_random_calibration(vnacal_t *vcp, vnacal_type_t type,
     for (int standard = 0; standard < standards; ++standard) {
 	int s[ports * ports];
 
-	if (test_vnacal_generate_random_parameters(vcp, s, ports * ports) == -1) {
+	if (libt_vnacal_generate_random_parameters(vcp, s,
+		    ports * ports) == -1) {
 	    goto error;
 	}
-	if (test_vnacal_calculate_measurements(ttp, tmp, s, ports, ports,
-		    NULL) == -1) {
+	if (libt_vnacal_calculate_measurements(ttp, tmp, s,
+		    ports, ports, NULL) == -1) {
 	    goto error;
 	}
 	if (ab) {
@@ -229,7 +231,7 @@ test_vnacal_terms_t *make_random_calibration(vnacal_t *vcp, vnacal_type_t type,
 	    }
 	}
     }
-    test_vnacal_free_measurements(tmp);
+    libt_vnacal_free_measurements(tmp);
     tmp = NULL;
 
     /*
@@ -240,19 +242,19 @@ test_vnacal_terms_t *make_random_calibration(vnacal_t *vcp, vnacal_type_t type,
 		progname, strerror(errno));
 	goto error;
     }
-    if (test_vnacal_validate_calibration(ttp, NULL) == -1) {
+    if (libt_vnacal_validate_calibration(ttp, NULL) == -1) {
 	goto error;
     }
     return ttp;
 
 error:
-    test_vnacal_free_measurements(tmp);
-    test_vnacal_free_error_terms(ttp);
+    libt_vnacal_free_measurements(tmp);
+    libt_vnacal_free_error_terms(ttp);
     return NULL;
 }
 
 /*
- * test_vnacal_print_standard: show a calibration standard
+ * libt_vnacal_print_standard: show a calibration standard
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @s: s-parameter indices matrix describing the standard
  *   @s_rows: rows in s_matrix
@@ -261,7 +263,7 @@ error:
  *   @frequency_vector: vector of frequencies
  *   @port_map: map from standard port to VNA port
  */
-void test_vnacal_print_standard(vnacal_t *vcp, const int *s,
+void libt_vnacal_print_standard(vnacal_t *vcp, const int *s,
 	int s_rows, int s_columns,
 	int frequencies, const double *frequency_vector,
 	const int *port_map)
@@ -345,14 +347,14 @@ void test_vnacal_print_standard(vnacal_t *vcp, const int *s,
 }
 
 /*
- * test_vnacal_add_single_reflect: measure a single reflect standard
+ * libt_vnacal_add_single_reflect: measure a single reflect standard
  *   @ttp: pointer to test error terms structure
  *   @tmp: test measurements structure
  *   @s11: reflection parameter
  *   @port: port to measure
  */
-int test_vnacal_add_single_reflect(const test_vnacal_terms_t *ttp,
-	test_vnacal_measurements_t *tmp, int s11, int port)
+int libt_vnacal_add_single_reflect(const libt_vnacal_terms_t *ttp,
+	libt_vnacal_measurements_t *tmp, int s11, int port)
 {
     const vnacal_layout_t *vlp = &ttp->tt_layout;
     const int m_rows = VL_M_ROWS(vlp);
@@ -360,7 +362,7 @@ int test_vnacal_add_single_reflect(const test_vnacal_terms_t *ttp,
     vnacal_new_t *vnp = ttp->tt_vnp;
     int a_rows = VL_HAS_COLUMN_SYSTEMS(vlp) ? 1 : m_columns;
 
-    if (test_vnacal_calculate_measurements(ttp, tmp, &s11, 1, 1, &port) == -1) {
+    if (libt_vnacal_calculate_measurements(ttp, tmp, &s11, 1, 1, &port) == -1) {
 	return -1;
     }
     if (tmp->tm_a_matrix != NULL) {
@@ -381,7 +383,7 @@ int test_vnacal_add_single_reflect(const test_vnacal_terms_t *ttp,
 }
 
 /*
- * test_vnacal_add_double_reflect: measure a double reflect standard
+ * libt_vnacal_add_double_reflect: measure a double reflect standard
  *   @ttp: pointer to test error terms structure
  *   @tmp: test measurements structure
  *   @s11: first reflection parameter
@@ -389,8 +391,8 @@ int test_vnacal_add_single_reflect(const test_vnacal_terms_t *ttp,
  *   @port1: first port
  *   @port2: second port
  */
-int test_vnacal_add_double_reflect(const test_vnacal_terms_t *ttp,
-	test_vnacal_measurements_t *tmp, int s11, int s22, int port1, int port2)
+int libt_vnacal_add_double_reflect(const libt_vnacal_terms_t *ttp,
+	libt_vnacal_measurements_t *tmp, int s11, int s22, int port1, int port2)
 {
     const vnacal_layout_t *vlp = &ttp->tt_layout;
     const int m_rows = VL_M_ROWS(vlp);
@@ -403,7 +405,7 @@ int test_vnacal_add_double_reflect(const test_vnacal_terms_t *ttp,
     };
     int port_map[2] = { port1, port2 };
 
-    if (test_vnacal_calculate_measurements(ttp, tmp, &s_matrix[0][0], 2, 2,
+    if (libt_vnacal_calculate_measurements(ttp, tmp, &s_matrix[0][0], 2, 2,
 		port_map) == -1) {
 	return -1;
     }
@@ -425,14 +427,14 @@ int test_vnacal_add_double_reflect(const test_vnacal_terms_t *ttp,
 }
 
 /*
- * test_vnacal_add_through: measure a through standard between the given ports
+ * libt_vnacal_add_through: measure a through standard between the given ports
  *   @ttp: pointer to test error terms structure
  *   @tmp: test measurements structure
  *   @port1: first port
  *   @port2: second port
  */
-int test_vnacal_add_through(const test_vnacal_terms_t *ttp,
-	test_vnacal_measurements_t *tmp, int port1, int port2)
+int libt_vnacal_add_through(const libt_vnacal_terms_t *ttp,
+	libt_vnacal_measurements_t *tmp, int port1, int port2)
 {
     const vnacal_layout_t *vlp = &ttp->tt_layout;
     const int m_rows = VL_M_ROWS(vlp);
@@ -443,7 +445,7 @@ int test_vnacal_add_through(const test_vnacal_terms_t *ttp,
 				  { VNACAL_ONE, VNACAL_MATCH } };
     int port_map[2] = { port1, port2 };
 
-    if (test_vnacal_calculate_measurements(ttp, tmp,
+    if (libt_vnacal_calculate_measurements(ttp, tmp,
 		&s_matrix[0][0], 2, 2, port_map) == -1) {
 	return -1;
     }
@@ -465,14 +467,14 @@ int test_vnacal_add_through(const test_vnacal_terms_t *ttp,
 }
 
 /*
- * test_vnacal_add_line: measure a line standard between the given ports
+ * libt_vnacal_add_line: measure a line standard between the given ports
  *   @ttp: pointer to test error terms structure
  *   @s_2x2: 2x2 parameter matrix
  *   @port1: first port
  *   @port2: second port
  */
-int test_vnacal_add_line(const test_vnacal_terms_t *ttp,
-	test_vnacal_measurements_t *tmp, const int *s_2x2,
+int libt_vnacal_add_line(const libt_vnacal_terms_t *ttp,
+	libt_vnacal_measurements_t *tmp, const int *s_2x2,
 	int port1, int port2)
 {
     const vnacal_layout_t *vlp = &ttp->tt_layout;
@@ -482,7 +484,7 @@ int test_vnacal_add_line(const test_vnacal_terms_t *ttp,
     int a_rows = VL_HAS_COLUMN_SYSTEMS(vlp) ? 1 : m_columns;
     int port_map[2] = { port1, port2 };
 
-    if (test_vnacal_calculate_measurements(ttp, tmp, s_2x2, 2, 2,
+    if (libt_vnacal_calculate_measurements(ttp, tmp, s_2x2, 2, 2,
 		port_map) == -1) {
 	return -1;
     }

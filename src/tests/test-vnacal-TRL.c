@@ -30,8 +30,8 @@
 #include <unistd.h>
 #endif
 #include "../vnacal_internal.h"
-#include "test.h"
-#include "vnacaltest.h"
+#include "libt.h"
+#include "libt_vnacal.h"
 
 
 #define NTRIALS		600
@@ -104,13 +104,13 @@ static void make_random_parameter(bool is_line,
 /*
  * run_vnacal_trl_trial: run a through-reflect-line calibration trial
  */
-static test_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
+static libt_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
 {
-    test_result_t result = T_SKIPPED;
+    libt_result_t result = T_SKIPPED;
     vnacal_t *vcp = NULL;
-    test_vnacal_terms_t *ttp = NULL;
+    libt_vnacal_terms_t *ttp = NULL;
     vnacal_new_t *vnp = NULL;
-    test_vnacal_measurements_t *tmp = NULL;
+    libt_vnacal_measurements_t *tmp = NULL;
     double complex r_actual[TRL_FREQUENCIES];	/* actual reflection */
     double complex r_guess[TRL_FREQUENCIES];	/* guess for reflection */
     double complex l_actual[TRL_FREQUENCIES];	/* actual line */
@@ -138,10 +138,10 @@ static test_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
     /*
      * Generate random error parameters.
      */
-    if ((ttp = test_vnacal_generate_error_terms(vcp, type, 2, 2,
+    if ((ttp = libt_vnacal_generate_error_terms(vcp, type, 2, 2,
 		    TRL_FREQUENCIES, /*frequency_vector*/NULL,
 		    0.10, false)) == NULL) {
-	(void)fprintf(stderr, "%s: test_vnacal_generate_error_terms: %s\n",
+	(void)fprintf(stderr, "%s: libt_vnacal_generate_error_terms: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
@@ -185,7 +185,7 @@ static test_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
     /*
      * Allocate the measurements matrices.
      */
-    if ((tmp = test_vnacal_alloc_measurements(type, /*m_rows*/2, /*m_columns*/2,
+    if ((tmp = libt_vnacal_alloc_measurements(type, /*m_rows*/2, /*m_columns*/2,
 		    TRL_FREQUENCIES, /*ab*/false)) == NULL) {
 	result = T_FAIL;
 	goto out;
@@ -194,7 +194,7 @@ static test_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
     /*
      * Add the through standard.
      */
-    if (test_vnacal_add_through(ttp, tmp, 1, 2) == -1) {
+    if (libt_vnacal_add_through(ttp, tmp, 1, 2) == -1) {
 	result = T_FAIL;
 	goto out;
     }
@@ -224,7 +224,7 @@ static test_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
 	s_matrix[0][1] = VNACAL_ZERO;
 	s_matrix[1][0] = VNACAL_ZERO;
 	s_matrix[1][1] = p_actual;
-	if (test_vnacal_calculate_measurements(ttp, tmp, &s_matrix[0][0],
+	if (libt_vnacal_calculate_measurements(ttp, tmp, &s_matrix[0][0],
 		    2, 2, NULL) == -1) {
 	    result = T_FAIL;
 	    goto out;
@@ -264,7 +264,7 @@ static test_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
 	s_matrix[0][1] = p_actual;
 	s_matrix[1][0] = p_actual;
 	s_matrix[1][1] = VNACAL_MATCH;
-	if (test_vnacal_calculate_measurements(ttp, tmp, &s_matrix[0][0],
+	if (libt_vnacal_calculate_measurements(ttp, tmp, &s_matrix[0][0],
 		    2, 2, NULL) == -1) {
 	    result = T_FAIL;
 	    goto out;
@@ -289,7 +289,7 @@ static test_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
 	result = T_FAIL;
 	goto out;
     }
-    if (test_vnacal_validate_calibration(ttp, NULL) == -1) {
+    if (libt_vnacal_validate_calibration(ttp, NULL) == -1) {
 	result = T_FAIL;
 	goto out;
     }
@@ -323,14 +323,14 @@ static test_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
 		    cabs(l_solved - l_actual[findex]));
 	    (void)printf("\n");
 	}
-	if (!test_isequal(r_solved, r_actual[findex])) {
+	if (!libt_isequal(r_solved, r_actual[findex])) {
 	    if (opt_a) {
 		assert(!"data miscompare");
 	    }
 	    result = T_FAIL;
 	    goto out;
 	}
-	if (!test_isequal(l_solved, l_actual[findex])) {
+	if (!libt_isequal(l_solved, l_actual[findex])) {
 	    if (opt_a) {
 		assert(!"data miscompare");
 	    }
@@ -347,8 +347,8 @@ out:
     if (l_unknown >= 0) {
 	vnacal_delete_parameter(vcp, l_unknown);
     }
-    test_vnacal_free_measurements(tmp);
-    test_vnacal_free_error_terms(ttp);
+    libt_vnacal_free_measurements(tmp);
+    libt_vnacal_free_error_terms(ttp);
     vnacal_free(vcp);
     return result;
 }
@@ -356,9 +356,9 @@ out:
 /*
  * test_vnacal_trl: through-reflect-line calibration
  */
-static test_result_t test_vnacal_trl()
+static libt_result_t test_vnacal_trl()
 {
-    test_result_t result = T_SKIPPED;
+    libt_result_t result = T_SKIPPED;
     static vnacal_type_t type_array[] = {
 	VNACAL_T8, VNACAL_U8, VNACAL_TE10, VNACAL_UE10
     };
@@ -373,7 +373,7 @@ static test_result_t test_vnacal_trl()
     result = T_PASS;
 
 out:
-    test_report(result);
+    libt_report(result);
     return result;
 }
 
@@ -425,6 +425,6 @@ main(int argc, char **argv)
 	}
 	break;
     }
-    test_isequal_eps = 0.01;
+    libt_isequal_eps = 0.01;
     exit(test_vnacal_trl());
 }

@@ -25,14 +25,14 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
-#include "test.h"
-#include "vnacaltest.h"
+#include "libt.h"
+#include "libt_vnacal.h"
 
 /*
- * test_vnacal_print_calibration: print solved calibration error terms
+ * libt_vnacal_print_calibration: print solved calibration error terms
  *   @calp: pointer to calibration structure
  */
-void test_vnacal_print_calibration(vnacal_calibration_t *calp)
+void libt_vnacal_print_calibration(vnacal_calibration_t *calp)
 {
     vnacal_layout_t vl;
 
@@ -365,17 +365,17 @@ void test_vnacal_print_calibration(vnacal_calibration_t *calp)
     }
     if (calp->cal_properties != NULL) {
 	(void)printf("properties:\n");
-	test_vnacal_print_properties(calp->cal_properties, 1);
+	libt_vnacal_print_properties(calp->cal_properties, 1);
     }
     (void)printf("\n");
 }
 
 /*
- * test_vnacal_validate_calibration: compare calculated error terms to actual
+ * libt_vnacal_validate_calibration: compare calculated error terms to actual
  *   @ttp: pointer to test error terms structure
  *   @calp: pointer to calibration structure
  */
-int test_vnacal_validate_calibration(const test_vnacal_terms_t *ttp,
+int libt_vnacal_validate_calibration(const libt_vnacal_terms_t *ttp,
 	vnacal_calibration_t *calp)
 {
     const vnacal_layout_t *vlp = &ttp->tt_layout;
@@ -387,7 +387,7 @@ int test_vnacal_validate_calibration(const test_vnacal_terms_t *ttp,
     }
     assert(calp != NULL);
     if (opt_v >= 2) {
-	test_vnacal_print_calibration(calp);
+	libt_vnacal_print_calibration(calp);
     }
     if (calp->cal_error_terms != VL_ERROR_TERMS(vlp)) {
 	(void)printf("cal_error_terms (%d) != vl_error_terms (%d)\n",
@@ -396,7 +396,7 @@ int test_vnacal_validate_calibration(const test_vnacal_terms_t *ttp,
     }
     for (int findex = 0; findex < ttp->tt_frequencies; ++findex) {
 	for (int term = 0; term < VL_ERROR_TERMS(vlp); ++term) {
-	    if (!test_isequal(calp->cal_error_term_vector[term][findex],
+	    if (!libt_isequal(calp->cal_error_term_vector[term][findex],
 			ttp->tt_error_term_vector[findex][term])) {
 		if (opt_a) {
 		    assert(!"data miscompare");

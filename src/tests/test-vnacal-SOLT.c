@@ -30,8 +30,8 @@
 #include <unistd.h>
 #endif
 #include "vnacal_internal.h"
-#include "test.h"
-#include "vnacaltest.h"
+#include "libt.h"
+#include "libt_vnacal.h"
 
 
 #define NTRIALS		67
@@ -70,16 +70,16 @@ static void error_fn(vnaerr_category_t category, const char *message, void *arg)
  *   @tmp: test measurements structure
  *   @port: port to calibrate
  */
-static test_result_t run_solt_trial_helper(test_vnacal_terms_t *ttp,
-	test_vnacal_measurements_t *tmp, int port)
+static libt_result_t run_solt_trial_helper(libt_vnacal_terms_t *ttp,
+	libt_vnacal_measurements_t *tmp, int port)
 {
-    if (test_vnacal_add_single_reflect(ttp, tmp, VNACAL_SHORT, port) == -1) {
+    if (libt_vnacal_add_single_reflect(ttp, tmp, VNACAL_SHORT, port) == -1) {
 	return T_FAIL;
     }
-    if (test_vnacal_add_single_reflect(ttp, tmp, VNACAL_OPEN, port) == -1) {
+    if (libt_vnacal_add_single_reflect(ttp, tmp, VNACAL_OPEN, port) == -1) {
 	return T_FAIL;
     }
-    if (test_vnacal_add_single_reflect(ttp, tmp, VNACAL_MATCH, port) == -1) {
+    if (libt_vnacal_add_single_reflect(ttp, tmp, VNACAL_MATCH, port) == -1) {
 	return T_FAIL;
     }
     return T_PASS;
@@ -94,15 +94,15 @@ static test_result_t run_solt_trial_helper(test_vnacal_terms_t *ttp,
  *   @frequencies: number of test frequenciens
  *   @ab: true: use a, b matrices; false: use m matrix
  */
-static test_result_t run_vnacal_new_solt_trial(int trial, vnacal_type_t type,
+static libt_result_t run_vnacal_new_solt_trial(int trial, vnacal_type_t type,
 	int rows, int columns, int frequencies, bool ab)
 {
     vnacal_t *vcp = NULL;
-    test_vnacal_terms_t *ttp = NULL;
-    test_vnacal_measurements_t *tmp = NULL;
+    libt_vnacal_terms_t *ttp = NULL;
+    libt_vnacal_measurements_t *tmp = NULL;
     int diagonals = MIN(rows, columns);
     int ports = MAX(rows, columns);
-    test_result_t result = T_FAIL;
+    libt_result_t result = T_FAIL;
 
     /*
      * If -v, print the test header.
@@ -126,9 +126,9 @@ static test_result_t run_vnacal_new_solt_trial(int trial, vnacal_type_t type,
     /*
      * Generate random error parameters.
      */
-    if ((ttp = test_vnacal_generate_error_terms(vcp, type, rows, columns,
+    if ((ttp = libt_vnacal_generate_error_terms(vcp, type, rows, columns,
 		    frequencies, NULL, 1.0, ab)) == NULL) {
-	(void)fprintf(stderr, "%s: test_vnacal_generate_error_terms: %s\n",
+	(void)fprintf(stderr, "%s: libt_vnacal_generate_error_terms: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
@@ -137,7 +137,7 @@ static test_result_t run_vnacal_new_solt_trial(int trial, vnacal_type_t type,
     /*
      * Allocate the test measurement matrices.
      */
-    if ((tmp = test_vnacal_alloc_measurements(type, rows, columns,
+    if ((tmp = libt_vnacal_alloc_measurements(type, rows, columns,
 		    frequencies, ab)) == NULL) {
 	result = T_ERROR;
 	goto out;
@@ -167,7 +167,7 @@ static test_result_t run_vnacal_new_solt_trial(int trial, vnacal_type_t type,
      */
     for (int port1 = 1; port1 <= diagonals; ++port1) {
 	for (int port2 = port1 + 1; port2 <= ports; ++port2) {
-	    if (test_vnacal_add_through(ttp, tmp, port1, port2) == -1) {
+	    if (libt_vnacal_add_through(ttp, tmp, port1, port2) == -1) {
 		result = T_FAIL;
 		goto out;
 	    }
@@ -183,15 +183,15 @@ static test_result_t run_vnacal_new_solt_trial(int trial, vnacal_type_t type,
 	result = T_FAIL;
 	goto out;
     }
-    if (test_vnacal_validate_calibration(ttp, NULL) == -1) {
+    if (libt_vnacal_validate_calibration(ttp, NULL) == -1) {
 	result = T_FAIL;
 	goto out;
     }
     result = T_PASS;
 
 out:
-    test_vnacal_free_measurements(tmp);
-    test_vnacal_free_error_terms(ttp);
+    libt_vnacal_free_measurements(tmp);
+    libt_vnacal_free_error_terms(ttp);
     vnacal_free(vcp);
     return result;
 }
@@ -199,13 +199,13 @@ out:
 /*
  * test_vnacal_new_solt: run SOLT tests for 8-12 term parameters
  */
-static test_result_t test_vnacal_new_solt()
+static libt_result_t test_vnacal_new_solt()
 {
     static const int sizes[] = { 1, 2, 3, 4 };
     static const vnacal_type_t types[] = {
 	VNACAL_T8, VNACAL_U8, VNACAL_TE10, VNACAL_UE10, VNACAL_UE14, VNACAL_E12
     };
-    test_result_t result = T_FAIL;
+    libt_result_t result = T_FAIL;
 
     for (int trial = 1; trial <= NTRIALS; ++trial) {
         for (int si = 0; si < sizeof(sizes) / sizeof(int); ++si) {
@@ -240,7 +240,7 @@ static test_result_t test_vnacal_new_solt()
     result = T_PASS;
 
 out:
-    test_report(result);
+    libt_report(result);
     return result;
 }
 
@@ -292,6 +292,6 @@ main(int argc, char **argv)
 	}
 	break;
     }
-    test_init_isequal();
+    libt_isequal_init();
     exit(test_vnacal_new_solt());
 }

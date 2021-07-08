@@ -27,46 +27,46 @@ extern "C" {
 #endif
 
 /*
- * test_result_t
+ * libt_result_t
  */
-typedef enum test_result {
+typedef enum libt_result {
     T_PASS	= 0,
     T_FAIL	= 1,
     T_SKIPPED	= 77,
     T_ERROR	= 99
-} test_result_t;
+} libt_result_t;
 
 /* progname: test program name */
 extern char *progname;
 
-/* test_isequal_eps: maximum allowed normalized error in test_isequal */
-extern double test_isequal_eps;
+/* libt_isequal_eps: maximum allowed normalized error in libt_isequal */
+extern double libt_isequal_eps;
 
 /* report the result of the test to stdout */
-extern void test_report(test_result_t result);
+extern void libt_report(libt_result_t result);
 
-/* test_crandn: generate a 2d normally distributed random complex number */
-extern double complex test_crandn();
+/* libt_crandn: generate a 2d normally distributed random complex number */
+extern double complex libt_crandn();
 
-/* test_crandn_nz: like test_crandn, except with magitude >= 0.1 */
-double complex test_crandn_nz();
+/* libt_crandn_nz: like libt_crandn, except with magitude >= 0.1 */
+double complex libt_crandn_nz();
 
-/* test_crandn_nrz: like test_crand_nz, but with angle in 20-160, 200-340 degrees */
-extern double complex test_crandn_nrz();
+/* libt_crandn_nrz: like libt_crandn_nz, angle in 20-160, 200-340 degrees */
+extern double complex libt_crandn_nrz();
 
-/* test_is_equal: test if two values are equal */
-extern bool test_isequal(double complex actual, double complex expected);
+/* libt_isequal: test if two values are equal */
+extern bool libt_isequal(double complex actual, double complex expected);
 
-/* test_is_equal: test if two values are equal with label */
-extern bool test_isequal_label(double complex actual, double complex expected,
+/* libt_isequal: test if two values are equal with label */
+extern bool libt_isequal_label(double complex actual, double complex expected,
 	const char *label);
 
-/* test_print_cmatrix: print an m by n serialized complex matrix */
-extern void test_print_cmatrix(const char *tag, double complex *a,
+/* libt_print_cmatrix: print an m by n serialized complex matrix */
+extern void libt_print_cmatrix(const char *tag, double complex *a,
 	int m, int n);
 
-/* test_init_isequal: init test_isequal_eps based on the machine precision */
-extern void test_init_isequal();
+/* libt_isequal_init: init libt_isequal_eps based on the machine precision */
+extern void libt_isequal_init();
 
 #ifdef __cplusplus
 } /* extern "C" */

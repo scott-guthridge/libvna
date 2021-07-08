@@ -28,7 +28,7 @@
 #include <unistd.h>
 #endif
 #include "vnaproperty_internal.h"
-#include "test.h"
+#include "libt.h"
 
 
 /*
@@ -49,12 +49,12 @@ static bool opt_v = false;
 /*
  * test_vnaproperty_list
  */
-static test_result_t test_vnaproperty_list()
+static libt_result_t test_vnaproperty_list()
 {
     vnaproperty_t *list;
     vnaproperty_t *first_scalar = NULL;
     int length;
-    test_result_t result = T_SKIPPED;
+    libt_result_t result = T_SKIPPED;
 
     /*
      * Test alloc and get_type.
@@ -650,7 +650,7 @@ static test_result_t test_vnaproperty_list()
     result = T_PASS;
 
 out:
-    test_report(result);;
+    libt_report(result);;
     return result;
 }
 

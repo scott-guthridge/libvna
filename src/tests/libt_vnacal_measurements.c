@@ -25,33 +25,33 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
-#include "test.h"
-#include "vnacaltest.h"
+#include "libt.h"
+#include "libt_vnacal.h"
 
 /*
- * test_vnacal_sigma_n: standard deviation of noise to add to measurements
+ * libt_vnacal_sigma_n: standard deviation of noise to add to measurements
  */
-double test_vnacal_sigma_n = 0.0;
+double libt_vnacal_sigma_n = 0.0;
 
 /*
- * test_vnacal_sigma_t: standard deviation of tracking error to add to meas.
+ * libt_vnacal_sigma_t: standard deviation of tracking error to add to meas.
  */
-double test_vnacal_sigma_t = 0.0;
+double libt_vnacal_sigma_t = 0.0;
 
 /*
- * test_vnacal_alloc_measurements: allocate test measurements
+ * libt_vnacal_alloc_measurements: allocate test measurements
  *   @type: error term type
  *   @m_rows: number of rows in the measurement matrix
  *   @m_columns: number of columns in the measurement matrix
  *   @frequencies: number of frequency points
  *   @ab: true: use a, b matrices; false: use m matrix
  */
-test_vnacal_measurements_t *test_vnacal_alloc_measurements(vnacal_type_t type,
+libt_vnacal_measurements_t *libt_vnacal_alloc_measurements(vnacal_type_t type,
 	int m_rows, int m_columns, int frequencies, bool ab)
 {
-    test_vnacal_measurements_t *tmp = NULL;
+    libt_vnacal_measurements_t *tmp = NULL;
 
-    if ((tmp = malloc(sizeof(test_vnacal_measurements_t))) == NULL) {
+    if ((tmp = malloc(sizeof(libt_vnacal_measurements_t))) == NULL) {
 	(void)fprintf(stderr, "%s: malloc: %s\n", progname, strerror(errno));
 	exit(99);
     }
@@ -65,7 +65,7 @@ test_vnacal_measurements_t *test_vnacal_alloc_measurements(vnacal_type_t type,
 			sizeof(double complex *))) == NULL) {
 	    (void)fprintf(stderr, "%s: calloc: %s\n", progname,
 		    strerror(errno));
-	    test_vnacal_free_measurements(tmp);
+	    libt_vnacal_free_measurements(tmp);
 	    exit(99);
 	}
 	for (int a_cell = 0; a_cell < a_rows * a_columns; ++a_cell) {
@@ -73,7 +73,7 @@ test_vnacal_measurements_t *test_vnacal_alloc_measurements(vnacal_type_t type,
 			    sizeof(double complex))) == NULL) {
 		(void)fprintf(stderr, "%s: calloc: %s\n", progname,
 			strerror(errno));
-		test_vnacal_free_measurements(tmp);
+		libt_vnacal_free_measurements(tmp);
 		exit(99);
 	    }
 	}
@@ -83,7 +83,7 @@ test_vnacal_measurements_t *test_vnacal_alloc_measurements(vnacal_type_t type,
     if ((tmp->tm_b_matrix = calloc(m_rows * m_columns,
 		    sizeof(double complex *))) == NULL) {
 	(void)fprintf(stderr, "%s: calloc: %s\n", progname, strerror(errno));
-	test_vnacal_free_measurements(tmp);
+	libt_vnacal_free_measurements(tmp);
 	exit(99);
     }
     for (int b_cell = 0; b_cell < m_rows * m_columns; ++b_cell) {
@@ -91,7 +91,7 @@ test_vnacal_measurements_t *test_vnacal_alloc_measurements(vnacal_type_t type,
 			sizeof(double complex))) == NULL) {
 	    (void)fprintf(stderr, "%s: calloc: %s\n", progname,
 		    strerror(errno));
-	    test_vnacal_free_measurements(tmp);
+	    libt_vnacal_free_measurements(tmp);
 	    exit(99);
 	}
     }
@@ -538,7 +538,7 @@ static int calc_m(const vnacal_layout_t *vlp, const double complex *e,
 /*
  * calc_measurements_helper: form s matrix and calc m matrix
  *   @ttp: pointer to test error terms structure
- *   @tmp: caller-allocated test_vnacal_measurements structure to hold result
+ *   @tmp: caller-allocated libt_vnacal_measurements structure to hold result
  *   @s_matrix: s-parameter indices matrix describing the standard
  *   @s_matrix_rows: rows in s_matrix
  *   @s_matrix_columns: columns in s_matrix
@@ -546,8 +546,8 @@ static int calc_m(const vnacal_layout_t *vlp, const double complex *e,
  *   @findex: frequency index
  *   @m: caller-allocated output matrix
  */
-static int calc_measurements_helper(const test_vnacal_terms_t *ttp,
-	test_vnacal_measurements_t *tmp, const int *s_matrix,
+static int calc_measurements_helper(const libt_vnacal_terms_t *ttp,
+	libt_vnacal_measurements_t *tmp, const int *s_matrix,
 	int s_matrix_rows, int s_matrix_columns, const int *port_map,
 	int findex, double complex *m)
 {
@@ -629,7 +629,7 @@ static int calc_measurements_helper(const test_vnacal_terms_t *ttp,
     }
     for (int s_cell = 0; s_cell < s_rows * s_columns; ++s_cell) {
 	if (!cell_defined[s_cell]) {
-	    s[s_cell] = test_crandn();
+	    s[s_cell] = libt_crandn();
 	}
     }
 
@@ -643,16 +643,16 @@ static int calc_measurements_helper(const test_vnacal_terms_t *ttp,
 }
 
 /*
- * test_vnacal_calculate_measurements: calculate measurements of standard
+ * libt_vnacal_calculate_measurements: calculate measurements of standard
  *   @ttp: pointer to test error terms structure
- *   @tmp: caller-allocated test_vnacal_measurements structure to hold result
+ *   @tmp: caller-allocated libt_vnacal_measurements structure to hold result
  *   @s_matrix: s-parameter indices matrix describing the standard
  *   @s_matrix_rows: rows in s_matrix
  *   @s_matrix_columns: columns in s_matrix
  *   @port_map: map from standard port to VNA port
  */
-int test_vnacal_calculate_measurements(const test_vnacal_terms_t *ttp,
-	test_vnacal_measurements_t *tmp,
+int libt_vnacal_calculate_measurements(const libt_vnacal_terms_t *ttp,
+	libt_vnacal_measurements_t *tmp,
 	const int *s_matrix, int s_matrix_rows, int s_matrix_columns,
 	const int *port_map)
 {
@@ -672,7 +672,7 @@ int test_vnacal_calculate_measurements(const test_vnacal_terms_t *ttp,
 	vnacal_new_t *vnp = ttp->tt_vnp;
 	vnacal_t *vcp = vnp->vn_vcp;
 
-	test_vnacal_print_standard(vcp, s_matrix, s_matrix_rows,
+	libt_vnacal_print_standard(vcp, s_matrix, s_matrix_rows,
 		s_matrix_columns, ttp->tt_frequencies,
 		ttp->tt_frequency_vector, port_map);
     }
@@ -745,10 +745,10 @@ int test_vnacal_calculate_measurements(const test_vnacal_terms_t *ttp,
 	/*
 	 * Add random measurement error if configured.
 	 */
-	if (test_vnacal_sigma_n != 0.0 || test_vnacal_sigma_t != 0.0) {
+	if (libt_vnacal_sigma_n != 0.0 || libt_vnacal_sigma_t != 0.0) {
 	    for (int cell = 0; cell < b_rows * b_columns; ++cell) {
-		m[cell] += test_vnacal_sigma_t * m[cell] * test_crandn();
-		m[cell] += test_vnacal_sigma_n * test_crandn();
+		m[cell] += libt_vnacal_sigma_t * m[cell] * libt_crandn();
+		m[cell] += libt_vnacal_sigma_n * libt_crandn();
 	    }
 	}
 
@@ -762,7 +762,7 @@ int test_vnacal_calculate_measurements(const test_vnacal_terms_t *ttp,
 	    }
 	} else if (VL_HAS_COLUMN_SYSTEMS(vlp)) {
 	    for (int b_column = 0; b_column < b_columns; ++b_column) {
-		double complex a = test_crandn();
+		double complex a = libt_crandn();
 
 		a_matrix[b_column][findex] = a;
 		for (int m_row = 0; m_row < b_rows; ++m_row) {
@@ -776,7 +776,7 @@ int test_vnacal_calculate_measurements(const test_vnacal_terms_t *ttp,
 	    double complex b[b_rows * b_columns];
 
 	    for (int a_cell = 0; a_cell < b_columns * b_columns; ++a_cell) {
-		a[a_cell] = test_crandn();
+		a[a_cell] = libt_crandn();
 		a_matrix[a_cell][findex] = a[a_cell];
 	    }
 	    _vnacommon_mmultiply(b, m, a, b_rows, b_columns, b_columns);
@@ -790,18 +790,18 @@ int test_vnacal_calculate_measurements(const test_vnacal_terms_t *ttp,
      * If verbose, show values.
      */
     if (opt_v >= 2) {
-	test_vnacal_print_measurements(tmp, frequencies);
+	libt_vnacal_print_measurements(tmp, frequencies);
     }
 
     return 0;
 }
 
 /*
- * test_vnacal_print_measurements: print the "measured" values
+ * libt_vnacal_print_measurements: print the "measured" values
  *   @tmp: test measurements structure
  *   @frequencies: number of frequencies
  */
-void test_vnacal_print_measurements(test_vnacal_measurements_t *tmp,
+void libt_vnacal_print_measurements(libt_vnacal_measurements_t *tmp,
 	int frequencies)
 {
     (void)printf("measurements %d x %d:\n",
@@ -836,10 +836,10 @@ void test_vnacal_print_measurements(test_vnacal_measurements_t *tmp,
 }
 
 /*
- * test_vnacal_free_measurements: free a test_vnacal_measurements_t structure
+ * libt_vnacal_free_measurements: free a libt_vnacal_measurements_t structure
  *   @tmp: test measurements structure
  */
-void test_vnacal_free_measurements(test_vnacal_measurements_t *tmp)
+void libt_vnacal_free_measurements(libt_vnacal_measurements_t *tmp)
 {
     if (tmp != NULL) {
 	if (tmp->tm_a_matrix != NULL) {

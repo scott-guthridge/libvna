@@ -25,13 +25,13 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
-#include "test.h"
-#include "vnacaltest.h"
+#include "libt.h"
+#include "libt_vnacal.h"
 
 /*
- * test_vnacal_print_properties: print a property list
+ * libt_vnacal_print_properties: print a property list
  */
-void test_vnacal_print_properties(const vnaproperty_t *vprp, int indent)
+void libt_vnacal_print_properties(const vnaproperty_t *vprp, int indent)
 {
     if (vprp == NULL) {
 	for (int i = 0; i < indent; ++i) {
@@ -58,7 +58,7 @@ void test_vnacal_print_properties(const vnaproperty_t *vprp, int indent)
 		    (void)printf("    ");
 		}
 		(void)printf(".%s\n", vmprp->vmpr_key);
-		test_vnacal_print_properties(vmprp->vmpr_value, indent + 1);
+		libt_vnacal_print_properties(vmprp->vmpr_value, indent + 1);
 	    }
 	}
 	return;
@@ -72,7 +72,7 @@ void test_vnacal_print_properties(const vnaproperty_t *vprp, int indent)
 		    (void)printf("    ");
 		}
 		(void)printf("[%d]\n", i);
-		test_vnacal_print_properties(vnaproperty_list_get(vprp, i),
+		libt_vnacal_print_properties(vnaproperty_list_get(vprp, i),
 			indent + 1);
 	    }
 	}

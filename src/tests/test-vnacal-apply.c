@@ -30,8 +30,8 @@
 #include <unistd.h>
 #endif
 #include "vnacal_internal.h"
-#include "test.h"
-#include "vnacaltest.h"
+#include "libt.h"
+#include "libt_vnacal.h"
 
 
 #define NTRIALS		50
@@ -72,18 +72,18 @@ static void error_fn(vnaerr_category_t category, const char *message, void *arg)
  *   @m_columns: number of VNA ports that generate signal
  *   @frequencies: number of test frequenciens
  */
-static test_result_t run_vnacal_apply_trial(int trial,
+static libt_result_t run_vnacal_apply_trial(int trial,
 	vnacal_type_t type, int m_rows, int m_columns,
 	int frequencies, bool ab)
 {
     const int ports = MAX(m_rows, m_columns);
     vnacal_t *vcp = NULL;
-    test_vnacal_terms_t *ttp = NULL;
-    test_vnacal_measurements_t *tmp = NULL;
+    libt_vnacal_terms_t *ttp = NULL;
+    libt_vnacal_measurements_t *tmp = NULL;
     int ci = -1;
     int s[ports * ports];
     vnadata_t *vdp = NULL;
-    test_result_t result = T_FAIL;
+    libt_result_t result = T_FAIL;
 
     /*
      * If -v, print the test header.
@@ -107,7 +107,7 @@ static test_result_t run_vnacal_apply_trial(int trial,
     /*
      * Make the requested calibration.
      */
-    if ((ttp = make_random_calibration(vcp, type, m_rows, m_columns,
+    if ((ttp = libt_vnacal_make_random_calibration(vcp, type, m_rows, m_columns,
 		    frequencies, false)) == NULL) {
 	result = T_FAIL;
 	goto out;
@@ -116,7 +116,7 @@ static test_result_t run_vnacal_apply_trial(int trial,
     /*
      * Allocate a test measurement structure to hold the DUT measurements.
      */
-    if ((tmp = test_vnacal_alloc_measurements(type, ports, ports,
+    if ((tmp = libt_vnacal_alloc_measurements(type, ports, ports,
 		    frequencies, ab)) == NULL) {
 	result = T_FAIL;
 	goto out;
@@ -133,11 +133,11 @@ static test_result_t run_vnacal_apply_trial(int trial,
     /*
      * Create random s-parameters for the DUT.
      */
-    if (test_vnacal_generate_random_parameters(vcp, s, ports * ports) == -1) {
+    if (libt_vnacal_generate_random_parameters(vcp, s, ports * ports) == -1) {
 	result = T_FAIL;
 	goto out;
     }
-    if (test_vnacal_calculate_measurements(ttp, tmp, s, ports, ports,
+    if (libt_vnacal_calculate_measurements(ttp, tmp, s, ports, ports,
 		NULL) == -1) {
 	result = T_FAIL;
 	goto out;
@@ -223,7 +223,7 @@ static test_result_t run_vnacal_apply_trial(int trial,
 		}
 		expected = _vnacal_get_parameter_value_i(vpmrp, f);
 		actual = vnadata_get_cell(vdp, findex, s_row, s_column);
-		if (!test_isequal(actual, expected)) {
+		if (!libt_isequal(actual, expected)) {
 		    if (opt_a) {
 			assert(!"data miscompare");
 		    }
@@ -240,8 +240,8 @@ static test_result_t run_vnacal_apply_trial(int trial,
 
 out:
     vnadata_free(vdp);
-    test_vnacal_free_measurements(tmp);
-    test_vnacal_free_error_terms(ttp);
+    libt_vnacal_free_measurements(tmp);
+    libt_vnacal_free_error_terms(ttp);
     vnacal_free(vcp);
     return result;
 }
@@ -249,7 +249,7 @@ out:
 /*
  * test_vnacal_apply: test vnacal_apply
  */
-static test_result_t test_vnacal_apply()
+static libt_result_t test_vnacal_apply()
 {
     static const int sizes[][2] = {
 	{  1,  1 },
@@ -264,7 +264,7 @@ static test_result_t test_vnacal_apply()
 	VNACAL_T8, VNACAL_U8, VNACAL_TE10, VNACAL_UE10, VNACAL_T16, VNACAL_U16,
 	VNACAL_UE14, VNACAL_E12
     };
-    test_result_t result = T_FAIL;
+    libt_result_t result = T_FAIL;
 
     for (int trial = 1; trial <= 12; ++trial) {
 	for (int s = 0; s < sizeof(sizes) / sizeof(sizes[0]); ++s) {
@@ -298,7 +298,7 @@ static test_result_t test_vnacal_apply()
     result = T_PASS;
 
 out:
-    test_report(result);
+    libt_report(result);
     return result;
 }
 
@@ -350,7 +350,7 @@ main(int argc, char **argv)
 	}
 	break;
     }
-    test_init_isequal();
+    libt_isequal_init();
     exit(test_vnacal_apply());
 }
 
@@ -1995,7 +1995,7 @@ static const apply_test_case_type apply_test_cases[] = {
  *   @frequencies: number of frequency points
  *   @map_flag: map DUT ports to VNA ports (required if DUT larger than cal)
  */
-static test_result_t test_vnacal_apply_helper(int trial, int frequencies,
+static libt_result_t test_vnacal_apply_helper(int trial, int frequencies,
 	const apply_test_case_type *atcp)
 {
     int vrows    = atcp->atc_vrows;
@@ -2011,7 +2011,7 @@ static test_result_t test_vnacal_apply_helper(int trial, int frequencies,
     double complex **measured_matrix = NULL;
     const int *const *map;
     vnadata_t *output_matrix = NULL;
-    test_result_t result = T_FAIL;
+    libt_result_t result = T_FAIL;
 #define S(i, j)	\
 	(actual_matrix[(i) * dcolumns + (j)])	/* drows x dcolumns */
 #define E(i, j, t) \
@@ -2049,7 +2049,7 @@ static test_result_t test_vnacal_apply_helper(int trial, int frequencies,
 	result = T_FAIL;
 	goto out;
     }
-    if ((error_terms = test_vnacal_generate_error_terms(cmsp)) == NULL) {
+    if ((error_terms = libt_vnacal_generate_error_terms(cmsp)) == NULL) {
 	result = T_FAIL;
 	goto out;
     }
@@ -2101,7 +2101,7 @@ static test_result_t test_vnacal_apply_helper(int trial, int frequencies,
     for (int row = 0; row < drows; ++row) {
 	for (int column = 0; column < dcolumns; ++column) {
 	    for (int findex = 0; findex < calp->cal_frequencies; ++findex) {
-		actual_matrix[row * dcolumns + column][findex] = test_crandn();
+		actual_matrix[row * dcolumns + column][findex] = libt_crandn();
 	    }
 	}
     }
@@ -2240,9 +2240,9 @@ static test_result_t test_vnacal_apply_helper(int trial, int frequencies,
 		if (opt_v != 0) {
 		    (void)printf("vcolumn %d dcolumn %d:\n", vcolumn, dcolumn);
 		    (void)printf("a:\n");
-		    test_print_cmatrix(a, vrows, vrows);
+		    libt_print_cmatrix(a, vrows, vrows);
 		    (void)printf("b:\n");
-		    test_print_cmatrix(b, vrows, 1);
+		    libt_print_cmatrix(b, vrows, 1);
 		}
 		/*
 		 * Find x = A^-1 b.
@@ -2257,7 +2257,7 @@ static test_result_t test_vnacal_apply_helper(int trial, int frequencies,
 		}
 		if (opt_v != 0) {
 		    (void)printf("x:\n");
-		    test_print_cmatrix(x, vrows, 1);
+		    libt_print_cmatrix(x, vrows, 1);
 		}
 		/*
 		 * From x, calculate the "measured" S-parameters for this
@@ -2424,7 +2424,7 @@ out:
     free_matrix_of_vectors(actual_matrix,   drows * dcolumns);
     if (cmsp != NULL) {
 	if (error_terms != NULL) {
-	    test_vnacal_free_error_terms(error_terms, cmsp);
+	    libt_vnacal_free_error_terms(error_terms, cmsp);
 	    error_terms = NULL;
 	}
 	vnacal_calset_free(cmsp);
@@ -2443,9 +2443,9 @@ out:
 /*
  * test_vnacal_map_apply: test vnacal_map
  */
-static test_result_t test_vnacal_map_apply()
+static libt_result_t test_vnacal_map_apply()
 {
-    test_result_t result = T_FAIL;
+    libt_result_t result = T_FAIL;
     bool pass = false;
 
     for (int trial = 1; trial <= NTRIALS; ++trial) {
@@ -2459,7 +2459,7 @@ static test_result_t test_vnacal_map_apply()
     result = T_PASS;
 
 out:
-    test_report(result);
+    libt_report(result);
     return result;
 }
 #endif /* end of mapped vnacal_apply tests */

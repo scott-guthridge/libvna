@@ -30,7 +30,7 @@
 #include <unistd.h>
 #endif
 #include "vnaconv_internal.h"
-#include "test.h"
+#include "libt.h"
 
 
 #define Z1	z0[0]
@@ -102,9 +102,9 @@ static int opt_v = 0;
  */
 #define TEST_EQUAL(x, y, label) \
     if (opt_a) { \
-	assert(test_isequal_label((x), (y), (label))); \
+	assert(libt_isequal_label((x), (y), (label))); \
     } else { \
-	if (!test_isequal_label((x), (y), (label))) { \
+	if (!libt_isequal_label((x), (y), (label))) { \
 	    result = T_FAIL; \
 	    goto out; \
 	} \
@@ -113,9 +113,9 @@ static int opt_v = 0;
 /*
  * test_conversions_3x3: test parameter conversions
  */
-static test_result_t test_conversions_3x3()
+static libt_result_t test_conversions_3x3()
 {
-    test_result_t result = T_SKIPPED;
+    libt_result_t result = T_SKIPPED;
 
     for (int trial = 0; trial < 10000; ++trial) {
 	double k1i, k2i, k3i;
@@ -130,27 +130,27 @@ static test_result_t test_conversions_3x3()
 	double complex xi[3];
 	double complex zi[3];
 
-	Z1  = test_crandn();
-	Z2  = test_crandn();
-	Z3  = test_crandn();
+	Z1  = libt_crandn();
+	Z2  = libt_crandn();
+	Z3  = libt_crandn();
 	z1c = conj(Z1);
 	z2c = conj(Z2);
 	z3c = conj(Z3);
 	k1i = sqrt(fabs(creal(Z1)));
 	k2i = sqrt(fabs(creal(Z2)));
 	k3i = sqrt(fabs(creal(Z3)));
-	a1  = test_crandn();
-	a2  = test_crandn();
-	a3  = test_crandn();
-	S11 = test_crandn();
-	S12 = test_crandn();
-	S13 = test_crandn();
-	S21 = test_crandn();
-	S22 = test_crandn();
-	S23 = test_crandn();
-	S31 = test_crandn();
-	S32 = test_crandn();
-	S33 = test_crandn();
+	a1  = libt_crandn();
+	a2  = libt_crandn();
+	a3  = libt_crandn();
+	S11 = libt_crandn();
+	S12 = libt_crandn();
+	S13 = libt_crandn();
+	S21 = libt_crandn();
+	S22 = libt_crandn();
+	S23 = libt_crandn();
+	S31 = libt_crandn();
+	S32 = libt_crandn();
+	S33 = libt_crandn();
 	b1 = S11 * a1 + S12 * a2 + S13 * a3;
 	b2 = S21 * a1 + S22 * a2 + S23 * a3;
 	b3 = S31 * a1 + S32 * a2 + S33 * a3;
@@ -180,7 +180,7 @@ static test_result_t test_conversions_3x3()
 	    (void)printf("v3 %9.5f%+9.5fj  i3 %9.5f%+9.5fj\n",
 		creal(v3), cimag(v3), creal(i3), cimag(i3));
 	    (void)printf("\n");
-	    test_print_cmatrix("s", *s, 3, 3);
+	    libt_print_cmatrix("s", *s, 3, 3);
 	}
 	TEST_EQUAL(S11 * a1 + S12 * a2 + S13 * a3, b1, "S11,S12,S13");
 	TEST_EQUAL(S21 * a1 + S22 * a2 + S23 * a3, b2, "S21,S22,S23");
@@ -188,7 +188,7 @@ static test_result_t test_conversions_3x3()
 
 	vnaconv_stozn(*s, *z, z0, 3);
 	if (opt_v) {
-	    test_print_cmatrix("z", *z, 3, 3);
+	    libt_print_cmatrix("z", *z, 3, 3);
 	}
 	TEST_EQUAL(Z11 * i1 + Z12 * i2 + Z13 * i3, v1, "stoz: Z11,Z12,Z13");
 	TEST_EQUAL(Z21 * i1 + Z22 * i2 + Z23 * i3, v2, "stoz: Z21,Z22,Z23");
@@ -196,7 +196,7 @@ static test_result_t test_conversions_3x3()
 
 	vnaconv_stoyn(*s, *y, z0, 3);
 	if (opt_v) {
-	    test_print_cmatrix("y", *y, 3, 3);
+	    libt_print_cmatrix("y", *y, 3, 3);
 	}
 	TEST_EQUAL(Y11 * v1 + Y12 * v2 + Y13 * v3, i1, "stoy: Y11,Y12,Y13");
 	TEST_EQUAL(Y21 * v1 + Y22 * v2 + Y23 * v3, i2, "stoy: Y21,Y22,Y23");
@@ -252,7 +252,7 @@ static test_result_t test_conversions_3x3()
 
 	vnaconv_stozin(*s, zi, z0, 3);
 	if (opt_v) {
-	    test_print_cmatrix("zi", zi, 3, 1);
+	    libt_print_cmatrix("zi", zi, 3, 1);
 	}
 
 	(void)memset((void *)xi, 0, sizeof(xi));
@@ -280,7 +280,7 @@ static test_result_t test_conversions_3x3()
     result = T_PASS;
 
 out:
-    test_report(result);;
+    libt_report(result);;
     return result;
 }
 
@@ -334,6 +334,6 @@ main(int argc, char **argv)
     if (argc != 0) {
 	print_usage();
     }
-    test_init_isequal();
+    libt_isequal_init();
     exit(test_conversions_3x3());
 }

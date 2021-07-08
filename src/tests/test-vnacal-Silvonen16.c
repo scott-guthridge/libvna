@@ -30,8 +30,8 @@
 #include <unistd.h>
 #endif
 #include "vnacal_internal.h"
-#include "test.h"
-#include "vnacaltest.h"
+#include "libt.h"
+#include "libt_vnacal.h"
 
 
 /*
@@ -265,13 +265,13 @@ static const int silvonen_table[][6] = {
  *   @frequencies: number of test frequenciens
  *   @ab: true: use a, b matrices; false: use m matrix
  */
-static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
+static libt_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
 	int frequencies, const int *table_entry, bool ab)
 {
     vnacal_t *vcp = NULL;
-    test_vnacal_terms_t *ttp = NULL;
-    test_vnacal_measurements_t *tmp = NULL;
-    test_result_t result = T_FAIL;
+    libt_vnacal_terms_t *ttp = NULL;
+    libt_vnacal_measurements_t *tmp = NULL;
+    libt_result_t result = T_FAIL;
 
     /*
      * If -v, print the test header.
@@ -298,9 +298,9 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
     /*
      * Generate random error parameters.
      */
-    if ((ttp = test_vnacal_generate_error_terms(vcp, type, 2, 2,
+    if ((ttp = libt_vnacal_generate_error_terms(vcp, type, 2, 2,
 		    frequencies, NULL, 1.0, ab)) == NULL) {
-	(void)fprintf(stderr, "%s: test_vnacal_generate_error_terms: %s\n",
+	(void)fprintf(stderr, "%s: libt_vnacal_generate_error_terms: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
@@ -309,7 +309,7 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
     /*
      * Allocate the test measurement matrices.
      */
-    if ((tmp = test_vnacal_alloc_measurements(type, 2, 2,
+    if ((tmp = libt_vnacal_alloc_measurements(type, 2, 2,
 		    frequencies, ab)) == NULL) {
 	result = T_FAIL;
 	goto out;
@@ -321,7 +321,7 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
     for (const int *ip = table_entry; *ip != -1; ++ip) {
 	switch (*ip) {
 	case MM:
-	    if (test_vnacal_add_double_reflect(ttp, tmp,
+	    if (libt_vnacal_add_double_reflect(ttp, tmp,
 			VNACAL_MATCH, VNACAL_MATCH, 1, 2) == -1) {
 		result = T_FAIL;
 		goto out;
@@ -329,7 +329,7 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
 	    break;
 
 	case MO:
-	    if (test_vnacal_add_double_reflect(ttp, tmp,
+	    if (libt_vnacal_add_double_reflect(ttp, tmp,
 			VNACAL_MATCH, VNACAL_OPEN, 1, 2) == -1) {
 		result = T_FAIL;
 		goto out;
@@ -337,7 +337,7 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
 	    break;
 
 	case MS:
-	    if (test_vnacal_add_double_reflect(ttp, tmp,
+	    if (libt_vnacal_add_double_reflect(ttp, tmp,
 			VNACAL_MATCH, VNACAL_SHORT, 1, 2) == -1) {
 		result = T_FAIL;
 		goto out;
@@ -345,7 +345,7 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
 	    break;
 
 	case OM:
-	    if (test_vnacal_add_double_reflect(ttp, tmp,
+	    if (libt_vnacal_add_double_reflect(ttp, tmp,
 			VNACAL_OPEN, VNACAL_MATCH, 1, 2) == -1) {
 		result = T_FAIL;
 		goto out;
@@ -353,7 +353,7 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
 	    break;
 
 	case OO:
-	    if (test_vnacal_add_double_reflect(ttp, tmp,
+	    if (libt_vnacal_add_double_reflect(ttp, tmp,
 			VNACAL_OPEN, VNACAL_OPEN, 1, 2) == -1) {
 		result = T_FAIL;
 		goto out;
@@ -361,7 +361,7 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
 	    break;
 
 	case OS:
-	    if (test_vnacal_add_double_reflect(ttp, tmp,
+	    if (libt_vnacal_add_double_reflect(ttp, tmp,
 			VNACAL_OPEN, VNACAL_SHORT, 1, 2) == -1) {
 		result = T_FAIL;
 		goto out;
@@ -369,7 +369,7 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
 	    break;
 
 	case SM:
-	    if (test_vnacal_add_double_reflect(ttp, tmp,
+	    if (libt_vnacal_add_double_reflect(ttp, tmp,
 			VNACAL_SHORT, VNACAL_MATCH, 1, 2) == -1) {
 		result = T_FAIL;
 		goto out;
@@ -377,7 +377,7 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
 	    break;
 
 	case SO:
-	    if (test_vnacal_add_double_reflect(ttp, tmp,
+	    if (libt_vnacal_add_double_reflect(ttp, tmp,
 			VNACAL_SHORT, VNACAL_OPEN, 1, 2) == -1) {
 		result = T_FAIL;
 		goto out;
@@ -385,7 +385,7 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
 	    break;
 
 	case SS:
-	    if (test_vnacal_add_double_reflect(ttp, tmp,
+	    if (libt_vnacal_add_double_reflect(ttp, tmp,
 			VNACAL_SHORT, VNACAL_SHORT, 1, 2) == -1) {
 		result = T_FAIL;
 		goto out;
@@ -393,7 +393,7 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
 	    break;
 
 	case T:
-	    if (test_vnacal_add_through(ttp, tmp, 1, 2) == -1) {
+	    if (libt_vnacal_add_through(ttp, tmp, 1, 2) == -1) {
 		result = T_FAIL;
 		goto out;
 	    }
@@ -419,7 +419,7 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
 		s[0][1] = p1;
 		s[1][0] = p1;
 		s[1][1] = p2;
-		if (test_vnacal_add_line(ttp, tmp, &s[0][0], 1, 2) == -1) {
+		if (libt_vnacal_add_line(ttp, tmp, &s[0][0], 1, 2) == -1) {
 		    vnacal_delete_parameter(vcp, p2);
 		    vnacal_delete_parameter(vcp, p1);
 		    result = T_FAIL;
@@ -445,15 +445,15 @@ static test_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
 	result = T_FAIL;
 	goto out;
     }
-    if (test_vnacal_validate_calibration(ttp, NULL) == -1) {
+    if (libt_vnacal_validate_calibration(ttp, NULL) == -1) {
 	result = T_FAIL;
 	goto out;
     }
     result = T_PASS;
 
 out:
-    test_vnacal_free_measurements(tmp);
-    test_vnacal_free_error_terms(ttp);
+    libt_vnacal_free_measurements(tmp);
+    libt_vnacal_free_error_terms(ttp);
     vnacal_free(vcp);
     return result;
 }
@@ -461,12 +461,12 @@ out:
 /*
  * test_vnacal_new_solt: run 16 parameter 2 port tests from Silvonen table
  */
-static test_result_t test_vnacal_new_silvonen16()
+static libt_result_t test_vnacal_new_silvonen16()
 {
     static const vnacal_type_t types[] = {
 	VNACAL_T16, VNACAL_U16
     };
-    test_result_t result = T_FAIL;
+    libt_result_t result = T_FAIL;
 
     for (int trial = 1; trial <= 10; ++trial) {
 	for (int entry = 0; entry < sizeof(silvonen_table) /
@@ -488,7 +488,7 @@ static test_result_t test_vnacal_new_silvonen16()
     result = T_PASS;
 
 out:
-    test_report(result);
+    libt_report(result);
     return result;
 }
 
@@ -541,6 +541,6 @@ main(int argc, char **argv)
 	}
 	break;
     }
-    test_init_isequal();
+    libt_isequal_init();
     exit(test_vnacal_new_silvonen16());
 }

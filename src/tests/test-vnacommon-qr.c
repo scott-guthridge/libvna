@@ -30,7 +30,7 @@
 #include <unistd.h>
 #endif
 #include "vnacommon_internal.h"
-#include "test.h"
+#include "libt.h"
 
 
 #define N_MATRIX_TRIALS	100
@@ -55,9 +55,9 @@ static int opt_v = 0;
 /*
  * test_qr: test QR decomposition
  */
-static test_result_t test_vnacommon_qr()
+static libt_result_t test_vnacommon_qr()
 {
-    test_result_t result = T_SKIPPED;
+    libt_result_t result = T_SKIPPED;
 
     for (int trial = 1; trial <= N_MATRIX_TRIALS; ++trial) {
 	for (int m = 1; m <= 5; ++m) {
@@ -81,7 +81,7 @@ static test_result_t test_vnacommon_qr()
 		 */
 		for (int i = 0; i < m; ++i) {
 		    for (int j = 0; j < n; ++j) {
-			t[i][j] = a[i][j] = test_crandn();
+			t[i][j] = a[i][j] = libt_crandn();
 		    }
 		}
 
@@ -91,9 +91,9 @@ static test_result_t test_vnacommon_qr()
 		 */
 		_vnacommon_qr(*t, *q, *r, m, n);
 		if (opt_v) {
-		    test_print_cmatrix("a", *a, m, n);
-		    test_print_cmatrix("q", *q, m, m);
-		    test_print_cmatrix("r", *r, m, n);
+		    libt_print_cmatrix("a", *a, m, n);
+		    libt_print_cmatrix("q", *q, m, m);
+		    libt_print_cmatrix("r", *r, m, n);
 		    (void)fflush(stdout);
 		}
 
@@ -107,7 +107,7 @@ static test_result_t test_vnacommon_qr()
 			for (int k = 0; k < m; ++k) {
 			    s += q[i][k] * conj(q[j][k]);
 			}
-			if (!test_isequal(s, i == j ? 1.0 : 0.0)) {
+			if (!libt_isequal(s, i == j ? 1.0 : 0.0)) {
 			    if (opt_a) {
 				assert(!"data miscompare");
 			    }
@@ -122,7 +122,7 @@ static test_result_t test_vnacommon_qr()
 		 */
 		for (int i = 1; i < m; ++i) {
 		    for (int j = 0; j < MIN(i, n); ++j) {
-			if (!test_isequal(r[i][j], 0.0)) {
+			if (!libt_isequal(r[i][j], 0.0)) {
 			    if (opt_a) {
 				assert(!"data miscompare");
 			    }
@@ -138,7 +138,7 @@ static test_result_t test_vnacommon_qr()
 		_vnacommon_mmultiply(*t, *q, *r, m, m, n);
 		for (int i = 0; i < m; ++i) {
 		    for (int j = 0; j < n; ++j) {
-			if (!test_isequal(t[i][j], a[i][j])) {
+			if (!libt_isequal(t[i][j], a[i][j])) {
 			    if (opt_a) {
 				assert(!"data miscompare");
 			    }
@@ -153,7 +153,7 @@ static test_result_t test_vnacommon_qr()
     result = T_PASS;
 
 out:
-    test_report(result);;
+    libt_report(result);;
     return result;
 }
 
@@ -207,6 +207,6 @@ main(int argc, char **argv)
     if (argc != 0) {
 	print_usage();
     }
-    test_init_isequal();
+    libt_isequal_init();
     exit(test_vnacommon_qr());
 }

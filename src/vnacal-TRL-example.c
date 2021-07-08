@@ -94,7 +94,7 @@ char *progname;
 /*
  * Errors in the Line Standard
  */
-#define LINE_LOSS	0.5 			/* dB/mm */
+#define LINE_LOSS	0.5			/* dB/mm */
 #define PHASE_ERROR	10.			/* degrees */
 
 /*
