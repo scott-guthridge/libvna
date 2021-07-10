@@ -908,7 +908,7 @@ int _vnadata_load_npd(vnadata_internal_t *vdip, FILE *fp, const char *filename)
 		    break;
 
 		case VNADATA_FORMAT_PRL:
-		    value = 1.0 / (1.0 / v1 - I / (2.0 * M_PI * I * f * v2));
+		    value = v1 / (1.0 - I * v1 / (2.0 * M_PI * f * v2));
 		    break;
 
 		case VNADATA_FORMAT_SRC:
