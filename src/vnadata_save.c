@@ -1335,8 +1335,8 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 					180.0 / M_PI * carg(value));
 			    } else {
 				(void)fprintf(fp, " %+*.*f",
-					aprecision + 2,
-					aprecision - 3,
+					aprecision + 4,
+					aprecision - 1,
 					180.0 / M_PI * carg(value));
 			    }
 			    break;
@@ -1351,8 +1351,8 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 					180.0 / M_PI * carg(value));
 			    } else {
 				(void)fprintf(fp, " %+*.*f",
-					aprecision + 2,
-					aprecision - 3,
+					aprecision + 4,
+					aprecision - 1,
 					180.0 / M_PI * carg(value));
 			    }
 			    break;
