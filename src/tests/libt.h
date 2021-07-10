@@ -16,10 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _TEST_H
-#define _TEST_H
+#ifndef _LIBT_H
+#define _LIBT_H
 
 #include <complex.h>
+#include <stdarg.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -39,20 +40,27 @@ typedef enum libt_result {
 /* progname: test program name */
 extern char *progname;
 
+extern bool opt_a;
+extern int opt_v;
+
 /* libt_isequal_eps: maximum allowed normalized error in libt_isequal */
 extern double libt_isequal_eps;
 
-/* report the result of the test to stdout */
-extern void libt_report(libt_result_t result);
+/* libt_isequal_init: init libt_isequal_eps based on the machine precision */
+extern void libt_isequal_init();
 
-/* libt_crandn: generate a 2d normally distributed random complex number */
-extern double complex libt_crandn();
+/* libt_isequal_d: test if two doubles are approximately equal */
+extern bool libt_isequal_d(double actual, double expected);
 
-/* libt_crandn_nz: like libt_crandn, except with magitude >= 0.1 */
-double complex libt_crandn_nz();
+/* libt_isequal_d_rpt: test for equality and report miscompare if not */
+extern bool libt_isequal_d_rpt(const char *prefix, double actual,
+	double expected);
 
-/* libt_crandn_nrz: like libt_crandn_nz, angle in 20-160, 200-340 degrees */
-extern double complex libt_crandn_nrz();
+/* libt_isequal_c: test if two complex numbers are approximately equal */
+extern bool libt_isequal_c(double complex actual, double complex expected);
+
+extern bool libt_isequal_c_rpt(const char *prefix, double complex actual,
+	double complex expected);
 
 /* libt_isequal: test if two values are equal */
 extern bool libt_isequal(double complex actual, double complex expected);
@@ -65,11 +73,38 @@ extern bool libt_isequal_label(double complex actual, double complex expected,
 extern void libt_print_cmatrix(const char *tag, double complex *a,
 	int m, int n);
 
-/* libt_isequal_init: init libt_isequal_eps based on the machine precision */
-extern void libt_isequal_init();
+/* libt_crandn: generate a 2d normally distributed random complex number */
+extern double complex libt_crandn();
 
-#ifdef __cplusplus
-} /* extern "C" */
+/* libt_crandn_nz: like libt_crandn, except with magitude >= 0.1 */
+double complex libt_crandn_nz();
+
+/* libt_crandn_nrz: like libt_crandn_nz, but angle in 20-160, 200-340 degrees */
+extern double complex libt_crandn_nrz();
+
+/* libt_fail: report a test failure and abort if opt_a */
+extern void libt_fail(const char *format, ...)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 1, 2)));
+#else
+    ;
 #endif
 
-#endif /* _TEST_H */
+/* libt_error: report an error in the test itself and exit */
+extern void libt_error(const char *format, ...)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 1, 2)))
+	__attribute__ ((__noreturn__));
+#else
+    ;
+#endif
+
+    /* report the result of the test to stdout */
+    extern void libt_report(libt_result_t result);
+
+
+#ifdef __cplusplus
+    } /* extern "C" */
+#endif
+
+#endif /* _LIBT_H */

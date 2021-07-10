@@ -93,8 +93,8 @@ static const char *const help[] = {
     "-v	 show verbose output",
     NULL
 };
-static bool opt_a = false;
-static int opt_v = 0;
+bool opt_a = false;
+int opt_v = 0;
 
 /*
  * TEST_EQUAL: fail the test if x and y are not equal
@@ -318,7 +318,7 @@ main(int argc, char **argv)
 	    continue;
 
 	case 'v':
-	    opt_v = 1;
+	    ++opt_v;
 	    continue;
 
 	case -1:

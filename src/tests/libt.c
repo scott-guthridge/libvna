@@ -53,19 +53,99 @@ void libt_isequal_init()
 }
 
 /*
- * libt_isequal: test if actual and expected are approximately equal
+ * libt_isequal_d: test if two doubles are approximately equal
+ *   @actual: actual value
+ *   @expected: expected value
  */
-bool libt_isequal(double complex actual, double complex expected)
+bool libt_isequal_d(double actual, double expected)
 {
-    double d = cabs(expected);
+    double error = fabs(actual - expected);
+    double scale = fabs(expected);
 
-    if (d < 1.0) {
-	d = 1.0;
+    /*
+     * If magnitude of the expected value is more than 1, normalize
+     * the error to the expected value.
+     */
+    if (scale > 1.0) {
+	error /= scale;
     }
-    if (cabs(actual - expected) / d > libt_isequal_eps) {
-	printf("data miscompare: %f%+fj != %f%+fj (%f)\n",
-		creal(actual), cimag(actual), creal(expected), cimag(expected),
-		cabs(actual - expected) / d);
+    return error <= libt_isequal_eps;
+}
+
+/*
+ * libt_isequal_c: test if two complex numbers are approximately equal
+ *   @actual: actual value
+ *   @expected: expected value
+ */
+bool libt_isequal_c(double complex actual, double complex expected)
+{
+    double error = cabs(actual - expected);
+    double scale = cabs(expected);
+
+    /*
+     * If magnitude of the expected value is more than 1, normalize
+     * the error to the expected value.
+     */
+    if (scale > 1.0) {
+	error /= scale;
+    }
+    return error <= libt_isequal_eps;
+}
+
+/*
+ * libt_isequal_d_rpt: test if two doubles are approximately equal
+ *   @actual: actual value
+ *   @expected: expected value
+ */
+bool libt_isequal_d_rpt(const char *prefix, double actual, double expected)
+{
+    double error = fabs(actual - expected);
+    double scale = fabs(expected);
+
+    /*
+     * If magnitude of the expected value is more than 1, normalize
+     * the error to the expected value.
+     */
+    if (scale > 1.0) {
+	error /= scale;
+    }
+    if (error > libt_isequal_eps) {
+	if (prefix != NULL) {
+	    (void)printf("%s: ", prefix);
+	}
+	(void)printf("data miscompare: %f%+fj != %f%+fj (%f)",
+		creal(actual), cimag(actual),
+		creal(expected), cimag(expected),
+		error);
+	return false;
+    }
+    return true;
+}
+
+/*
+ * libt_isequal_c_rpt: test if actual and expected are approximately equal
+ */
+bool libt_isequal_c_rpt(const char *prefix, double complex actual,
+	double complex expected)
+{
+    double error = cabs(actual - expected);
+    double scale = cabs(expected);
+
+    /*
+     * If magnitude of the expected value is more than 1, normalize
+     * the error to the expected value.
+     */
+    if (scale > 1.0) {
+	error /= scale;
+    }
+    if (error > libt_isequal_eps) {
+	if (prefix != NULL) {
+	    (void)printf("%s: ", prefix);
+	}
+	(void)printf("data miscompare: %f%+fj != %f%+fj (%f)",
+		creal(actual), cimag(actual),
+		creal(expected), cimag(expected),
+		error);
 	return false;
     }
     return true;
@@ -77,18 +157,19 @@ bool libt_isequal(double complex actual, double complex expected)
 bool libt_isequal_label(double complex actual, double complex expected,
 	const char *label)
 {
-    double d = cabs(expected);
-
-    if (d < 1.0) {
-	d = 1.0;
-    }
-    if (cabs(actual - expected) / d > libt_isequal_eps) {
-	printf("%s: %f%+fj != %f%+fj (%f)\n", label,
-		creal(actual), cimag(actual), creal(expected), cimag(expected),
-		cabs(actual - expected) / d);
+    if (!libt_isequal_c_rpt(label, actual, expected)) {
+	(void)printf("\n");
 	return false;
     }
     return true;
+}
+
+/*
+ * libt_isequal: test if actual and expected are approximately equal
+ */
+bool libt_isequal(double complex actual, double complex expected)
+{
+    return libt_isequal_label(actual, expected, NULL);
 }
 
 /*
@@ -158,6 +239,36 @@ void libt_print_cmatrix(const char *tag, double complex *a, int m, int n)
 	(void)printf("\n");
     }
     (void)printf("\n");
+}
+
+/*
+ * libt_error: report an error in the test itself and exit
+ */
+void libt_error(const char *format, ...)
+{
+    va_list ap;
+
+    va_start(ap, format);
+    (void)fprintf(stderr, "%s: ", progname);
+    (void)vfprintf(stderr, format, ap);
+    va_end(ap);
+
+    exit(99);
+}
+
+/*
+ * libt_fail: report a test failure and abort on opt_a
+ */
+void libt_fail(const char *format, ...)
+{
+    va_list ap;
+
+    va_start(ap, format);
+    (void)vprintf(format, ap);
+    va_end(ap);
+    if (opt_a) {
+	abort();
+    }
 }
 
 /* report the result of the test to stdout */

@@ -51,7 +51,7 @@ static const char *const help[] = {
     NULL
 };
 bool opt_a = false;
-int  opt_v = 0;
+int opt_v = 0;
 
 /*
  * error_fn: error reporting function

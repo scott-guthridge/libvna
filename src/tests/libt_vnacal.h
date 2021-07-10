@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _TEST_VNACAL_H
-#define _TEST_VNACAL_H
+#ifndef _LIBT_VNACAL_H
+#define _LIBT_VNACAL_H
 
 #include <stdbool.h>
 #include "vnacal_internal.h"
@@ -152,4 +152,4 @@ extern int libt_vnacal_validate_calibration(
 } /* extern "C" */
 #endif
 
-#endif /* _TEST_VNACAL_H */
+#endif /* _LIBT_VNACAL_H */

@@ -49,8 +49,8 @@ static const char *const help[] = {
     "-v	 show verbose output",
     NULL
 };
-static bool opt_a = false;
-static int opt_v = 0;
+bool opt_a = false;
+int opt_v = 0;
 
 /*
  * test_vnacommon_mldivide: test matrix left division
@@ -183,7 +183,7 @@ main(int argc, char **argv)
 	    continue;
 
 	case 'v':
-	    opt_v = true;
+	    ++opt_v;
 	    continue;
 
 	case -1:

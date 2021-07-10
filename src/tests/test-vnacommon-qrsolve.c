@@ -49,8 +49,8 @@ static const char *const help[] = {
     "-v	 show verbose output",
     NULL
 };
-static bool opt_a = false;
-static int opt_v = 0;
+bool opt_a = false;
+int opt_v = 0;
 
 /*
  * qrsolve_helper: generate a random system of equations and solve
@@ -363,7 +363,7 @@ main(int argc, char **argv)
 	    continue;
 
 	case 'v':
-	    opt_v = true;
+	    ++opt_v;
 	    continue;
 
 	case -1:
