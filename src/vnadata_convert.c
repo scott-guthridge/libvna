@@ -201,7 +201,7 @@ typedef enum conversion_code {
  * conversion_table: map a vnadata_parameter_type_t pair to conversion_code_t
  *   Row index is a member of vnadata_parameter_type_t describing the type
  *   of the input matrix.  Column index is the new type.
- *   
+ *
  *   Name format: [ANTV][01]conversion
  *	A: any dimensions
  *	N: NxN
@@ -220,7 +220,7 @@ static const conversion_code_t conversion_table[VPT_NTYPES][VPT_NTYPES] = {
 /*-*/{ ASAME,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL },
 /*S*/{ INVAL,  ASAME, N1StoZ, N1StoY, T0StoT, T1StoH, T1StoG, T1StoA, T1StoB, A1StoI },
 /*Z*/{ INVAL, N1ZtoS,  NSAME, N0ZtoY, T1ZtoT, T0ZtoH, T0ZtoG, T0ZtoA, T0ZtoB, N1ZtoI },
-/*Y*/{ INVAL, N1YtoS, N1YtoI,  NSAME, T1YtoT, T0YtoH, T0YtoG, T0YtoA, T0YtoB, N1YtoI },
+/*Y*/{ INVAL, N1YtoS, N0YtoZ,  NSAME, T1YtoT, T0YtoH, T0YtoG, T0YtoA, T0YtoB, N1YtoI },
 /*T*/{ INVAL, T0TtoS, T1TtoZ, T1TtoY,  TSAME, T1TtoH, T1TtoG, T1TtoA, T1TtoB, T1TtoI },
 /*H*/{ INVAL, T1HtoS, T0HtoZ, T0HtoY, T1HtoT,  TSAME, T0HtoG, T0HtoA, T0HtoB, T1HtoI },
 /*G*/{ INVAL, T1GtoS, T0GtoZ, T0GtoY, T1GtoT, T0GtoH,  TSAME, T0GtoA, T0GtoB, T1GtoI },
