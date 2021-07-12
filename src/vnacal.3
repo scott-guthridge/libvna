@@ -251,7 +251,7 @@ The \fIvnp\fP argument is a pointer to a \fBvnacal_new_t\fP structure.
 See \fBvnacal_new\fP(3).
 .PP
 \fBvnacal_find_calibration\fP() finds a calibration by name and
-returns the calibration index (\fIci\fP), or -1 if not found.
+returns the calibration index, \fIci\fP, or -1 if not found.
 .PP
 \fBvnacal_delete_calibration\fP() deletes the calibration with index
 \fIci\fP from the \fBvnacal_t\fP structure.
@@ -287,7 +287,7 @@ dimensions of the calibration.  See \fBvnacal_new\fP(3).
 \fBvnacal_get_frequencies\fP() returns the number of frequency
 points used in the calibration
 .PP
-\fBvncal_get_fmin\fP() and \fBvnacal_get_fmax\fP() return
+\fBvnacal_get_fmin\fP() and \fBvnacal_get_fmax\fP() return
 the minimum and maximum frequency values, respectively, and
 \fBvnacal_get_frequency_vector\fP() returns a pointer to the full vector
 of calibration frequencies.
@@ -311,15 +311,14 @@ structure and any associated \fBvnacal_new_t\fP structures.
 .PP
 \fBvnacal_apply\fP() and \fBvnacal_apply_m\fP() apply the calibration
 with index \fIci\fP to measured data and store the resulting s-parameters
-into the caller provided \fBvncal_data_t\fP structure.
+into the caller provided \fBvnacal_data_t\fP structure.
 The \fIfrequency_vector\fP argument is a vector of length
 \fIfrequencies\fP of frequency points at which the measurements were
 taken.
 The range of frequencies must lie within the frequency range of the
-calibration; however, the frequency points don't have to line up with
-the calibration frequency points: the library uses rational function
-interpolation when necessary to interpolate between calibration frequency
-points.
+calibration; however, the frequency points don't have to be the same
+as those used during calibration: the library uses rational function
+interpolation when necessary to interpolate between frequency points.
 .PP
 If the vector network analyzer measures both signal leaving each port
 (\fIa\fP matrix) and signal entering each port (\fIb\fP matrix), use
@@ -327,10 +326,9 @@ If the vector network analyzer measures both signal leaving each port
 If it only measures the amount of detected signal, use
 \fBvnacal_apply_m\fP().
 In either case, the measurement matrix (\fIb\fP or \fIm\fP) must be
-square as each s-parameter in general depends on all cells of the
-measurement matrix, even if the caller isn't interested in the full set
-of S-parameters.
-The dimensions of the calibration must also be square and the same as
+square since each s-parameter, in general, depends on all cells of the
+measurement matrix.
+The dimensions of the calibration must also be square, and the same as
 the measurement matrix, with the exception that a 1x2 or 2x1 calibration
 can be used with a 2x2 measurement matrix.
 .\" TODO: update this when fixed
@@ -340,9 +338,9 @@ can be used with a 2x2 measurement matrix.
 .PP
 For T8, U8, TE10, UE10, T16 and U16 error term types, the \fIa\fP matrix
 has dimensions \fIb_columns\fP x \fIb_columns\fP.
-The rows of \fIa\fP represent the amount of signal leaving the respective
-VNA port; the columns of \fIa\fP represent the VNA port that's driving
-signal.
+The rows of \fIa\fP represent the amount of signal leaving each VNA port;
+the columns of \fIa\fP represent the VNA port that was nominally driving
+signal when the measurement was taken.
 When \fIa\fP and \fIb\fP matrices are given, the library calculates the
 measurement matrix using
 .ie t \{\
@@ -376,7 +374,7 @@ in \fBsprintf\fP(); and \fB...\fP is a list of additional arguments as
 appropriate for \fIformat\fP.
 The functions use \fIformat\fP and the additional arguments to construct
 a string which they then interpret.
-The generated string begins with a key consisting of a list of
+The generated string must begin with a key consisting of a list of
 dot-separated identifiers and square-bracket delimited array indices
 described below, giving a path through the properties, which form a tree.
 .PP
@@ -448,7 +446,7 @@ vnacal_property_set(vcp, ci, "my_reflect[2].gamma=0.0");
 .fi
 .in +4n
 Create a key-value map with member \fImy_reflect\fP containing a list
-of three key-value maps with \fIname\fP and \fIgamma\fP submembers set
+of three key-value maps with \fIname\fP and \fIgamma\fP sub-members set
 as shown.
 .in -4n
 .PP
@@ -474,7 +472,7 @@ fails with a return of \s-2NULL\s+2.
 The \fBvnacal_property_delete\fP() function deletes a property from
 the tree.
 For example vnacal_property_delete(vcp, set, "detectorMatrix") deletes
-\fIdetectorMatrix\fP and its descendents; vnacal_property_delete(vcp, ci,
+\fIdetectorMatrix\fP and its descendants; vnacal_property_delete(vcp, ci,
 ".") deletes all properties.
 .PP
 The \fBvnacal_property_type\fP() function returns 'm' if the key refers
@@ -528,7 +526,7 @@ functions.
 .SH ERRORS
 The library functions reports the following errors:
 .IP \fBEBADMSG\fP
-The file given to \fBvnacal_load\fP() has a synax error or is otherwise
+The file given to \fBvnacal_load\fP() has a syntax error or is otherwise
 invalid.
 .IP \fBEDOM\fP
 The \fIa\fP matrix given to \fBvnacal_apply\fP() or the system of
