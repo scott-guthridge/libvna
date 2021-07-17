@@ -124,7 +124,13 @@ libt_vnadata_t *libt_vnadata_create(vnadata_parameter_type_t type, int rows,
 
 	    case Z0_COMPLEX_VECTOR:
 		for (int i = 0; i < ports; ++i) {
-		    tdp->td_z0_vector[i] = libt_crandn();
+		    double complex value = libt_crandn();
+
+		    /* don't let real part get too close to zero */
+		    if (fabs(creal(value)) < 0.1) {
+			value += 1.0;
+		    }
+		    tdp->td_z0_vector[i] = value;
 		}
 		break;
 
@@ -145,7 +151,13 @@ libt_vnadata_t *libt_vnadata_create(vnadata_parameter_type_t type, int rows,
 			libt_error("calloc: %s", strerror(errno));
 		    }
 		    for (int port = 0; port < ports; ++port) {
-			tdp->td_fz0_vector[findex][port] = libt_crandn_nz();
+			double complex value = libt_crandn();
+
+			/* don't let real part get too close to zero */
+			if (fabs(creal(value)) < 0.1) {
+			    value += 1.0;
+			}
+			tdp->td_fz0_vector[findex][port] = value;
 		    }
 		}
 	    }
