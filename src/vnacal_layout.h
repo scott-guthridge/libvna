@@ -222,7 +222,7 @@ typedef struct vnacal_layout {
  * The sub-matrices are related to the measurement matrix, M, and the
  * scattering parameter matrix, S by the following matrix equation:
  *
- *	Um M + Ui = S Ux M + S Us
+ *	Um M + Ui = S (Ux M + Us)
  *
  * The dimensions follow directly from the equation:
  *	Um: s_rows x m_rows
@@ -344,9 +344,10 @@ typedef struct vnacal_layout {
  *	[ Et Em ]
  *
  * The sub-matrices are related to the measurement matrix, M, and the
- * scattering parameter matrix, S by the following matrix equation:
+ * scattering parameter matrix, S by the following matrix equations:
  *
- *      (M - El) Et^-1 (I - Em S) = Er S
+ *      (I - S Em) Er^-1 (M - El) = S Et	if m_rows    == s_rows
+ *      (M - El) Et^-1 (I - Em S) = Er S	if m_columns == s_columns
  *
  * The dimensions follow from the equations:
  *	El: m_rows x m_columns		leakage
@@ -354,8 +355,8 @@ typedef struct vnacal_layout {
  *	Et: s_columns x m_columns	transmission tracking
  *	Em: s_columns x s_rows		match
  *
- * The El sub-matrix is always complete and matches the dimensions of M.
- * The other sub-matrices may be full or diagonal, depending on the type.
+ * The El sub-matrix matches the dimensions of M.  The other matrices
+ * may be complete or diagonal, depending on the number of error terms.
  *
  * Solved for M:
  *      M = El + Er (I - S Em)^-1 S Et
@@ -364,7 +365,6 @@ typedef struct vnacal_layout {
  * Solved for S:
  *      S = Er^-1 (M - El) (Et + Em Er^-1 (M - El))^-1	if mr == sr && mc == sc
  *        = ((M - El) Et^-1 Em + Er)^-1 (M - El) Et^-1	if mr == sr && mc == sc
- *        = (Ef (M - El)^-1 Er + Em)^-1			if mr == mc && sr == sc
  *
  * From T terms:				if m_columns == s_columns
  *	El = Ti Tm^-1
@@ -413,18 +413,18 @@ typedef struct vnacal_layout {
  * We can solve for M column by column as follows:
  *
  *  M(:,1) = El(:,1) + B A^-1 Et(:,1) with:
- *      A = 1 - c1_em11 s11                       - c1_em11 s12
- *            - c1_em22 s21                     1 - c1_em22 s22
+ *	A = [ 1 - c1_em11 s11			    - c1_em11 s12 ]
+ *	    [	- c1_em22 s21			  1 - c1_em22 s22 ]
  *
- *      B = c1_er11 s11				c1_er11 s12
- *          c1_er22 s21				c1_er22 s22
+ *	B = [ c1_er11 s11			      c1_er11 s12 ]
+ *	    [ c1_er22 s21			      c1_er22 s22 ]
  *
  *  M(:,2) = El(:,2) + B A^-1 Et(:,2) with:
- *      A = 1 - c2_em11 s11                       - c2_em11 s12
- *            - c2_em22 s21                     1 - c2_em22 s22
+ *	A = [ 1 - c2_em11 s11			    - c2_em11 s12 ]
+ *	    [	- c2_em22 s21			  1 - c2_em22 s22 ]
  *
- *      B = c2_er11 s11				c2_er11 s12
- *          c2_er22 s21				c2_er22 s22
+ *	B = [ c2_er11 s11			      c2_er11 s12 ]
+ *	    [ c2_er22 s21			      c2_er22 s22 ]
  *
  *  ...
  *
