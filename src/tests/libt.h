@@ -73,7 +73,13 @@ extern bool libt_isequal_label(double complex actual, double complex expected,
 extern void libt_print_cmatrix(const char *tag, double complex *a,
 	int m, int n);
 
-/* libt_crandn: generate a 2d normally distributed random complex number */
+/* libt_randn: return a normally distributed random number */
+extern double libt_randn();
+
+/* libt_randn: return a pair of normally distributed random numbers */
+extern double libt_randn2(double *);
+
+/* libt_crandn: generate a complex normal random number */
 extern double complex libt_crandn();
 
 /* libt_crandn_nz: like libt_crandn, except with magitude >= 0.1 */

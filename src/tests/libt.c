@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include "libt.h"
 
+#define SQRT2_2		0.707106781186547524400844362104
+
 /*
  * libt_isequal_eps: maximum allowed normalized error in libt_isequal
  */
@@ -173,8 +175,31 @@ bool libt_isequal(double complex actual, double complex expected)
 }
 
 /*
- * libt_crandn: generate a random complex number where real and imaginary parts
- *	are normally distributed with zero mean and unit standard deviation
+ * libt_randn2: return a pair of normally distributed random numbers
+ */
+double libt_randn2(double *second)
+{
+    double u1 = (random() + 1.0) / RAND_MAX;	/* Box Muller method */
+    double u2 = (double)random() / RAND_MAX;
+    double r = sqrt(-2.0 * log(u1));
+    double a = 2 * M_PI * u2;
+
+    if (second != NULL) {
+	*second = r * sin(a);
+    }
+    return r * cos(a);
+}
+
+/*
+ * libt_randn: generate a normally distributed random number
+ */
+double libt_randn()
+{
+    return libt_randn2(NULL);
+}
+
+/*
+ * libt_crandn: generate a complex normal random number
  */
 double complex libt_crandn()
 {
@@ -183,7 +208,7 @@ double complex libt_crandn()
     double r = sqrt(-2.0 * log(u1));
     double a = 2 * M_PI * u2;
 
-    return r * (cos(a) + I * sin(a));
+    return SQRT2_2 * r * (cos(a) + I * sin(a));
 }
 
 /*
@@ -196,7 +221,7 @@ double complex libt_crandn_nz()
     double r = 0.1 + 0.9 * sqrt(-2.0 * log(u1));
     double a = 2 * M_PI * u2;
 
-    return r * (cos(a) + I * sin(a));
+    return SQRT2_2 * r * (cos(a) + I * sin(a));
 }
 
 /*
@@ -221,7 +246,7 @@ double complex libt_crandn_nrz()
     }
     a = M_PI / 180.0 * d;
 
-    return r * (cos(a) + I * sin(a));
+    return SQRT2_2 * r * (cos(a) + I * sin(a));
 }
 
 /*
