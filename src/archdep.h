@@ -40,6 +40,10 @@
 #define srandom srand
 #endif
 
+#ifdef HAVE_FLOAT_H
+#include <float.h>
+#endif
+
 #ifdef HAVE_SEARCH_H
 #include <search.h>	/* for POSIX insque; sometimes in string.h */
 #endif /* HAVE_SEARCH_H */
