@@ -60,29 +60,48 @@ vnacal_parameter_t *_vnacal_get_parameter(vnacal_t *vcp, int parameter)
 void _vnacal_get_parameter_frange(vnacal_parameter_t *vpmrp,
 	double *fmin, double *fmax)
 {
+    vnacal_parameter_t *vpmrp_orig = vpmrp;
+
     for (;;) {
 	switch (vpmrp->vpmr_type) {
-	case VNACAL_NEW:
-	    break;
-
 	case VNACAL_SCALAR:
 	    *fmin = 0.0;
 	    *fmax = INFINITY;
-	    return;
+	    break;
 
 	case VNACAL_VECTOR:
 	    *fmin = vpmrp->vpmr_frequency_vector[0];
 	    *fmax = vpmrp->vpmr_frequency_vector[vpmrp->vpmr_frequencies - 1];
-	    return;
+	    break;
 
 	case VNACAL_UNKNOWN:
 	case VNACAL_CORRELATED:
 	    vpmrp = vpmrp->vpmr_other;
 	    continue;
+
+	default:
+	    assert(!"unexpected parameter type");
 	}
 	break;
     }
-    assert(!"unexpected parameter type");
+
+    /*
+     * If the original object is of type VNA_CORRELATED, then further
+     * restrict the range based on the sigma frequencies.
+     */
+    if (vpmrp_orig->vpmr_type == VNACAL_CORRELATED &&
+	    vpmrp_orig->vpmr_sigma_frequency_vector != NULL) {
+	int sf = vpmrp_orig->vpmr_sigma_frequencies;
+	double smin = vpmrp_orig->vpmr_sigma_frequency_vector[0];
+	double smax = vpmrp_orig->vpmr_sigma_frequency_vector[sf - 1];
+
+	if (smin > *fmin) {
+	    *fmin = smin;
+	}
+	if (smax < *fmax) {
+	    *fmax = smax;
+	}
+    }
 }
 
 /*
@@ -205,8 +224,16 @@ static void _vnacal_free_parameter(vnacal_parameter_t *vpmrp)
 	vprmcp->vprmc_first_free = parameter;
     }
     switch (vpmrp->vpmr_type) {
-    case VNACAL_UNKNOWN:
     case VNACAL_CORRELATED:
+	if (vpmrp->vpmr_sigma_frequency_vector !=
+		vpmrp->vpmr_other->vpmr_frequency_vector) {
+	    free((void *)vpmrp->vpmr_sigma_frequency_vector);
+	}
+	free((void *)vpmrp->vpmr_sigma_vector);
+	free((void *)vpmrp->vpmr_sigma_spline);
+        /*FALLTHROUGH*/
+
+    case VNACAL_UNKNOWN:
 	if (vpmrp->vpmr_other != NULL) {
 	    _vnacal_release_parameter(vpmrp->vpmr_other);
 	}

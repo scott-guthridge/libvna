@@ -739,13 +739,16 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 		 * then put the known value into k_vector with one over
 		 * sigma weight.
 		 */
-		coefficient = 1.0 / vpmrp1->vpmr_sigma;
+		coefficient = 1.0 / _vnacal_get_correlated_sigma(vpmrp1,
+			frequency);
 		vnprp2 = vnprp1->vnpr_correlate;
 		j_matrix[j_row][vnprp1->vnpr_unknown_index] = coefficient;
 		if (vnprp2->vnpr_unknown) {
 		    j_matrix[j_row][vnprp2->vnpr_unknown_index] = -coefficient;
 		} else {
-		    k_vector[j_row] = coefficient * vnprp2->vnpr_known_value;
+		    k_vector[j_row] = coefficient *
+			_vnacal_get_parameter_value_i(vnprp2->vnpr_parameter,
+				frequency);
 		}
 		++j_row;
 	    }
@@ -910,6 +913,7 @@ static double calc_rms_error(solve_state_t *ssp,
 {
     vnacal_new_t *vnp = ssp->ss_vnp;
     const int findex = ssp->ss_findex;
+    const double frequency = vnp->vn_frequency_vector[findex];
     leakage_term_t *leakage_vector = ssp->ss_leakage_vector;
     const int correlated = vnp->vn_correlated_parameters;
     const vnacal_new_m_error_t *m_error_vector = vnp->vn_m_error_vector;
@@ -996,15 +1000,17 @@ static double calc_rms_error(solve_state_t *ssp,
 	    if (vpmrp1->vpmr_type == VNACAL_CORRELATED) {
 		vnacal_new_parameter_t *vnprp2 = vnprp1->vnpr_correlate;
 		double complex v;
+		double sigma;
 
 		v = ssp->ss_p_vector[vnprp1->vnpr_unknown_index][findex];
 		if (vnprp2->vnpr_unknown) {
 		    v -= ssp->ss_p_vector[vnprp2->vnpr_unknown_index][findex];
 		} else {
-		    v -= vnprp2->vnpr_known_value;
+		    v -= _vnacal_get_parameter_value_i(vnprp2->vnpr_parameter,
+			    frequency);
 		}
-		squared_error += creal(v * conj(v)) /
-		    (vpmrp1->vpmr_sigma * vpmrp1->vpmr_sigma);
+		sigma = _vnacal_get_correlated_sigma(vpmrp1, frequency);
+		squared_error += creal(v * conj(v)) / (sigma * sigma);
 		++count;
 	    }
 	}

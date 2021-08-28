@@ -87,27 +87,52 @@ typedef struct vnacal_parameter {
     union {
 	double complex scalar;
 	struct {
+	    /*
+	     * For vector parameters, frequencies, frequency_vector and
+	     * gamma_vector are set up in vnacal_make_vector_parameter;
+	     * for unknown and correlated parameters, these are set up
+	     * in vnacal_new_solve.
+	     */
 	    int frequencies;
 	    double *frequency_vector;
 	    double complex *gamma_vector;
 	    struct {
+		/* pointer to related parameter */
 		struct vnacal_parameter *other;
 		union {
 		    struct {
-			double sigma;
+			/* number of freq-dependent sigma values */
+			int sigma_frequencies;
+
+			/* sigma frequences; may == other->frequency_vec */
+			double *sigma_frequency_vector;
+
+			/* sigma_frequencies long vector of sigma values */
+			double *sigma_vector;
+
+			/* cubic spline coefficients for sigma_vector */
+			double (*sigma_spline)[3];
+
 		    } correlated;
 		} u;
-	    } unknown;
+	    } unknown;	/* including correlated */
 	} vector;
     } u;
-
 } vnacal_parameter_t;
-#define vpmr_gamma		u.scalar
-#define vpmr_frequencies	u.vector.frequencies
-#define vpmr_frequency_vector	u.vector.frequency_vector
-#define vpmr_gamma_vector	u.vector.gamma_vector
-#define vpmr_other		u.vector.unknown.other
-#define vpmr_sigma		u.vector.unknown.u.correlated.sigma
+
+/*
+ * Hide the union
+ */
+#define vpmr_gamma			u.scalar
+#define vpmr_frequencies		u.vector.frequencies
+#define vpmr_frequency_vector		u.vector.frequency_vector
+#define vpmr_gamma_vector		u.vector.gamma_vector
+#define vpmr_other			u.vector.unknown.other
+#define vmpr_correlated			u.vector.unknown.u.correlated
+#define vpmr_sigma_frequencies		vmpr_correlated.sigma_frequencies
+#define vpmr_sigma_frequency_vector	vmpr_correlated.sigma_frequency_vector
+#define vpmr_sigma_vector		vmpr_correlated.sigma_vector
+#define vpmr_sigma_spline		vmpr_correlated.sigma_spline
 
 /*
  * VNACAL_GET_PARAMETER_TYPE: access the parameter type
@@ -208,9 +233,6 @@ typedef struct vnacal_new_parameter {
 
     /* union keyed on vnpr_unknown */
     union {
-	/* known value of the parameter at the current frequency */
-	double complex known_value;
-
 	struct {
 	    /* second index to cmprc_unknown_vector */
 	    int unknown_index;
@@ -221,7 +243,6 @@ typedef struct vnacal_new_parameter {
 	    /* next unknown parameter */
 	    struct vnacal_new_parameter *next_unknown;
 	} vnpr_unknown;
-
     } u;
 
     /* next parameter in hash chain */
@@ -229,7 +250,6 @@ typedef struct vnacal_new_parameter {
 
 } vnacal_new_parameter_t;
 
-#define vnpr_known_value	u.known_value
 #define vnpr_unknown_index	u.vnpr_unknown.unknown_index
 #define vnpr_correlate		u.vnpr_unknown.correlate
 #define vnpr_next_unknown	u.vnpr_unknown.next_unknown
@@ -293,10 +313,11 @@ typedef struct vnacal_new_equation {
  * vnacal_new_measurement_t: measurement of a calibration standard
  */
 typedef struct vnacal_new_measurement {
-    /* matrix of vectors of per-frequency measurements of the standard */
+    /* m_rows x m_columns matrix of vectors of per-frequency measurements
+       of the standard */
     double complex **vnm_m_matrix;
 
-    /* matrix of refrences representing the S parameters of the standard */
+    /* s_rows x s_columns matrix of the S parameters of the standard */
     vnacal_new_parameter_t **vnm_s_matrix;
 
     /* transitive closure of vnm_s_matrix */
@@ -558,6 +579,10 @@ extern void _vnacal_get_parameter_frange(vnacal_parameter_t *vpmrp,
 
 /* _vnacal_get_parameter_value_i: get the value of the parameter at frequency */
 extern double complex _vnacal_get_parameter_value_i(vnacal_parameter_t *vpmrp,
+	double frequency);
+
+/* _vnacal_get_correlated_sigma: return the sigma value for the given f */
+extern double _vnacal_get_correlated_sigma(vnacal_parameter_t *vpmrp,
 	double frequency);
 
 /* _vnacal_setup_parameter_collection: allocate the parameter collection */

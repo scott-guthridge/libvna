@@ -55,8 +55,19 @@ ll.
 .BI "int vnacal_make_unknown_parameter(vnacal_t *" vcp ", int " initial_guess );
 .PP
 .BI "int vnacal_make_correlated_parameter(vnacal_t *" vcp ", int " other ,
-.if n .in +4n
-.BI "double " sigma );
+.ie n \{\
+.in +4n
+.BI "int " sigma_frequencies ", const double *" sigma_frequency_vector ,
+.br
+.BI "const double *" sigma_vector );
+.in -4n
+.\}
+.el \{\
+.BI "int " sigma_frequencies ,
+.in +4n
+.BI "const double *" sigma_frequency_vector ", const double *" sigma_vector );
+.in -4n
+.\}
 .if n .in -4n
 .\"
 .PP
@@ -113,22 +124,42 @@ the solution.
 .PP
 \fBvnacal_make_correlated_parameter\fP() creates a parameter with unknown
 value that is correlated with another (possibly unknown) parameter,
-\fIother\fP, which is expected to be equal within a standard deviation
-of \fIsigma\fP.
+\fIother\fP, with per-frequency standard deviations of the differences
+given in \fIsigma_vector\fP.
+The \fIsigma_frequency_vector\fP argument gives the list of frequencies
+where sigma values are specified, and \fIsigma_frequencies\fP gives the
+length of both \fIsigma_vector\fP and \fIsigma_frequency_vector\fP.
+This type of parameter is useful for stochastic modeling of connection
+non-repeatability.
+.PP
+If \fIsigma_frequencies\fP is 1, then \fIsigma_frequency_vector\fP is
+ignored, and \fIsigma_vector\fP[0] is taken as a frequency-independent
+value.
+Otherwise, the frequencies given in \fIsigma_frequencies\fP
+must be positive increasing values that overlap with, but
+don't necessarily have to be the same as, those given in either
+\fBvnacal_new_set_frequency_vector\fP() or those given in a vector
+parameter referred to by \fIother\fP.
+The library uses cubic-spline interpolation to interpolate sigma values
+between frequency points as needed.
 .PP
 \fBvnacal_get_parameter_value\fP() returns the value of the parameter
 at a given frequency.
 If given a scalar parameter, \fBvnacal_get_parameter_value\fP() ignores
-\fIfrequency\fP, and simply returns the fixed gamma value; otherwise,
-it computes the value at the given frequency, interpolating as necessary.
+\fIfrequency\fP, and simply returns the fixed gamma value; if given
+a vector parameter, it computes the value at the given frequency,
+interpolating as necessary.
 The \fIfrequency\fP parameter must lie within the frequency range of
 the parameter.
-If given an unknown or correlated parameter, it returns the most recent
-value computed by \fBvnacal_new_solve\fP(), or fails if the parameter has
-not been solved.
+If given an unknown or correlated parameter, this function returns the
+most recent value computed by \fBvnacal_new_solve\fP(), or fails if the
+parameter has not been solved.
 .PP
 \fBvnacal_delete_parameter\fP() removes a parameter from the
 \fBvnacal_t\fP structure.
+It's not an error to delete a parameter that has been added to a
+\fBvnacal_new_t\fP structure \- a copy of the parameter will continue
+to exist internally until the last reference has been released.
 .\"
 .SH "RETURN VALUE"
 The \fBvnacal_make_\fP*\fB_parameter\fP() functions return an integer

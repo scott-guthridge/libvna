@@ -56,7 +56,7 @@ int vnacal_new_set_m_error(vnacal_new_t *vnp,
     m_error_vector = vnp->vn_m_error_vector;
     if (frequencies < 1) {
 	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_new_set_m_error: "
-		"at least one frequency must be given");
+		"frequencies must be at least 1");
 	return -1;
     }
     if (m_error_vector == NULL && noise_error_vector == NULL) {

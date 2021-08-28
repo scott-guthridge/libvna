@@ -315,10 +315,13 @@ extern int vnacal_make_unknown_parameter(vnacal_t *vcp, int initial_guess);
  * vnacal_make_correlated_parameter: create unknown parameter related by sigma
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @other: another parameter close to this one
- *   @sigma: parameter deviation of the difference between this and other
+ *   @sigma_frequencies: length of frequency_vector and sigma_vector
+ *   @sigma_frequency_vector: vector of increasing frequency values
+ *   @sigma_vector: frequency dependent parameter deviation from other
  */
 extern int vnacal_make_correlated_parameter(vnacal_t *vcp, int other,
-	double sigma);
+	int sigma_frequencies, const double *sigma_frequency_vector,
+	const double *sigma_vector);
 
 /*
  * vnacal_get_parameter_value: evaluate a parameter at a given frequency

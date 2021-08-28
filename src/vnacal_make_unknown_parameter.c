@@ -36,15 +36,15 @@
  */
 int vnacal_make_unknown_parameter(vnacal_t *vcp, int initial_guess)
 {
-    vnacal_parameter_t *vstdp_other;
+    vnacal_parameter_t *vpmrp_other;
     vnacal_parameter_t *vpmrp;
 
     if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
 	errno = EINVAL;
 	return -1;
     }
-    vstdp_other = _vnacal_get_parameter(vcp, initial_guess);
-    if (vstdp_other == NULL) {
+    vpmrp_other = _vnacal_get_parameter(vcp, initial_guess);
+    if (vpmrp_other == NULL) {
 	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_make_unknown_parameter: "
 		"initial_guess must refer to a valid scalar or vector "
 		"parameter");
@@ -54,8 +54,8 @@ int vnacal_make_unknown_parameter(vnacal_t *vcp, int initial_guess)
     if (vpmrp == NULL) {
 	return -1;
     }
-    _vnacal_hold_parameter(vstdp_other);
+    _vnacal_hold_parameter(vpmrp_other);
     vpmrp->vpmr_type = VNACAL_UNKNOWN;
-    vpmrp->vpmr_other = vstdp_other;
+    vpmrp->vpmr_other = vpmrp_other;
     return vpmrp->vpmr_index;
 }
