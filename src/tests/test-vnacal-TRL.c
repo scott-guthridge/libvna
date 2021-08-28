@@ -34,7 +34,7 @@
 #include "libt_vnacal.h"
 
 
-#define NTRIALS		600
+#define NTRIALS		1000
 
 /*
  * Command Line Options
@@ -70,35 +70,105 @@ static void error_fn(vnaerr_category_t category, const char *message, void *arg)
 #define TRL_FREQUENCIES	2
 
 /*
- * make_random_parameter: make random actual and guess
- *   @is_line: restrict actual angle to +/- 20..160.
- *   @lfp_actual: address to receive actual parameter
- *   @lfp_guess: address to receive guess
+ * make_random_parameters: make random actual and guess
+ *   @r_actual: address to receive actual reflect
+ *   @l_actual: address to receive actual line
+ *   @r_guess:  address to receive guess reflect
+ *   @l_guess:  address to receive guess line
  */
-static void make_random_parameter(bool is_line,
-	double complex *lfp_actual, double complex *lfp_guess)
+static void make_random_parameters(double complex *r_actual,
+	double complex *l_actual, double complex *r_guess,
+	double complex *l_guess)
 {
     double actual_magnitude;
     double actual_angle;
-    double guess_magnitude;
-    double guess_angle;
+    double distance2;
 
+    /*
+     * Find actual reflect.  Magnitude is constrained to 0.25 .. 1.0;
+     * angle is not constrained.
+     */
     actual_magnitude = 0.25 + 0.75 * random() / RAND_MAX;
-    if (is_line) {
-	actual_angle = 140.0 * (2.0 * random() / RAND_MAX - 1.0);
-	if (actual_angle >= 0.0) {
-	    actual_angle += 20.0;
-	} else {
-	    actual_angle -= 20.0;
-	}
+    actual_angle = 360.0 * random() / RAND_MAX - 180.0;
+    *r_actual = actual_magnitude * cexp(I * M_PI / 180.0 * actual_angle);
+
+    /*
+     * Find the actual line.  Magnitude is constrained from 0.25 .. 1.0;
+     * angle is constrained to 20..160 or 200..350 degrees to prevent
+     * it from being * too close to through.
+     */
+    actual_magnitude = 0.25 + 0.75 * random() / RAND_MAX;
+    actual_angle = 140.0 * (2.0 * random() / RAND_MAX - 1.0);
+    if (actual_angle >= 0.0) {
+	actual_angle += 20.0;
     } else {
-	actual_angle = 180.0 * random() / RAND_MAX;
+	actual_angle -= 20.0;
     }
-    guess_magnitude = actual_magnitude * pow(2.0,
-	    2.0 * random() / (double)RAND_MAX - 1.0);
-    guess_angle = actual_angle + 30.0 * (2.0 * random() / RAND_MAX - 1.0);
-    *lfp_actual = actual_magnitude * cexp(I * M_PI / 180.0 * actual_angle);
-    *lfp_guess  = guess_magnitude  * cexp(I * M_PI / 180.0 * guess_angle);
+    *l_actual = actual_magnitude * cexp(I * M_PI / 180.0 * actual_angle);
+
+    /*
+     * There are four solutions to TRL:
+     *     R,   L
+     *    -R,   L
+     *    1/R, 1/L
+     *   -1/R, 1/L
+     *
+     * We need an initial guess that's always closer to the first solution
+     * than to the others.  Stategy: find the minimum distance from
+     * the first solution to each of the others in 4-space.  Choose a
+     * gaussian random vector to serve as the uniform direction in
+     * 4-space between the actual and guess.  Scale the vector to be
+     * less than half of the distance calculated in the first step.
+     * Add the actual answer to produce the guess values.
+     */
+    {
+	double complex ri = 1.0 / *r_actual, li = 1.0 / *l_actual;
+	double complex ctemp1, ctemp2;
+	double dtemp;
+
+	/*
+	 * Find squared distance to -R, L
+	 */
+	ctemp1 = -*r_actual - *r_actual;
+	distance2 = creal(ctemp1 * conj(ctemp1));
+
+	/*
+	 * Find squared distance to 1/R, 1/L
+	 */
+	ctemp1 = ri - *r_actual;
+	ctemp2 = li - *l_actual;
+	dtemp = creal(ctemp1 * conj(ctemp1)) + creal(ctemp2 * conj(ctemp2));
+	if (dtemp < distance2) {
+	    distance2 = dtemp;
+	}
+
+	/*
+	 * Find squared distance to -1/R, 1/L
+	 */
+	ctemp1 = -ri - *r_actual;
+	dtemp = creal(ctemp1 * conj(ctemp1)) + creal(ctemp2 * conj(ctemp2));
+	if (dtemp < distance2) {
+	    distance2 = dtemp;
+	}
+    }
+    assert(distance2 > 0.0);
+
+    /*
+     * Choose gaussian random guess values and normalize to be less
+     * than half of sqrt(distance2).
+     */
+    {
+	double temp;
+
+	*r_guess = libt_crandn();
+	*l_guess = libt_crandn();
+	temp = distance2 / (creal(*r_guess * conj(*r_guess)) +
+	                    creal(*l_guess * conj(*l_guess)));
+	temp = 0.45 * sqrt(temp);	/* maximum magnitude */
+	temp *= random() / RAND_MAX;
+	*r_guess = temp * *r_guess + *r_actual;
+	*l_guess = temp * *l_guess + *l_actual;
+    }
 }
 
 /*
@@ -152,8 +222,8 @@ static libt_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
      * Generate random reflect and line parameters.
      */
     for (int findex = 0; findex < TRL_FREQUENCIES; ++findex) {
-	make_random_parameter(false, &r_actual[findex], &r_guess[findex]);
-	make_random_parameter(true,  &l_actual[findex], &l_guess[findex]);
+	make_random_parameters(&r_actual[findex], &l_actual[findex],
+		               &r_guess[findex],  &l_guess[findex]);
     }
     if (opt_v > 1) {
 	(void)printf("actual:\n");
