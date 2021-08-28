@@ -154,12 +154,12 @@ vnacal_type_t _vnacal_name_to_type(const char *name)
  *    Um M + Ui = S Ux M + S Us
  *
  *    with dimensions:
- *      Ts: m_rows x s_rows            Um: s_rows x m_rows
- *      Ti: m_rows x s_columns         Ui: s_rows x m_columns
+ *      Ts: m_rows    x s_rows         Um: s_rows    x m_rows
+ *      Ti: m_rows    x s_columns      Ui: s_rows    x m_columns
  *      Tx: m_columns x s_rows         Ux: s_columns x m_rows
  *      Tm: m_columns x s_columns      Us: s_columns x m_columns
- *      S: s_rows x s_columns
- *      M: m_rows x m_columns
+ *      S: s_rows     x s_columns
+ *      M: m_rows     x m_columns
  *
  *    where:
  *      Ts, Us: error terms with coefficients involving only S
