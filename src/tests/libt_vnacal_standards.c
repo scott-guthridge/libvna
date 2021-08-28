@@ -144,7 +144,7 @@ libt_vnacal_terms_t *libt_vnacal_make_random_calibration(vnacal_t *vcp,
      * Generate random error parameters.
      */
     if ((ttp = libt_vnacal_generate_error_terms(vcp, type, m_rows, m_columns,
-		    frequencies, NULL, 1.0, false)) == NULL) {
+		    frequencies, NULL, 1.0, 0)) == NULL) {
 	(void)fprintf(stderr, "%s: libt_vnacal_generate_error_terms: %s\n",
 		progname, strerror(errno));
 	goto error;

@@ -71,11 +71,16 @@ extern double libt_vnacal_sigma_n;
 /* libt_vnacal_sigma_t: standard deviation of tracking error to add to meas. */
 extern double libt_vnacal_sigma_t;
 
+/*
+ * Flags for libt_vnacal_generate_error_tersm
+ */
+#define LIBT_GET_2_10_GHZ	1	/* generate f in 2..10 GHz range */
+
 /* libt_vnacal_generate_error_terms: generate random error terms */
 extern libt_vnacal_terms_t *libt_vnacal_generate_error_terms(
 	vnacal_t *vcp, vnacal_type_t type, int m_rows, int m_columns,
 	int frequencies, const double *frequency_vector, double sigma,
-	bool ab);
+	uint32_t flags);
 
 /* libt_vnacal_print_error_terms: show the generated error terms */
 extern void libt_vnacal_print_error_terms(const libt_vnacal_terms_t *ttp);

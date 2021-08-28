@@ -345,11 +345,12 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
  *   @m_columns: number of VNA ports that generate signal
  *   @frequencies: number of calibration frequencies
  *   @frequency_vector: optional vector of specific frequencies
- *   @stdev: standard deviation from perfect
+ *   @sigma: standard deviation from perfect
+ *   @flags: misc flags (see libt_vnacal.h)
  */
 libt_vnacal_terms_t *libt_vnacal_generate_error_terms(vnacal_t *vcp,
 	vnacal_type_t type, int m_rows, int m_columns, int frequencies,
-	const double *frequency_vector, double sigma, bool ab)
+	const double *frequency_vector, double sigma, uint32_t flags)
 {
     libt_vnacal_terms_t *ttp = NULL;
     vnacal_layout_t *vlp;
@@ -378,6 +379,11 @@ libt_vnacal_terms_t *libt_vnacal_generate_error_terms(vnacal_t *vcp,
     } else if (frequencies == 2) {
 	ttp->tt_frequency_vector[0] = 0.0;
 	ttp->tt_frequency_vector[1] = 1.0e+9;
+    } else if (flags & LIBT_GET_2_10_GHZ) {
+	for (int i = 0; i < frequencies; ++i) {
+	    ttp->tt_frequency_vector[i] = 10.0e+9 *
+		(double)(i + 1) / (double)frequencies;
+	}
     } else {
 	ttp->tt_frequency_vector[0] = 0.0;
 	for (int i = 1; i < frequencies; ++i) {

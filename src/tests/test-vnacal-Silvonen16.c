@@ -299,7 +299,7 @@ static libt_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
      * Generate random error parameters.
      */
     if ((ttp = libt_vnacal_generate_error_terms(vcp, type, 2, 2,
-		    frequencies, NULL, 1.0, ab)) == NULL) {
+		    frequencies, NULL, 1.0, 0)) == NULL) {
 	(void)fprintf(stderr, "%s: libt_vnacal_generate_error_terms: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
