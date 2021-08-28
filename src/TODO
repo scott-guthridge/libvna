@@ -1,40 +1,34 @@
-- Merge the vnafile_t structure into vnadata_t.
+- Rework the matrix representation in vnacal_new to implement equation
+  weighting using the more elegant method in the Van hamme paper.
 
-    - Eliminate vnadata_check_save and do the checks instead in
-      vnadata_set_format and vnadata_set_filetype.  If the data type or
-      dimensions are changed, can simply clear out the format information.
-      Alternatively, can check if the new type is compatible with the
-      format, but if not, it may create a situation the user can't get
-      out of.. can't change the format due to type/dim; can't change
-      type/dim because of the type.
-
-    - Initialize the format information to NULL and deal with the
-      default Sri format in save.
-
-
-- Document vnacal_new_set_m_error.  First, do more evaluation
-  on whether or not weighting the equations improves accuracy.
+- Document vnacal_new_set_m_error.  First do a little more evaluation
+  on how well weighting is working.
 
 - Add functions to set the error threshold and to retrieve errors.
     int vnacal_new_get_error_vector(vnp, double *)
     int vnacal_new_set_error_limit(vnp, double limit) - scalar
 
-  Normalize the errors to 1 standard deviation.
+  Normalize the errors to 1 standard deviation?
+
+- Audit the API for whether frequencies or frequency_vector comes first.
+  In general, the pointer should come frist, but
+  in vnacal_make_correlated_parameter, the length applies to two vectors.
+  Check all and evaluate.
+
+- Disallow rectangular S parameter matrices.
+
+- Add a special-case solver in vnacal_new_solve for TRL when no redundant
+  measurements and no measurement error is given.  Evaluate if it increases
+  accuracy over the iterative approach.
+
+- Add debian package support
 
 - Add vnacal-T16-example.c using T-MM-SS-SM-MS standards.
   Approach: generally follow the example of vnacal-TSD-example, but
   in the simulated VNA, use the M = (Ts S + Ti) (Tx S + Tm)^-1 matrix
   equation to generate the measured value, taking into account all four
   T error matrices.  Note that test-vnacal-Silvonen16 also tests this
-  case and can serve somewhat as an example.
-
-- Add Van Hamme example following as closely as possible the example
-  given in the paper.
-
-- Add debian package support
-
-- Add example for TRM / LRM
-    through, unknown equal reflect, match
+  case and can serve as a starting point.
 
 - Add example for TXYZ / LXYZ
     through, 3 known reflects
@@ -47,13 +41,17 @@
     3 known reflects
 
 - Make tests that invoke each of the examples.  Create expected output
-  files and compare that values are approximately equal.
+  files and compare that values are approximately equal.  Be careful
+  with build and source directories set to different places.
 
-- Add a test suite for vnadata
-
-- Add a test suite for vnafile
-
-- Add U-parameter (inverse T) support to vnaconv, vnadata and vnafile.
+- Add U-parameter (inverse T) support to vnaconv, vnadata and vnafile ?
+  Inverse T,U parameters seem like a natural parallel to A,B, and we
+  use U parameters in vnacal_new.  There is also the practial case when
+  S21 = 0 but S12 != 0: we can't convert from S to T in this case, but
+  we can convert to U.  But U parameters don't seem to really exist in
+  practice today.  There is an alternate representation of T parameters,
+  where the two rows are swapped, but they're essentially still T.
+  At minimum, reserve a type slot for U.
 
 - Bring back vnacal_apply_t from the git history (consider renaming to
   vnacal_map_t to better match what it does and avoid confusion with the
