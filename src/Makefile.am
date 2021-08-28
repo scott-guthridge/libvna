@@ -16,7 +16,7 @@ include_HEADERS = vnacal.h vnaconv.h vnadata.h vnaerr.h
 lib_LTLIBRARIES = libvna.la
 libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnacal_delete_parameter.c vnacal_apply.c vnacal_new_add_common.c \
-	vnacal_new_parameter.c vnacal_new_set_measurement_error.c \
+	vnacal_new_parameter.c vnacal_new_set_m_error.c \
 	vnacal_new_solve.c vnacal_new.c vnacal_create.c vnacal_calibration.c \
 	vnacal_make_correlated_parameter.c vnacal_make_scalar_parameter.c \
 	vnacal_make_unknown_parameter.c vnacal_make_vector_parameter.c \
