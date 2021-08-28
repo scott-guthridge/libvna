@@ -34,7 +34,7 @@ TESTS = \
 	test-vnaproperty-expr \
 	test-vnacal-SOLT test-vnacal-Silvonen16 test-vnacal-random \
 	test-vnacal-apply test-vnacal-save-load test-vnacal-TRL \
-	test-vnacal-compat-V2 \
+	test-vnacal-Van-hamme test-vnacal-compat-V2 \
 	test-vnaconv-2x2 test-vnaconv-3x3 \
 	test-vnadata-basic test-vnadata-save-load-convert
 check_PROGRAMS = \
@@ -45,7 +45,7 @@ check_PROGRAMS = \
 	test-vnaproperty-expr \
 	test-vnacal-SOLT test-vnacal-Silvonen16 test-vnacal-random \
 	test-vnacal-apply test-vnacal-save-load test-vnacal-TRL \
-	test-vnacal-compat-V2 \
+	test-vnacal-Van-hamme test-vnacal-compat-V2 \
 	test-vnaconv-2x2 test-vnaconv-3x3 \
 	test-vnadata-basic test-vnadata-save-load-convert
 
@@ -130,6 +130,11 @@ test_vnacal_TRL_SOURCES = test-vnacal-TRL.c
 test_vnacal_TRL_LDADD = libt.a $(top_builddir)/src/libvna.la \
 	-lyaml -lm
 test_vnacal_TRL_LDFLAGS = -static
+
+test_vnacal_Van_hamme_SOURCES = test-vnacal-Van-hamme.c
+test_vnacal_Van_hamme_LDADD = libt.a $(top_builddir)/src/libvna.la \
+	-lyaml -lm
+test_vnacal_Van_hamme_LDFLAGS = -static
 
 test_vnacal_compat_V2_SOURCES = test-vnacal-compat-V2.c
 test_vnacal_compat_V2_LDADD = libt.a $(top_builddir)/src/libvna.la \
