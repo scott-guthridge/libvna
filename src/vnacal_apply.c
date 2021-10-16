@@ -685,6 +685,10 @@ int _vnacal_apply_common(vnacal_apply_args_t vaa)
 		strerror(errno));
 	return -1;
     }
+    if (vnadata_set_frequency_vector(vaa.vaa_s_parameters,
+		vaa.vaa_frequency_vector) == -1) {
+	return -1;
+    }
 
     /*
      * For each frequency index...
