@@ -28,7 +28,7 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .\" --------------------------------------------------------------------------
 .SS "Allocation and Initialization"
 .PP
-.BI "vnadata_t *vnadata_alloc()"
+.BI "vnadata_t *vnadata_alloc(vnaerr_error_fn_t *" error_fn ", void *" error_arg );
 .\"
 .PP
 .BI "int vnadata_init(vnadata_t *" vdp ", vnadata_parameter_type_t " type ,
@@ -37,10 +37,22 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .in -4n
 .\"
 .PP
-.BI "vnadata_t *vnadata_alloc_and_init(vnadata_parameter_type_t " type ,
+.ie n \{\
+.BI "vnadata_t *vnadata_alloc_and_init(vnaerr_error_fn_t *" error_fn ,
 .in +4n
+.BI "void *" error_arg ", vnadata_parameter_type_t " type ,
+.br
 .BI "int " rows ", int " columns ", int " frequencies );
 .in -4n
+.\}
+.el \{\
+.BI "vnadata_t *vnadata_alloc_and_init(vnaerr_error_fn_t *" error_fn ,
+.BI "void *" error_arg ,
+.in +4n
+.BI "vnadata_parameter_type_t " type ,
+.BI "int " rows ", int " columns ", int " frequencies );
+.in -4n
+.\}
 .\"
 .PP
 .BI "int vnadata_resize(vnadata_t *" vdp ", vnadata_parameter_type_t " type ,

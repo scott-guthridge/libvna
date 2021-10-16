@@ -15,7 +15,7 @@ plot: all
 pdfman:
 	(cd src && $(MAKE) $(AM_MAKEFLAGS) $@)
 
-clean-local:
-	rm -f archdep.o
+#clean-local:
+#	rm -f
 
-.PHONY: srcrpm rpm plot pdfroff
+.PHONY: srcrpm rpm plot pdfman
