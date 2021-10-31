@@ -736,6 +736,12 @@ int vnacal_save(vnacal_t *vcp, const char *pathname)
 		vcp->vc_filename, strerror(errno));
 	return -1;
     }
+    free((void *)vcp->vc_filename);
+    if ((vcp->vc_filename = strdup(pathname)) == NULL) {
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"strdup: %s", strerror(errno));
+	goto error;
+    }
     errno = 0;
     if (!yaml_document_initialize(&document, &version, &tags[0], &tags[0],
 		0, 0)) {
@@ -1045,5 +1051,7 @@ error:
     if (fp != NULL) {
 	(void)fclose(fp);
     }
+    free((void *)vcp->vc_filename);
+    vcp->vc_filename = NULL;
     return -1;
 }
