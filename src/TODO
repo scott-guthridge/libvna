@@ -55,7 +55,7 @@
 
 - Bring back vnacal_apply_t from the git history (consider renaming to
   vnacal_map_t to better match what it does and avoid confusion with the
-  vancal_apply functions).  But first, explore if we can make it work
+  vnacal_apply functions).  But first, explore if we can make it work
   with other than perfect match standards on the unconnected DUT ports.
   Note that even if we know these standards exactly, if the reflections
   aren't exactly zero, the system can't be solved with a linear system

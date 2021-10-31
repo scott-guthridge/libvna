@@ -512,7 +512,7 @@ static void calc_weights(solve_state_t *ssp,
 static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	int x_length)
 {
-    /* pointer to vancal_new_t structore */
+    /* pointer to vnacal_new_t structore */
     vnacal_new_t *vnp = ssp->ss_vnp;
 
     /* current frequency index */
@@ -521,7 +521,7 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
     /* current frequency */
     const double frequency = vnp->vn_frequency_vector[findex];
 
-    /* pointer to vancal_t structure */
+    /* pointer to vnacal_t structure */
     vnacal_t *vcp = vnp->vn_vcp;
 
     /* number of unknown (including correlated) parameters */

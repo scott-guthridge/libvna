@@ -477,7 +477,7 @@ static void make_calibration()
     }
 
     /*
-     * Add the new calibration to the vancal_t structure and save.
+     * Add the new calibration to the vnacal_t structure and save.
      */
     if (vnacal_add_calibration(vcp, "cal-T8", vnp) == -1) {
 	exit(7);
