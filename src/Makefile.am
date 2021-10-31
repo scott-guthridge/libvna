@@ -12,7 +12,7 @@ SUBDIRS= . tests
 #
 # Library
 #
-include_HEADERS = vnacal.h vnaconv.h vnadata.h vnaerr.h
+include_HEADERS = vnacal.h vnaconv.h vnadata.h vnaerr.h vnaproperty.h
 lib_LTLIBRARIES = libvna.la
 libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnacal_delete_parameter.c vnacal_apply.c vnacal_new_add_common.c \
@@ -61,8 +61,7 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnadata_set_dprecision.c vnadata_set_filetype.c vnadata_set_format.c \
 	vnadata_set_fprecision.c vnadata_set_fz0.c vnadata_set_fz0_vector.c \
 	vnadata_set_simple_format.c vnadata_set_z0.c vnadata_set_z0_vector.c \
-	vnadata_update_format_string.c \
-	vnaproperty.h vnaproperty_internal.h vnaproperty.c
+	vnadata_update_format_string.c vnaproperty_internal.h vnaproperty.c
 
 
 #
