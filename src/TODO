@@ -1,74 +1,129 @@
-- Rework the matrix representation in vnacal_new to implement equation
-  weighting using the more elegant method in the Van hamme paper.
+== Measurement Tolerance & Error ==
 
-- Document vnacal_new_set_m_error.  First do a little more evaluation
-  on how well weighting is working.
+    - Rework the matrix representation in vnacal_new to implement equation
+      weighting using the more elegant method in the Van hamme paper.
 
-- Add functions to set the error threshold and to retrieve errors.
-    int vnacal_new_get_error_vector(vnp, double *)
-    int vnacal_new_set_error_limit(vnp, double limit) - scalar
+    - Document vnacal_new_set_m_error.  First do a little more evaluation
+      on how well weighting is working.
 
-  Normalize the errors to 1 standard deviation?
+    - Add functions to set the error threshold and to retrieve errors.
+	int vnacal_new_get_error_vector(vnp, double *)
+	int vnacal_new_set_error_limit(vnp, double limit) - scalar
 
-- Audit the API for whether frequencies or frequency_vector comes first.
-  In general, the pointer should come frist, but
-  in vnacal_make_correlated_parameter, the length applies to two vectors.
-  Check all and evaluate.
+    - Normalize errors to 1 standard deviation?
 
-- Disallow rectangular S parameter matrices.
+    - Add a special-case solver in vnacal_new_solve for TRL when
+      no redundant measurements and no measurement error is given.
+      Evaluate if it increases accuracy over the iterative approach.
 
-- Add a special-case solver in vnacal_new_solve for TRL when no redundant
-  measurements and no measurement error is given.  Evaluate if it increases
-  accuracy over the iterative approach.
+== Finalizing the API's ==
 
-- Add debian package support
+   - Switch the error callback parameter order to put category last.
 
-- Add vnacal-T16-example.c using T-MM-SS-SM-MS standards.
-  Approach: generally follow the example of vnacal-TSD-example, but
-  in the simulated VNA, use the M = (Ts S + Ti) (Tx S + Tm)^-1 matrix
-  equation to generate the measured value, taking into account all four
-  T error matrices.  Note that test-vnacal-Silvonen16 also tests this
-  case and can serve as a starting point.
+   - Reserve a spot for U parameters after T.  U parameters may not
+     be a standard, but they pretty obviously belong with all the
+     other pairs Y-Z H-G A-B.  And we're using them in vnacal.
 
-- Add example for TXYZ / LXYZ
-    through, 3 known reflects
+   - Change the vnacal_parameter indexes to avoid small positive
+     integers for possible future intermixing with port numbers.  Keep 0
+     for VNACAL_MATCH.  Avoid -1, which is the error return.  Losing
+     VNACAL_ONE == 1 is minor since it doesn't extend to VNACAL_SHORT
+     == -1, and this isn't a good thing to rely on anyway, especially
+     if you don't realize you're relying on it.  Instead of negative,
+     use a high positive bit.  This has the added advantage of helping
+     to validate that a given index is valid, i.e.  high bit must be
+     zero and next to high bit must be 1.
 
-- Add example for LRRM
-    known line, 2 unknown equal reflects, match
+    - Disallow rectangular S parameter matrices?  We keep going back
+      and forth on this.  Arguments against rectangular S matrices:
+        - They don't accurately reflect any DUT.  All S parameters
+	  are there, whether we ignore them or not.
+	- If rectangular, why not triangular that all passive DUT's
+	  fall into?
+	- We can't measure S parameters accurately without measuring
+	  all of them.  At best, we can assume VNA port 2 has a perfect
+	  match, thus S12 and S22 have no effect on the measurements
+	  of S11 and S21.
+	- They cannot be saved in either Touchstone format.
 
-- Add example for UXYZ
-    unknown line with S12=S21
-    3 known reflects
+      Arguments for keeping rectangular S matrices:
+        - Though they can't be saved in Touchstone, it's not uncommon
+	  to see S11, S21 only in spreadsheet form.
+
+    - Audit the API for whether frequencies or frequency_vector
+      comes first.  In general, the pointer should come first, but in
+      vnacal_make_correlated_parameter, the length applies to two vectors.
+      Check all and evaluate.
+
+    - Before the 1.0 release, change "VNACAL" to "VNACal" in the vnacal
+      save file and reset the version number to 1.0.  Make vnacal_load
+      recognize capital VNACAL versions for compatibility, mapping old
+      2.0 to new 0.2 and old 3.0 to new 1.0.
+
+   - Add vnacal_property_get_subtree, vnacal_property_set_subtree functions.
+     DONE
+
+   - Audit const pointer not at the outer level in the API.  In particular,
+     look at the vnacal_new_add_* functions.
+
+== Installation Packaging Improvements ==
+
+    - Add debian package support
+
+== Example Code Improvements ==
+
+    - Add vnacal-T16-example.c using T-MM-SS-SM-MS standards.
+      Approach: generally follow the example of vnacal-TSD-example, but
+      in the simulated VNA, use the M = (Ts S + Ti) (Tx S + Tm)^-1 matrix
+      equation to generate the measured value, taking into account all four
+      T error matrices.  Note that test-vnacal-Silvonen16 also tests this
+      case and can serve as a starting point.
+
+    - Add example for TXYZ / LXYZ
+	through, 3 known reflects
+
+    - Add example for LRRM
+	known line, 2 unknown equal reflects, match
+
+    - Add example for UXYZ
+	unknown line with S12=S21
+	3 known reflects
+
+== Test Improvements ==
 
 - Make tests that invoke each of the examples.  Create expected output
   files and compare that values are approximately equal.  Be careful
   with build and source directories set to different places.
 
-- Add U-parameter (inverse T) support to vnaconv, vnadata and vnafile ?
-  Inverse T,U parameters seem like a natural parallel to A,B, and we
-  use U parameters in vnacal_new.  There is also the practial case when
-  S21 = 0 but S12 != 0: we can't convert from S to T in this case, but
-  we can convert to U.  But U parameters don't seem to really exist in
-  practice today.  There is an alternate representation of T parameters,
-  where the two rows are swapped, but they're essentially still T.
-  At minimum, reserve a type slot for U.
+== New Functionality ==
 
-- Bring back vnacal_apply_t from the git history (consider renaming to
-  vnacal_map_t to better match what it does and avoid confusion with the
-  vnacal_apply functions).  But first, explore if we can make it work
-  with other than perfect match standards on the unconnected DUT ports.
-  Note that even if we know these standards exactly, if the reflections
-  aren't exactly zero, the system can't be solved with a linear system
-  of equations because it involes products of s-parameters.  Ideally,
-  we'd want to also be able to use unknown parameters and have the
-  library solve for the unknowns.
+    - Add frequency-dependent Z0 support to vnacal_new, vnacal.
+      Complex reference impedances really make sense only if they're
+      per frequency.
 
-  From an interface perspective, a clean approach would be to let
-  positive numbers in the DUT->VNA port map to be VNA port numbers and
-  zero or negative numbers represent parameters, using the negative of
-  the parameter handle.
+    - Add U-parameter (inverse T) support to vnaconv and vnadata.
+      Inverse T,U parameters seem like a natural parallel to A,B, and we
+      use U parameters in vnacal_new.  There is also the practial case when
+      S21 = 0 but S12 != 0: we can't convert from S to T in this case, but
+      we can convert to U.  But U parameters don't seem to really exist in
+      practice today.  There is an alternate representation of T parameters,
+      where the two rows are swapped, but they're essentially still T.
+      At minimum, reserve a type slot for U.
 
-- Before the 1.0 release, change "VNACAL" to "VNACal" in the vnacal save
-  file and reset the version number to 1.0.  Make vnacal_load 
-  recognize capital VNACAL versions for compatibility, mapping
-  old 2.0 to new 0.2 and old 3.0 to new 1.0.
+    - Bring back vnacal_apply_t from the git history (consider renaming to
+      vnacal_map_t to better match what it does and avoid confusion with the
+      vnacal_apply functions).  But first, explore if we can make it work
+      with other than perfect match standards on the unconnected DUT ports.
+      Note that even if we know these standards exactly, if the reflections
+      aren't exactly zero, the system can't be solved as a linear system
+      of equations because it involes products of s-parameters.  Ideally,
+      we'd want to also be able to use unknown parameters and have the
+      library solve for the unknowns.
+
+      From an interface perspective, a clean approach would be to let
+      positive numbers in the DUT->VNA port map to be VNA port numbers and
+      zero or negative numbers represent parameters, using the negative of
+      the parameter handle.  BUT, we'd have to make parameter indices all
+      negative now, avoiding -1.  An alternative to negative would be to
+      set a lesser high bit on all parameter indices except zero, which
+      we'd like to keep as VNACAL_ZERO.  Again, it needs to be done now.
