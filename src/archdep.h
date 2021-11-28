@@ -60,12 +60,12 @@ typedef struct list {
 } list_t;
 
 #ifndef HAVE_INSQUE	/* POSIX.1-2001, POSIX.1-2008 */
-void _vna_insque(void *elem, void *prev);
+extern void _vna_insque(void *elem, void *prev);
 #define insque _vna_insque
 #endif /* HAVE_INSQUE */
 
 #ifndef HAVE_REMQUE	/* POSIX.1-2001, POSIX.1-2008 */
-void _vna_remque(void *elem);
+extern void _vna_remque(void *elem);
 #define remque _vna_remque
 #endif /* HAVE_REMQUE */
 

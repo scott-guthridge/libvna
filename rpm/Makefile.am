@@ -19,6 +19,6 @@ rpm: $(rpmspec)
 rpms: rpm	# alias
 
 clean-local:
-	rm -rf $(PACKAGE_TARNAME)-$(PACKAGE_VERSION) root
+	rm -rf *.rpm */*.rpm $(PACKAGE_TARNAME)-$(PACKAGE_VERSION) root
 
 .PHONY: srcrpm rpm rpms
