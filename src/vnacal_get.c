@@ -147,7 +147,7 @@ int vnacal_get_columns(const vnacal_t *vcp, int ci)
 	errno = EINVAL;
 	return -1;
     }
-    return calp->cal_rows;
+    return calp->cal_columns;
 }
 
 /*
