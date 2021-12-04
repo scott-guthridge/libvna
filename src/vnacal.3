@@ -18,7 +18,7 @@
 .TH VNACAL 3 "JULY 2017" GNU
 .nh
 .SH NAME
-vnacal_apply, vnacal_apply_m, vnacal_create, vnacal_add_calibration, vnacal_delete_calibration, vnacal_find_calibration, vnacal_free, vnacal_get_calibration_end, vnacal_get_columns, vnacal_get_filename, vnacal_get_fmax, vnacal_get_fmin, vnacal_get_frequencies, vnacal_get_frequency_vector, vnacal_get_name, vnacal_get_rows, vnacal_get_type, vnacal_load, vnacal_property_count, vnacal_property_delete, vnacal_property_get, vnacal_property_keys, vnacal_property_set, vnacal_property_type, vnacal_save, vnacal_set_dprecision, vnacal_set_fprecision \- vector network analyzer calibration
+vnacal_apply, vnacal_apply_m, vnacal_create, vnacal_add_calibration, vnacal_delete_calibration, vnacal_find_calibration, vnacal_free, vnacal_get_calibration_end, vnacal_get_columns, vnacal_get_filename, vnacal_get_fmax, vnacal_get_fmin, vnacal_get_frequencies, vnacal_get_frequency_vector, vnacal_get_name, vnacal_get_rows, vnacal_get_type, vnacal_get_z0, vnacal_load, vnacal_property_count, vnacal_property_delete, vnacal_property_get, vnacal_property_keys, vnacal_property_set, vnacal_property_type, vnacal_save, vnacal_set_dprecision, vnacal_set_fprecision \- vector network analyzer calibration
 .\"
 .SH SYNOPSIS
 .B #include <vnacal.h>
@@ -84,6 +84,9 @@ vnacal_apply, vnacal_apply_m, vnacal_create, vnacal_add_calibration, vnacal_dele
 .PP
 .BI "const double *vnacal_get_frequency_vector(const vnacal_t *" vcp ",
 .BI "int " ci );
+.\"
+.PP
+.BI "double complex vnacal_get_z0(const vnacal_t *" vcp ", int " ci );
 .\"
 .PP
 .BI "const char *vnacal_get_filename(const vnacal_t *" vcp );
@@ -291,6 +294,9 @@ points used in the calibration
 the minimum and maximum frequency values, respectively, and
 \fBvnacal_get_frequency_vector\fP() returns a pointer to the full vector
 of calibration frequencies.
+.PP
+\fBvnacal_get_z0\fP() returns the reference impedance for the given
+calibration.
 .PP
 \fBvnacal_get_filename\fP() returns the file name of the calibration
 file last loaded from or saved to, or \s-2NULL\s+2 if the \fBvnacal_t\fP
@@ -514,8 +520,8 @@ See \fBvnaerr\fP(3).
 .PP
 The \fBvnacal_find_calibration\fP(), \fBvnacal_delete_calibration\fP(),
 all the \fBvnacal_get_\fP*() functions and the \fBvnacal_property_\fP*()
-functions set \fBerrno\fP and return -1 or \s-2NULL\s+2 on failure, but
-don't invoke the error function.
+functions set \fBerrno\fP and return -1, \s-2NULL\s+2 or \s-2HUGE_VAL\s+2
+on failure, but don't invoke the error function.
 This makes it possible, for example, to use
 \fBvnacal_find_calibration\fP() to test if a given calibration name is
 present or \fBvnacal_get_name\fP() to test if there's a calibration at

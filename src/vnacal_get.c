@@ -209,3 +209,18 @@ const double *vnacal_get_frequency_vector(const vnacal_t *vcp, int ci)
     }
     return calp->cal_frequency_vector;
 }
+
+/*
+ * vnacal_get_z0: return the system impedance for the given calibration
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
+ */
+double complex vnacal_get_z0(const vnacal_t *vcp, int ci)
+{
+    const vnacal_calibration_t *calp;
+
+    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
+	return HUGE_VAL;
+    }
+    return calp->cal_z0;
+}

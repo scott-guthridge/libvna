@@ -461,6 +461,13 @@ extern const double *vnacal_get_frequency_vector(const vnacal_t *vcp,
 	int ci);
 
 /*
+ * vnacal_get_z0: return the system impedance for the given calibration
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
+ */
+extern double complex vnacal_get_z0(const vnacal_t *vcp, int ci);
+
+/*
  * vnacal_set_fprecision: set the frequency value precision for vnacal_save
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @precision: precision in decimal places (1..n) or VNACAL_MAX_PRECISION
