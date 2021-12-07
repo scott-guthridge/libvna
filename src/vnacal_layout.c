@@ -28,111 +28,6 @@
 #include <string.h>
 #include "vnacal_internal.h"
 
-
-/*
- * _vnacal_type_to_name: convert type to type name
- *   @type: error term type
- */
-const char *_vnacal_type_to_name(vnacal_type_t type)
-{
-    switch (type) {
-    case VNACAL_T8:
-	return "T8";
-    case VNACAL_U8:
-	return "U8";
-    case VNACAL_TE10:
-	return "TE10";
-    case VNACAL_UE10:
-	return "UE10";
-    case VNACAL_T16:
-	return "T16";
-    case VNACAL_U16:
-	return "U16";
-    case VNACAL_UE14:
-	return "UE14";
-    case _VNACAL_E12_UE14:
-	return "E12_UE14";
-    case VNACAL_E12:
-	return "E12";
-    }
-    abort();
-}
-
-/*
- * _vnacal_type_to_name: convert type name to type
- *   @name: error parameter type name
- */
-vnacal_type_t _vnacal_name_to_type(const char *name)
-{
-    switch (name[0]) {
-    case 'E':
-	if (strcmp(name, "E12") == 0) {
-	    return VNACAL_E12;
-	}
-	if (strcmp(name, "E12_UE14") == 0) {
-	    return _VNACAL_E12_UE14;
-	}
-	break;
-
-    case 'T':
-	switch (name[1]) {
-	case '1':
-	    if (strcmp(name, "T16") == 0) {
-		return VNACAL_T16;
-	    }
-	    break;
-
-	case '8':
-	    if (strcmp(name, "T8") == 0) {
-		return VNACAL_T8;
-	    }
-	    break;
-
-	case 'E':
-	    if (strcmp(name, "TE10") == 0) {
-		return VNACAL_TE10;
-	    }
-	    break;
-
-	default:
-	    break;
-	}
-	break;
-
-    case 'U':
-	switch (name[1]) {
-	case '1':
-	    if (strcmp(name, "U16") == 0) {
-		return VNACAL_U16;
-	    }
-	    break;
-
-	case '8':
-	    if (strcmp(name, "U8") == 0) {
-		return VNACAL_U8;
-	    }
-	    break;
-
-	case 'E':
-	    if (strcmp(name, "UE10") == 0) {
-		return VNACAL_UE10;
-	    }
-	    if (strcmp(name, "UE14") == 0) {
-		return VNACAL_UE14;
-	    }
-	    break;
-
-	default:
-	    break;
-	}
-	break;
-
-    default:
-	break;
-    }
-    return (vnacal_type_t)-1;
-}
-
 /*
  * _vnacal_layout: init the error term layout structure
  *  @vlp: pointer to vnacal_layout_t structure
@@ -333,5 +228,8 @@ void _vnacal_layout(vnacal_layout_t *vlp, vnacal_type_t type,
 	    vlp->vl_error_terms	= m_columns * e_terms;
 	}
 	break;
+
+    default:
+	abort();
     }
 }

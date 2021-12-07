@@ -444,7 +444,7 @@ void libt_vnacal_print_error_terms(const libt_vnacal_terms_t *ttp)
     const vnacal_layout_t *vlp = &ttp->tt_layout;
 
     (void)printf("error terms %s %d x %d frequencies %d:\n",
-	    _vnacal_type_to_name(VL_TYPE(vlp)),
+	    vnacal_type_to_name(VL_TYPE(vlp)),
 	    VL_M_ROWS(vlp), VL_M_COLUMNS(vlp), ttp->tt_frequencies);
     for (int frequency = 0; frequency < ttp->tt_frequencies; ++frequency) {
 	(void)printf("f %e\n", ttp->tt_frequency_vector[frequency]);
@@ -736,6 +736,10 @@ void libt_vnacal_print_error_terms(const libt_vnacal_terms_t *ttp)
 		    }
 		}
 	    }
+	    break;
+
+	default:
+	    abort();
 	}
     }
     (void)printf("\n");

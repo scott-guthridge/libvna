@@ -110,7 +110,7 @@ static libt_result_t run_vnacal_new_solt_trial(int trial, vnacal_type_t type,
     if (opt_v != 0) {
 	(void)printf("Test vnacal_new: trial %3d size %d x %d "
 		"type %-4s %s SOLT\n",
-	    trial, rows, columns, _vnacal_type_to_name(type), ab ? "AB" : "M ");
+	    trial, rows, columns, vnacal_type_to_name(type), ab ? "AB" : "M ");
     }
 
     /*

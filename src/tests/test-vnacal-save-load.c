@@ -133,13 +133,16 @@ static libt_result_t run_vnacal_save_load_trial(int trial)
 	    m_rows = dimension_table[dindex][1];
 	    m_columns = dimension_table[dindex][0];
 	    break;
+
+	default:
+	    abort();
 	}
 	if ((ttp_table[tindex] = libt_vnacal_make_random_calibration(vcp, type,
 			m_rows, m_columns, frequencies, /*ab*/false)) == NULL) {
 	    result = T_FAIL;
 	    goto out;
 	}
-	if (vnacal_add_calibration(vcp, _vnacal_type_to_name(type),
+	if (vnacal_add_calibration(vcp, vnacal_type_to_name(type),
 		    ttp_table[tindex]->tt_vnp) == -1) {
 	    result = T_FAIL;
 	    goto out;
@@ -263,7 +266,7 @@ static libt_result_t run_vnacal_save_load_trial(int trial)
 	int ci = -1;
 
 	if ((ci = vnacal_find_calibration(vcp,
-			_vnacal_type_to_name(type))) == -1) {
+			vnacal_type_to_name(type))) == -1) {
 	    (void)fprintf(stderr, "%s: vnacal_find_calibration: %s\n",
 		    progname, strerror(errno));
 	    result = T_FAIL;

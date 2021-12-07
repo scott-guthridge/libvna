@@ -18,7 +18,7 @@
 .TH VNACAL 3 "JULY 2017" GNU
 .nh
 .SH NAME
-vnacal_apply, vnacal_apply_m, vnacal_create, vnacal_add_calibration, vnacal_delete_calibration, vnacal_find_calibration, vnacal_free, vnacal_get_calibration_end, vnacal_get_columns, vnacal_get_filename, vnacal_get_fmax, vnacal_get_fmin, vnacal_get_frequencies, vnacal_get_frequency_vector, vnacal_get_name, vnacal_get_rows, vnacal_get_type, vnacal_get_z0, vnacal_load, vnacal_property_count, vnacal_property_delete, vnacal_property_get, vnacal_property_keys, vnacal_property_set, vnacal_property_type, vnacal_save, vnacal_set_dprecision, vnacal_set_fprecision \- vector network analyzer calibration
+vnacal_apply, vnacal_apply_m, vnacal_create, vnacal_add_calibration, vnacal_delete_calibration, vnacal_find_calibration, vnacal_free, vnacal_get_calibration_end, vnacal_get_columns, vnacal_get_filename, vnacal_get_fmax, vnacal_get_fmin, vnacal_get_frequencies, vnacal_get_frequency_vector, vnacal_get_name, vnacal_get_rows, vnacal_get_type, vnacal_get_z0, vnacal_load, vnacal_name_to_type, vnacal_property_count, vnacal_property_delete, vnacal_property_get, vnacal_property_keys, vnacal_property_set, vnacal_property_type, vnacal_save, vnacal_set_dprecision, vnacal_set_fprecision, vnacal_type_to_name \- vector network analyzer calibration
 .\"
 .SH SYNOPSIS
 .B #include <vnacal.h>
@@ -99,6 +99,12 @@ vnacal_apply, vnacal_apply_m, vnacal_create, vnacal_add_calibration, vnacal_dele
 .\"
 .PP
 .BI "void vnacal_free(vnacal_t *" vcp );
+.\"
+.PP
+.BI "vnacal_type_t vnacal_name_to_type(const char * " name );
+.\"
+.PP
+.BI "const char *vnacal_type_to_name(vnacal_type_t" type );
 .\"
 .SS "Applying a Calibration to Measured Data"
 .PP
@@ -312,6 +318,14 @@ precision is 6.
 .PP
 \fBvnacal_free\fP() frees the memory used by the \fBvnacal_t\fP
 structure and any associated \fBvnacal_new_t\fP structures.
+.PP
+\fBvnacal_name_to_type\fP() takes an error term type name such as "T8",
+"U8", "E12", etc. and converts to the corresponding \fBvnacal_type_t\fP
+enum.
+The name match is case-insensitive.  If the name doesn't match any
+type, the function returns -1.
+The \fBvnacal_type_to_name\fP() function does the opposite: it returns
+the canonical (upper-case) name for the given \fItype\fP.
 .\"
 .SS "Applying a Calibration to Measured Data"
 .PP

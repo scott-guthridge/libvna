@@ -48,6 +48,7 @@ extern "C" {
  * vnacal_type_t: calibration type
  */
 typedef enum vnacal_type {
+    VNACAL_NOTYPE = -1, /* an invalid type value */
     VNACAL_T8,		/* 8-term T parameters */
     VNACAL_U8,		/* 8-term U (inverse T) parameters */
     VNACAL_TE10,	/* 8-term T plus off-diagonal E leakage terms */
@@ -68,6 +69,19 @@ typedef struct vnacal vnacal_t;
  * vnacal_new_t: opaque type containing calibration measurements
  */
 typedef struct vnacal_new vnacal_new_t;
+
+
+/*
+ * vnacal_name_to_type: convert error-term type name to enum
+ *   @name: name of error term type (case insensitive)
+ */
+extern vnacal_type_t vnacal_name_to_type(const char *name);
+
+/*
+ * vnacal_type_to_name: convert error term type to name
+ *   @type: type of error terms
+ */
+extern const char *vnacal_type_to_name(vnacal_type_t type);
 
 /*
  * vnacal_new_alloc: allocate a vnacal_new_t structure

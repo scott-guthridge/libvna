@@ -511,6 +511,9 @@ static int calc_m(const vnacal_layout_t *vlp, const double complex *e,
 	    }
 	}
 	break;
+
+    default:
+	abort();
     }
 
     /*

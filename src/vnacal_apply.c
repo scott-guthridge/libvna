@@ -785,6 +785,9 @@ int _vnacal_apply_common(vnacal_apply_args_t vaa)
 	case VNACAL_E12:
 	    fill_e12(&vl, t, m, a, b);
 	    break;
+
+	default:
+	    abort();
 	}
 
 	/*
@@ -808,6 +811,9 @@ int _vnacal_apply_common(vnacal_apply_args_t vaa)
 	case VNACAL_E12:
 	    determinant = _vnacommon_mrdivide(s, b, a, c_ports, c_ports);
 	    break;
+
+	default:
+	    abort();
 	}
 	if (determinant == 0.0 || !isnormal(cabs(determinant))) {
 	    _vnacal_error(vcp, VNAERR_MATH,

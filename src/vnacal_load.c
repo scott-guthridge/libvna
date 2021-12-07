@@ -231,7 +231,7 @@ static int parse_type(vnacal_load_state_t *vlsp,
     if (node->type != YAML_SCALAR_NODE) {
 	goto error;
     }
-    *result = _vnacal_name_to_type((const char *)node->data.scalar.value);
+    *result = vnacal_name_to_type((const char *)node->data.scalar.value);
     if (*result == (vnacal_type_t)-1) {
 	goto error;
     }
@@ -1035,6 +1035,9 @@ static int parse_data(vnacal_load_state_t *vlsp, const vnacal_layout_t *vlp,
 	case VNACAL_E12:
 	    required_matrices |= E_MASK;
 	    break;
+
+	default:
+	    abort();
 	}
 	for (int i = 0; i < MATRIX_IDS; ++i) {
 	    if (((1 << i) & required_matrices) && matrices[i] == NULL) {

@@ -192,7 +192,7 @@ static libt_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
      */
     if (opt_v != 0) {
 	(void)printf("Test vnacal TRL calibration trial %d type %-4s TRL\n",
-		trial, _vnacal_type_to_name(type));
+		trial, vnacal_type_to_name(type));
     }
 
     /*

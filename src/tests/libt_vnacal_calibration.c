@@ -37,7 +37,7 @@ void libt_vnacal_print_calibration(vnacal_calibration_t *calp)
     vnacal_layout_t vl;
 
     (void)printf("calibration %s %d x %d",
-	    _vnacal_type_to_name(calp->cal_type),
+	    vnacal_type_to_name(calp->cal_type),
 	    calp->cal_rows, calp->cal_columns);
     if (calp->cal_name != NULL) {
 	(void)printf(" \"%s\":\n", calp->cal_name);
@@ -361,6 +361,9 @@ void libt_vnacal_print_calibration(vnacal_calibration_t *calp)
 		    }
 		}
 	    }
+
+	default:
+	    abort();
 	}
     }
     if (calp->cal_properties != NULL) {

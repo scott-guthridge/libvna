@@ -570,6 +570,7 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 	break;
 
     case VNACAL_E12:
+    default:
 	abort();
     }
     return 0;
@@ -695,6 +696,7 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 	break;
 
     case VNACAL_E12:
+    default:
 	abort();
     }
     assert(ptype != '\000');
@@ -1238,6 +1240,7 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 	break;
 
     case VNACAL_E12:
+    default:
 	abort();
     }
 

@@ -278,7 +278,7 @@ static libt_result_t test_vnacal_new_table_entry(int trial, vnacal_type_t type,
      */
     if (opt_v != 0) {
 	(void)printf("Test vnacal_new: trial %3d size 2 x 2 type %s %s:",
-	    trial, _vnacal_type_to_name(type), ab ? "AB" : "M ");
+	    trial, vnacal_type_to_name(type), ab ? "AB" : "M ");
 	for (const int *ip = table_entry; *ip != -1; ++ip) {
 	    (void)printf(" %s", standard_names[*ip]);
 	}

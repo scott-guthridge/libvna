@@ -148,7 +148,7 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
      */
     if (opt_v != 0) {
 	(void)printf("Test vnacal Van-hamme calibration trial %d "
-		"type %-4s Van hamme\n", trial, _vnacal_type_to_name(type));
+		"type %-4s Van hamme\n", trial, vnacal_type_to_name(type));
     }
 
     /*

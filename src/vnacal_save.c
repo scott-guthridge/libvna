@@ -836,7 +836,7 @@ int vnacal_save(vnacal_t *vcp, const char *pathname)
 		    "name", t_value) == -1) {
 	    goto error;
 	}
-	cp = _vnacal_type_to_name(calp->cal_type);
+	cp = vnacal_type_to_name(calp->cal_type);
 	if ((t_value = yaml_document_add_scalar(&document, NULL,
 			(yaml_char_t *)cp, strlen(cp),
 			YAML_ANY_SCALAR_STYLE)) == 0) {

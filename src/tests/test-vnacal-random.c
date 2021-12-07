@@ -92,7 +92,7 @@ static libt_result_t run_vnacal_new_random_trial(int trial,
 		&add_all_match);
 	(void)printf("Test vnacal_new: trial %3d size %d x %d "
 		"type %-4s %s %2d random standards%s\n",
-		trial, m_rows, m_columns, _vnacal_type_to_name(type),
+		trial, m_rows, m_columns, vnacal_type_to_name(type),
 		ab ? "AB" : "M ", standards, add_all_match ? "+match" : "");
     }
 

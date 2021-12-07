@@ -90,7 +90,7 @@ static libt_result_t run_vnacal_apply_trial(int trial,
      */
     if (opt_v != 0) {
 	(void)printf("Test vnacal_apply: trial %3d size %d x %d type %-4s %s\n",
-	    trial, m_rows, m_columns, _vnacal_type_to_name(type),
+	    trial, m_rows, m_columns, vnacal_type_to_name(type),
 	    ab ? "AB" : "M ");
     }
 

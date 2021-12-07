@@ -503,12 +503,6 @@ __attribute__ ((__format__ (__printf__, 3, 4)))
 #endif /* __GNUC__ */
 ;
 
-/* _vnacal_type_to_name: convert type to type name */
-extern const char *_vnacal_type_to_name(vnacal_type_t type);
-
-/* _vnacal_name_to_type: convert type name to type */
-extern vnacal_type_t _vnacal_name_to_type(const char *name);
-
 /* _vnacal_layout: init the error term layout structure */
 extern void _vnacal_layout(vnacal_layout_t *vlp, vnacal_type_t type,
 	int m_rows, int m_columns);

@@ -15,16 +15,18 @@ SUBDIRS= . tests
 include_HEADERS = vnacal.h vnaconv.h vnadata.h vnaerr.h vnaproperty.h
 lib_LTLIBRARIES = libvna.la
 libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
-	vnacal_delete_parameter.c vnacal_apply.c vnacal_new_add_common.c \
-	vnacal_new_parameter.c vnacal_new_set_m_error.c \
-	vnacal_new_solve.c vnacal_new.c vnacal_create.c vnacal_calibration.c \
+	vnacal_add_calibration.c vnacal_apply.c vnacal_calibration.c \
+	vnacal_create.c vnacal_delete_calibration.c \
+	vnacal_delete_parameter.c vnacal_error.c vnacal_find_calibration.c \
+	vnacal_free.c vnacal_get.c vnacal_get_parameter_value.c \
+	vnacal_layout.c vnacal_layout.h vnacal_load.c \
 	vnacal_make_correlated_parameter.c vnacal_make_scalar_parameter.c \
 	vnacal_make_unknown_parameter.c vnacal_make_vector_parameter.c \
-	vnacal_add_calibration.c vnacal_delete_calibration.c \
-	vnacal_layout.h vnacal_layout.c vnacal_get_parameter_value.c \
-	vnacal_error.c vnacal_find_calibration.c vnacal_free.c vnacal_get.c \
-	vnacal_load.c vnacal_property.c vnacal_rfi.c vnacal_save.c \
-	vnacal_set_dprecision.c vnacal_set_fprecision.c vnacal_parameter.c \
+	vnacal_name_to_type.c vnacal_new_add_common.c vnacal_new.c \
+	vnacal_new_parameter.c vnacal_new_set_m_error.c vnacal_new_solve.c \
+	vnacal_parameter.c vnacal_property.c vnacal_rfi.c \
+	vnacal_save.c vnacal_set_dprecision.c vnacal_set_fprecision.c \
+	vnacal_type_to_name.c \
 	vnacommon_internal.h vnacommon_lu.c vnacommon_mmultiply.c \
 	vnacommon_minverse.c vnacommon_mldivide.c vnacommon_mrdivide.c \
 	vnacommon_qrd.c vnacommon_qr.c vnacommon_qrsolve.c \

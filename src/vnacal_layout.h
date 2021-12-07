@@ -488,6 +488,9 @@ static inline int _vl_unity_offset(const vnacal_layout_t *vlp, int system)
 
     case VNACAL_E12:			/* no unity term in E12 */
 	break;
+
+    default:
+	break;
     }
     return -1;
 }
