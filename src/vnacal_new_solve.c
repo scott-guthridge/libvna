@@ -1015,7 +1015,7 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 		pindex1 = vnprp1->vnpr_unknown_index;
 		j_matrix[j_row][pindex1] = coefficient;	/* partial derivative */
 		k_vector[j_row] += coefficient *
-		    ssp->ss_p_vector[pindex1][findex]; 	/* contr. to residual */
+		    ssp->ss_p_vector[pindex1][findex];	/* contr. to residual */
 		if (vnprp2->vnpr_unknown) {
 		    int pindex2 = vnprp2->vnpr_unknown_index;
 		    j_matrix[j_row][pindex2] = -coefficient; /* partial drvtv */

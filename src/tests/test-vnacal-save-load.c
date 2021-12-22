@@ -349,7 +349,7 @@ static libt_result_t run_vnacal_save_load_trial(int trial)
 		if ((cp_temp = vnacal_property_get(vcp, 1, "switches[%d][%d]",
 			    row, column)) == NULL) {
 		    (void)fprintf(stderr, "%s: vnacal_property_get: "
-			    "switches[%d][%d] in calibration 0 not found: %s\n",
+			    "switches[%d][%d] in calibration 1 not found: %s\n",
 			    progname, row, column, strerror(errno));
 		    result = T_FAIL;
 		    goto out;

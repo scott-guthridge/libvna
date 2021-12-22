@@ -93,7 +93,7 @@ take a matrix of type \fBint\fP, filled with either the predefined
 constants:
 \fB\s-2VNACAL_MATCH\s+2\fP, \fB\s-2VNACAL_OPEN\s+2\fP,
 \fB\s-2VNACAL_SHORT\s+2\fP, \fB\s-2VNACAL_ZERO\s+2\fP,
-\fB\s-2VNACAL_ONE\s+2\fP; or the integer handles returned from the four
+\fB\s-2VNACAL_ONE\s+2\fP, or the integer handles returned from the four
 \fBvnacal_make_\fP*\fP_parameter\fP() functions described here.
 There are two reasons for this extra level of abstraction.
 First, it unifies the interface between scalar parameters \- parameters
@@ -140,8 +140,8 @@ must be positive increasing values that overlap with, but
 don't necessarily have to be the same as, those given in either
 \fBvnacal_new_set_frequency_vector\fP() or those given in a vector
 parameter referred to by \fIother\fP.
-The library uses cubic-spline interpolation to interpolate sigma values
-between frequency points as needed.
+The library uses natural cubic-spline interpolation to interpolate sigma
+values between frequency points as needed.
 .PP
 \fBvnacal_get_parameter_value\fP() returns the value of the parameter
 at a given frequency.
@@ -169,9 +169,10 @@ on success or \s-2HUGE_VAL\s+2 on error.
 \fBvnacal_delete_parameter\fP() returns 0 on success or -1 on error.
 .\"
 .SH ERRORS
-On error, these functions invoke the \fIerror_fn\fP, given to
-\fBvnacal_create\fP() or \fBvnacal_load\fP() if not \s-2NULL\s+2, set
-\fBerrno\fP to one of the following values and return failure.
+On error, these functions invoke the \fIerror_fn\fP,
+given to
+\fBvnacal_create\fP() or \fBvnacal_load\fP() if provided, set \fBerrno\fP
+to one of the following values and return failure.
 .IP \fB\s-2ENOENT\s+2\fP
 The \fBvnacal_delete_parameter\fP() function was called with a parameter
 handle that doesn't refer to an extant parameter.
