@@ -18,7 +18,7 @@
 .TH VNADATA 3 "JULY 2017" GNU
 .nh
 .SH NAME
-vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get_type, vnadata_get_type_name, vnadata_set_type, vnadata_get_rows, vnadata_get_columns, vnadata_get_frequencies, vnadata_free, vnadata_get_frequency, vnadata_set_frequency, vnadata_get_frequency_vector, vnadata_set_frequency_vector, vnadata_add_frequency, vnadata_get_cell, vnadata_set_cell, vnadata_get_matrix, vnadata_set_matrix, vnadata_get_to_vector, vnadata_set_from_vector, vnadata_get_z0, vnadata_set_z0, vnadata_get_z0_vector, vnadata_set_z0_vector, vnadata_set_all_z0, vnadata_has_fz0, vnadata_get_fz0, vnadata_set_fz0, vnadata_get_fz0_vector, vnadata_set_fz0_vector, vnadata_convert, vnadata_load, vnadata_fload, vnadata_save, vnadata_fsave, vnadata_cksave, vnadata_get_filetype, vnadata_set_filetype, vnadata_get_format, vnadata_set_format, vnadata_get_fprecision, vnadata_set_fprecision, vnadata_get_dprecision, vnadata_set_dprecision \- Network Parameter Data
+vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get_type, vnadata_get_type_name, vnadata_set_type, vnadata_get_rows, vnadata_get_columns, vnadata_get_frequencies, vnadata_free, vnadata_get_fmin, vnadata_get_fmax, vnadata_get_frequency, vnadata_set_frequency, vnadata_get_frequency_vector, vnadata_set_frequency_vector, vnadata_add_frequency, vnadata_get_cell, vnadata_set_cell, vnadata_get_matrix, vnadata_set_matrix, vnadata_get_to_vector, vnadata_set_from_vector, vnadata_get_z0, vnadata_set_z0, vnadata_get_z0_vector, vnadata_set_z0_vector, vnadata_set_all_z0, vnadata_has_fz0, vnadata_get_fz0, vnadata_set_fz0, vnadata_get_fz0_vector, vnadata_set_fz0_vector, vnadata_convert, vnadata_load, vnadata_fload, vnadata_save, vnadata_fsave, vnadata_cksave, vnadata_get_filetype, vnadata_set_filetype, vnadata_get_format, vnadata_set_format, vnadata_get_fprecision, vnadata_set_fprecision, vnadata_get_dprecision, vnadata_set_dprecision \- Network Parameter Data
 .\"
 .SH SYNOPSIS
 .B #include <vnadata.h>
@@ -85,6 +85,12 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .BI "void vnadata_free(vnadata_t *" vdp );
 .\" --------------------------------------------------------------------------
 .SS "The Frequency Vector"
+.PP
+.BI "double vnadata_get_fmin(const vnadata_t *" vdp );
+.\"
+.PP
+.BI "double vnadata_get_fmax(const vnadata_t *" vdp );
+.\"
 .PP
 .BI "double vnadata_get_frequency(const vnadata_t *" vdp ", int " findex );
 .\"
@@ -293,6 +299,9 @@ of the matrix.
 The \fBvnadata_free\fP() function frees the structure and its contents.
 .\" --------------------------------------------------------------------------
 .SS "The Frequency Vector"
+.PP
+The \fBvnadata_get_fmin\fP() and \fBvnadata_get_fmax\fP() functions
+return the lowest and highest frequencies, respectively.
 .PP
 The \fBvnadata_get_frequency\fP() and \fBvnadata_set_frequency\fP()
 functions, respectively, get and set the frequency at index \fIfindex\fP.

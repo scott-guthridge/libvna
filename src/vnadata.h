@@ -220,6 +220,44 @@ static inline vnadata_parameter_type_t vnadata_get_type(const vnadata_t *vdp)
 extern int vnadata_set_type(vnadata_t *vdp, vnadata_parameter_type_t type);
 
 /*
+ * vnadata_get_fmin: get the minimum frequency
+ *   @vdp:    a pointer to the vnadata_t structure
+ */
+static inline double vnadata_get_fmin(const vnadata_t *vdp)
+{
+#ifndef VNADATA_NO_BOUNDS_CHECK
+    if (vdp == NULL) {
+	errno = EINVAL;
+	return HUGE_VAL;
+    }
+    if (vdp->vd_frequencies == 0) {
+	_vnadata_bounds_error(__func__, vdp, "frequency index", 0);
+	return HUGE_VAL;
+    }
+#endif /* VNADATA_NO_BOUNDS_CHECK */
+    return vdp->vd_frequency_vector[0];
+}
+
+/*
+ * vnadata_get_fmax: get the maximum frequency
+ *   @vdp:    a pointer to the vnadata_t structure
+ */
+static inline double vnadata_get_fmax(const vnadata_t *vdp)
+{
+#ifndef VNADATA_NO_BOUNDS_CHECK
+    if (vdp == NULL) {
+	errno = EINVAL;
+	return HUGE_VAL;
+    }
+    if (vdp->vd_frequencies == 0) {
+	_vnadata_bounds_error(__func__, vdp, "frequency index", 0);
+	return HUGE_VAL;
+    }
+#endif /* VNADATA_NO_BOUNDS_CHECK */
+    return vdp->vd_frequency_vector[vdp->vd_frequencies - 1];
+}
+
+/*
  * vnadata_get_frequency: get the indexed frequency
  *   @vdp:    a pointer to the vnadata_t structure
  *   @findex: frequency index
