@@ -142,9 +142,10 @@ plot: plot-SOLT
 	$(PDFROFF) -t -e -man --no-toc-relocation $< > "$@"
 
 pdfman: vnacal.pdf vnacal_new.pdf vnacal_parameter.pdf vnaconv.pdf \
-	vnadata.pdf vnaerr.pdf
+	vnadata.pdf vnaerr.pdf vnaproperty.pdf
 
 clean-local:
 	rm -f example.vnacal vnacal-SOLT-example.out vnacal-TSD-example.out \
 		vnacal-TRL-example.out vnacal.pdf vnacal_new.pdf \
-		vnacal_parameter.pdf vnaconv.pdf vnadata.pdf vnaerr.pdf
+		vnacal_parameter.pdf vnaconv.pdf vnadata.pdf vnaerr.pdf \
+		vnaproperty.pdf
