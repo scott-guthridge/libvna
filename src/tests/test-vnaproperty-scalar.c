@@ -27,7 +27,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include "vnaproperty_internal.h"
+#include "vnaproperty.h"
 #include "libt.h"
 
 
@@ -52,82 +52,83 @@ int opt_v = 0;
  */
 static libt_result_t test_vnaproperty_scalar()
 {
-    vnaproperty_t *scalar;
+    vnaproperty_t *root = NULL;
+    int type = -1;
     const char *value;
     static const char text1[] = "abcdefghijklmnopqrstuvwxyz";
-    static const char text2[] = "0123456789";
-    char buf[64];
+    static const char text2[] = "~";
     libt_result_t result = T_SKIPPED;
 
-    (void)strcpy(buf, text1);
-    scalar = vnaproperty_scalar_alloc(buf);
-    if (scalar == NULL) {
-	(void)printf("vnaproperty_scalar_alloc: %s\n", strerror(errno));
+    if (vnaproperty_set(&root, ".=%s", text1) == -1) {
+	(void)printf("1: vnaproperty_set: %s\n", strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
-    if (vnaproperty_type(scalar) != VNAPROPERTY_SCALAR) {
-	(void)printf("vnaproperty_type(scalar) != VNAPROPERTY_SCALAR "
-		"(1)\n");
+    if ((type = vnaproperty_type(root, ".")) != 's') {
+	(void)printf("2: vnaproperty_type: 0x%04X != 's'\n",
+		(int)type);
 	result = T_FAIL;
 	goto out;
     }
-    (void)strcpy(buf, text2);
-    value = vnaproperty_scalar_get(scalar);
-    if (value == NULL) {
-	(void)printf("vnaproperty_get_value(scalar) == NULL (1)");
+    errno = 0;
+    if ((value = vnaproperty_get(root, ".")) == NULL) {
+	(void)printf("3: vnaproperty_get: NULL: %s\n", strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
     if (strcmp(value, text1) != 0) {
-	(void)printf("vnaproperty_get_value(scalar) ne text1");
+	(void)printf("3: vnaproperty_get: mismatch: \"%s\" != \"%s\"",
+		value, text1);
 	result = T_FAIL;
 	goto out;
     }
-    if (vmaproperty_scalar_set(scalar, buf) == -1) {
-	(void)printf("vmaproperty_scalar_set: %s\n", strerror(errno));
+    if (vnaproperty_set(&root, ".#") == -1) {
+	(void)printf("5: vnaproperty_set: %s\n", strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
-    value = vnaproperty_scalar_get(scalar);
-    if (value == NULL) {
-	(void)printf("vnaproperty_get_value(scalar) == NULL (2)");
+    if (root != NULL) {
+	(void)printf("6: root not NULL after set .#\n");
+	result = T_FAIL;
+	goto out;
+    }
+    if (vnaproperty_set(&root, ".=%s", text2) == -1) {
+	(void)printf("7: vnaproperty_set: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if ((type = vnaproperty_type(root, ".")) != 's') {
+	(void)printf("8: vnaproperty_type: 0x%04X != 's'\n",
+		(int)type);
+	result = T_FAIL;
+	goto out;
+    }
+    errno = 0;
+    if ((value = vnaproperty_get(root, ".")) == NULL) {
+	(void)printf("9: vnaproperty_get: NULL: %s\n", strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
     if (strcmp(value, text2) != 0) {
-	(void)printf("vnaproperty_get_value(scalar) ne text2 (1)");
+	(void)printf("10: vnaproperty_get: mismatch: \"%s\" != \"%s\"",
+		value, text2);
 	result = T_FAIL;
 	goto out;
     }
-    vnaproperty_hold(scalar);
-    vnaproperty_free(scalar);
-    if (vnaproperty_type(scalar) != VNAPROPERTY_SCALAR) {
-	(void)printf("vnaproperty_type(scalar) != VNAPROPERTY_SCALAR "
-		"(2)\n");
+    if (vnaproperty_delete(&root, ".") == -1) {
+	(void)printf("11: vnaproperty_delete: %s\n", strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
-    if (value == NULL) {
-	(void)printf("vnaproperty_get_value(scalar) == NULL (3)");
-	result = T_FAIL;
-	goto out;
-    }
-    if (strcmp(value, text2) != 0) {
-	(void)printf("vnaproperty_get_value(scalar) ne text2 (2)");
-	result = T_FAIL;
-	goto out;
-    }
-    vnaproperty_free(scalar);
-    if (vnaproperty_type(scalar) == VNAPROPERTY_SCALAR) {
-	(void)printf("still a scalar after free!");
+    if (root != NULL) {
+	(void)printf("12: root not NULL after delete .\n");
 	result = T_FAIL;
 	goto out;
     }
     result = T_PASS;
 
 out:
-    libt_report(result);;
+    libt_report(result);
     return result;
 }
 

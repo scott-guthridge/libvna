@@ -18,7 +18,7 @@
 .TH VNACAL 3 "JULY 2017" GNU
 .nh
 .SH NAME
-vnacal_apply, vnacal_apply_m, vnacal_create, vnacal_add_calibration, vnacal_delete_calibration, vnacal_find_calibration, vnacal_free, vnacal_get_calibration_end, vnacal_get_columns, vnacal_get_filename, vnacal_get_fmax, vnacal_get_fmin, vnacal_get_frequencies, vnacal_get_frequency_vector, vnacal_get_name, vnacal_get_rows, vnacal_get_type, vnacal_get_z0, vnacal_load, vnacal_name_to_type, vnacal_property_count, vnacal_property_delete, vnacal_property_get, vnacal_property_keys, vnacal_property_set, vnacal_property_type, vnacal_save, vnacal_set_dprecision, vnacal_set_fprecision, vnacal_type_to_name \- vector network analyzer calibration
+vnacal_apply, vnacal_apply_m, vnacal_create, vnacal_add_calibration, vnacal_delete_calibration, vnacal_find_calibration, vnacal_free, vnacal_get_calibration_end, vnacal_get_columns, vnacal_get_filename, vnacal_get_fmax, vnacal_get_fmin, vnacal_get_frequencies, vnacal_get_frequency_vector, vnacal_get_name, vnacal_get_rows, vnacal_get_type, vnacal_get_z0, vnacal_load, vnacal_name_to_type, vnacal_property_count, vnacal_property_delete, vnacal_property_get, vnacal_property_get_subtree, vnacal_property_keys, vnacal_property_set, vnacal_property_set_subtree, vnacal_property_type, vnacal_save, vnacal_set_dprecision, vnacal_set_fprecision, vnacal_type_to_name \- vector network analyzer calibration
 .\"
 .SH SYNOPSIS
 .B #include <vnacal.h>
@@ -101,10 +101,10 @@ vnacal_apply, vnacal_apply_m, vnacal_create, vnacal_add_calibration, vnacal_dele
 .BI "void vnacal_free(vnacal_t *" vcp );
 .\"
 .PP
-.BI "vnacal_type_t vnacal_name_to_type(const char * " name );
+.BI "vnacal_type_t vnacal_name_to_type(const char *" name );
 .\"
 .PP
-.BI "const char *vnacal_type_to_name(vnacal_type_t" type );
+.BI "const char *vnacal_type_to_name(vnacal_type_t " type );
 .\"
 .SS "Applying a Calibration to Measured Data"
 .PP
@@ -203,6 +203,19 @@ vnacal_apply, vnacal_apply_m, vnacal_create, vnacal_add_calibration, vnacal_dele
 .if n \{\
 .in -4n
 .\}
+.\"
+.PP
+.BI "vnaproperty_t *vnacal_property_get_subtree(vnacal_t *" vcp ", int " ci ,
+.if n .in +4n
+.BI "const char *" format ", ...);"
+.if n .in -4n
+.\"
+.PP
+.BI "vnaproperty_t **vnacal_property_set_subtree(vnacal_t *" vcp ", int " ci ,
+.if n .in +4n
+.BI "const char *" format ", ...);"
+.if n .in -4n
+.\"
 .PP
 Link with \fI-lvna\fP \fI-lyaml\fP \fI-lm\fP.
 .sp
@@ -393,26 +406,24 @@ or -1 to indicate a global property; \fIformat\fP is a format string as
 in \fBsprintf\fP(); and \fB...\fP is a list of additional arguments as
 appropriate for \fIformat\fP.
 The functions use \fIformat\fP and the additional arguments to construct
-a string which they then interpret.
-The generated string must begin with a key consisting of a list of
-dot-separated identifiers and square-bracket delimited array indices
-described below, giving a path through the properties, which form a tree.
+a string which the property functions interpret.
+The string must begin with a descriptor consisting of dot-separated
+identifiers and square-bracket delimited array indices, giving a path
+through the property tree.
 .PP
-The key may begin with a dot: a key consisting of only of a dot represents
-the root of the tree.
-The elements of the tree consist of key-value maps, lists and scalars.
-Some example keys are: \(lq.\(rq, \(lqabc\(rq, \(lqabc.def\(rq,
-\(lq[0]\(rq, \(lqnames[0]\(rq, \(lqnames[1]\(rq, and
+Some example descriptors are: \(lq.\(rq, \(lqabc\(rq,
+\(lqabc.def\(rq, \(lq[0]\(rq, \(lqnames[0]\(rq, \(lqnames[1]\(rq, and
 \(lq.abc.def[2][0].ghi\(rq.
-Identifiers consist of ASCII characters in [-+A-Za-z0-9_] and valid
-unicode characters encoded in UTF-8.
-The examples below show how these keys are used.
+See \fBvnaproperty\fP(3) for complete documentation.
 .PP
-The \fBvnacal_property_set\fP() function adds or modifies a property.
-The given \fIformat\fP and variable arguments form a string in
-\fIkey\fP=\fIvalue\fP format.
-The left hand side must be a valid key as described above; the
-right hand side can be any text string \- it may contain newlines.
+The \fBvnacal_property_set\fP() function places a scalar value into
+the property tree, creating and replacing objects along the path as needed
+to make them conform to the descriptor string.
+Normally, the argument to this function has the form
+\fIdescriptor\fP=\fIvalue\fP, where everything to the right of the equal
+sign is taken literally as the value to be set \- the right hand side may
+contain newlines.
+See \fBvnaproperty\fP(3) for additional documentation.
 Here are some examples:
 .sp
 vnacal_property_set(vcp, -1, "value1=5");
@@ -472,7 +483,7 @@ as shown.
 .PP
 Calling \fBvnacal_property_set\fP() on an existing property changes the
 property to the new value.
-If the key path contains an element with a conflicting type,
+If the descriptor contains an element with a conflicting type,
 \fBvnacal_property_set\fP() replaces the conflicting element.
 For example, if after building \fImy_reflect\fP in the previous example,
 we set "my_reflect=newValue", then \fImy_reflect\fP changes from a list
@@ -483,10 +494,10 @@ property tree with a scalar.
 The \fBvnacal_property_get\fP() function retrieves a scalar value from
 the property tree.
 For example, after adding the values in the examples above,
-vnacal_property_get(vcp, ci, "value1") returns the string "5";
+vnacal_property_get(vcp, ci, "value1") returns the string "5" and
 vnacal_property_get(vcp, ci, "my_reflect[1].gamma") returns the string
 "1.0".
-If the key doesn't refer to a scalar, \fBvnacal_property_get\fP()
+If the descriptor doesn't refer to a scalar, \fBvnacal_property_get\fP()
 fails with a return of \s-2NULL\s+2.
 .PP
 The \fBvnacal_property_delete\fP() function deletes a property from
@@ -495,20 +506,30 @@ For example vnacal_property_delete(vcp, set, "detectorMatrix") deletes
 \fIdetectorMatrix\fP and its descendants; vnacal_property_delete(vcp, ci,
 ".") deletes all properties.
 .PP
-The \fBvnacal_property_type\fP() function returns 'm' if the key refers
-to a key-value map, 'l' if the key refers to a list, or 's' if the key
-refers to a scalar.
-Given the detectorMatrix example above, vnacal_property_type(vcp, ci,
-".") returns 'm', vnacal_property_type(vcp, ci, "detectorMatrix")
-returns 'l', vnacal_property_type(vcp, ci, "detectorMatrix[0]")
-returns 'l', and vnacal_property_type(vcp, ci, "detectorMatrix[0][0]")
-returns 's'.
-If the key doesn't exist or a component along the path isn't the specified
-type, \fBvnacal_property_type\fP() fails with a return of -1.
+The \fBvnacal_property_type\fP() function returns 'm' if the descriptor
+refers to a key-value map, 'l' if the descriptor refers to a list, or
+'s' if the descriptor refers to a scalar.
+Given the detectorMatrix example above:
+.sp
+.RS +4n
+vnacal_property_type(vcp, ci, ".") returns 'm',
+.br
+vnacal_property_type(vcp, ci, "detectorMatrix") returns 'l',
+.br
+vnacal_property_type(vcp, ci, "detectorMatrix[0]") returns 'l', and
+.br
+vnacal_property_type(vcp, ci, "detectorMatrix[0][0]") returns 's'.
+.RS -4n
+.\"
+.PP
+If a component along the path doesn't exist or isn't the specified type,
+\fBvnacal_property_type\fP() fails with a return of -1.
+.\"
 .PP
 The \fBvnacal_property_count\fP() returns the number of elements in a
 specified map or list.
 If applied to a scalar, it fails with a return of -1.
+.\"
 .PP
 Given a key-value map, \fBvnacal_property_keys\fP() returns a vector of
 pointers to all the keys in the map.
@@ -516,6 +537,12 @@ The caller is responsible for freeing the returned vector (but not the
 strings it points to) by a call to \fBfree\fP(3).
 If applied to something other than a map, \fBvnacal_property_keys\fP()
 fails with a return of \s-2NULL\s+2.
+.\"
+.PP
+The \fBvnacal_property_get_subtree\fP() and
+\fBvnacal_property_set_subtree\fP() functions return pointers that can
+be manipulated by the functions in \fBvnaproperty\fP(3).
+Complete documentation can be found in that page.
 .\"
 .SH "RETURN VALUE"
 The functions that return int set \fBerrno\fP and return -1 on error.
@@ -584,4 +611,4 @@ Example programs can be found in <install-prefix>/share/doc/libvna.
 .\"
 .SH "SEE ALSO"
 .BR vnacal "(3), " vnaconv "(3), " vnadata "(3), " vnaerr "(3),"
-.BR vnacal_parameter "(3)"
+.BR vnacal_parameter "(3), " vnaproperty "(3)"

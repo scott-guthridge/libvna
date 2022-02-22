@@ -27,9 +27,8 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include "vnaproperty_internal.h"
+#include "vnaproperty.h"
 #include "libt.h"
-
 
 /*
  * Options
@@ -52,22 +51,27 @@ int opt_v = 0;
  */
 static libt_result_t test_vnaproperty_list()
 {
-    vnaproperty_t *list;
-    vnaproperty_t *first_scalar = NULL;
-    int length;
+    vnaproperty_t *root = NULL;
+    int type = -1;
+    int count;
     libt_result_t result = T_SKIPPED;
 
     /*
-     * Test alloc and get_type.
+     * Test alloc, type and count of empty list.
      */
-    list = vnaproperty_list_alloc();
-    if (list == NULL) {
-	(void)printf("vnaproperty_list_alloc: %s\n", strerror(errno));
+    if (vnaproperty_set_subtree(&root, "[]") == NULL) {
+	(void)printf("1: vnaproperty_set_subtree: %s\n", strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
-    if (vnaproperty_type(list) != VNAPROPERTY_LIST) {
-	(void)printf("vnaproperty_type(list) != VNAPROPERTY_LIST\n");
+    if ((type = vnaproperty_type(root, ".")) != 'l') {
+	(void)printf("2: vnaproperty_type: 0x%04X != 'l'\n",
+		(int)type);
+	result = T_FAIL;
+	goto out;
+    }
+    if ((count = vnaproperty_count(root, ".")) != 0) {
+	(void)printf("3: vnaproperty_count: %d != 0\n", count);
 	result = T_FAIL;
 	goto out;
     }
@@ -76,37 +80,29 @@ static libt_result_t test_vnaproperty_list()
      * Test append.
      */
     for (int i = 0; i < 100; ++i) {
-	char buf[3 * sizeof(int) + 1];
-	vnaproperty_t *scalar;
-
-	length = vnaproperty_list_count(list);
-	if (length == -1) {
-	    (void)printf("vnaproperty_list_count: %s (%d)\n",
-		    strerror(errno), i);
-	}
-	if (length != i) {
-	    (void)printf("vnaproperty_list_count mismatch (%d != %d)\n",
-		    (int)length, i);
+	if ((count = vnaproperty_count(root, "[]")) == -1) {
+	    (void)printf("4[%d]: vnaproperty_count: %s\n", i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
-	(void)sprintf(buf, "%d", i);
-	if ((scalar = vnaproperty_scalar_alloc(buf)) == NULL) {
-	    (void)printf("vnaproperty_scalar_alloc: %s\n", strerror(errno));
+	if (count != i) {
+	    (void)printf("5[%d]: vnaproperty_count: %d != %d\n", i, count, i);
 	    result = T_FAIL;
 	    goto out;
 	}
-	if (vnaproperty_list_append(list, scalar) == -1) {
-	    (void)printf("vnaproperty_list_append: %s (%d)\n",
-		    strerror(errno), i);
+	if (vnaproperty_set(&root, "[+]=%d", i) == -1) {
+	    (void)printf("6[%d]: vnaproperty_set: %s\n", i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
     }
-    length = vnaproperty_list_count(list);
-    if (length != 100) {
-	(void)printf("vnaproperty_list_count mismatch (%d != 100)\n",
-		(int)length);
+    if ((count = vnaproperty_count(root, ".")) == -1) {
+	(void)printf("7: vnaproperty_count: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if (count != 100) {
+	(void)printf("8: vnaproperty_count: %d != %d\n", count, 100);
 	result = T_FAIL;
 	goto out;
     }
@@ -115,543 +111,468 @@ static libt_result_t test_vnaproperty_list()
      * Test get.
      */
     for (int i = 0; i < 100; ++i) {
-	vnaproperty_t *scalar;
 	const char *value;
-	char buf[3 * sizeof(int) + 1];
 
-	(void)sprintf(buf, "%d", i);
-	if ((scalar = vnaproperty_list_get(list, i)) == NULL) {
-	    (void)printf("vnaproperty_list_get: %s (%d)\n",
-		    strerror(errno), i);
+	errno = 0;
+	if ((value = vnaproperty_get(root, "[%d]", i)) == NULL) {
+	    (void)printf("10[%d]: vnaproperty_get: %s\n", i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
-	if (vnaproperty_type(scalar) != VNAPROPERTY_SCALAR) {
-	    (void)printf("retrieved list element %d not a scalar\n", i);
-	    result = T_FAIL;
-	    goto out;
-	}
-	if ((value = vnaproperty_scalar_get(scalar)) == NULL) {
-	    (void)printf("vnaproperty_scalar_get: %s (%d)\n",
-		    strerror(errno), i);
-	    result = T_FAIL;
-	    goto out;
-	}
-	if (strcmp(value, buf) != 0) {
-	    (void)printf("vnaproperty_list_get miscompare \"%s\" != \"%s\"\n",
-		value, buf);
+	if (atoi(value) != i) {
+	    (void)printf("11[%d]: value %s != %d\n", i, value, i);
 	    result = T_FAIL;
 	    goto out;
 	}
     }
-    first_scalar = vnaproperty_list_get(list, 0);
 
     /*
-     * Test set.
+     * Test set with invalid index.
      */
-    {
-	vnaproperty_t *scalar;
+    if (vnaproperty_set(&root, "[-1]=invalid") != -1) {
+	(void)printf("20: expected set out of bounds to fail\n");
+	result = T_FAIL;
+	goto out;
+    }
+    if (errno != EINVAL) {
+	(void)printf("21: %s: expected EINVAL\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
 
-	/*
-	 * Test bounds check.
-	 */
-	if ((scalar = vnaproperty_scalar_alloc("out-of-bounds")) == NULL) {
-	    (void)printf("vnaproperty_scalar_alloc: %s (fifty)\n",
-		    strerror(errno));
-	    result = T_FAIL;
-	    goto out;
-	}
+    /*
+     * Test set in the middle.
+     *   starting state: 0..99
+     *   ending state:   0..49 "fifty" 51..99
+     */
+    if (vnaproperty_set(&root, "[50]=fifty") == -1) {
+	(void)printf("30: vnaproperty_set: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if ((count = vnaproperty_count(root, "[]")) == -1) {
+	(void)printf("31: vnaproperty_count: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if (count != 100) {
+	(void)printf("32: vnaproperty_count: %d != %d\n", count, 100);
+	result = T_FAIL;
+	goto out;
+    }
+    for (int i = 0; i < 100; ++i) {
+	const char *value;
+
 	errno = 0;
-	if (vnaproperty_list_set(list, -1, scalar) != -1 || errno != EINVAL) {
-	    (void)printf("vnaproperty_list_set: %s (bounds -1)\n",
-		    strerror(errno));
+	if ((value = vnaproperty_get(root, "[%d]", i)) == NULL) {
+	    (void)printf("33[%d]: vnaproperty_get: %s\n", i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
-	vnaproperty_free(scalar);
+	if (i != 50) {
+	    if (atoi(value) != i) {
+		(void)printf("34[%d]: value %s != %d\n", i, value, i);
+		result = T_FAIL;
+		goto out;
+	    }
+	} else if (strcmp(value, "fifty") != 0) {
+	    (void)printf("35[%d]: value %s != fifty\n", i, value);
+	    result = T_FAIL;
+	    goto out;
+	}
+    }
 
-	/*
-	 * Test set in middle.
-	 *   starting state: 0..99
-	 *   ending state:   0..49 "fifty" 51..99
-	 */
-	if ((scalar = vnaproperty_scalar_alloc("fifty")) == NULL) {
-	    (void)printf("vnaproperty_scalar_alloc: %s (fifty)\n",
-		    strerror(errno));
-	    result = T_FAIL;
-	    goto out;
-	}
-	if (vnaproperty_list_set(list, 50, scalar) == -1) {
-	    (void)printf("vnaproperty_list_set: %s (fifty)\n",
-		    strerror(errno));
-	    result = T_FAIL;
-	    goto out;
-	}
-	length = vnaproperty_list_count(list);
-	if (length != 100) {
-	    (void)printf("vnaproperty_list_count mismatch "
-		    "(set %d != 100)\n", (int)length);
-	    result = T_FAIL;
-	    goto out;
-	}
-	for (int i = 0; i < 100; ++i) {
-	    vnaproperty_t *scalar;
-	    const char *value;
-	    char buf[64];
+    /*
+     * Test setting past the end.
+     *   starting state: 0..49 "fifty" 51..99
+     *   ending state:   0..49 "fifty" 51..99 ~ ~ "hundred-two"
+     */
+    if (vnaproperty_set(&root, "[102]=hundred-two") == -1) {
+	(void)printf("40: vnaproperty_set: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if ((count = vnaproperty_count(root, "[]")) == -1) {
+	(void)printf("41: vnaproperty_count: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if (count != 103) {
+	(void)printf("42: vnaproperty_count: %d != %d\n", count, 103);
+	result = T_FAIL;
+	goto out;
+    }
+    for (int i = 0; i < 104; ++i) {
+	const char *value;
+	char expected[50];
 
-	    (void)sprintf(buf, "%d", i);
-	    if ((scalar = vnaproperty_list_get(list, i)) == NULL) {
-		(void)printf("vnaproperty_list_get: %s (set %d)\n",
-			strerror(errno), i);
+	errno = 0;
+	value = vnaproperty_get(root, "[%d]", i);
+	if (i == 100 || i == 101 || i == 103) {
+	    if (value != NULL) {
+		(void)printf("43[%d]: expected NULL; found \"%s\"\n",
+			i, value);
 		result = T_FAIL;
 		goto out;
 	    }
-	    if (vnaproperty_type(scalar) != VNAPROPERTY_SCALAR) {
-		(void)printf("retrieved list element %d not a scalar (set)\n",
-			i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if ((value = vnaproperty_scalar_get(scalar)) == NULL) {
-		(void)printf("vnaproperty_scalar_get: %s (set %d)\n",
-			strerror(errno), i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if (i == 50) {
-		(void)strcpy(buf, "fifty");
-	    }
-	    if (strcmp(value, buf) != 0) {
-		(void)printf("vnaproperty_list_get miscompare "
-		    "\"%s\" != \"%s\" (set)\n", value, buf);
-		result = T_FAIL;
-		goto out;
-	    }
-	}
-
-	/*
-	 * Test setting past the end.
-	 *   starting state: 0..49 "fifty" 51..99
-	 *   ending state:   0..49 "fifty" 51..99 ~ ~ "hundred-two"
-	 */
-	if ((scalar = vnaproperty_scalar_alloc("hundred-two")) == NULL) {
-	    (void)printf("vnaproperty_scalar_alloc: %s (fifty)\n",
-		    strerror(errno));
-	    result = T_FAIL;
-	    goto out;
-	}
-	if (vnaproperty_list_set(list, 102, scalar) == -1) {
-	    (void)printf("vnaproperty_list_set: %s (fifty)\n",
-		    strerror(errno));
-	    result = T_FAIL;
-	    goto out;
-	}
-	length = vnaproperty_list_count(list);
-	if (length != 103) {
-	    (void)printf("vnaproperty_list_count mismatch "
-		    "(set %d != 103)\n", (int)length);
-	    result = T_FAIL;
-	    goto out;
-	}
-	for (int i = 0; i < 103; ++i) {
-	    vnaproperty_t *scalar;
-	    const char *value;
-	    char buf[64];
-
-	    if ((scalar = vnaproperty_list_get(list, i)) == NULL) {
-		(void)printf("vnaproperty_list_get: %s (set %d)\n",
-			strerror(errno), i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if (vnaproperty_type(scalar) != VNAPROPERTY_SCALAR) {
-		(void)printf("retrieved list element %d not a scalar (set)\n",
-			i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if ((value = vnaproperty_scalar_get(scalar)) == NULL) {
-		(void)printf("vnaproperty_scalar_get: %s (set %d)\n",
-			strerror(errno), i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if (i == 50) {
-		(void)strcpy(buf, "fifty");
-	    } else if (i == 100 || i == 101) {
-		(void)strcpy(buf, "~");
-	    } else if (i == 102) {
-		(void)strcpy(buf, "hundred-two");
+	    if (i == 103) {
+		if (errno != ENOENT) {
+		    (void)printf("44[%d]: %s: expected ENOENT\n",
+			    i, strerror(errno));
+		    result = T_FAIL;
+		    goto out;
+		}
 	    } else {
-		(void)sprintf(buf, "%d", i);
+		if (errno != 0) {
+		    (void)printf("45[%d]: %s: expected no error\n",
+			i, strerror(errno));
+		    result = T_FAIL;
+		    goto out;
+		}
 	    }
-	    if (strcmp(value, buf) != 0) {
-		(void)printf("vnaproperty_list_get miscompare "
-		    "\"%s\" != \"%s\" (set)\n", value, buf);
-		result = T_FAIL;
-		goto out;
-	    }
+	    continue;
+	}
+	if (value == NULL) {
+	    (void)printf("46[%d]: vnaproperty_get: %s\n",
+		    i, strerror(errno));
+	    result = T_FAIL;
+	    goto out;
+	}
+	switch (i) {
+	case 50:
+	    (void)strcpy(expected, "fifty");
+	    break;
+	case 102:
+	    (void)strcpy(expected, "hundred-two");
+	    break;
+	default:
+	    (void)sprintf(expected, "%d", i);
+	    break;
+	}
+	if (strcmp(value, expected) != 0) {
+	    (void)printf("47[%d]: \"%s\" != \"%s\"\n", i, value, expected);
+	    result = T_FAIL;
+	    goto out;
 	}
     }
 
     /*
-     * Test insert.
+     * Test insert in the middle.
      *	 starting state: 0..49 "fifty" 51..99 ~ ~ "hundred-two"
+     *   ending state: 0..50 [51]="fifty" [52]=51..[100]=99
+     *			     [101]=~ [102]=~ [103]="hundred-two"
      */
-    {
-	vnaproperty_t *scalar;
+    if (vnaproperty_set(&root, "[50+]=50") == -1) {
+	(void)printf("50: vnaproperty_set: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if ((count = vnaproperty_count(root, ".")) == -1) {
+	(void)printf("51: vnaproperty_count: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if (count != 104) {
+	(void)printf("52: vnaproperty_count: %d != %d\n", count, 104);
+	result = T_FAIL;
+	goto out;
+    }
+    for (int i = 0; i < 105; ++i) {
+	const char *value;
+	char expected[50];
 
-	/*
-	 * Test bounds check.
-	 */
-	if ((scalar = vnaproperty_scalar_alloc("50")) == NULL) {
-	    (void)printf("vnaproperty_scalar_alloc: %s (END)\n",
-		    strerror(errno));
-	    result = T_FAIL;
-	    goto out;
-	}
 	errno = 0;
-	if (vnaproperty_list_insert(list, -1, scalar) != -1 ||
-		errno != EINVAL) {
-	    (void)printf("vnaproperty_list_insert: %s (bounds -1)\n",
-		    strerror(errno));
+	value = vnaproperty_get(root, "[%d]", i);
+	if (i == 101 || i == 102 || i == 104) {
+	    if (value != NULL) {
+		(void)printf("53[%d]: expected NULL; found \"%s\"\n",
+			i, value);
+		result = T_FAIL;
+		goto out;
+	    }
+	    if (i == 104) {
+		if (errno != ENOENT) {
+		    (void)printf("54[%d]: %s: expected ENOENT\n",
+			    i, strerror(errno));
+		    result = T_FAIL;
+		    goto out;
+		}
+	    } else {
+		if (errno != 0) {
+		    (void)printf("55[%d]: %s: expected no error\n",
+			    i, strerror(errno));
+		    result = T_FAIL;
+		    goto out;
+		}
+	    }
+	    continue;
+	}
+	if (value == NULL) {
+	    (void)printf("56[%d]: vnaproperty_get: %s\n",
+		    i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
-
-	/*
-	 * Test insert in the middle.
-	 *   ending state: 0..50 [51]="fifty" [52]=51..[100]=99
-	 *	[101]=~ [102]=~ [103]="hundred-two"
-	 */
-	if (vnaproperty_list_insert(list, 50, scalar) == -1) {
-	    (void)printf("vnaproperty_list_insert: %s\n", strerror(errno));
+	switch (i) {
+	case 51:
+	    (void)strcpy(expected, "fifty");
+	    break;
+	case 103:
+	    (void)strcpy(expected, "hundred-two");
+	    break;
+	default:
+	    (void)sprintf(expected, "%d", i <= 51 ? i : i - 1);
+	    break;
+	}
+	if (strcmp(value, expected) != 0) {
+	    (void)printf("57[%d]: \"%s\" != \"%s\"\n", i, value, expected);
 	    result = T_FAIL;
 	    goto out;
-	}
-	length = vnaproperty_list_count(list);
-	if (length != 104) {
-	    (void)printf("vnaproperty_list_count mismatch "
-		    "(insert %d != 104)\n", (int)length);
-	    result = T_FAIL;
-	    goto out;
-	}
-	for (int i = 0; i < 102; ++i) {
-	    vnaproperty_t *scalar;
-	    const char *value;
-	    char buf[64];
-
-	    if ((scalar = vnaproperty_list_get(list, i)) == NULL) {
-		(void)printf("vnaproperty_list_get: %s (insert %d)\n",
-			strerror(errno), i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if (vnaproperty_type(scalar) != VNAPROPERTY_SCALAR) {
-		(void)printf("retrieved list element %d not a scalar "
-			"(insert)\n", i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if ((value = vnaproperty_scalar_get(scalar)) == NULL) {
-		(void)printf("vnaproperty_scalar_get: %s (insert %d)\n",
-			strerror(errno), i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if (i <= 50) {
-		(void)sprintf(buf, "%d", i);
-	    } else if (i == 51) {
-		(void)strcpy(buf, "fifty");
-	    } else if (i == 101 || i == 102) {
-		(void)strcpy(buf, "~");
-	    } else if (i == 103) {
-		(void)strcpy(buf, "hundred-two");
-	    } else {	/* 52 <= i <= 100 */
-		(void)sprintf(buf, "%d", i - 1);
-	    }
-	    if (strcmp(value, buf) != 0) {
-		(void)printf("vnaproperty_list_get miscompare "
-		    "\"%s\" != \"%s\" (insert)\n", value, buf);
-		result = T_FAIL;
-		goto out;
-	    }
-	}
-
-	/*
-	 * Test insert at the end.
-	 *   starting state: 0..50 [51]="fifty" [52]=51..[100]=99
-	 *	[101]=~ [102]=~ [103]="hundred-two"
-	 *   ending state:   0..50 [51]="fifty" [52]=51..[100]=99
-	 *	[101]=~ [102]=~ [103]="hundred-two" [104]="one-o-four"
-	 */
-	if ((scalar = vnaproperty_scalar_alloc("one-o-four")) == NULL) {
-	    (void)printf("vnaproperty_scalar_alloc: %s (END)\n",
-		    strerror(errno));
-	    result = T_FAIL;
-	    goto out;
-	}
-	if (vnaproperty_list_insert(list, 104, scalar) == -1) {
-	    (void)printf("vnaproperty_list_insert: %s\n", strerror(errno));
-	    result = T_FAIL;
-	    goto out;
-	}
-	length = vnaproperty_list_count(list);
-	if (length != 105) {
-	    (void)printf("vnaproperty_list_count mismatch "
-		    "(insert %d != 105)\n", (int)length);
-	    result = T_FAIL;
-	    goto out;
-	}
-	for (int i = 0; i < 105; ++i) {
-	    vnaproperty_t *scalar;
-	    const char *value;
-	    char buf[64];
-
-	    if ((scalar = vnaproperty_list_get(list, i)) == NULL) {
-		(void)printf("vnaproperty_list_get: %s (insert %d)\n",
-			strerror(errno), i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if (vnaproperty_type(scalar) != VNAPROPERTY_SCALAR) {
-		(void)printf("retrieved list element %d not a scalar "
-			"(insert)\n", i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if ((value = vnaproperty_scalar_get(scalar)) == NULL) {
-		(void)printf("vnaproperty_scalar_get: %s (insert %d)\n",
-			strerror(errno), i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if (i <= 50) {
-		(void)sprintf(buf, "%d", i);
-	    } else if (i == 51) {
-		(void)strcpy(buf, "fifty");
-	    } else if (i == 101 || i == 102) {
-		(void)strcpy(buf, "~");
-	    } else if (i == 103) {
-		(void)strcpy(buf, "hundred-two");
-	    } else if (i == 104) {
-		(void)strcpy(buf, "one-o-four");
-	    } else {	/* 52 <= i <= 100 */
-		(void)sprintf(buf, "%d", i - 1);
-	    }
-	    if (strcmp(value, buf) != 0) {
-		(void)printf("vnaproperty_list_get miscompare "
-		    "\"%s\" != \"%s\" (insert)\n", value, buf);
-		result = T_FAIL;
-		goto out;
-	    }
 	}
     }
 
     /*
-     * Test delete.
+     * Test insert at the end.
+     *   starting state: 0..50 [51]="fifty" [52]=51..[100]=99
+     *	[101]=~ [102]=~ [103]="hundred-two"
+     *   ending state:   0..50 [51]="fifty" [52]=51..[100]=99
+     *	[101]=~ [102]=~ [103]="hundred-two" [104]="one-o-four"
+     */
+    if (vnaproperty_set(&root, "[104+]=one-o-four") == -1) {
+	(void)printf("60: vnaproperty_set: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if ((count = vnaproperty_count(root, ".")) == -1) {
+	(void)printf("61: vnaproperty_count: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if (count != 105) {
+	(void)printf("62: vnaproperty_count: %d != %d\n", count, 105);
+	result = T_FAIL;
+	goto out;
+    }
+    for (int i = 0; i < 106; ++i) {
+	const char *value;
+	char expected[50];
+
+	errno = 0;
+	value = vnaproperty_get(root, "[%d]", i);
+	if (i == 101 || i == 102 || i == 105) {
+	    if (value != NULL) {
+		(void)printf("63[%d]: expected NULL; found \"%s\"\n",
+			i, value);
+		result = T_FAIL;
+		goto out;
+	    }
+	    if (i == 105) {
+		if (errno != ENOENT) {
+		    (void)printf("64[%d]: %s: expected ENOENT\n",
+			    i, strerror(errno));
+		    result = T_FAIL;
+		    goto out;
+		}
+	    } else {
+		if (errno != 0) {
+		    (void)printf("65[%d]: %s: expected no error\n",
+			    i, strerror(errno));
+		    result = T_FAIL;
+		    goto out;
+		}
+	    }
+	    continue;
+	}
+	if (value == NULL) {
+	    (void)printf("66[%d]: vnaproperty_get: %s\n",
+		    i, strerror(errno));
+	    result = T_FAIL;
+	    goto out;
+	}
+	switch (i) {
+	case 51:
+	    (void)strcpy(expected, "fifty");
+	    break;
+	case 103:
+	    (void)strcpy(expected, "hundred-two");
+	    break;
+	case 104:
+	    (void)strcpy(expected, "one-o-four");
+	    break;
+	default:
+	    (void)sprintf(expected, "%d", i <= 51 ? i : i - 1);
+	    break;
+	}
+	if (strcmp(value, expected) != 0) {
+	    (void)printf("67[%d]: \"%s\" != \"%s\"\n", i, value, expected);
+	    result = T_FAIL;
+	    goto out;
+	}
+    }
+
+    /*
+     * Test delete in the middle.
      *   starting state: 0..50 [51]="fifty" [52]=51..[100]=99
      *	   [101]=~ [102]=~ [103]="hundred-two" [104]="one-o-four"
+     *   ending state:   0..99 [100]=~ [101]=~ [102]="hundred-two"
+     *     [103]="one-o-four"
      */
-    {
-	/*
-	 * Test bounds check.
-	 */
+    if (vnaproperty_delete(&root, "[51]") == -1) {
+	(void)printf("70: vnaproperty_delete: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if ((count = vnaproperty_count(root, ".")) == -1) {
+	(void)printf("71: vnaproperty_count: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if (count != 104) {
+	(void)printf("72: vnaproperty_count: %d != %d\n", count, 104);
+	result = T_FAIL;
+	goto out;
+    }
+    for (int i = 0; i < 105; ++i) {
+	const char *value;
+	char expected[50];
+
 	errno = 0;
-	if (vnaproperty_list_delete(list, -1) != -1 || errno != EINVAL) {
-	    (void)printf("vnaproperty_list_delete: %s (bounds -1)\n",
-		    strerror(errno));
-	    result = T_FAIL;
-	    goto out;
-	}
-	errno = 0;
-	if (vnaproperty_list_delete(list, 105) != -1 || errno != ENOENT) {
-	    (void)printf("vnaproperty_list_delete: %s (bounds 103)\n",
-		    strerror(errno));
-	    result = T_FAIL;
-	    goto out;
-	}
-
-	/*
-	 * Test delete in the middle.
-	 *   ending state:   0..99 [100]=~ [101]=~ [102]="hundred-two"
-	 *     [103]="one-o-four"
-	 */
-	if (vnaproperty_list_delete(list, 51) == -1) {
-	    (void)printf("vnaproperty_list_delete: %s (delete 51)\n",
-		    strerror(errno));
-	    result = T_FAIL;
-	    goto out;
-	}
-	length = vnaproperty_list_count(list);
-	if (length != 104) {
-	    (void)printf("vnaproperty_list_count mismatch "
-		    "(delete %d != 104)\n", (int)length);
-	    result = T_FAIL;
-	    goto out;
-	}
-	for (int i = 0; i < 102; ++i) {
-	    vnaproperty_t *scalar;
-	    const char *value;
-	    char buf[64];
-
-	    if ((scalar = vnaproperty_list_get(list, i)) == NULL) {
-		(void)printf("vnaproperty_list_get: %s (delete %d)\n",
-			strerror(errno), i);
+	value = vnaproperty_get(root, "[%d]", i);
+	if (i == 100 || i == 101 || i == 104) {
+	    if (value != NULL) {
+		(void)printf("73[%d]: expected NULL; found \"%s\"\n",
+			i, value);
 		result = T_FAIL;
 		goto out;
 	    }
-	    if (vnaproperty_type(scalar) != VNAPROPERTY_SCALAR) {
-		(void)printf("retrieved list element %d not a scalar "
-			"(delete)\n", i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if ((value = vnaproperty_scalar_get(scalar)) == NULL) {
-		(void)printf("vnaproperty_scalar_get: %s (delete %d)\n",
-			strerror(errno), i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if (i <= 99) {
-		(void)sprintf(buf, "%d", i);
-	    } else if (i == 100 || i == 101) {
-		(void)strcpy(buf, "~");
-	    } else if (i == 102) {
-		(void)strcpy(buf, "hundred-two");
-	    } else if (i == 103) {
-		(void)strcpy(buf, "one-o-four");
+	    if (i == 104) {
+		if (errno != ENOENT) {
+		    (void)printf("74[%d]: %s: expected ENOENT\n",
+			    i, strerror(errno));
+		    result = T_FAIL;
+		    goto out;
+		}
 	    } else {
-		abort();
+		if (errno != 0) {
+		    (void)printf("75[%d]: %s: expected no error\n",
+			    i, strerror(errno));
+		    result = T_FAIL;
+		    goto out;
+		}
 	    }
-	    if (strcmp(value, buf) != 0) {
-		(void)printf("vnaproperty_list_get miscompare "
-		    "\"%s\" != \"%s\" (delete 51)\n", value, buf);
-		result = T_FAIL;
-		goto out;
-	    }
+	    continue;
 	}
-
-	/*
-	 * Test delete at the end.
-	 *   starting state: 0..99 [100]=~ [101]=~ [102]="hundred-two"
-	 *     [103]="one-o-four"
-	 *   ending state:   0..99 [100]=~ [101]=~ [102]="hundred-two"
-	 */
-	if (vnaproperty_list_delete(list, 103) == -1) {
-	    (void)printf("vnaproperty_list_delete: %s (delete 103)\n",
-		    strerror(errno));
+	if (value == NULL) {
+	    (void)printf("76[%d]: vnaproperty_get: %s\n", i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
-	length = vnaproperty_list_count(list);
-	if (length != 103) {
-	    (void)printf("vnaproperty_list_count mismatch "
-		    "(delete %d != 101)\n", (int)length);
+	switch (i) {
+	case 102:
+	    (void)strcpy(expected, "hundred-two");
+	    break;
+	case 103:
+	    (void)strcpy(expected, "one-o-four");
+	    break;
+	default:
+	    (void)sprintf(expected, "%d", i);
+	    break;
+	}
+	if (strcmp(value, expected) != 0) {
+	    (void)printf("77[%d]: \"%s\" != \"%s\"\n", i, value, expected);
 	    result = T_FAIL;
 	    goto out;
-	}
-	for (int i = 0; i < 103; ++i) {
-	    vnaproperty_t *scalar;
-	    const char *value;
-	    char buf[64];
-
-	    if ((scalar = vnaproperty_list_get(list, i)) == NULL) {
-		(void)printf("vnaproperty_list_get: %s (delete %d)\n",
-			strerror(errno), i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if (vnaproperty_type(scalar) != VNAPROPERTY_SCALAR) {
-		(void)printf("retrieved list element %d not a scalar "
-			"(delete)\n", i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if ((value = vnaproperty_scalar_get(scalar)) == NULL) {
-		(void)printf("vnaproperty_scalar_get: %s (delete %d)\n",
-			strerror(errno), i);
-		result = T_FAIL;
-		goto out;
-	    }
-	    if (i <= 99) {
-		(void)sprintf(buf, "%d", i);
-	    } else if (i == 100 || i == 101) {
-		(void)strcpy(buf, "~");
-	    } else if (i == 102) {
-		(void)strcpy(buf, "hundred-two");
-	    } else {
-		abort();
-	    }
-	    if (strcmp(value, buf) != 0) {
-		(void)printf("vnaproperty_list_get miscompare "
-		    "\"%s\" != \"%s\" (delete 101)\n", value, buf);
-		result = T_FAIL;
-		goto out;
-	    }
 	}
     }
 
     /*
-     * Test hold and free.
+     * Test delete at the end.
+     *   starting state: 0..99 [100]=~ [101]=~ [102]="hundred-two"
+     *     [103]="one-o-four"
+     *   ending state:   0..99 [100]=~ [101]=~ [102]="hundred-two"
      */
-    {
-	vnaproperty_t *scalar;
+    if (vnaproperty_delete(&root, "[103]") == -1) {
+	(void)printf("80: vnaproperty_delete: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if ((count = vnaproperty_count(root, ".")) == -1) {
+	(void)printf("81: vnaproperty_count: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if (count != 103) {
+	(void)printf("82: vnaproperty_count: %d != %d\n", count, 104);
+	result = T_FAIL;
+	goto out;
+    }
+    for (int i = 0; i < 105; ++i) {
+	const char *value;
+	char expected[50];
 
-	if ((scalar = vnaproperty_scalar_alloc("END")) == NULL) {
-	    (void)printf("vnaproperty_scalar_alloc: %s (END)\n",
-		    strerror(errno));
+	errno = 0;
+	value = vnaproperty_get(root, "[%d]", i);
+	if (i == 100 || i == 101 || i == 103 || i == 104) {
+	    if (value != NULL) {
+		(void)printf("83[%d]: expected NULL; found \"%s\"\n",
+			i, value);
+		result = T_FAIL;
+		goto out;
+	    }
+	    if (i == 103 || i == 104) {
+		if (errno != ENOENT) {
+		    (void)printf("84[%d]: %s: expected ENOENT\n",
+			    i, strerror(errno));
+		    result = T_FAIL;
+		    goto out;
+		}
+	    } else {
+		if (errno != 0) {
+		    (void)printf("85[%d]: %s: expected no error\n",
+			    i, strerror(errno));
+		    result = T_FAIL;
+		    goto out;
+		}
+	    }
+	    continue;
+	}
+	if (value == NULL) {
+	    (void)printf("86[%d]: vnaproperty_get: %s\n", i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
-	if (vnaproperty_list_append(list, scalar) == -1) {
-	    (void)printf("vnaproperty_list_append: %s (END)\n",
-		    strerror(errno));
+	switch (i) {
+	case 102:
+	    (void)strcpy(expected, "hundred-two");
+	    break;
+	default:
+	    (void)sprintf(expected, "%d", i);
+	    break;
+	}
+	if (strcmp(value, expected) != 0) {
+	    (void)printf("87[%d]: \"%s\" != \"%s\"\n", i, value, expected);
 	    result = T_FAIL;
 	    goto out;
 	}
-	vnaproperty_hold(list);
-	vnaproperty_free(list);
-	if (vnaproperty_type(list) != VNAPROPERTY_LIST) {
-	    (void)printf("held list type changed on free\n");
-	    result = T_FAIL;
-	    goto out;
-	}
-	if (vnaproperty_type(scalar) != VNAPROPERTY_SCALAR) {
-	    (void)printf("last held list scalar element type changed "
-		    "on free\n");
-	    result = T_FAIL;
-	    goto out;
-	}
-	if (vnaproperty_type(first_scalar) != VNAPROPERTY_SCALAR) {
-	    (void)printf("first held list scalar element type changed "
-		    "on free\n");
-	    result = T_FAIL;
-	    goto out;
-	}
-	vnaproperty_free(list);
-	if (vnaproperty_type(list) == VNAPROPERTY_LIST) {
-	    (void)printf("unheld list type remained on free\n");
-	    result = T_FAIL;
-	    goto out;
-	}
-	if (vnaproperty_type(scalar) == VNAPROPERTY_SCALAR) {
-	    (void)printf("last unheld list scalar element type "
-		    "remained on free\n");
-	    result = T_FAIL;
-	    goto out;
-	}
-	if (vnaproperty_type(first_scalar) == VNAPROPERTY_SCALAR) {
-	    (void)printf("first unheld list scalar element type "
-		    "remained on free\n");
-	    result = T_FAIL;
-	    goto out;
-	}
+    }
+
+    /*
+     * Test delete all.
+     */
+    if (vnaproperty_delete(&root, "[]") == -1) {
+	(void)printf("90: vnaproperty_delete: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if (root != NULL) {
+	(void)printf("91: expected NULL after delete .\n");
+	result = T_FAIL;
+	goto out;
     }
     result = T_PASS;
 
 out:
-    libt_report(result);;
+    libt_report(result);
     return result;
 }
 

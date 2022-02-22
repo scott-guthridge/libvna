@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <vnadata.h>
 #include <vnaerr.h>
+#include <vnaproperty.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -497,7 +498,8 @@ extern int vnacal_set_dprecision(vnacal_t *vcp, int precision);
 
 /*
  * vnacal_property_type: get the type of the given property expression
- *   @root:   property data root (can be NULL)
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  *   @format: printf format string forming the property expression
  *   @...:    optional variable arguments
  */
@@ -510,7 +512,8 @@ extern int vnacal_property_type(vnacal_t *vcp, int ci,
 
 /*
  * vnacal_property_count: return count of elements in given collection
- *   @root:   property data root (can be NULL)
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  *   @format: printf format string forming the property expression
  *   @...:    optional variable arguments
  */
@@ -523,7 +526,8 @@ extern int vnacal_property_count(vnacal_t *vcp, int ci,
 
 /*
  * vnacal_property_keys: return a vector of keys for the given map expr
- *   @root:   property data root (can be NULL)
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  *   @format: printf format string forming the property expression
  *   @...:    optional variable arguments
  *
@@ -538,7 +542,8 @@ extern const char **vnacal_property_keys(vnacal_t *vcp, int ci,
 
 /*
  * vnacal_property_get: get a property value from a property expression
- *   @root:   property data root (can be NULL)
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  *   @format: printf format string forming the property expression
  *   @...:    optional variable arguments
  */
@@ -551,7 +556,8 @@ extern const char *vnacal_property_get(vnacal_t *vcp, int ci,
 
 /*
  * vnacal_property_set: set a property value from a property expression
- *   @anchor: address of root property pointer
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  *   @format: printf format string forming the property expression
  *   @...:    optional variable arguments
  */
@@ -564,7 +570,8 @@ extern int vnacal_property_set(vnacal_t *vcp, int ci,
 
 /*
  * vnacal_property_delete: delete the value described by format
- *   @anchor: address of root property pointer
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  *   @format: printf format string forming the property expression
  *   @...:    optional variable arguments
  */
@@ -574,6 +581,34 @@ extern int vnacal_property_delete(vnacal_t *vcp, int ci,
     __attribute__((__format__(__printf__, 3, 4)))
 #endif
     ;
+
+/*
+ * vnacal_property_get_subtree: get the subtree described by format
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
+ *   @format:  printf-like format string forming the property expression
+ *   @...:     optional variable arguments
+ */
+extern vnaproperty_t *vnacal_property_get_subtree(vnacal_t *vcp, int ci,
+	const char *format, ...)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 3, 4)))
+#endif
+;
+
+/*
+ * vnacal_property_set_subtree: for subtree and return address
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
+ *   @format:  printf-like format string forming the property expression
+ *   @...:     optional variable arguments
+ */
+extern vnaproperty_t **vnacal_property_set_subtree(vnacal_t *vcp, int ci,
+	const char *format, ...)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 3, 4)))
+#endif
+;
 
 /*
  * vnacal_free: free a vnacal_t structure

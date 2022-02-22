@@ -43,7 +43,7 @@ void vnacal_free(vnacal_t *vcp)
 
 	    vnacal_new_free(vnp);
 	}
-	(void)vnaproperty_expr_delete(&vcp->vc_properties, ".");
+	(void)vnaproperty_delete(&vcp->vc_properties, ".");
 	assert(vcp->vc_properties == NULL);
 	_vnacal_teardown_parameter_collection(vcp);
 	vcp->vc_magic = -1;

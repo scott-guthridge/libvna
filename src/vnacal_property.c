@@ -59,31 +59,16 @@ int vnacal_property_type(vnacal_t *vcp, int ci,
 {
     va_list ap;
     vnaproperty_t **anchor;
-    vnaproperty_type_t type;
+    int rv;
 
     if ((anchor = _get_property_root(vcp, ci)) == NULL) {
 	return -1;
     }
     va_start(ap, format);
-    type = vnaproperty_expr_vtype(*anchor, format, ap);
+    rv = vnaproperty_vtype(*anchor, format, ap);
     va_end(ap);
 
-    /*
-     * Convert to character.
-     */
-    switch (type) {
-    case VNAPROPERTY_SCALAR:
-	return 's';
-
-    case VNAPROPERTY_MAP:
-	return 'm';
-
-    case VNAPROPERTY_LIST:
-	return 'l';
-
-    default:
-	abort();
-    }
+    return rv;
 }
 
 /*
@@ -103,7 +88,7 @@ int vnacal_property_count(vnacal_t *vcp, int ci,
 	return -1;
     }
     va_start(ap, format);
-    count = vnaproperty_expr_vcount(*anchor, format, ap);
+    count = vnaproperty_vcount(*anchor, format, ap);
     va_end(ap);
 
     return count;
@@ -128,7 +113,7 @@ const char **vnacal_property_keys(vnacal_t *vcp, int ci,
 	return NULL;
     }
     va_start(ap, format);
-    keys = vnaproperty_expr_vkeys(*anchor, format, ap);
+    keys = vnaproperty_vkeys(*anchor, format, ap);
     va_end(ap);
 
     return keys;
@@ -151,7 +136,7 @@ const char *vnacal_property_get(vnacal_t *vcp, int ci,
 	return NULL;
     }
     va_start(ap, format);
-    value = vnaproperty_expr_vget(*anchor, format, ap);
+    value = vnaproperty_vget(*anchor, format, ap);
     va_end(ap);
 
     return value;
@@ -174,7 +159,7 @@ int vnacal_property_set(vnacal_t *vcp, int ci,
 	return -1;
     }
     va_start(ap, format);
-    rv = vnaproperty_expr_vset(anchor, format, ap);
+    rv = vnaproperty_vset(anchor, format, ap);
     va_end(ap);
 
     return rv;
@@ -197,8 +182,56 @@ int vnacal_property_delete(vnacal_t *vcp, int ci,
 	return -1;
     }
     va_start(ap, format);
-    rv = vnaproperty_expr_vdelete(anchor, format, ap);
+    rv = vnaproperty_vdelete(anchor, format, ap);
     va_end(ap);
 
     return rv;
+}
+
+/*
+ * vnacal_property_get_subtree: get the subtree described by format
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
+ *   @format:  printf-like format string forming the property expression
+ *   @...:     optional variable arguments
+ */
+vnaproperty_t *vnacal_property_get_subtree(vnacal_t *vcp, int ci,
+	const char *format, ...)
+{
+    va_list ap;
+    vnaproperty_t **anchor;
+    vnaproperty_t *subtree;
+
+    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
+	return NULL;
+    }
+    va_start(ap, format);
+    subtree = vnaproperty_vget_subtree(*anchor, format, ap);
+    va_end(ap);
+
+    return subtree;
+}
+
+/*
+ * vnacal_property_set_subtree: for subtree and return address
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
+ *   @format:  printf-like format string forming the property expression
+ *   @...:     optional variable arguments
+ */
+vnaproperty_t **vnacal_property_set_subtree(vnacal_t *vcp, int ci,
+	const char *format, ...)
+{
+    va_list ap;
+    vnaproperty_t **anchor;
+    vnaproperty_t **subtree;
+
+    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
+	return NULL;
+    }
+    va_start(ap, format);
+    subtree = vnaproperty_vset_subtree(anchor, format, ap);
+    va_end(ap);
+
+    return subtree;
 }

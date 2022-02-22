@@ -40,40 +40,58 @@ void libt_vnacal_print_properties(const vnaproperty_t *vprp, int indent)
 	printf(".\n");
 	return;
     }
-    switch (vnaproperty_type(vprp)) {
-    case VNAPROPERTY_SCALAR:
+    switch (vnaproperty_type(vprp, ".")) {
+    case 's':
 	for (int i = 0; i < indent; ++i) {
 	    (void)printf("    ");
 	}
-	(void)printf("\"%s\"\n", vnaproperty_scalar_get(vprp));
+	(void)printf("\"%s\"\n", vnaproperty_get(vprp, "."));
 	return;
 
-    case VNAPROPERTY_MAP:
+    case 'm':
 	{
-	    const vnaproperty_map_pair_t *vmprp;
+	    const char **keys;
 
-	    for (vmprp = vnaproperty_map_begin(vprp); vmprp != NULL;
-		    vmprp = vnaproperty_map_next(vmprp)) {
+	    keys = vnaproperty_keys(vprp, "{}");
+	    assert(keys != NULL);
+	    for (const char **cpp = keys; *cpp != NULL; ++cpp) {
+		char *key = NULL;
+		vnaproperty_t *subtree;
+
+		if ((key = vnaproperty_quote_key(*cpp)) == NULL) {
+		    (void)printf("vnaproperty_quote_keys: %s\n",
+			    strerror(errno));
+		    continue;
+		}
+		subtree = vnaproperty_get_subtree(vprp, "%s", key);
+		assert(subtree != NULL);
 		for (int i = 0; i < indent; ++i) {
 		    (void)printf("    ");
 		}
-		(void)printf(".%s\n", vmprp->vmpr_key);
-		libt_vnacal_print_properties(vmprp->vmpr_value, indent + 1);
+		(void)printf(".%s\n", key);
+		libt_vnacal_print_properties(subtree, indent + 1);
+		free((void *)key);
 	    }
+	    free((void *)keys);
 	}
 	return;
 
-    case VNAPROPERTY_LIST:
+    case 'l':
 	{
-	    int count = vnaproperty_list_count(vprp);
+	    int count;
 
+	    count = vnaproperty_count(vprp, "[]");
+	    assert(count >= 0);
 	    for (int i = 0; i < count; ++i) {
+		vnaproperty_t *subtree;
+
+		subtree = vnaproperty_get_subtree(vprp, "[%d]", i);
+		assert(subtree != NULL);
 		for (int i = 0; i < indent; ++i) {
 		    (void)printf("    ");
 		}
 		(void)printf("[%d]\n", i);
-		libt_vnacal_print_properties(vnaproperty_list_get(vprp, i),
-			indent + 1);
+		libt_vnacal_print_properties(subtree, indent + 1);
 	    }
 	}
 	return;

@@ -30,6 +30,7 @@
 #include <string.h>
 #include <yaml.h>
 #include "vnacal_internal.h"
+#include "vnaproperty_internal.h"
 
 /*
  * matrix_id_t: which error term matrix
@@ -243,109 +244,24 @@ error:
     return -1;
 }
 
-
 /*
  * parse_properties: parse user properties
  *   @vlsp: pointer to vnacal_load info structure
  *   @node: user properties
  */
-static vnaproperty_t *parse_properties(vnacal_load_state_t
-	*vlsp, yaml_node_t *node)
+static int parse_properties(vnacal_load_state_t *vlsp, vnaproperty_t **rootptr,
+	yaml_node_t *node)
 {
     vnacal_t *vcp = vlsp->vls_vcp;
-    vnaproperty_t *root = NULL;
-    vnaproperty_t *subtree = NULL;
+    vnaproperty_yaml_t vyml;
 
-    switch (node->type) {
-    case YAML_SCALAR_NODE:
-	if ((root = vnaproperty_scalar_alloc((const char *)node->data.
-			scalar.value)) == NULL) {
-	    _vnacal_error(vcp, VNAERR_SYSTEM,
-		    "vnaproperty_scalar_alloc: %s: %s",
-		    vcp->vc_filename, strerror(errno));
-	    goto out;
-	}
-	return root;
+    (void)memset((void *)&vyml, 0, sizeof(vyml));
+    vyml.vyml_document = (void *)&vlsp->vls_document;
+    vyml.vyml_filename = vcp->vc_filename;
+    vyml.vyml_error_fn = vcp->vc_error_fn;
+    vyml.vyml_error_arg = vcp->vc_error_arg;
 
-    case YAML_MAPPING_NODE:
-	{
-	    yaml_node_pair_t *pair;
-
-	    if ((root = vnaproperty_map_alloc()) == NULL) {
-		_vnacal_error(vcp, VNAERR_SYSTEM,
-			"vnaproperty_map_alloc: %s: %s",
-			vcp->vc_filename, strerror(errno));
-		goto out;
-	    }
-	    for (pair = node->data.mapping.pairs.start;
-		 pair < node->data.mapping.pairs.top; ++pair) {
-		yaml_node_t *key, *value;
-
-		key = yaml_document_get_node(&vlsp->vls_document, pair->key);
-		if (key->type != YAML_SCALAR_NODE) {
-		    _vnacal_error(vcp, VNAERR_WARNING,
-			    "%s (line %ld) warning: "
-			    "non-scalar property key ignored\n",
-			    vcp->vc_filename, key->start_mark.line + 1);
-		    continue;
-		}
-		value = yaml_document_get_node(&vlsp->vls_document,
-			pair->value);
-		subtree = parse_properties(vlsp, value);
-		if (subtree == NULL) {
-		    goto out;
-		}
-		if (vnaproperty_map_set(root,
-			    (const char *)key->data.scalar.value,
-			    subtree) == -1) {
-		    _vnacal_error(vcp, VNAERR_SYSTEM,
-			    "vnaproperty_map_set: %s: %s",
-			    vcp->vc_filename, strerror(errno));
-		    goto out;
-		}
-		subtree = NULL;
-	    }
-	    return root;
-	}
-
-    case YAML_SEQUENCE_NODE:
-	{
-	    yaml_node_item_t *item;
-
-	    if ((root = vnaproperty_list_alloc()) == NULL) {
-		_vnacal_error(vcp, VNAERR_SYSTEM,
-			"vnaproperty_list_alloc: %s: %s",
-			vcp->vc_filename, strerror(errno));
-		goto out;
-	    }
-	    for (item = node->data.sequence.items.start;
-		 item < node->data.sequence.items.top; ++item) {
-		int term = item - node->data.sequence.items.start;
-		yaml_node_t *value;
-
-		value = yaml_document_get_node(&vlsp->vls_document, *item);
-		subtree = parse_properties(vlsp, value);
-		if (subtree == NULL) {
-		    goto out;
-		}
-		if (vnaproperty_list_set(root, term, subtree) == -1) {
-		    _vnacal_error(vcp, VNAERR_SYSTEM,
-			    "vnaproperty_list_set: %s: %s",
-			    vcp->vc_filename, strerror(errno));
-		    goto out;
-		}
-	    }
-	    return root;
-	}
-
-    default:
-	abort();
-    }
-
-out:
-    vnaproperty_free(subtree);
-    vnaproperty_free(root);
-    return NULL;
+    return _vnaproperty_yaml_import(&vyml, rootptr, (void *)node);
 }
 
 /*
@@ -1234,8 +1150,7 @@ static int parse_set(vnacal_load_state_t *vlsp, yaml_node_t *node)
 
     calp->cal_z0 = z0;
     if (properties != NULL) {
-	calp->cal_properties = parse_properties(vlsp, properties);
-	if (calp->cal_properties == NULL) {
+	if (parse_properties(vlsp, &calp->cal_properties, properties) == -1) {
 	    _vnacal_calibration_free(calp);
 	    return -1;
 	}
@@ -1312,7 +1227,7 @@ static int parse_document(vnacal_load_state_t *vlsp, yaml_node_t *node)
 	 * Process global properties.
 	 */
 	if (strcmp((const char *)key->data.scalar.value, "properties") == 0) {
-	    if ((vcp->vc_properties = parse_properties(vlsp, value)) == NULL) {
+	    if (parse_properties(vlsp, &vcp->vc_properties, value) == -1) {
 		return -1;
 	    }
 	}

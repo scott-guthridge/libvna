@@ -1,0 +1,690 @@
+.\"
+.\" Vector Network Analyzer Library
+.\" Copyright © 2020, 2021 D Scott Guthridge <scott_guthridge@rompromity.net>
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published
+.\" by the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.\"
+.TH VNACAL_PROPERTY 3 "FEB 2021" GNU
+.SH NAME
+vnaproperty_vtype, vnaproperty_vcount, vnaproperty_vkeys, vnaproperty_vget, vnaproperty_vset, vnaproperty_vdelete, vnaproperty_vget_subtree, vnaproperty_vset_subtree, vnaproperty_type, vnaproperty_count, vnaproperty_keys, vnaproperty_get, vnaproperty_set, vnaproperty_delete, vnaproperty_get_subtree, vnaproperty_set_subtree, vnaproperty_copy, vnaproperty_quote_key, vnaproperty_import_yaml_from_string, vnaproperty_import_yaml_from_file, vnaproperty_export_yaml_to_file \- VNA YAML interface
+.\"
+.SH SYNOPSIS
+.B #include <vnaproperty.h>
+.\"
+.PP
+.BI "int vnaproperty_type(const vnaproperty_t *" root ,
+.if n .in +4n
+.BI "const char *" format ", ...);"
+.if n .in -4n
+.\"
+.PP
+.BI "int vnaproperty_count(const vnaproperty_t *" root ,
+.if n .in +4n
+.BI "const char *" format ", ...);"
+.if n .in -4n
+.\"
+.PP
+.BI "const char **vnaproperty_keys(const vnaproperty_t *" root ,
+.if n .in +4n
+.BI "const char *" format ", ...);
+.if n .in -4n
+.\"
+.PP
+.BI "const char *vnaproperty_get(const vnaproperty_t *" root ,
+.if n .in +4n
+.BI "const char *" format ", ...);"
+.if n .in -4n
+.\"
+.PP
+.BI "int vnaproperty_set(vnaproperty_t **" rootptr ,
+.if n .in +4n
+.BI "const char *" format ", ...);"
+.if n .in -4n
+.\"
+.PP
+.BI "int vnaproperty_delete(vnaproperty_t **" rootptr ,
+.if n .in +4n
+.BI "const char *" format ", ...);"
+.if n .in -4n
+.\"
+.PP
+.BI "vnaproperty_t *vnaproperty_get_subtree(const vnaproperty_t *" root ,
+.if n .in +4n
+.BI "const char *" format ", ...);"
+.if n .in -4n
+.\"
+.PP
+.BI "vnaproperty_t **vnaproperty_set_subtree(vnaproperty_t **" rootptr ,
+.if n .in +4n
+.BI "const char *" format ", ...);"
+.if n .in -4n
+.\"
+.SS "Variants Taking a va_list"
+.PP
+.BI "int vnaproperty_vtype(const vnaproperty_t *" root ,
+.if n .in +4n
+.BI "const char *" format ", va_list " ap );
+.if n .in -4n
+.\"
+.PP
+.BI "int vnaproperty_vcount(const vnaproperty_t *" root ,
+.if n .in +4n
+.BI "const char *" format ", va_list " ap );
+.if n .in -4n
+.\"
+.PP
+.BI "const char **vnaproperty_vkeys(const vnaproperty_t *" root ,
+.if n .in +4n
+.BI "const char *" format ", va_list " ap );
+.if n .in -4n
+.\"
+.PP
+.BI "const char *vnaproperty_vget(const vnaproperty_t *" root ,
+.if n .in +4n
+.BI "const char *" format ", va_list " ap );
+.if n .in -4n
+.\"
+.PP
+.BI "int vnaproperty_vset(vnaproperty_t **" rootptr ,
+.if n .in +4n
+.BI "const char *" format ", va_list " ap );
+.if n .in -4n
+.\"
+.PP
+.BI "int vnaproperty_vdelete(vnaproperty_t **" rootptr ,
+.if n .in +4n
+.BI "const char *" format ", va_list " ap );
+.if n .in -4n
+.\"
+.PP
+.BI "vnaproperty_t *vnaproperty_vget_subtree(const vnaproperty_t *" root ,
+.RS +4n
+.BI "const char *" format ", va_list " ap );
+.RS -4n
+.\"
+.PP
+.BI "vnaproperty_t **vnaproperty_vset_subtree(vnaproperty_t **" rootptr ,
+.RS +4n
+.BI "const char *" format ", va_list " ap );
+.RS -4n
+.\"
+.SS "Copy, Import, Export, Misc."
+.PP
+.BI "char *vnaproperty_quote_key(const char *" key );
+.\"
+.PP
+.BI "int vnaproperty_copy(vnaproperty_t **" destination ,
+.if n .in +4n
+.BI "const vnaproperty_t *" source );
+.if n .in -4n
+.\"
+.PP
+.ie n \{\
+.BI "int vnaproperty_import_yaml_from_string(vnaproperty_t **" rootptr ,
+.RS +4n
+.BI "const char *" input ", vnaerr_error_fn_t *" error_fn ", void *" error_arg );
+.RS -4n
+.\}
+.el \{\
+.BI "int vnaproperty_import_yaml_from_string(vnaproperty_t **" rootptr ,
+.BI "const char *" input ,
+.RS +4n
+.BI "vnaerr_error_fn_t *" error_fn ", void *" error_arg );
+.RS -4n
+.\}
+.\"
+.PP
+.ie n \{\
+.BI "int vnaproperty_import_yaml_from_file(vnaproperty_t **" rootptr ,
+.RS +4n
+.BI "FILE *" fp ", const char *" filename ", vnaerr_error_fn_t *" error_fn ,
+.br
+.BI "void *" error_arg );
+.RS -4n
+.\}
+.el \{\
+.BI "int vnaproperty_import_yaml_from_file(vnaproperty_t **" rootptr ,
+.BI "FILE *" fp ", const char *" filename ,
+.RS +4n
+.BI "vnaerr_error_fn_t *" error_fn ", void *" error_arg );
+.RS -4n
+.\}
+.\"
+.PP
+.ie n \{\
+.BI "int vnaproperty_export_yaml_to_file(const vnaproperty_t *" root ,
+.RS +4n
+.BI "FILE *" fp ", const char *" filename ", vnaerr_error_fn_t *" error_fn ,
+.br
+.BI "void *" error_arg );
+.RS -4n
+.\}
+.el \{\
+.BI "int vnaproperty_export_yaml_to_file(const vnaproperty_t *" root ,
+.BI "FILE *" fp ", const char *" filename ,
+.RS +4n
+.BI "vnaerr_error_fn_t *" error_fn ", void *" error_arg );
+.RS -4n
+.\}
+.\"
+.PP
+Link with \fI-lvna\fP \fI-lyaml\fP \fI-lm\fP.
+.sp
+.\"
+.SH DESCRIPTION
+.PP
+These functions provide a convenient interface for storing arbitrary
+data (properties) as key-value pairs and lists of values.
+The values themselves can be maps of key-value pairs and lists, making
+it possible to organize data hierarchically as a tree structure.
+Originally, the vnaproperty interface was used to record VNA
+configuration and other conditions under which a calibration was made
+(see \fBvnacal\fP(3)), but the API has since been expanded to make it
+useful for other purposes.
+Property data can be exported to and imported from files in \s-2YAML\s+2
+format.
+.\"
+.PP
+Most of the functions take a format string and variable arguments as
+in \fBsprintf\fP(3).
+While all scalars are stored internally as text strings, the sprint-like
+interface makes it easy to store numeric values without first having to
+convert them.
+The interface also makes substitutions on the left-hand side possible.
+Example:
+.sp
+.RS +4n
+.nf
+vnaproperty_t *root = \s-2NULL\s+2;
+int n_ports = 2;
+int my_index = 3;
+
+/* Create a map and set the VNA_Model key to a fixed value. */
+vnaproperty_set(&root, "VNA_Model=ACME 1050");
+
+/* Set VNA_ports to the value in the n_ports variable */
+vnaproperty_set(&root, "VNA_ports=%d", n_ports);
+
+/* Set the key name formed from the value in my_index to pi. */
+vnaproperty_set(&root, "my_property%d=%f", my_index, M_PI);
+
+/* Retrieve and print the values set above. */
+printf("%s\\n", vnaproperty_get(root, "VNA_Model"));
+printf("%s\\n", vnaproperty_get(root, "VNA_ports"));
+printf("%s\\n", vnaproperty_get(root, "my_property%d", my_index));
+
+.fi
+.RS -4n
+.\"
+.SS "Syntax of the Descriptor"
+.PP
+In the \fBvnaproperty_set\fP() examples above, the string appearing
+left of the equals sign after %-expansion is called the descriptor.
+This section describes the descriptor syntax.
+.\"
+.PP
+The descriptor may optionally begin with a dot.  A descriptor consisting
+only of a dot represents the root of the tree.
+.\"
+.PP
+Following the optional leading dot is a list of zero or more dot-separated
+map keys and list subscripts, describing a path down the tree.
+A few examples are: \(lqabc\(rq, \(lqabc.def\(rq, \(lq[0]\(rq,
+\(lqnames[0]\(rq, \(lqnames[1]\(rq, and \(lq.abc.def[2][0].ghi\(rq.
+The descriptor cannot be empty.
+.\"
+.PP
+Map keys begin with a letter, underscore, UTF-8 encoded character
+or backslash-quoted character, followed by any number of letters,
+underscores, UTF-8 encoded characters, backslash-quoted characters,
+digits and minuses.
+Keys may contain multiple words separated by spaces; spaces between
+words do not need to be quoted.
+Keys are separated by dots.
+.\"
+.PP
+List subscripts consist of a non-negative integer, a non-negative
+integer followed by a plus sign, or just a plus sign, enclosed within
+square brackets.  An simple integer subscript indexes list items, with
+the first item having index zero, e.g. \(lq[0]\(rq.  In contexts that
+modify the property tree, an integer subscript followed by a plus sign,
+e.g. \(lq[5+]\(rq, causes an item to be inserted into the list at the
+given position, moving existing elements up.  A subscript consisting of
+a plus alone, e.g.  \(lq[+]\(rq causes a new element to be appended to
+the end of the list.  More than one subscript with a + can appear in
+the same descriptor string.
+.\"
+.PP
+The descriptor may optionally end with empty braces (\(lq{}\(rq), empty
+brackets (\(lq[]\(rq), or if preceded by a key or subscript, a dot
+(\(lq.\(rq).
+The {} and [] suffixes require the last element in the path to match a
+map or list, respectively.
+A trailing dot represents the element of a map or list as opposed
+to the map or list entry itself: this distinction matters only in
+\fBvnaproperty_delete\fP().  For example, deleting \(lqfoo\(rq removes foo
+from the map, but deleting \(lqfoo.\(rq retains foo as a key, replacing
+its descendents with an empty subtree.
+.\"
+.PP
+.\"
+.SS "Functions"
+.PP
+The \fBvnaproperty_type\fP() function returns the type of the specified
+element in the property tree.  If returns 'm' if the element is a map, 'l'
+if it's a list, 's' if it's a scalar or -1 if the descriptor does not refer
+to a valid element.
+.\"
+.PP
+The \fBvnaproperty_count\fP() function returns the number of elements
+in the given map or list.  If the descriptor doesn't refer to a map or list,
+the function fails with -1.
+.\"
+.PP
+The \fBvnaproperty_keys\fP() function returns a vector of pointers to
+the keys of the specified map.
+The caller is responsible for freeing the memory of the returned vector
+but not the strings it points to, by a call to \fBfree\fP(3).
+If the descriptor doesn't refer to a map, or if the function is unable
+to allocate memory for the vector, the function indicates failure by
+a return of \s-2NULL\s+2.
+.\"
+.PP
+The \fBvnaproperty_get\fP() function returns the value of the specified
+scalar.  If the descriptor doesn't refer to a scalar, the function
+returns \s-2NULL\s+2.  Do not call \fBfree\fP(3) on the returned string!
+.\"
+.PP
+The \fBvnaproperty_set\fP() function places a scalar value into in the
+property tree, creating and replacing objects along the path as needed
+to make them conform to the descriptor string.
+Normally, the argument to this function has the form
+\fIdescriptor\fP=\fIvalue\fP, where everything to the right of the equal
+sign is taken literally as the value to set.
+As a special-case, however, if the function is invoked with an argument
+of the form \fIdescriptor\fP#, it doesn't place a scalar into the tree,
+but rather places a null value, e.g. ~ in \s-2YAML\s+2.
+You cannot create a null value using the first form; for example, the
+assignment \fIdescriptor\fP=~ sets the descriptor literally to the string
+"~".
+.PP
+If an object along the given path exists but is of the wrong type,
+\fBvnapropert_set\fP() removes the conflicting element and all its
+descendents and replaces it with the desired element.
+.\"
+.PP
+The \fBvnaproperty_delete\fP() function removes objects from the tree.
+With a descriptor of \(lq.\(rq, it removes all elements of the tree and
+sets the root pointer to \s-2NULL\s+2.
+If the top-level of the tree is a map and the descriptor is, for example,
+\(lqfoo\(rq, \fBvnaproperty_delete\fP() removes foo from the map.
+If the top-level of three is a list and the descriptor is, for example,
+\(lq[5]\(rq, \fBvnaproperty_delete\fP() removes the element at index 5,
+moving any elements with higher indices down by one.
+The behavior changes if the descriptor ends in dot. e.g. in the map
+example, if the descriptor is \(lqfoo.\(rq, foo is left in the map
+but its value is set to null.
+Simlarly, in the list example, if the descriptor is \(lq[5].\(rq,
+then the element at index 5 is replaced with a null value, retaining
+its position.
+These differ from the #-form of
+\fBvnaproperty_set\fP() in that \fBvnaproperty_delete\fP() does not
+create or replace elements along the path that are inconsistent with
+the descriptor but fails instead.
+For example, if the top level of the tree is a list but you call
+\fBvnaproperty_delete\fP() with a descriptor of \(lqfoo\(rq, it fails
+with a return of -1, whereas \fBvnaproperty_set\fP() would replace the
+entire list with a map and insert foo with a null value.
+.\"
+.PP
+The \fBvnaproperty_get_subtree\fP() function returns the root of
+the subtree described by the descriptor.
+If the descriptor refers to nonexistent elements or is inconsistent
+with the tree, it fails with \s-2NULL\s+2.
+This function is useful for factoring out common code and reducing
+the length of the path that has to be traversed on each call.
+.PP
+Note that \s-2NULL\s+2 is a valid return value if the subtree is empty.
+Setting \fBerrno\fP to 0 before the call and checking if it's still
+zero afterwards can be used to distinguish an empty subtree from an error.
+.\"
+.PP
+The \fBvnaproperty_set_subtree\fP() function is similar to
+\fBvnaproperty_get_subtree\fP() except that it creates and replaces
+objects along the given path, forcing the property tree to conform to the
+descriptor as in \fBvnaproperty_set\fP(), and instead of returning the
+root of the subtree, it returns the address of the root of the subtree,
+making it possible to subsequently use any of the modifying functions
+on the subtree.
+.\"
+.PP
+The \fBvnaproperty_vtype\fP(), \fBvnaproperty_vcount\fP(),
+\fBvnaproperty_vget\fP(), \fBvnaproperty_vset\fP(),
+\fBvnaproperty_vdelete\fP(), \fBvnaproperty_vget_subtree\fP() and
+\fBvnaproperty_vset_subtree\fP() functions are the same as their non-v
+counterparts above, except that they are called with a \fBva_list\fP
+instead of a variable number of arguments.
+These functions do not call the \fBva_end\fP() macro.
+Because they invoke the \fBva_arg\fP() macro, the value of \fIap\fP is
+undefined after the call.
+See \fBstdarg\fP(3).
+.\"
+.PP
+The \fBvnaproperty_quote_key\fP() function returns a copy of \fIkey\fP
+with backslash quotes inserted as needed to make it suitable for use
+in the descriptor string of the other functions.
+For example, suppose the top level of the tree is a map and we want
+to look-up \fIkey\fP in the map.  Further suppose that \fIkey\fP may
+contain literal dots, e.g. \(lqmy.key\(rq.
+If we hand \fIkey\fP to \fBvnaproperty_get\fP() directly, the dots will
+be interpreted as separators, searching first in our example for the key
+\(lqmy\(rq, then expecting the value to be a map containing \(lqkey\(rq.
+We can avoid the special meaning of dots, brackets and braces appearing
+in the key by calling \fBvnaproperty_quote_key\fP().
+In our example, it returns \(lqmy\\.key\(rq, making the dot literal.
+Example:
+.sp
+.RS +4n
+.nf
+char *quoted_key;
+const char *value;
+
+if ((quoted_key = vnaproperty_quote_key(key)) == \s-2NULL\s+2) {
+    ....handle error....
+}
+if ((value = vnaproperty_get("%s", quoted_key)) == \s-2NULL\s+2) {
+    ....handle key does not exist....
+}
+free((void *)quoted_key); // finished with quoted_key
+printf("value is: %s\n", value);
+
+.fi
+.RS -4n
+.\"
+.PP
+A common use of \fBvnaproperty_quote_key\fP() is with
+\fBvnaproperty_keys\fP(), where we use the later to get the set of
+(unquoted) keys from a map, iterate over the keys, and look up each value.
+The caller is responsible for freeing the memory of the returned string
+by a call to \fBfree\fP(3).
+.\"
+.PP
+The \fBvnaproperty_copy\fP() function creates a deep copy of the
+property tree in \fIsource\fP and places it in \fIdestination\fP,
+replacing any existing content in \fIdestination\fP.
+.\"
+.PP
+The \fBvnaproperty_import_yaml_from_string\fP() builds a property tree
+from the \s-2YAML\s+2 document found in \fIinput\fP, and places it at
+\fIrootptr\fP, replacing any existing content.
+If \fIerrfn\fP is non-\s-2NULL\s+2, then errors found in the input
+document are reported by calling \fIerrfn\fP with a single-line string
+describing the error.  The \fIerrarg\fP argument is passed through to
+the user's function.  See \fBvnaerr\fP(3).
+.\"
+.PP
+In \s-2YAML\s+2, map keys don't have to be scalars \- they can be
+arbitrarily complex subtrees of maps and lists.
+This library, however, supports only scalar map keys.
+If \fBvnaproperty_import_yaml_from_string\fP() encounters a map item
+with a non-scalar key, it reports a warning through \fIerrfn\fP and
+skips over the map entry.
+.\"
+.PP
+The \fBvnaproperty_import_yaml_from_file\fP() reads the \s-2YAML\s+2
+document from file pointer \fIfp\fP, builds a property tree from it
+and places the tree at \fIrootptr\fP, replacing any previous content.
+The \fIfilename\fP argument is used only in error messages and doesn't
+have to refer to an actual file.
+The other arguments are as in \fBvnaproperty_import_yaml_from_string\fP().
+.\"
+.PP
+The \fBvnaproperty_export_yaml_to_file\fP() function creates a \s-2YAML\s+2
+document from \fIroot\fP and writes it to the open file pointer \fIfp\fP.
+The other arguments are the same as in
+\fBvnaproperty_import_yaml_from_file\fP().
+.\"
+.SH "RETURN VALUE"
+.PP
+The \fBvnaproperty_type\fP() and \fBvnaproperty_vtype\fP() functions
+return 'm' for map, 'l' for list, 's' for scalar, or -1 for error.
+The \fBvnaproperty_count\fP() and \fBvnaproperty_vcount\fP() functions
+return a count of objects or -1 on error.
+The \fBvnaproperty_keys\fP() and \fBvnaproperty_vkeys\fP() functions
+return a dynamically allocated vector of pointers to keys or \s-2NULL\s+2
+on error.
+The \fBvnaproperty_get\fP() and \fBvnaproperty_vget\fP() functions return
+a pointer to a string value or \s-2NULL\s+2 on error.
+The other integer valued functions return 0 on success or -1 on error.
+The \fBvnaproperty_get_subtree\fP() and \fBvnaproperty_vget_subtree\fP()
+return the root of subtree on success or \s-2NULL\s+2 on error; the
+\fBvnaproperty_set_subtree\fP() and \fBvnaproperty_vset_subtree\fP()
+functions return the address of the root of the given subtree on success
+or \s-2NULL\s+2 on error.
+The \fBvnaproperty_quote_key\fP() function returns a dynamically allocated
+string on success or \s-2NULL\s+2 on error.
+.\"
+.SH ERRORS
+.IP \fBEINVAL\fP
+This error is returned in each of the following cases.
+The descriptor string is not well formed.
+The \fBvnaproperty_count\fP() function was invoked on a scalar value.
+The \fBvnaproperty_get\fP() function was invoked on an object that's not
+a scalar.
+In a non-set function, the descriptor string contains a key or subscript,
+but the corresonding object in the property tree is not a map or list,
+respectively.
+In a non-set function, the descriptor string has {} or [], but the
+corresponding object in the property tree is not a map or list, respectively.
+In a non-set function, an insert [index+], or append [+] subscript was
+given.
+.IP \fBENOENT\fP
+This error is returned in each of the following cases.
+The given key doesn't exist in a map.
+The given subscript doesn't exist in a list.
+.IP \fBENOMEM\fP
+A function was unable to allocate memory.
+.\"
+.SH "NOTES"
+.PP
+In \s-2YAML\s+2, it's possible to distinguish between numbers and
+strings, e.g. 3.14 is different from "3.14".
+In this library, the two are indistinguishable.
+Here, we consider a scalar to be a number if \fBstrtol\fP(3) or
+\fBstrtod\fP(3) is able to parse it.
+.\"
+.SH "EXAMPLES"
+.PP
+The following example constructs a property tree from a \s-2YAML\s+2
+file and recursively prints it.
+.sp
+.nf
+.ft CW
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <vnaproperty.h>
+
+/*
+ * errfn: report YAML errors
+ */
+static void errfn(vnaerr_category_t category,
+        const char *message, void *error_arg)
+{
+    fprintf(stderr, "%s\\n", message);
+}
+
+/*
+ * indent: indent level steps
+ *   @level: number of indents
+ */
+static void indent(int level)
+{
+    for (int i = 0; i < level; ++i) {
+        printf("  ");
+    }
+}
+
+/*
+ * print_subtree: print the subtree at root
+ *   @root:  root of subtree to print
+ *   @level: current indent level
+ */
+static void print_subtree(vnaproperty_t *root, int level)
+{
+    /*
+     * Handle NULL subtree.
+     */
+    if (root == NULL) {
+        printf("~");
+        return;
+    }
+
+    /*
+     * Handle each node type...
+     */
+    switch (vnaproperty_type(root, ".")) {
+    case 's': /* scalar */
+        printf("\\"%s\\"", vnaproperty_get(root, "."));
+        break;
+
+    case 'm': /* map */
+        {
+            const char **keys;
+
+            /*
+             * Get the list of keys.
+             */
+            if ((keys = vnaproperty_keys(root, "{}")) == NULL) {
+                fprintf(stderr, "vnaproperty_keys: %s\\n",
+                        strerror(errno));
+                exit(5);
+            }
+
+            /*
+             * For each key, recurse.
+             */
+            printf("{\\n");
+            ++level;
+            for (const char **cpp = keys; *cpp != NULL; ++cpp) {
+                char *quoted;
+                vnaproperty_t *subtree;
+
+                if ((quoted = vnaproperty_quote_key(*cpp)) == NULL) {
+                    fprintf(stderr, "vnaproperty_quote_key: %s\\n",
+                            strerror(errno));
+                    exit(6);
+                }
+                subtree = vnaproperty_get_subtree(root, "%s", quoted);
+                free((void *)quoted);
+                indent(level);
+                printf("%s: ", *cpp);
+                print_subtree(subtree, level);
+                if (cpp[1] != NULL) {
+                    printf(",");
+                }
+                printf("\\n");
+            }
+            --level;
+            indent(level);
+            printf("}");
+            free((void *)keys);
+        }
+        break;
+
+    case 'l': /* list */
+        {
+            int count;
+
+            /*
+             * Get the count of elements in the list.
+             */
+            if ((count = vnaproperty_count(root, "[]")) == -1) {
+                fprintf(stderr, "vnaproperty_count: %s\\n",
+                        strerror(errno));
+                exit(8);
+            }
+
+            /*
+             * For each element, recurse.
+             */
+            printf("[\\n");
+            ++level;
+            for (int i = 0; i < count; ++i) {
+                vnaproperty_t *subtree;
+
+                subtree = vnaproperty_get_subtree(root, "[%d]", i);
+                indent(level);
+                print_subtree(subtree, level);
+                if (i + 1 < count) {
+                    printf(",");
+                }
+                printf("\\n");
+            }
+            --level;
+            indent(level);
+            printf("]");
+        }
+        break;
+    }
+}
+
+/*
+ * main
+ */
+int main(int argc, char **argv)
+{
+    vnaproperty_t *root = NULL;
+    FILE *fp;
+
+    /*
+     * Check usage.
+     */
+    if (argc != 2) {
+        fprintf(stderr, "usage: yaml-file\\n");
+        exit(2);
+    }
+
+    /*
+     * Build the property tree from the input file.
+     */
+    if ((fp = fopen(argv[1], "r")) == NULL) {
+        fprintf(stderr, "fopen: %s: %s\\n", argv[1], strerror(errno));
+        exit(3);
+    }
+    if (vnaproperty_import_yaml_from_file(&root, fp, argv[1],
+                errfn, NULL) == -1) {
+        fprintf(stderr, "vnaproperty_import_yaml_from_file: %s: %s\\n",
+                argv[1], strerror(errno));
+        exit(4);
+    }
+    fclose(fp);
+
+    /*
+     * Print the tree.
+     */
+    print_subtree(root, 0);
+    printf("\\n");
+
+    /*
+     * Free all objects.
+     */
+    (void)vnaproperty_delete(&root, ".");
+
+    exit(0);
+}
+.\"
+.SH "SEE ALSO"
+.BR vnacal "(3), " vnacal_new "(3), " vnaerr "(3)"

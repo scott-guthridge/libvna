@@ -27,7 +27,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include "vnaproperty_internal.h"
+#include "vnaproperty.h"
 #include "libt.h"
 
 
@@ -53,20 +53,20 @@ int opt_v = 0;
 static libt_result_t test_vnaproperty_expr()
 {
     vnaproperty_t *root = NULL;
-    vnaproperty_type_t type;
+    int type;
     int count;
     const char *value;
     const char **keys;
     libt_result_t result = T_SKIPPED;
 
-    if (vnaproperty_expr_set(&root, ".=scalar-only") == -1) {
-	(void)printf("%s: vnaproperty_expr_set: %s\n",
+    if (vnaproperty_set(&root, ".=scalar-only") == -1) {
+	(void)printf("%s: vnaproperty_set: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
-    if ((value = vnaproperty_expr_get(root, ".")) == NULL) {
-	(void)printf("%s: vnaproperty_expr_get: %s\n",
+    if ((value = vnaproperty_get(root, ".")) == NULL) {
+	(void)printf("%s: vnaproperty_get: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
@@ -77,14 +77,14 @@ static libt_result_t test_vnaproperty_expr()
 	result = T_FAIL;
 	goto out;
     }
-    if (vnaproperty_expr_set(&root, "A=B") == -1) {
-	(void)printf("%s: vnaproperty_expr_set: %s\n",
+    if (vnaproperty_set(&root, "A=B") == -1) {
+	(void)printf("%s: vnaproperty_set: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
-    if ((value = vnaproperty_expr_get(root, "A")) == NULL) {
-	(void)printf("%s: vnaproperty_expr_get: %s\n",
+    if ((value = vnaproperty_get(root, "A")) == NULL) {
+	(void)printf("%s: vnaproperty_get: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
@@ -97,34 +97,34 @@ static libt_result_t test_vnaproperty_expr()
     }
     for (int i = 0; i < 3; ++i) {
 	for (int j = 0; j < 4; ++j) {
-	    if (vnaproperty_expr_set(&root, "matrix[%d][%d]=%d,%d",
+	    if (vnaproperty_set(&root, "matrix[%d][%d]=%d,%d",
 			i, j, i, j) == -1) {
-		(void)printf("%s: vnaproperty_expr_set: %s\n",
+		(void)printf("%s: vnaproperty_set: %s\n",
 			progname, strerror(errno));
 		result = T_FAIL;
 		goto out;
 	    }
 	}
     }
-    if (vnaproperty_expr_set(&root, "foo.bar=baz") == -1) {
-	(void)printf("%s: vnaproperty_expr_set: %s\n",
+    if (vnaproperty_set(&root, "foo.bar=baz") == -1) {
+	(void)printf("%s: vnaproperty_set: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
-    if ((type = vnaproperty_expr_type(root, ".")) == -1) {
-	(void)printf("%s: vnaproperty_expr_type: %s\n",
+    if ((type = vnaproperty_type(root, ".")) == -1) {
+	(void)printf("%s: vnaproperty_type: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
-    if (type != VNAPROPERTY_MAP) {
+    if (type != 'm') {
 	(void)printf("%s: expected type MAP, found type %d\n", progname, type);
 	result = T_FAIL;
 	goto out;
     }
-    if ((count = vnaproperty_expr_count(root, ".")) == -1) {
-	(void)printf("%s: vnaproperty_expr_count: %s\n",
+    if ((count = vnaproperty_count(root, ".")) == -1) {
+	(void)printf("%s: vnaproperty_count: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
@@ -135,8 +135,8 @@ static libt_result_t test_vnaproperty_expr()
 	result = T_FAIL;
 	goto out;
     }
-    if ((keys = vnaproperty_expr_keys(root, ".")) == NULL) {
-	(void)printf("%s: vnaproperty_expr_keys: %s\n",
+    if ((keys = vnaproperty_keys(root, ".")) == NULL) {
+	(void)printf("%s: vnaproperty_keys: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
@@ -170,29 +170,29 @@ static libt_result_t test_vnaproperty_expr()
     result = T_PASS;
     /* delete matrix columns 1 and 3 (zero-based) */
     for (int i = 0; i < 3; ++i) {
-	if (vnaproperty_expr_delete(&root, "matrix[%d][3]", i) == -1) {
-	    (void)printf("%s: vnaproperty_expr_set: %s\n",
+	if (vnaproperty_delete(&root, "matrix[%d][3]", i) == -1) {
+	    (void)printf("%s: vnaproperty_set: %s\n",
 		    progname, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
-	if (vnaproperty_expr_delete(&root, "matrix[%d][1]", i) == -1) {
-	    (void)printf("%s: vnaproperty_expr_set: %s\n",
+	if (vnaproperty_delete(&root, "matrix[%d][1]", i) == -1) {
+	    (void)printf("%s: vnaproperty_set: %s\n",
 		    progname, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
     }
     /* delete matrix row 1 */
-    if (vnaproperty_expr_delete(&root, "matrix[1]") == -1) {
-	(void)printf("%s: vnaproperty_expr_set: %s\n",
+    if (vnaproperty_delete(&root, "matrix[1]") == -1) {
+	(void)printf("%s: vnaproperty_set: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
     /* check */
-    if ((count = vnaproperty_expr_count(root, "matrix")) == -1) {
-	(void)printf("%s: vnaproperty_expr_count: %s\n",
+    if ((count = vnaproperty_count(root, "matrix")) == -1) {
+	(void)printf("%s: vnaproperty_count: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
@@ -204,8 +204,8 @@ static libt_result_t test_vnaproperty_expr()
 	goto out;
     }
     for (int i = 0; i < 2; ++i) {
-	if ((count = vnaproperty_expr_count(root, "matrix[%d]", i)) == -1) {
-	    (void)printf("%s: vnaproperty_expr_count: %s\n",
+	if ((count = vnaproperty_count(root, "matrix[%d]", i)) == -1) {
+	    (void)printf("%s: vnaproperty_count: %s\n",
 		    progname, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
@@ -219,9 +219,9 @@ static libt_result_t test_vnaproperty_expr()
 	for (int j = 0; j < 2; ++j) {
 	    char buf[6*sizeof(int)+2];
 
-	    if ((value = vnaproperty_expr_get(root, "matrix[%d][%d]",
+	    if ((value = vnaproperty_get(root, "matrix[%d][%d]",
 			    i, j)) == NULL) {
-		(void)printf("%s: vnaproperty_expr_get: %s\n",
+		(void)printf("%s: vnaproperty_get: %s\n",
 			progname, strerror(errno));
 		result = T_FAIL;
 		goto out;
@@ -235,25 +235,25 @@ static libt_result_t test_vnaproperty_expr()
 	    }
 	}
     }
-    if (vnaproperty_expr_set(&root, "foo[0].bar=zap") == -1) {
-	(void)printf("%s: vnaproperty_expr_set: %s\n",
+    if (vnaproperty_set(&root, "foo[0].bar=zap") == -1) {
+	(void)printf("%s: vnaproperty_set: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
-    if ((type = vnaproperty_expr_type(root, "foo")) == -1) {
-	(void)printf("%s: vnaproperty_expr_type: %s\n",
+    if ((type = vnaproperty_type(root, "foo")) == -1) {
+	(void)printf("%s: vnaproperty_type: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
-    if (type != VNAPROPERTY_LIST) {
+    if (type != 'l') {
 	(void)printf("%s: expected type LIST, found type %d\n", progname, type);
 	result = T_FAIL;
 	goto out;
     }
-    if ((value = vnaproperty_expr_get(root, "foo[0].bar")) == NULL) {
-	(void)printf("%s: vnaproperty_expr_get: %s\n",
+    if ((value = vnaproperty_get(root, "foo[0].bar")) == NULL) {
+	(void)printf("%s: vnaproperty_get: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
 	goto out;
@@ -267,7 +267,7 @@ static libt_result_t test_vnaproperty_expr()
     result = T_PASS;
 
 out:
-    vnaproperty_free(root);
+    vnaproperty_delete(&root, ".");
     root = NULL;
     libt_report(result);;
     return result;

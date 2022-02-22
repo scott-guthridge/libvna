@@ -26,6 +26,13 @@
 extern "C" {
 #endif
 
+typedef enum {
+    VNAPROPERTY_ERROR	= -1,
+    VNAPROPERTY_SCALAR	= 0x56505253,	/* "VPRS" */
+    VNAPROPERTY_MAP	= 0x5650524D,	/* "VPRM" */
+    VNAPROPERTY_LIST	= 0x5650524C	/* "VPRL" */
+} vnaproperty_type_t;
+
 #define VNAPROPERTY_MAP_PAIR_ELEMENT_MAGIC	0x564D5045	/* "VMPE" */
 
 /* forward */
@@ -36,7 +43,6 @@ struct vnaproperty_map;
  */
 struct vnaproperty {
     uint32_t vpr_type;
-    uint32_t vpr_refcount;
 };
 
 /*
@@ -56,6 +62,14 @@ typedef struct vnaproperty_list {
     size_t vpl_allocation;
     vnaproperty_t **vpl_vector;
 } vnaproperty_list_t;
+
+/*
+ * vnaproperty_map_pair: key-value pair for _vnaproperty_map_get_pairs
+ */
+typedef struct vnaproperty_map_pair {
+    const char *vmpr_key;
+    vnaproperty_t *vmpr_value;
+} vnaproperty_map_pair_t;
 
 /*
  * vnaproperty_map_element_t: internal element of a map structure
@@ -87,6 +101,13 @@ typedef struct vnaproperty_map {
     vnaproperty_map_element_t *vpm_order_tail;
 } vnaproperty_map_t;
 
+/* _vnaproperty_yaml_error: report an error */
+extern void _vnaproperty_yaml_error(const vnaproperty_yaml_t *vymlp,
+	vnaerr_category_t category, const char *format, ...)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 3, 4)))
+#endif
+;
 
 #ifdef __cplusplus
 } /* extern "C" */

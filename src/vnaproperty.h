@@ -20,18 +20,13 @@
 #define _VNAPROPERTY_H
 
 #include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <vnaerr.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef enum vnaproperty_type {
-    VNAPROPERTY_ERROR	= -1,
-    VNAPROPERTY_SCALAR	= 0x56505253,	/* "VPRS" */
-    VNAPROPERTY_MAP	= 0x5650524D,	/* "VPRM" */
-    VNAPROPERTY_LIST	= 0x5650524C	/* "VPRL" */
-} vnaproperty_type_t;
 
 /*
  * vnaproperty_t: opaque scalar, map or list structure
@@ -39,233 +34,321 @@ typedef enum vnaproperty_type {
 typedef struct vnaproperty vnaproperty_t;
 
 /*
- * vnaproperty_map_item_t: opaque
- */
-typedef struct vnaproperty_map_item vnaproperty_map_item_t;
-
-/*
- * vnaproperty_map_pair: key-value pair for vnaproperty_map_get_pairs
- */
-typedef struct vnaproperty_map_pair {
-    const char *vmpr_key;
-    vnaproperty_t *vmpr_value;
-} vnaproperty_map_pair_t;
-
-/*
- * vnaproperty_type: return the type of the given element
- *   @element: property element to test
- */
-extern vnaproperty_type_t vnaproperty_type(const vnaproperty_t *element);
-
-/*
- * vnaproperty_hold: increment the reference count on element
- *   @element: property element to reference
- */
-void vnaproperty_hold(vnaproperty_t *element);
-
-/*
- * vnaproperty_free: decrement the reference count on element and free if zero
- *   @element: property element to release
- */
-void vnaproperty_free(vnaproperty_t *element);
-
-/*
- * vnaproperty_alloc_scalar: allocate a scalar property element
- *   @value: value of the scalar (string)
- */
-extern vnaproperty_t *vnaproperty_scalar_alloc(const char *value);
-
-/*
- * vnaproperty_scalar_get: return the value of a scalar
- *   @scalar: pointer to a scalar element
- */
-extern const char *vnaproperty_scalar_get(const vnaproperty_t *scalar);
-
-/*
- * vmaproperty_scalar_set: change the value of a scalar element
- *   @scalar: pointer to a scalar element
- *   @value: new value
- */
-extern int vmaproperty_scalar_set(vnaproperty_t *scalar,
-	const char *value);
-
-/*
- * vnaproperty_alloc_list: allocate a new list element
- */
-extern vnaproperty_t *vnaproperty_list_alloc();
-
-/*
- * vnaproperty_list_count: return the number of items in the list
- *   @list: pointer to a list element
- */
-extern int vnaproperty_list_count(const vnaproperty_t *list);
-
-/*
- * vnaproperty_list_get: get the element at the given index
- *   @list: pointer to a list element
- *   @index: index of element to get
+ * vnaproperty_vtype: get the type of the given property expression
+ *   @root:   property data root (can be NULL)
+ *   @format: printf-like format string forming the property expression
+ *   @ap:     variable arguments
  *
- * Note: this function doesn't increment the reference count on the
- * retrieved element.
+ * Return:
+ *   'm' map
+ *   'l' list
+ *   's' scalar
+ *   -1  error
  */
-extern vnaproperty_t *vnaproperty_list_get(const vnaproperty_t *list,
-	int index);
+extern int vnaproperty_vtype(const vnaproperty_t *root,
+	const char *format, va_list ap)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 0)))
+#endif
+;
 
 /*
- * vnaproperty_list_set: replace the element at the given index
- *   @list: pointer to a list element
- *   @index: index where element should be placed
- *   @element: element to insert (reference is transferred to list)
+ * vnaproperty_vcount: return count of elements in given collection
+ *   @root:   property data root (can be NULL)
+ *   @format: printf-like format string forming the property expression
+ *   @ap:     variable arguments
+ */
+extern int vnaproperty_vcount(const vnaproperty_t *root,
+	const char *format, va_list ap)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 0)))
+#endif
+;
+
+/*
+ * vnaproperty_vkeys: return a vector of keys for the given map expr
+ *   @root:   property data root (can be NULL)
+ *   @format: printf-like format string forming the property expression
+ *   @ap:     variable arguments
  *
- * Index must be in 0..N where N is the number of elements in the list.
+ * Caller can free the vector by a call to free.
  */
-extern int vnaproperty_list_set(vnaproperty_t *list, int index,
-	vnaproperty_t *element);
+extern const char **vnaproperty_vkeys(const vnaproperty_t *root,
+	const char *format, va_list ap)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 0)))
+#endif
+;
 
 /*
- * vnaproperty_list_append: append element to the list
- *   @list: pointer to a list element
- *   @element: pointer to element to append (reference is transferred to list)
+ * vnaproperty_vget: get a property value from a property expression
+ *   @root:   property data root (can be NULL)
+ *   @format: printf-like format string forming the property expression
+ *   @ap:     variable arguments
  */
-extern int vnaproperty_list_append(vnaproperty_t *list, vnaproperty_t *element);
+extern const char *vnaproperty_vget(const vnaproperty_t *root,
+	const char *format, va_list ap)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 0)))
+#endif
+;
 
 /*
- * vnaproperty_list_insert: insert element at the given index
- *   @list: pointer to a list element
- *   @index: index where element should be inserted
- *   @element: element to insert (reference is transferred to list)
+ * vnaproperty_vset: set a property value from a property expression
+ *   @rootptr: address of root property pointer
+ *   @format:  printf-like format string forming the property expression
+ *   @ap:      variable arguments
+ */
+extern int vnaproperty_vset(vnaproperty_t **rootptr,
+	const char *format, va_list ap)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 0)))
+#endif
+;
+
+/*
+ * vnaproperty_delete: vdelete the value described by format
+ *   @rootptr: address of root property pointer
+ *   @format:  printf-like format string forming the property expression
+ *   @ap:      variable arguments
+ */
+extern int vnaproperty_vdelete(vnaproperty_t **rootptr,
+	const char *format, va_list ap)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 0)))
+#endif
+;
+
+/*
+ * vnaproperty_vget_subtree: get the subtree described by format
+ *   @root:    property data root (can be NULL)
+ *   @format:  printf-like format string forming the property expression
+ *   @ap:      variable arguments
+ */
+extern vnaproperty_t *vnaproperty_vget_subtree(const vnaproperty_t *root,
+	const char *format, va_list ap)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 0)))
+#endif
+;
+
+/*
+ * vnaproperty_vset_subtree: make the tree conform and return address of subtree
+ *   @rootptr: address of root property pointer
+ *   @format:  printf-like format string forming the property expression
+ *   @ap:      variable arguments
+ */
+extern vnaproperty_t **vnaproperty_vset_subtree(vnaproperty_t **rootptr,
+	const char *format, va_list ap)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 0)))
+#endif
+;
+
+/*
+ * vnaproperty_type: get the type of the given property expression
+ *   @root:   property data root (can be NULL)
+ *   @format: printf-like format string forming the property expression
+ *   @...:    optional variable arguments
  *
- * Index must be in 0..N where N is the number of elements in the list.
+ * Return:
+ *   'm' map
+ *   'l' list
+ *   's' scalar
+ *   -1  error
  */
-extern int vnaproperty_list_insert(vnaproperty_t *list, int index,
-	vnaproperty_t *element);
+extern int vnaproperty_type(const vnaproperty_t *root,
+	const char *format, ...)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 3)))
+#endif
+;
 
 /*
- * vnaproperty_list_delete: delete the element at the given index
- *   @list: pointer to a list element
- *   @index: index of element to delete
- */
-extern int vnaproperty_list_delete(vnaproperty_t *list, int index);
-
-/*
- * vnaproperty_alloc_map: allocate a new map element
- */
-extern vnaproperty_t *vnaproperty_map_alloc();
-
-/*
- * vnaproperty_map_count: return the number of items in the map
- *   @map: pointer to a map element
- */
-extern int vnaproperty_map_count(const vnaproperty_t *map);
-
-/*
- * vnaproperty_map_get: get the element with given key
- */
-extern vnaproperty_t *vnaproperty_map_get(const vnaproperty_t *map,
-	const char *key);
-
-/*
- * vnaproperty_map_set: add an element to the map (replacing if key exists)
- *   @map: pointer to a map element
- *   @key: search key
- *   @element: element to add (reference is transferred to list)
- */
-extern int vnaproperty_map_set(vnaproperty_t *map, const char *key,
-	vnaproperty_t *element);
-
-/*
- * vnaproperty_map_delete: delete the element with given key
- *   @map: pointer to a map element
- *   @key: search key
- */
-extern int vnaproperty_map_delete(vnaproperty_t *map, const char *key);
-
-/*
- * vnaproperty_map_begin: begin iteration
- *   @map: pointer to a map element
- */
-extern const vnaproperty_map_pair_t *
-vnaproperty_map_begin(const vnaproperty_t *map);
-
-/*
- * vnaproperty_map_next: return the next key-value pair
- *   @cur: current pair
- */
-extern const vnaproperty_map_pair_t *vnaproperty_map_next(
-    const vnaproperty_map_pair_t *cur);
-
-/*
- * vnaproperty_expr
- */
-
-extern vnaproperty_type_t vnaproperty_expr_vtype(const vnaproperty_t *root,
-	const char *format, va_list ap);
-extern int vnaproperty_expr_vcount(const vnaproperty_t *root,
-	const char *format, va_list ap);
-extern const char **vnaproperty_expr_vkeys(const vnaproperty_t *root,
-	const char *format, va_list ap);
-extern const char *vnaproperty_expr_vget(const vnaproperty_t *root,
-	const char *format, va_list ap);
-extern int vnaproperty_expr_vset(vnaproperty_t **anchor,
-	const char *format, va_list ap);
-extern int vnaproperty_expr_vdelete(vnaproperty_t **anchor,
-	const char *format, va_list ap);
-
-/*
- * vnaproperty_expr_type: get the type of the given property expression
+ * vnaproperty_count: return count of elements in given collection
  *   @root:   property data root (can be NULL)
  *   @format: printf-like format string forming the property expression
  *   @...:    optional variable arguments
  */
-extern vnaproperty_type_t vnaproperty_expr_type(const vnaproperty_t *root,
-	const char *format, ...);
+extern int vnaproperty_count(const vnaproperty_t *root,
+	const char *format, ...)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 3)))
+#endif
+;
 
 /*
- * vnaproperty_expr_count: return count of elements in given collection
- *   @root:   property data root (can be NULL)
- *   @format: printf-like format string forming the property expression
- *   @...:    optional variable arguments
- */
-extern int vnaproperty_expr_count(const vnaproperty_t *root,
-	const char *format, ...);
-
-/*
- * vnaproperty_expr_keys: return a vector of keys for the given map expr
+ * vnaproperty_keys: return a vector of keys for the given map expr
  *   @root:   property data root (can be NULL)
  *   @format: printf-like format string forming the property expression
  *   @...:    optional variable arguments
  *
  * Caller can free the vector by a call to free.
  */
-extern const char **vnaproperty_expr_keys(const vnaproperty_t *root,
-	const char *format, ...);
+extern const char **vnaproperty_keys(const vnaproperty_t *root,
+	const char *format, ...)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 3)))
+#endif
+;
 
 /*
- * vnaproperty_expr_get: get a property value from a property expression
+ * vnaproperty_get: get a property value from a property expression
  *   @root:   property data root (can be NULL)
  *   @format: printf-like format string forming the property expression
  *   @...:    optional variable arguments
  */
-extern const char *vnaproperty_expr_get(const vnaproperty_t *root,
-	const char *format, ...);
+extern const char *vnaproperty_get(const vnaproperty_t *root,
+	const char *format, ...)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 3)))
+#endif
+;
 
 /*
- * vnaproperty_expr_set: set a property value from a property expression
- *   @anchor: address of root property pointer
- *   @format: printf-like format string forming the property expression
- *   @...:    optional variable arguments
+ * vnaproperty_set: set a property value from a property expression
+ *   @rootptr: address of root property pointer
+ *   @format:  printf-like format string forming the property expression
+ *   @...:     optional variable arguments
  */
-extern int vnaproperty_expr_set(vnaproperty_t **anchor,
-	const char *format, ...);
+extern int vnaproperty_set(vnaproperty_t **rootptr,
+	const char *format, ...)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 3)))
+#endif
+;
 
 /*
- * vnaproperty_expr_delete: delete the value described by format
- *   @anchor: address of root property pointer
- *   @format: printf-like format string forming the property expression
- *   @...:    optional variable arguments
+ * vnaproperty_delete: delete the value described by format
+ *   @rootptr: address of root property pointer
+ *   @format:  printf-like format string forming the property expression
+ *   @...:     optional variable arguments
  */
-extern int vnaproperty_expr_delete(vnaproperty_t **anchor,
-	const char *format, ...);
+extern int vnaproperty_delete(vnaproperty_t **rootptr,
+	const char *format, ...)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 3)))
+#endif
+;
+
+/*
+ * vnaproperty_get_subtree: get the subtree described by format
+ *   @root:    address of root property pointer
+ *   @format:  printf-like format string forming the property expression
+ *   @...:     optional variable arguments
+ */
+extern vnaproperty_t *vnaproperty_get_subtree(const vnaproperty_t *root,
+	const char *format, ...)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 3)))
+#endif
+;
+
+/*
+ * vnaproperty_set_subtree: make the tree conform and return address of subtree
+ *   @rootptr: address of root property pointer
+ *   @format:  printf-like format string forming the property expression
+ *   @...:     optional variable arguments
+ */
+extern vnaproperty_t **vnaproperty_set_subtree(vnaproperty_t **rootptr,
+	const char *format, ...)
+#ifdef __GNUC__
+    __attribute__((__format__(__printf__, 2, 3)))
+#endif
+;
+
+/*
+ * vnaproperty_copy: copy a subtree
+ *   @destination: subtree to be replaced by copy
+ *   @source:      subtree to copy
+ */
+extern int vnaproperty_copy(vnaproperty_t **destination,
+	const vnaproperty_t *source);
+
+/*
+ * vnaproperty_quote_key: quote a map ID that contains spaces or reserved chars
+ *   @key: map key to quote
+ * 
+ * Caller must free the returned memory by a call to free().
+ */
+extern char *vnaproperty_quote_key(const char *key);
+
+/*
+ * vnaproperty_import_yaml_from_string: import YAML from a string
+ *   @rootptr:   address of vnaproperty root
+ *   @input:     string to parse
+ *   @error_fn:  optional error reporting function
+ *   @error_arg: optional argument to error reporting function
+ */
+extern int vnaproperty_import_yaml_from_string(vnaproperty_t **rootptr,
+	const char *input, vnaerr_error_fn_t *error_fn, void *error_arg);
+
+/*
+ * vnaproperty_import_yaml_from_file: import YAML from a file pointer
+ *   @rootptr:   address of vnaproperty root
+ *   @fp:        open file pointer
+ *   @filename:  file name for error messages
+ *   @error_fn:  optional error reporting function
+ *   @error_arg: optional argument to error reporting function
+ */
+extern int vnaproperty_import_yaml_from_file(vnaproperty_t **rootptr, FILE *fp,
+	const char *filename, vnaerr_error_fn_t *error_fn, void *error_arg);
+
+/*
+ * vnaproperty_export_yaml_to_file: import YAML from a file pointer
+ *   @rootptr:   address of vnaproperty root
+ *   @fp:        open file pointer
+ *   @filename:  file name for error messages
+ *   @error_fn:  optional error reporting function
+ *   @error_arg: optional argument to error reporting function
+ */
+extern int vnaproperty_export_yaml_to_file(const vnaproperty_t *root, FILE *fp,
+	const char *filename, vnaerr_error_fn_t *error_fn, void *error_arg);
+
+/***********************************************************************
+ * ZZ: delete me
+ * Undocumented YAML Import / Export
+ *
+ * The _vnaproperty_yaml_import and _vnaproperty_yaml_export functions
+ * build property trees from YAML subtrees, and build YAML subtrees from
+ * a property trees, respectively.  These are public so that they can
+ * be used in libraries that are friendly with this one.  They remain
+ * undocumented, however, to avoid creating dependencies on libyaml in
+ * our external API, making it possible to switch to newer versions of
+ * libyaml or to other YAML libraries without breaking compatibility.
+ * Note that we pass pointers to the libyaml types as pointer to void
+ * so that this file doesn't have to include libyaml.h.
+ *
+ **********************************************************************/
+
+/*
+ * vnaproperty_yaml_t: common argument structure for yaml import/export
+ */
+typedef struct vnaproperty_yaml {
+    void	       *vyml_document;	/* yaml_document_t */
+    const char         *vyml_filename;	/* filename for error messages */
+    vnaerr_error_fn_t  *vyml_error_fn;	/* error reporting function */
+    void	       *vyml_error_arg;	/* argument to error function */
+} vnaproperty_yaml_t;
+
+/*
+ * _vnaproperty_yaml_import: import properties from a YAML document
+ *   @vymlp:     common argument structure
+ *   @rootptr:   address of vnaproperty root
+ *   @yaml_node: YAML node type cast to void pointer
+ */
+extern int _vnaproperty_yaml_import(vnaproperty_yaml_t *vymlp,
+	vnaproperty_t **rootptr, void *yaml_node);
+
+/*
+ * _vnaproperty_yaml_export: export properties to a YAML document
+ *   @vymlp:     common argument structure
+ *   @root:      address of vnaproperty root
+ *
+ * Returns the index of a YAML node, or -1 on error.
+ */
+extern int _vnaproperty_yaml_export(vnaproperty_yaml_t *vymlp,
+	const vnaproperty_t *root);
 
 #ifdef __cplusplus
 } /* extern "C" */

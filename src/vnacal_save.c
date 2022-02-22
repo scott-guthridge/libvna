@@ -30,6 +30,7 @@
 #include <string.h>
 #include <yaml.h>
 #include "vnacal_internal.h"
+#include "vnaproperty_internal.h"
 
 
 /*
@@ -598,119 +599,17 @@ static int add_error_parameters(error_terms_common_arguments_t etca,
  *   @root:     property list root
  */
 static int add_properties(vnacal_t *vcp, yaml_document_t *document,
-	vnaproperty_t *root)
+	const vnaproperty_t *root)
 {
-    if (root == NULL) {
-	return 0;
-    }
-    switch (vnaproperty_type(root)) {
-    case VNAPROPERTY_SCALAR:
-	{
-	    int item;
-	    const char *value;
-	    yaml_scalar_style_t style = YAML_ANY_SCALAR_STYLE;
+    vnaproperty_yaml_t vyml;
 
-	    if ((value = vnaproperty_scalar_get(root)) == NULL) {
-		_vnacal_error(vcp, VNAERR_INTERNAL,
-			"%s: vnaproperty_scalar_get: %s: %s",
-			__func__, vcp->vc_filename, strerror(errno));
-		return -1;
-	    }
-	    if (strchr(value, '\n') != NULL) {
-		style = YAML_LITERAL_SCALAR_STYLE;
-	    }
-	    errno = 0;
-	    if ((item = yaml_document_add_scalar(document, NULL,
-			    (yaml_char_t *)value, strlen(value), style)) == 0) {
-		if (errno == 0) {
-		    errno = EINVAL;
-		}
-		_vnacal_error(vcp, VNAERR_SYSTEM,
-			"yaml_document_add_scalar: %s: %s",
-			vcp->vc_filename, strerror(errno));
-		return -1;
-	    }
-	    return item;
-	}
+    (void)memset((void *)&vyml, 0, sizeof(vyml));
+    vyml.vyml_document = (void *)document;
+    vyml.vyml_filename = vcp->vc_filename;
+    vyml.vyml_error_fn = vcp->vc_error_fn;
+    vyml.vyml_error_arg = vcp->vc_error_arg;
 
-    case VNAPROPERTY_MAP:
-	{
-	    int map;
-	    const vnaproperty_map_pair_t *vmprp;
-
-	    errno = 0;
-	    if ((map = yaml_document_add_mapping(document, NULL,
-			    YAML_ANY_MAPPING_STYLE)) == 0) {
-		if (errno == 0) {
-		    errno = EINVAL;
-		}
-		_vnacal_error(vcp, VNAERR_SYSTEM,
-			"yaml_document_add_mapping: %s: %s",
-			vcp->vc_filename, strerror(errno));
-		return -1;
-	    }
-	    for (vmprp = vnaproperty_map_begin(root); vmprp != NULL;
-		    vmprp = vnaproperty_map_next(vmprp)) {
-		int value;
-
-		if ((value = add_properties(vcp, document,
-				vmprp->vmpr_value)) == -1) {
-		    return -1;
-		}
-		if (add_mapping_entry(vcp, document, map,
-			    vmprp->vmpr_key, value) == -1) {
-		    return -1;
-		}
-	    }
-	    return map;
-	}
-
-    case VNAPROPERTY_LIST:
-	{
-	    int sequence;
-	    int count = vnaproperty_list_count(root);
-
-	    errno = 0;
-	    if ((sequence = yaml_document_add_sequence(document, NULL,
-			    YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
-		if (errno == 0) {
-		    errno = EINVAL;
-		}
-		_vnacal_error(vcp, VNAERR_SYSTEM,
-			"yaml_document_add_sequence: %s: %s",
-			vcp->vc_filename, strerror(errno));
-		return -1;
-	    }
-	    for (int i = 0; i < count; ++i) {
-		vnaproperty_t *property;
-		int value;
-
-		if ((property = vnaproperty_list_get(root, i)) == NULL) {
-		    _vnacal_error(vcp, VNAERR_INTERNAL,
-			    "%s: vnaproperty_list_get: %s: %s",
-			    __func__, vcp->vc_filename, strerror(errno));
-		    return -1;
-		}
-		if ((value = add_properties(vcp, document, property)) == -1) {
-		    return -1;
-		}
-		if (yaml_document_append_sequence_item(document, sequence,
-			    value) == 0) {
-		    if (errno == 0) {
-			errno = EINVAL;
-		    }
-		    _vnacal_error(vcp, VNAERR_SYSTEM,
-			    "yaml_document_append_sequence_item: %s: %s",
-			    vcp->vc_filename, strerror(errno));
-		    return -1;
-		}
-	    }
-	    return sequence;
-	}
-
-    default:
-	abort();
-    }
+    return _vnaproperty_yaml_export(&vyml, root);
 }
 
 /*

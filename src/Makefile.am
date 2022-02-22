@@ -63,25 +63,29 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnadata_set_dprecision.c vnadata_set_filetype.c vnadata_set_format.c \
 	vnadata_set_fprecision.c vnadata_set_fz0.c vnadata_set_fz0_vector.c \
 	vnadata_set_simple_format.c vnadata_set_z0.c vnadata_set_z0_vector.c \
-	vnadata_update_format_string.c vnaproperty_internal.h vnaproperty.c
+	vnadata_update_format_string.c vnaproperty_internal.h vnaproperty.c \
+	vnaproperty_import_yaml_from_string.c \
+	vnaproperty_import_yaml_from_file.c \
+	vnaproperty_export_yaml_to_file.c
+
 
 
 #
 # Man pages
 #
 dist_man_MANS = vnacal.3 vnacal_new.3 vnacal_parameter.3 vnaconv.3 \
-	vnadata.3 vnaerr.3
+	vnadata.3 vnaerr.3 vnaproperty.3
 
 #
 # Examples
 #
-noinst_PROGRAMS = vnacal-SOLT-example vnacal-TSD-example \
+noinst_PROGRAMS = vnaproperty-example vnacal-SOLT-example vnacal-TSD-example \
 		  vnacal-TRL-example \
 		  vnaconv-example vnadata-example convert-parameters
 
-#vnaproperty_example_SOURCES = vnaproperty-example.c
-#vnaproperty_example_LDADD = libvna.la
-#vnaproperty_example_LDFLAGS = -static
+vnaproperty_example_SOURCES = vnaproperty-example.c
+vnaproperty_example_LDADD = libvna.la
+vnaproperty_example_LDFLAGS = -static
 
 vnacal_SOLT_example_SOURCES = vnacal-SOLT-example.c
 vnacal_SOLT_example_LDADD = libvna.la -lyaml -lm

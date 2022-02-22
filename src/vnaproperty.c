@@ -27,8 +27,60 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <yaml.h>
+#include "vnaerr_internal.h"
 #include "vnaproperty_internal.h"
 
+static void vnaproperty_free(vnaproperty_t *root);	/* forward */
+
+
+/***********************************************************************
+ * Scalars
+ **********************************************************************/
+
+/*
+ * scalar_alloc: allocate a new scalar element
+ *   @value: value of the scalar (string)
+ */
+static vnaproperty_t *scalar_alloc(const char *value)
+{
+    char *copy;
+    vnaproperty_scalar_t *vpsp;
+
+    if ((copy = strdup(value)) == NULL) {
+	return NULL;
+    }
+    if ((vpsp = malloc(sizeof(vnaproperty_scalar_t))) == NULL) {
+	free((void *)copy);
+	return NULL;
+    }
+    (void)memset((void *)vpsp, 0, sizeof(*vpsp));
+    vpsp->vps_base.vpr_type = VNAPROPERTY_SCALAR;
+    vpsp->vps_value = copy;
+
+    return ((vnaproperty_t *)vpsp);
+}
+
+/*
+ * scalar_get: return the value of a scalar
+ *   @scalar: pointer to scalar element
+ */
+static const char *scalar_get(const vnaproperty_t *scalar)
+{
+    vnaproperty_scalar_t *vpsp;
+
+    if (scalar->vpr_type != VNAPROPERTY_SCALAR) {
+	errno = EINVAL;
+	return NULL;
+    }
+    vpsp = (vnaproperty_scalar_t *)scalar;
+    return vpsp->vps_value;
+}
+
+
+/***********************************************************************
+ * Maps
+ **********************************************************************/
 
 /*
  * Castagnoli CRC-32 Table
@@ -116,374 +168,15 @@ static uint32_t crc32c(uint32_t value, const void *data, size_t length)
 	return value;
 }
 
-
 /*
- * vnaproperty_type: return the type of the given element
- *   @element: pointer to element to test
- */
-vnaproperty_type_t vnaproperty_type(const vnaproperty_t *element)
-{
-    return element->vpr_type;
-}
-
-/*
- * vnaproperty_hold: increment the reference count on element
- *   @element: pointer to element to reference
- */
-void vnaproperty_hold(vnaproperty_t *element)
-{
-    assert(element->vpr_type == VNAPROPERTY_SCALAR ||
-           element->vpr_type == VNAPROPERTY_LIST   ||
-	   element->vpr_type == VNAPROPERTY_MAP);
-    ++element->vpr_refcount;
-}
-
-/*
- * vnaproperty_free: decrement the reference count on element and free if zero
- *   @element: pointer to element to release
- */
-void vnaproperty_free(vnaproperty_t *element)
-{
-    if (element == NULL)
-	return;
-
-    assert(element->vpr_type == VNAPROPERTY_SCALAR ||
-           element->vpr_type == VNAPROPERTY_LIST   ||
-	   element->vpr_type == VNAPROPERTY_MAP);
-    assert(element->vpr_refcount > 0);
-    if (--element->vpr_refcount == 0) {
-	switch (element->vpr_type) {
-	case VNAPROPERTY_SCALAR:
-	    {
-		vnaproperty_scalar_t *vpsp = (vnaproperty_scalar_t *)element;
-		free((void *)vpsp->vps_value);
-		(void)memset((void *)vpsp, 'X', sizeof(*vpsp));
-	    }
-	    break;
-
-	case VNAPROPERTY_LIST:
-	    {
-		vnaproperty_list_t *vplp  = (vnaproperty_list_t *)element;
-		for (size_t s = 0; s < vplp->vpl_length; ++s) {
-		    vnaproperty_free((vnaproperty_t *)vplp->vpl_vector[s]);
-		}
-		free((void *)vplp->vpl_vector);
-		(void)memset((void *)vplp, 'X', sizeof(*vplp));
-	    }
-	    break;
-
-	case VNAPROPERTY_MAP:
-	    {
-		vnaproperty_map_t *vpmp = (vnaproperty_map_t *)element;
-		vnaproperty_map_element_t *vmep, *next;
-
-		for (vmep = vpmp->vpm_order_head; vmep != NULL; vmep = next) {
-		    next = vmep->vme_order_next;
-		    free((void *)vmep->vme_pair.vmpr_key);
-		    vnaproperty_free((vnaproperty_t *)vmep->vme_pair.
-			    vmpr_value);
-		    memset((void *)vmep, 'X', sizeof(*vmep));
-		    free((void *)vmep);
-		    vmep = NULL;
-		}
-		free((void *)vpmp->vpm_hash_table);
-		(void)memset((void *)vpmp, 'X', sizeof(*vpmp));
-	    }
-	    break;
-	}
-	free((void *)element);
-    }
-}
-
-/*
- * vnaproperty_alloc_scalar: allocate a new scalar element
- *   @value: value of the scalar (string)
- */
-vnaproperty_t *vnaproperty_scalar_alloc(const char *value)
-{
-    char *copy;
-    vnaproperty_scalar_t *vpsp;
-
-    if (strcasecmp(value, "null") == 0) {
-	value = "~";
-    }
-    if ((copy = strdup(value)) == NULL) {
-	return NULL;
-    }
-    if ((vpsp = malloc(sizeof(vnaproperty_scalar_t))) == NULL) {
-	free((void *)copy);
-	return NULL;
-    }
-    (void)memset((void *)vpsp, 0, sizeof(*vpsp));
-    vpsp->vps_base.vpr_type = VNAPROPERTY_SCALAR;
-    vpsp->vps_base.vpr_refcount = 1;
-    vpsp->vps_value = copy;
-
-    return ((vnaproperty_t *)vpsp);
-}
-
-/*
- * vnaproperty_scalar_get: return the value of a scalar
- *   @scalar: pointer to scalar element
- */
-const char *vnaproperty_scalar_get(const vnaproperty_t *scalar)
-{
-    vnaproperty_scalar_t *vpsp;
-
-    if (scalar->vpr_type != VNAPROPERTY_SCALAR) {
-	errno = EINVAL;
-	return NULL;
-    }
-    vpsp = (vnaproperty_scalar_t *)scalar;
-    return vpsp->vps_value;
-}
-
-/*
- * vmaproperty_scalar_set: change the value of a scalar element
- *   @scalar: pointer to scalar element
- *   @value: new value
- */
-int vmaproperty_scalar_set(vnaproperty_t *scalar, const char *value)
-{
-    char *copy;
-    vnaproperty_scalar_t *vpsp;
-
-    if (scalar->vpr_type != VNAPROPERTY_SCALAR) {
-	errno = EINVAL;
-	return -1;
-    }
-    vpsp = (vnaproperty_scalar_t *)scalar;
-
-    if (strcasecmp(value, "null") == 0) {
-	value = "~";
-    }
-    if ((copy = strdup(value)) == NULL) {
-	return -1;
-    }
-    free((void *)vpsp->vps_value);
-    vpsp->vps_value = copy;
-    return 0;
-}
-
-/*
- * _vnaproperty_list_check_allocation: extend allocation to >= size
- *   @vplp: pointer to property list structure
- *   @size: needed size
- */
-int _vnaproperty_list_check_allocation(vnaproperty_list_t *vplp, size_t size)
-{
-    size_t new_allocation;
-    vnaproperty_t **new_vector = NULL;
-
-    /* If there's already enough, return. */
-    if (size <= vplp->vpl_allocation)
-	return 0;
-
-    /*
-     * Find the next power of 2 allocation higher than size.
-     */
-    new_allocation = MAX(8, vplp->vpl_allocation);
-    while (new_allocation <= size) {
-	new_allocation <<= 1;
-	if (new_allocation == 0) {
-	    errno = EINVAL;
-	    return -1;
-	}
-    }
-
-    /* Realloc */
-    if ((new_vector = realloc(vplp->vpl_vector, new_allocation *
-		    sizeof(vnaproperty_t *))) == NULL) {
-	return -1;
-    }
-    (void)memset((void *)&new_vector[vplp->vpl_allocation], 0,
-                 (new_allocation - vplp->vpl_allocation) *
-		 sizeof(vnaproperty_t *));
-    vplp->vpl_vector = new_vector;
-    vplp->vpl_allocation = new_allocation;
-    return 0;
-}
-
-/*
- * vnaproperty_alloc_list: allocate a new list element
- */
-vnaproperty_t *vnaproperty_list_alloc()
-{
-    vnaproperty_list_t *vplp;
-
-    if ((vplp = malloc(sizeof(vnaproperty_list_t))) == NULL) {
-	return NULL;
-    }
-    (void)memset((void *)vplp, 0, sizeof(*vplp));
-    vplp->vpl_base.vpr_type = VNAPROPERTY_LIST;
-    vplp->vpl_base.vpr_refcount = 1;
-
-    return ((vnaproperty_t *)vplp);
-}
-
-/*
- * vnaproperty_list_count: return the number of items in the list
- *   @list: pointer to list element
- */
-int vnaproperty_list_count(const vnaproperty_t *list)
-{
-    vnaproperty_list_t *vplp;
-
-    if (list->vpr_type != VNAPROPERTY_LIST) {
-	errno = EINVAL;
-	return -1;
-    }
-    vplp = (vnaproperty_list_t *)list;
-    return vplp->vpl_length;
-}
-
-/*
- * vnaproperty_list_get: get the element at the given index
- *   @list: pointer to list element
- *   @index: index of element to get
- *
- * Note: this function doesn't increment the reference count on the
- * retrieved element.
- */
-vnaproperty_t *vnaproperty_list_get(const vnaproperty_t *list, int index)
-{
-    vnaproperty_list_t *vplp;
-
-    if (list->vpr_type != VNAPROPERTY_LIST || index < 0) {
-	errno = EINVAL;
-	return NULL;
-    }
-    vplp = (vnaproperty_list_t *)list;
-    if (index >= vplp->vpl_length) {
-	errno = ENOENT;
-	return NULL;
-    }
-    return vplp->vpl_vector[index];
-}
-
-/*
- * vnaproperty_list_set: replace the element at the given index
- *   @list: pointer to list element
- *   @index: index where element should be placed
- *   @element: element to insert (reference is transferred to list)
- */
-int vnaproperty_list_set(vnaproperty_t *list, int index,
-	vnaproperty_t *element)
-{
-    vnaproperty_list_t *vplp;
-
-    if (list->vpr_type != VNAPROPERTY_LIST || index < 0) {
-	errno = EINVAL;
-	return -1;
-    }
-    vplp = (vnaproperty_list_t *)list;
-    if (index >= vplp->vpl_length) {	/* extend case */
-	if (_vnaproperty_list_check_allocation(vplp, index + 1) == -1) {
-	    return -1;
-	}
-	for (int i = vplp->vpl_length; i < index; ++i) { /* pad with nulls */
-	    if ((vplp->vpl_vector[i] = vnaproperty_scalar_alloc("~")) == NULL) {
-		return -1;
-	    }
-	    ++vplp->vpl_length;
-	}
-	assert(vplp->vpl_length == index);
-	vplp->vpl_length = index + 1;
-    } else {				/* replace case */
-	vnaproperty_free(vplp->vpl_vector[index]);
-	vplp->vpl_vector[index] = NULL;
-    }
-    vplp->vpl_vector[index] = element;
-    return 0;
-}
-
-/*
- * vnaproperty_list_append: append element to the list
- *   @list: pointer to list element
- *   @element: pointer to element to append (reference is transferred to list)
- */
-int vnaproperty_list_append(vnaproperty_t *list, vnaproperty_t *element)
-{
-    vnaproperty_list_t *vplp;
-
-    if (list->vpr_type != VNAPROPERTY_LIST) {
-	errno = EINVAL;
-	return -1;
-    }
-    vplp = (vnaproperty_list_t *)list;
-    if (_vnaproperty_list_check_allocation(vplp, vplp->vpl_length + 1) == -1) {
-	return -1;
-    }
-    vplp->vpl_vector[vplp->vpl_length++] = element;
-    return 0;
-}
-
-/*
- * vnaproperty_list_insert: insert element at the given index
- *   @list: pointer to list element
- *   @index: index where element should be inserted
- *   @element: element to insert (reference is transferred to list)
- *
- * Index must be in 0..N where N is the number of elements in the list.
- */
-int vnaproperty_list_insert(vnaproperty_t *list, int index,
-	vnaproperty_t *element)
-{
-    vnaproperty_list_t *vplp;
-
-    if (list->vpr_type != VNAPROPERTY_LIST || index < 0) {
-	errno = EINVAL;
-	return -1;
-    }
-    vplp = (vnaproperty_list_t *)list;
-    if (index >= vplp->vpl_length) {
-	return vnaproperty_list_set(list, index, element);
-    }
-    if (_vnaproperty_list_check_allocation(vplp, vplp->vpl_length + 1) == -1) {
-	return -1;
-    }
-    (void)memmove((void *)&vplp->vpl_vector[index + 1],
-                  (void *)&vplp->vpl_vector[index],
-		  (vplp->vpl_length - index) * sizeof(vnaproperty_t *));
-    vplp->vpl_vector[index] = element;
-    ++vplp->vpl_length;
-    return 0;
-}
-
-/*
- * vnaproperty_list_delete: delete the element at the given index
- *   @list: pointer to list element
- *   @index: index of element to delete
- */
-int vnaproperty_list_delete(vnaproperty_t *list, int index)
-{
-    vnaproperty_list_t *vplp;
-
-    if (list->vpr_type != VNAPROPERTY_LIST || index < 0) {
-	errno = EINVAL;
-	return -1;
-    }
-    vplp = (vnaproperty_list_t *)list;
-    if (index >= vplp->vpl_length) {
-	errno = ENOENT;
-	return -1;
-    }
-    (void)memmove((void *)&vplp->vpl_vector[index],
-                  (void *)&vplp->vpl_vector[index + 1],
-		  (vplp->vpl_length - index) * sizeof(vnaproperty_t *));
-    vplp->vpl_vector[--vplp->vpl_length] = NULL;
-    return 0;
-}
-
-/*
- * _vnaproperty_map_compare_keys: compare key and hashval to the given element
+ * map_compare_keys: compare key and hashval to the given element
  *   @key: key string
  *   @hashval: full 32-bit hashval
  *   @vmep: element with which to compare
  *
  * compares by hashval first, then by string compare
  */
-static int _vnaproperty_map_compare_keys(const char *key, uint32_t hashval,
+static int map_compare_keys(const char *key, uint32_t hashval,
 	vnaproperty_map_element_t *vmep)
 {
     if (hashval < vmep->vme_hashval)
@@ -496,10 +189,10 @@ static int _vnaproperty_map_compare_keys(const char *key, uint32_t hashval,
 }
 
 /*
- * _vnaproperty_map_find_anchor: find insertion point
- *   @vplp: pointer to property map structure
+ * map_find_anchor: find insertion point
+ *   @vplp:    pointer to property map structure
  *   @anchor:  address of address of the insertion point
- *   @key: search key
+ *   @key:     search key
  *   @hashval: full 32 bit hash value
  *
  * If the key is found return true, else return false.  In either case,
@@ -507,8 +200,8 @@ static int _vnaproperty_map_compare_keys(const char *key, uint32_t hashval,
  * **anchor is the found element; if not found, *anchor is the address
  * of the pointer where the element should be inserted.
  */
-static bool _vnaproperty_map_find_anchor(
-	vnaproperty_map_t *vpmp, vnaproperty_map_element_t ***anchor,
+static bool map_find_anchor(vnaproperty_map_t *vpmp,
+	vnaproperty_map_element_t ***anchor,
 	const char *key, uint32_t hashval)
 {
     vnaproperty_map_element_t *vmep, **vmepp;
@@ -519,14 +212,18 @@ static bool _vnaproperty_map_find_anchor(
     bucket = hashval % vpmp->vpm_hash_size;
     vmepp = &vpmp->vpm_hash_table[bucket];
     for (; (vmep = *vmepp) != NULL; vmepp = &vmep->vme_hash_next) {
-	if ((cmp = _vnaproperty_map_compare_keys(key, hashval, vmep)) <= 0)
+	if ((cmp = map_compare_keys(key, hashval, vmep)) <= 0)
 	    break;
     }
     *anchor = vmepp;
     return cmp == 0;
 }
 
-static int _vnaproperty_map_expand(vnaproperty_map_t *vpmp)
+/*
+ * map_expand: increase the size of the hash table and rehash all elements
+ *   @vpmp: map structure
+ */
+static int map_expand(vnaproperty_map_t *vpmp)
 {
     size_t old_allocation = vpmp->vpm_hash_size;
     size_t new_allocation = vpmp->vpm_count + 1;
@@ -579,11 +276,11 @@ static int _vnaproperty_map_expand(vnaproperty_map_t *vpmp)
 	     * Re-insert "cur" into its new hash chain.  As we go through
 	     * the buckets, we will re-process elements we've already moved.
 	     * But since a reprocessed element is always already in the
-	     * correct location, it can be reprocessed only once.
+	     * correct location, it has to be reprocessed at most once.
 	     */
 	    anchor = &new_table[cur->vme_hashval % new_allocation];
 	    for (; (next = *anchor) != NULL; anchor = &next->vme_hash_next) {
-		if (_vnaproperty_map_compare_keys(cur->vme_pair.vmpr_key,
+		if (map_compare_keys(cur->vme_pair.vmpr_key,
 			    cur->vme_hashval, next) <= 0)
 		    break;
 	    }
@@ -596,12 +293,12 @@ static int _vnaproperty_map_expand(vnaproperty_map_t *vpmp)
 }
 
 /*
- * _vnaproperty_map_append_order_element: append to order list
+ * map_append_order_element: append to order list
  *   @vplp: pointer to property map structure
  *   @vmep: element to append
  */
-void _vnaproperty_map_append_order_element(vnaproperty_map_t *vpmp,
-					   vnaproperty_map_element_t *vmep)
+static void map_append_order_element(vnaproperty_map_t *vpmp,
+	vnaproperty_map_element_t *vmep)
 {
     assert(vmep->vme_order_next == NULL);
     assert(vmep->vme_order_prev == NULL);
@@ -619,12 +316,12 @@ void _vnaproperty_map_append_order_element(vnaproperty_map_t *vpmp,
 }
 
 /*
- * _vnaproperty_map_delete_order_element: delete from order list
+ * map_delete_order_element: delete from order list
  *   @vplp: pointer to property map structure
  *   @vmep: element to delete
  */
-void _vnaproperty_map_delete_order_element(vnaproperty_map_t *vpmp,
-					   vnaproperty_map_element_t *vmep)
+static void map_delete_order_element(vnaproperty_map_t *vpmp,
+	vnaproperty_map_element_t *vmep)
 {
     vnaproperty_map_element_t *prev = vmep->vme_order_prev;
     vnaproperty_map_element_t *next = vmep->vme_order_next;
@@ -642,9 +339,9 @@ void _vnaproperty_map_delete_order_element(vnaproperty_map_t *vpmp,
 }
 
 /*
- * vnaproperty_alloc_map: allocate a new map element
+ * map_alloc: allocate a new map element
  */
-vnaproperty_t *vnaproperty_map_alloc()
+static vnaproperty_t *map_alloc()
 {
     vnaproperty_map_t *vpmp;
 
@@ -653,15 +350,14 @@ vnaproperty_t *vnaproperty_map_alloc()
     }
     (void)memset((void *)vpmp, 0, sizeof(*vpmp));
     vpmp->vpm_base.vpr_type = VNAPROPERTY_MAP;
-    vpmp->vpm_base.vpr_refcount = 1;
     return ((vnaproperty_t *)vpmp);
 }
 
 /*
- * vnaproperty_map_count: return the number of items in the map
+ * map_count: return the number of items in the map
  *   @list: pointer to map element
  */
-int vnaproperty_map_count(const vnaproperty_t *map)
+static int map_count(const vnaproperty_t *map)
 {
     vnaproperty_map_t *vpmp;
 
@@ -674,39 +370,13 @@ int vnaproperty_map_count(const vnaproperty_t *map)
 }
 
 /*
- * vnaproperty_map_get: get the element with given key
- */
-vnaproperty_t *vnaproperty_map_get(const vnaproperty_t *map, const char *key)
-{
-    vnaproperty_map_t *vpmp;
-    vnaproperty_map_element_t **anchor;
-    uint32_t hashval;
-
-    if (map->vpr_type != VNAPROPERTY_MAP) {
-	errno = EINVAL;
-	return NULL;
-    }
-    vpmp = (vnaproperty_map_t *)map;
-    if (vpmp->vpm_count == 0) {
-	errno = ENOENT;
-	return NULL;
-    }
-    hashval = crc32c(-1, (void *)key, strlen(key));
-    if (!_vnaproperty_map_find_anchor(vpmp, &anchor, key, hashval)) {
-	errno = ENOENT;
-	return NULL;
-    }
-    return (vnaproperty_t *)(*anchor)->vme_pair.vmpr_value;
-}
-
-/*
- * vnaproperty_map_set: add an element to the map (replacing if key exists)
+ * map_subtree: return the address of the subtree of key
  *   @list: pointer to map element
- *   @key: search key
- *   @element: element to add (reference is transferred to list)
+ *   @add:  insert key if not found
+ *   @key:  search key
  */
-int vnaproperty_map_set(vnaproperty_t *map, const char *key,
-	vnaproperty_t *element)
+static vnaproperty_t **map_subtree(vnaproperty_t *map, bool add,
+	const char *key)
 {
     vnaproperty_map_t *vpmp;
     vnaproperty_map_element_t **anchor, *vmep;
@@ -714,45 +384,46 @@ int vnaproperty_map_set(vnaproperty_t *map, const char *key,
 
     if (map->vpr_type != VNAPROPERTY_MAP) {
 	errno = EINVAL;
-	return -1;
+	return NULL;
     }
     vpmp = (vnaproperty_map_t *)map;
     if (vpmp->vpm_count + 1 >= 2 * vpmp->vpm_hash_size) {
-	if (_vnaproperty_map_expand(vpmp) == -1) {
-	    return -1;
+	if (map_expand(vpmp) == -1) {
+	    return NULL;
 	}
     }
     hashval = crc32c(-1, (void *)key, strlen(key));
-    if (_vnaproperty_map_find_anchor(vpmp, &anchor, key, hashval)) {
+    if (map_find_anchor(vpmp, &anchor, key, hashval)) {
 	vmep = *anchor;
-	vnaproperty_free(vmep->vme_pair.vmpr_value);
-	vmep->vme_pair.vmpr_value = element;
-	return 0;
+	return &vmep->vme_pair.vmpr_value;
     }
     if ((vmep = malloc(sizeof(vnaproperty_map_element_t))) == NULL) {
-	return -1;
+	return NULL;
+    }
+    if (!add) {
+	errno = ENOENT;
+	return NULL;
     }
     (void)memset((void *)vmep, 0, sizeof(*vmep));
     if ((vmep->vme_pair.vmpr_key = strdup(key)) == NULL) {
 	free((void *)vmep);
-	return -1;
+	return NULL;
     }
-    vmep->vme_pair.vmpr_value = element;
     vmep->vme_magic = VNAPROPERTY_MAP_PAIR_ELEMENT_MAGIC;
     vmep->vme_hashval = hashval;
     vmep->vme_hash_next = *anchor;
     *anchor = vmep;
-    _vnaproperty_map_append_order_element(vpmp, vmep);
+    map_append_order_element(vpmp, vmep);
     ++vpmp->vpm_count;
-    return 0;
+    return &vmep->vme_pair.vmpr_value;
 }
 
 /*
- * vnaproperty_map_delete: delete the element with given key
+ * map_delete: delete the element with given key
  *   @list: pointer to map element
  *   @key: search key
  */
-int vnaproperty_map_delete(vnaproperty_t *map, const char *key)
+static int map_delete(vnaproperty_t *map, const char *key)
 {
     vnaproperty_map_t *vpmp;
     vnaproperty_map_element_t **anchor, *vmep;
@@ -768,13 +439,13 @@ int vnaproperty_map_delete(vnaproperty_t *map, const char *key)
 	return -1;
     }
     hashval = crc32c(-1, (void *)key, strlen(key));
-    if (!_vnaproperty_map_find_anchor(vpmp, &anchor, key, hashval)) {
+    if (!map_find_anchor(vpmp, &anchor, key, hashval)) {
 	errno = ENOENT;
 	return -1;
     }
     vmep = *anchor;
     assert(vpmp->vpm_count > 0);
-    _vnaproperty_map_delete_order_element(vpmp, vmep);
+    map_delete_order_element(vpmp, vmep);
     *anchor = vmep->vme_hash_next;
     free((void *)vmep->vme_pair.vmpr_key);
     vnaproperty_free((vnaproperty_t *)vmep->vme_pair.vmpr_value);
@@ -791,83 +462,255 @@ int vnaproperty_map_delete(vnaproperty_t *map, const char *key)
     return 0;
 }
 
-/*
- * vnaproperty_map_begin: return the first key-value pair
- *   @list: pointer to map element
- */
-const vnaproperty_map_pair_t *vnaproperty_map_begin(const vnaproperty_t *map)
-{
-    vnaproperty_map_t *vpmp;
 
-    if (map->vpr_type != VNAPROPERTY_MAP) {
-	errno = EINVAL;
-	return NULL;
+/***********************************************************************
+ * Lists
+ **********************************************************************/
+
+/*
+ * list_check_allocation: extend allocation to >= size
+ *   @vplp: pointer to property list structure
+ *   @size: needed size
+ */
+static int list_check_allocation(vnaproperty_list_t *vplp, size_t size)
+{
+    size_t new_allocation;
+    vnaproperty_t **new_vector = NULL;
+
+    /* If there's already enough, return. */
+    if (size <= vplp->vpl_allocation)
+	return 0;
+
+    /*
+     * Find the next power of 2 allocation higher than size.
+     */
+    new_allocation = MAX(8, vplp->vpl_allocation);
+    while (new_allocation <= size) {
+	new_allocation <<= 1;
+	if (new_allocation == 0) {
+	    errno = EINVAL;
+	    return -1;
+	}
     }
-    vpmp = (vnaproperty_map_t *)map;
-    return (vnaproperty_map_pair_t *)vpmp->vpm_order_head;
+
+    /* Realloc */
+    if ((new_vector = realloc(vplp->vpl_vector, new_allocation *
+		    sizeof(vnaproperty_t *))) == NULL) {
+	return -1;
+    }
+    (void)memset((void *)&new_vector[vplp->vpl_allocation], 0,
+                 (new_allocation - vplp->vpl_allocation) *
+		 sizeof(vnaproperty_t *));
+    vplp->vpl_vector = new_vector;
+    vplp->vpl_allocation = new_allocation;
+    return 0;
 }
 
 /*
- * vnaproperty_map_next: return the next key-value pair
- *   @cur: current position
+ * list_alloc: allocate a new list element
  */
-const vnaproperty_map_pair_t *vnaproperty_map_next(
-	const vnaproperty_map_pair_t *cur)
+static vnaproperty_t *list_alloc()
 {
-    vnaproperty_map_element_t *vmep = (vnaproperty_map_element_t *)cur;
+    vnaproperty_list_t *vplp;
 
-    if (vmep->vme_magic != VNAPROPERTY_MAP_PAIR_ELEMENT_MAGIC) {
+    if ((vplp = malloc(sizeof(vnaproperty_list_t))) == NULL) {
+	return NULL;
+    }
+    (void)memset((void *)vplp, 0, sizeof(*vplp));
+    vplp->vpl_base.vpr_type = VNAPROPERTY_LIST;
+
+    return ((vnaproperty_t *)vplp);
+}
+
+/*
+ * list_count: return the number of items in the list
+ *   @list: pointer to list element
+ */
+static int list_count(const vnaproperty_t *list)
+{
+    vnaproperty_list_t *vplp;
+
+    if (list->vpr_type != VNAPROPERTY_LIST) {
+	errno = EINVAL;
+	return -1;
+    }
+    vplp = (vnaproperty_list_t *)list;
+    return vplp->vpl_length;
+}
+
+/*
+ * list_subtree: return address of subtree at given index
+ *   @list:  pointer to list element
+ *   @add:   add elements to list if needed
+ *   @index: index into list
+ */
+static vnaproperty_t **list_subtree(vnaproperty_t *list,
+	bool add, int index)
+{
+    vnaproperty_list_t *vplp;
+
+    if (list->vpr_type != VNAPROPERTY_LIST || index < 0) {
 	errno = EINVAL;
 	return NULL;
     }
-    return (const vnaproperty_map_pair_t *)vmep->vme_order_next;
+    vplp = (vnaproperty_list_t *)list;
+    if (index >= vplp->vpl_length) {	/* extend case */
+	if (!add) {
+	    errno = ENOENT;
+	    return NULL;
+	}
+	if (list_check_allocation(vplp, index + 1) == -1) {
+	    return NULL;
+	}
+	vplp->vpl_length = index + 1;
+    }
+    return &vplp->vpl_vector[index];
 }
 
+/*
+ * list_insert: insert null element at index and return address
+ *   @list: pointer to list element
+ *   @index: index where element should be inserted
+ *
+ * Index must be in 0..N where N is the number of elements in the list.
+ */
+static vnaproperty_t **list_insert(vnaproperty_t *list, int index)
+{
+    vnaproperty_list_t *vplp;
+
+    if (list->vpr_type != VNAPROPERTY_LIST || index < 0) {
+	errno = EINVAL;
+	return NULL;
+    }
+    vplp = (vnaproperty_list_t *)list;
+    if (index >= vplp->vpl_length) {
+	return list_subtree(list, /*add*/true, index);
+    }
+    if (list_check_allocation(vplp, vplp->vpl_length + 1) == -1) {
+	return NULL;
+    }
+    (void)memmove((void *)&vplp->vpl_vector[index + 1],
+                  (void *)&vplp->vpl_vector[index],
+		  (vplp->vpl_length - index) * sizeof(vnaproperty_t *));
+    vplp->vpl_vector[index] = NULL;
+    ++vplp->vpl_length;
+
+    return &vplp->vpl_vector[index];
+}
+
+/*
+ * list_append: append null element and return address
+ *   @list: pointer to list element
+ */
+static vnaproperty_t **list_append(vnaproperty_t *list)
+{
+    vnaproperty_list_t *vplp;
+    vnaproperty_t **result;
+
+    if (list->vpr_type != VNAPROPERTY_LIST) {
+	errno = EINVAL;
+	return NULL;
+    }
+    vplp = (vnaproperty_list_t *)list;
+    if (list_check_allocation(vplp, vplp->vpl_length + 1) == -1) {
+	return NULL;
+    }
+    *(result = &vplp->vpl_vector[vplp->vpl_length++]) = NULL;
+
+    return result;
+}
+
+/*
+ * list_delete: delete the element at the given index
+ *   @list: pointer to list element
+ *   @index: index of element to delete
+ */
+static int list_delete(vnaproperty_t *list, int index)
+{
+    vnaproperty_list_t *vplp;
+
+    if (list->vpr_type != VNAPROPERTY_LIST || index < 0) {
+	errno = EINVAL;
+	return -1;
+    }
+    vplp = (vnaproperty_list_t *)list;
+    if (index >= vplp->vpl_length) {
+	errno = ENOENT;
+	return -1;
+    }
+    (void)memmove((void *)&vplp->vpl_vector[index],
+                  (void *)&vplp->vpl_vector[index + 1],
+		  (vplp->vpl_length - index) * sizeof(vnaproperty_t *));
+    vplp->vpl_vector[--vplp->vpl_length] = NULL;
+    return 0;
+}
+
+
+/***********************************************************************
+ * Property Scanner & Parser
+ **********************************************************************/
+
+/*
+ * vnaproperty_token_t: tokens returned by the scanner
+ */
 typedef enum vnaproperty_token {
     T_ERROR	= -1,
     T_EOF,
+    T_HASH,
+    T_PLUS,
     T_DOT,
     T_ASSIGN,
     T_LBRACKET,
     T_RBRACKET,
+    T_LCURLY,
+    T_RCURLY,
     T_ID,
     T_INT
 } vnaproperty_token_t;
 
 /*
- * vnaproperty_scanner: lexical analyzer state
+ * scanner_t: scanner state
  */
-typedef struct vnaproperty_scanner {
-    char               *vs_input;
-    char               *vs_position;
-    char                vs_cur;
-    char               *vs_text;
-    vnaproperty_token_t vs_token;
-} vnaproperty_scanner_t;
+typedef struct scanner {
+    char               *scn_input;
+    char               *scn_position;
+    char                scn_cur;
+    char               *scn_text;
+    union {
+	int		scn_int;
+    } u;
+    vnaproperty_token_t scn_token;
+} scanner_t;
 
 /*
  * VNAPROPERTY_GETCHAR: advance to the next input character
  */
-#define VNAPROPERTY_GETCHAR(vsp) \
-	((vsp)->vs_cur = *++(vsp)->vs_position)
+#define VNAPROPERTY_GETCHAR(scnp) \
+	((scnp)->scn_cur = *++(scnp)->scn_position)
 
 /*
- * VNAPROPERTY_ISIDCHAR: return true if c is a valid identifier character
+ * ISIDCHAR1: return true if c can start an identifier
  */
-#define VNAPROPERTY_ISIDCHAR(c) \
-	(isalpha(c) || isdigit(c) || !isascii(c) || (c) == '_' || \
-	 (c) == '-' || (c) == '+')
+#define ISIDCHAR1(c) \
+	(isalpha(c) || !isascii(c) || (c) == '_' || (c) == '\\')
 
 /*
- * _vnaproperty_scan: return the next input token
- *   @vsp: scanner state
+ * ISIDCHAR: return true if c can continue an identifier
  */
-static void _vnaproperty_scan(vnaproperty_scanner_t *vsp)
+#define ISIDCHAR(c) \
+	(isalpha(c) || isdigit(c) || !isascii(c) || (c) == ' ' || \
+	 (c) == '_' || (c) == '-' || (c) == '\\')
+
+/*
+ * scan: return the next input token
+ *   @scnp: scanner state
+ */
+static void scan(scanner_t *scnp)
 {
     for (;;) {
-	switch (vsp->vs_cur) {
+	switch (scnp->scn_cur) {
 	case '\000':
-	    vsp->vs_token = T_EOF;
+	    scnp->scn_token = T_EOF;
 	    return;
 
 	/*
@@ -879,30 +722,50 @@ static void _vnaproperty_scan(vnaproperty_scanner_t *vsp)
 	case '\t':
 	case '\v':
 	case ' ':
-	    VNAPROPERTY_GETCHAR(vsp);
+	    VNAPROPERTY_GETCHAR(scnp);
 	    continue;
 
 	/*
 	 * Handle simple tokens.
 	 */
+	case '#':
+	    VNAPROPERTY_GETCHAR(scnp);
+	    scnp->scn_token = T_HASH;
+	    return;
+
+	case '+':
+	    VNAPROPERTY_GETCHAR(scnp);
+	    scnp->scn_token = T_PLUS;
+	    return;
+
 	case '.':
-	    VNAPROPERTY_GETCHAR(vsp);
-	    vsp->vs_token = T_DOT;
+	    VNAPROPERTY_GETCHAR(scnp);
+	    scnp->scn_token = T_DOT;
 	    return;
 
 	case '=':
-	    VNAPROPERTY_GETCHAR(vsp);
-	    vsp->vs_token = T_ASSIGN;
+	    VNAPROPERTY_GETCHAR(scnp);
+	    scnp->scn_token = T_ASSIGN;
 	    return;
 
 	case '[':
-	    VNAPROPERTY_GETCHAR(vsp);
-	    vsp->vs_token = T_LBRACKET;
+	    VNAPROPERTY_GETCHAR(scnp);
+	    scnp->scn_token = T_LBRACKET;
 	    return;
 
 	case ']':
-	    VNAPROPERTY_GETCHAR(vsp);
-	    vsp->vs_token = T_RBRACKET;
+	    VNAPROPERTY_GETCHAR(scnp);
+	    scnp->scn_token = T_RBRACKET;
+	    return;
+
+	case '{':
+	    VNAPROPERTY_GETCHAR(scnp);
+	    scnp->scn_token = T_LCURLY;
+	    return;
+
+	case '}':
+	    VNAPROPERTY_GETCHAR(scnp);
+	    scnp->scn_token = T_RCURLY;
 	    return;
 
 	default:
@@ -910,341 +773,750 @@ static void _vnaproperty_scan(vnaproperty_scanner_t *vsp)
 	}
 
 	/*
-	 * Integers and Identifiers
+	 * Integers
 	 */
-	if (VNAPROPERTY_ISIDCHAR(vsp->vs_cur)) {
-	    vsp->vs_text = vsp->vs_position;
+	if (isdigit(scnp->scn_cur)) {
+	    scnp->scn_text = scnp->scn_position;
 	    do {
-		VNAPROPERTY_GETCHAR(vsp);
-	    } while (VNAPROPERTY_ISIDCHAR(vsp->vs_cur));
-	    *vsp->vs_position = '\000';
-	    vsp->vs_token = T_ID;
+		VNAPROPERTY_GETCHAR(scnp);
+	    } while (isdigit(scnp->scn_cur));
+	    *scnp->scn_position = '\000';
+	    scnp->u.scn_int = strtol(scnp->scn_text, NULL, 10);
+	    scnp->scn_token = T_INT;
+	    return;
+	}
+
+	/*
+	 * Identifiers
+	 */
+	if (ISIDCHAR1(scnp->scn_cur)) {
+	    char *protected = scnp->scn_position;
+	    char *destination = scnp->scn_position;
+
+	    scnp->scn_text = scnp->scn_position;
+	    do {
+		if (scnp->scn_cur == '\\') {
+		    VNAPROPERTY_GETCHAR(scnp);
+		    if (scnp->scn_cur == '\000') {
+			scnp->scn_token = T_ERROR;
+			return;
+		    }
+		    protected = scnp->scn_position;
+		}
+		*destination++ = scnp->scn_cur;
+		VNAPROPERTY_GETCHAR(scnp);
+	    } while (ISIDCHAR(scnp->scn_cur));
+
+	    /*
+	     * Trim trailing spaces.
+	     */
+	    while (&destination[-1] > protected &&
+		    destination[-1] == ' ') {
+		--destination;
+	    }
+	    *destination = '\000';
+	    scnp->scn_token = T_ID;
 	    return;
 	}
 
 	/*
 	 * All other characters are reserved.
 	 */
-	vsp->vs_token = T_ERROR;
+	scnp->scn_token = T_ERROR;
 	return;
     }
 }
 
 /*
- * vnaproperty_expr_t: expression node
+ * expr_type_t: expression node type
  */
-typedef struct vnaproperty_expr {
-    vnaproperty_token_t vex_token;	/* T_DOT=map, T_LBRACKET=list */
-    struct vnaproperty_expr *vex_next;	/* next expression node */
-    vnaproperty_t *vex_collection;	/* existing collection if exists */
-    union {
-	char   *vex_name;		/* key for map */
-	int     vex_index;		/* index for list */
-    } u;
-} vnaproperty_expr_t;
+typedef enum expr_type {
+    E_MAP,				/* {}   */
+    E_MAP_ELEMENT,			/* foo  */
+    E_LIST,				/* []   */
+    E_LIST_ELEMENT,			/* [5]  */
+    E_LIST_INSERT,			/* [5+] */
+    E_LIST_APPEND,			/* [+] */
+    E_DOT				/* .    */
+} expr_type_t;
 
 /*
- * _vnaproperty_expr_free: free an expression list
- *   @head: expression list returned from _vnaproperty_expr_parse
+ * expr_t: expression node
  */
-static void _vnaproperty_expr_free(vnaproperty_expr_t *head)
+typedef struct expr {
+    expr_type_t ex_type;		/* expression node type */
+    struct expr *ex_next;		/* next expression node */
+    union {
+	char   *ex_name;		/* key for map element */
+	int     ex_index;		/* index for list element */
+    } u;
+} expr_t;
+
+/*
+ * parser_t: parser state
+ */
+typedef struct parser {
+    scanner_t		prs_scn;		/* scanner state */
+    expr_t	       *prs_head;	/* expression list head */
+    expr_t	       *prs_tail;	/* expression list tail */
+    vnaproperty_t      *prs_collection;	/* if last elem is map/list */
+} parser_t;
+
+/*
+ * expr_free: free scanner and parser resources
+ *   @parser: pointer to parser state structure
+ */
+static void parser_free(parser_t *parser)
 {
+    while (parser->prs_head != NULL) {
+	expr_t *exp = parser->prs_head;
 
-    while (head != NULL) {
-	vnaproperty_expr_t *vexp = head;
-
-	head = vexp->vex_next;
-	free((void *)vexp);
+	parser->prs_head = exp->ex_next;
+	free((void *)exp);
     }
+    free((void *)parser->prs_scn.scn_input);
+    parser->prs_scn.scn_input = NULL;
 }
 
 /*
- * _vnaproperty_parse: parse a property expression and return expression list
- *   @vsp:    caller allocated scanner state initialized here
- *   @anchor: location to return expression list
- *   @root:   property root (can be NULL)
+ * parse: parse a property expression and return expression list
+ *   @parser: address of caller-allocated parser state structure
+ *   @result: address of vnaproperty_t pointer to receive result
  *   @format: sprintf format
  *   @ap:     variable argument pointer
  *
- *   On success, *anchor is a linked list of expression nodes
- *   representing the given expression in right-to-left order.
- *   For example, given "foo.bar[5]", the returned list would
- *   be T_LIST/index=5, T_MAP/name="bar", T_MAP/name="foo".
- *   If the indicated collections exist (starting from root), the
- *   vex_collection member points to the existing element; otherwise
- *   if the element doesn't exist or is not the requested type,
- *   vex_collection is NULL.  For get operations, the first
- *   element in the returned list is the bottom most collection
- *   containing the requested element, if one exists.  For set
- *   operations, one builds new property nodes from the bottom up
- *   until finding an expression node with a non-NULL vex_collection
- *   pointer.  A set operation on that collection completes the
- *   update.  Thus, in both cases, the reversed list is the most
- *   useful order.
+ *   On success, *exp_anchor is a linked list of expression nodes
+ *   representing the given expression in left-to-right order.
  */
-static int _vnaproperty_parse(vnaproperty_scanner_t *vsp,
-	vnaproperty_expr_t **anchor, vnaproperty_t *root,
+static int parse(parser_t *parser,
 	const char *format, va_list ap)
 {
-    vnaproperty_expr_t *head = NULL, *vexp;
+    scanner_t *scanner = &parser->prs_scn;
+    expr_t *exp, **expp;
+    int state;
 
     /*
-     * Format the VNA property expression and init the scanner.
+     * Init the parser and format the user's arguments.
      */
-    (void)memset((void *)vsp, 0, sizeof(vnaproperty_scanner_t));
-    if (vasprintf(&vsp->vs_input, format, ap) == -1) {
+    (void)memset((void *)parser, 0, sizeof(*parser));
+    if (vasprintf(&scanner->scn_input, format, ap) == -1) {
 	return -1;
     }
-    vsp->vs_position = vsp->vs_input;
-    vsp->vs_cur = vsp->vs_input[0];
-    _vnaproperty_scan(vsp);
+    scanner->scn_position = scanner->scn_input;
+    scanner->scn_cur = scanner->scn_input[0];
+    expp = &parser->prs_head;
+    exp = NULL;
+    scan(scanner);
 
     /*
-     * expr    : T_DOT					     // root
-     *         | T_DOT T_ID tail_opt			     // absolute path
-     *         | T_DOT T_LBRACKET T_ID T_BRACKET tail_opt    // absolute path
-     *         | T_ID tail_opt				     // relative path
-     *         | T_LBRACKET T_ID T_BRACKET tail_opt	     // relative path
-     *         ;
+     * LL(1) Grammar
+     *
+     * expr is the starting state
+     * [token] means the token is left on the input
+     *
+     * expr		: T_DOT dot			// .
+     *			| [T_ID] map_element		// abc
+     *			| T_LBRACKET subscript		// [5], [5+], [+], []
+     *			| [T_LCURLY] abstract_map	// {}
+     *			;
+     *
+     * dot		: [T_ID] map_element		// .abc
+     *			| T_LBRACKET subscript		// .[5], .[5+], etc
+     *			| [T_LCURLY] abstract_map	// .{}
+     *			| final_dot			// accepting
+     *			;
+     *
+     * chain		: T_DOT dot			// foo.
+     *			| T_LBRACKET subscript		// foo.bar[5]
+     *			| [T_LCURLY] abstract_map	// foo.bar{}
+     *			| λ				// accepting
+     *			;
+     *
+     * subscript	: T_INT list_element		// 5], 5+]
+     *			| T_PLUS list_append		// +]
+     *			| [T_RBRACKET] abstract_list	// ]
+     *			;
+     *
+     * map_element	: T_ID chain			// foo
+     *			;
+     *
+     * list_element	: T_PLUS list_insert		// 5+]
+     *			| T_RBRACKET chain		// 5]
+     *			;
+     *
+     * list_insert	: T_RBRACKET chain		// 5+]
+     *			;
+     *
+     * list_append	: T_RBRACKET chain		// +]
+     *			;
+     *
+     * final_dot	: λ
+     *			;
+     *
+     * abstract_map	: T_LCURLY T_RCURLY
+     *			;
+     *
+     * abstract_list	: T_RBRACKET
+     *			;
+     *
+     * The language is regular, so we parse it simply using Duff's device.
      */
-    switch (vsp->vs_token) {
-    case T_DOT:
-	    _vnaproperty_scan(vsp);
-	    switch (vsp->vs_token) {
+    state = 0;
+    for (;;) {
+	switch (state) {
+	case 0:
+	    /*
+	     * expr	: T_DOT dot
+	     *		| [T_ID] map_element
+	     *		| T_LBRACKET subscript
+	     *		| [T_LCURLY] abstract_map
+	     *		;
+	     */
+	    switch (scanner->scn_token) {
+	    case T_DOT:
+		scan(scanner);
+		state = 1;
+		continue;
+
 	    case T_ID:
-		goto map;
+		goto map_element;
 
 	    case T_LBRACKET:
-		break;
+		scan(scanner);
+		state = 3;
+		continue;
+
+	    case T_LCURLY:
+		goto abstract_map;
 
 	    default:
-		goto accept;
+		goto error;				/* NOT accepting */
 	    }
 	    break;
 
-    case T_ID:
-	goto map;
-
-    case T_LBRACKET:
-	break;
-
-    default:
-	goto error;
-    }
-
-    /*
-     * tail_opt: %empty
-     *         | tail_opt T_DOT T_ID
-     *         | tail_opt T_LBRACKET T_ID T_BRACKET
-     *         ;
-     */
-    for (;;) {
-	switch (vsp->vs_token) {
-	case T_DOT:
+	case 1:
 	    /*
-             * tail_opt : tail_opt <here> T_DOT T_ID
+	     * dot	: [T_ID] map_element
+	     *		| T_LBRACKET subscript
+	     *		| [T_LCURLY] abstract_map
+	     *		| [default]  final_dot
+	     *		;
 	     */
-	    _vnaproperty_scan(vsp);
-	    if (vsp->vs_token != T_ID) {
-		goto error;
-	    }
-	    /*FALLTHROUGH*/
+	    switch (scanner->scn_token) {
+	    case T_ID:
+		goto map_element;
 
-	map:
-	    if ((vexp = malloc(sizeof(vnaproperty_expr_t))) == NULL) {
+	    case T_LBRACKET:
+		scan(scanner);
+		state = 3;
+		continue;
+
+	    case T_LCURLY:
+		goto abstract_map;
+
+	    default:
+		goto final_dot;				/* accepting state */
+	    }
+	    break;
+
+	case 2:
+	    /*
+	     * chain	: T_DOT dot
+	     *		| T_LBRACKET subscript
+	     *		| [T_LCURLY] abstract_map
+	     *		| λ
+	     *		;
+	     */
+	    switch (scanner->scn_token) {
+	    case T_DOT:
+		scan(scanner);
+		state = 1;
+		continue;
+
+	    case T_LBRACKET:
+		scan(scanner);
+		state = 3;
+		continue;
+
+	    case T_LCURLY:
+		goto abstract_map;
+
+	    default:
+		break;					/* accepting state */
+	    }
+	    break;
+
+	case 3:
+	    /*
+	     * subscript	: T_INT list_element
+	     *			| T_PLUS list_append
+	     *			| [T_RBRACKET] abstract_list
+	     *			;
+	     */
+	    switch (scanner->scn_token) {
+	    case T_INT:
+		goto list_element;
+
+	    case T_PLUS:
+		goto list_append;
+
+	    case T_RBRACKET:
+		goto abstract_list;
+
+	    default:
+		goto error;				/* NOT accepting */
+	    }
+	    break;
+
+	map_element:
+	    /*
+	     * map_element	: T_ID chain ;
+	     */
+	    assert(scanner->scn_token == T_ID);
+	    if ((exp = malloc(sizeof(expr_t))) == NULL) {
 		goto error;
 	    }
-	    (void)memset((void *)vexp, 0, sizeof(vnaproperty_expr_t));
-	    vexp->vex_token = T_DOT;
-	    vexp->u.vex_name = vsp->vs_text;
-	    if (root != NULL) {
-		if (root->vpr_type == VNAPROPERTY_MAP) {
-		    vexp->vex_collection = root;
-		    root = vnaproperty_map_get(root, vexp->u.vex_name);
-		} else {
-		    root = NULL;
-		}
-	    }
-	    vexp->vex_next = head;
-	    head = vexp;
-	    _vnaproperty_scan(vsp);
+	    (void)memset((void *)exp, 0, sizeof(expr_t));
+	    exp->ex_type = E_MAP_ELEMENT;
+	    exp->u.ex_name = scanner->scn_text;
+	    exp->ex_next = NULL;
+	    *expp = exp;
+	    expp = &exp->ex_next;
+	    scan(scanner);
+	    state = 2;
 	    continue;
 
-	case T_LBRACKET:
+	list_element:	/* and list_insert */
 	    /*
-	     * tail_opt : tail_opt <here> T_LBRACKET T_ID T_RBRACKET
+	     * list_element	: T_PLUS list_insert
+	     *			| T_RBRACKET chain
+	     *			;
+	     *
+	     * list_insert	: T_RBRACKET chain
+	     *			;
 	     */
-	    _vnaproperty_scan(vsp);
-	    if (vsp->vs_token != T_ID) {
+	    assert(scanner->scn_token == T_INT);
+	    if ((exp = malloc(sizeof(expr_t))) == NULL) {
+		goto error;
+	    }
+	    (void)memset((void *)exp, 0, sizeof(expr_t));
+	    exp->ex_type = E_LIST_ELEMENT;
+	    exp->u.ex_index = scanner->u.scn_int;
+	    scan(scanner);
+	    if (scanner->scn_token == T_PLUS) {
+		exp->ex_type = E_LIST_INSERT;
+		scan(scanner);
+	    }
+	    *expp = exp;
+	    expp = &exp->ex_next;
+	    if (scanner->scn_token != T_RBRACKET) {
 		errno = EINVAL;
 		goto error;
 	    }
-	    {
-		char *end;
-		int index;
+	    scan(scanner);
+	    state = 2;
+	    continue;
 
-		index = strtol(vsp->vs_text, &end, 0);
-		if (end == vsp->vs_text) {
-		    errno = EINVAL;
-		    goto error;
-		}
-		while (isascii(*end) && isspace(*end)) {
-		    ++end;
-		}
-		if (*end != '\000') {
-		    errno = EINVAL;
-		    goto error;
-		}
-		if ((vexp = malloc(sizeof(vnaproperty_expr_t))) == NULL) {
-		    goto error;
-		}
-		(void)memset((void *)vexp, 0, sizeof(vnaproperty_expr_t));
-		vexp->vex_token = T_LBRACKET;
-		vexp->u.vex_index = index;
-		if (root != NULL) {
-		    if (root->vpr_type == VNAPROPERTY_LIST) {
-			vexp->vex_collection = root;
-			root = vnaproperty_list_get(root, vexp->u.vex_index);
-		    } else {
-			root = NULL;
-		    }
-		}
-		vexp->vex_next = head;
-		head = vexp;
+	list_append:
+	    /*
+	     * list_append	: T_RBRACKET chain
+	     */
+	    assert(scanner->scn_token == T_PLUS);
+	    if ((exp = malloc(sizeof(expr_t))) == NULL) {
+		goto error;
 	    }
-	    _vnaproperty_scan(vsp);
-	    if (vsp->vs_token != T_RBRACKET) {
+	    (void)memset((void *)exp, 0, sizeof(expr_t));
+	    exp->ex_type = E_LIST_APPEND;
+	    *expp = exp;
+	    expp = &exp->ex_next;
+	    scan(scanner);
+	    if (scanner->scn_token != T_RBRACKET) {
 		errno = EINVAL;
 		goto error;
 	    }
-	    _vnaproperty_scan(vsp);
+	    scan(scanner);
+	    state = 2;
 	    continue;
 
-	default:
+	final_dot:
+	    /*
+	     * final_dot	: λ ;
+	     */
+	    if ((exp = malloc(sizeof(expr_t))) == NULL) {
+		goto error;
+	    }
+	    (void)memset((void *)exp, 0, sizeof(expr_t));
+	    exp->ex_type = E_DOT;
+	    exp->ex_next = NULL;
+	    *expp = exp;
+	    expp = &exp->ex_next;
+	    break;
+
+	abstract_map:
+	    /*
+	     * abstract_map	: T_LCURLY T_RCURLY ;
+	     */
+	    assert(scanner->scn_token == T_LCURLY);
+	    scan(scanner);
+	    if (scanner->scn_token != T_RCURLY) {
+		goto error;
+	    }
+	    scan(scanner);
+	    if ((exp = malloc(sizeof(expr_t))) == NULL) {
+		goto error;
+	    }
+	    (void)memset((void *)exp, 0, sizeof(expr_t));
+	    exp->ex_type = E_MAP;
+	    exp->ex_next = NULL;
+	    *expp = exp;
+	    expp = &exp->ex_next;
+	    break;
+
+	abstract_list:
+	    /*
+	     * abstract_list	: T_RBRACKET ;
+	     */
+	    assert(scanner->scn_token == T_RBRACKET);
+	    scan(scanner);
+	    if ((exp = malloc(sizeof(expr_t))) == NULL) {
+		goto error;
+	    }
+	    (void)memset((void *)exp, 0, sizeof(expr_t));
+	    exp->ex_type = E_LIST;
+	    exp->ex_next = NULL;
+	    *expp = exp;
+	    expp = &exp->ex_next;
 	    break;
 	}
 	break;
     }
-accept:
-    *anchor = head;
+    parser->prs_tail = exp;
     return 0;
 
 error:
-    _vnaproperty_expr_free(head);
+    parser_free(parser);
+    errno = EINVAL;
     return -1;
 }
 
+
+/***********************************************************************
+ * Internal Tree Operations
+ **********************************************************************/
+
 /*
- * _vnaproperty_expr_getobj: return the node referended by the given expression
- *   @root:   property data root (can be NULL)
- *   @format: printf-like format string forming the property expression
- *   @ap      variable argument pointer
+ * parse_and_descend: parse the expression and descend down the tree
+ *   @parser:  address of caller-allocated parser state structure
+ *   @rootptr: address of property data root
+ *   @set:     force the tree to conform to the indicated expression
+ *   @format:  printf-like format string forming the property expression
+ *   @ap       variable argument pointer
  */
-const vnaproperty_t *_vnaproperty_expr_getobj(const vnaproperty_t *root,
-	const char *format, va_list ap)
+static vnaproperty_t **parse_and_descend(parser_t *parser,
+	vnaproperty_t **rootptr, bool set, const char *format, va_list ap)
 {
-    vnaproperty_expr_t *head = NULL;
-    vnaproperty_scanner_t vs;
-    const vnaproperty_t *property = NULL;
+    vnaproperty_t **anchor = rootptr;
+    vnaproperty_t *node = *anchor;
+    vnaproperty_t *collection = NULL;
 
     /*
      * Parse the expression.
      */
-    if (_vnaproperty_parse(&vs, &head, (vnaproperty_t *)root,
-		format, ap) == -1) {
-	goto out;
+    if (parse(parser, format, ap) == -1) {
+	return NULL;
     }
 
     /*
-     * Fail if there are extra tokens at the end.
+     * Following the expression list, walk down the tree.
      */
-    if (vs.vs_token != T_EOF) {
-	errno = EINVAL;
-	goto out;
-    }
-
-    /*
-     * If the expression list is '.' or empty, return the root element.
-     */
-    if (head == NULL) {
-	if (root == NULL) {
-	    errno = ENOENT;
-	    goto out;
+    for (expr_t *exp = parser->prs_head; exp != NULL; exp = exp->ex_next) {
+	collection = NULL;
+	if (exp->ex_type == E_DOT) {
+	    assert(exp->ex_next == NULL);
+	    break;
 	}
-	property = root;
-	goto out;
+	switch (exp->ex_type) {
+	case E_MAP:
+	case E_MAP_ELEMENT:
+	    if (node == NULL) {
+		if (!set) {
+		    errno = ENOENT;
+		    goto error;
+		}
+		if ((node = map_alloc()) == NULL) {
+		    goto error;
+		}
+		*anchor = node;
+
+	    } else if (node->vpr_type != VNAPROPERTY_MAP) {
+		if (!set) {
+		    node = NULL;
+		    errno = EINVAL;
+		    goto error;
+		}
+		vnaproperty_free(node);
+		*anchor = node = NULL;
+		if ((node = map_alloc()) == NULL) {
+		    goto error;
+		}
+		*anchor = node;
+	    }
+	    if (exp->ex_type == E_MAP) {
+		assert(exp->ex_next == NULL);
+		break;
+	    }
+	    collection = node;
+	    if ((anchor = map_subtree(node, set,
+			    exp->u.ex_name)) == NULL) {
+		goto error;
+	    }
+	    node = *anchor;
+	    continue;
+
+	case E_LIST:
+	case E_LIST_ELEMENT:
+	case E_LIST_INSERT:
+	case E_LIST_APPEND:
+	    if (node == NULL) {
+		if (!set) {
+		    errno = ENOENT;
+		    goto error;
+		}
+		if ((node = list_alloc()) == NULL) {
+		    goto error;
+		}
+		*anchor = node;
+
+	    } else if (node->vpr_type != VNAPROPERTY_LIST) {
+		if (!set) {
+		    node = NULL;
+		    errno = EINVAL;
+		    goto error;
+		}
+		vnaproperty_free(node);
+		*anchor = node = NULL;
+		if ((node = list_alloc()) == NULL) {
+		    goto error;
+		}
+		*anchor = node;
+	    }
+	    switch (exp->ex_type) {
+	    case E_LIST:
+		assert(exp->ex_next == NULL);
+		break;
+
+	    case E_LIST_ELEMENT:
+		collection = node;
+		if ((anchor = list_subtree(node, set,
+				exp->u.ex_index)) == NULL) {
+		    goto error;
+		}
+		node = *anchor;
+		continue;
+
+	    case E_LIST_INSERT:
+		if (!set) {
+		    errno = EINVAL;
+		    goto error;
+		}
+		collection = node;
+		if ((anchor = list_insert(node, exp->u.ex_index)) == NULL) {
+		    goto error;
+		}
+		node = *anchor;
+		continue;
+
+	    case E_LIST_APPEND:
+		if (!set) {
+		    errno = EINVAL;
+		    goto error;
+		}
+		collection = node;
+		if ((anchor = list_append(node)) == NULL) {
+		    goto error;
+		}
+		node = *anchor;
+		continue;
+
+	    default:
+		abort();
+	    }
+	    break;
+
+	    if (exp->ex_type == E_LIST) {
+		assert(exp->ex_next == NULL);
+		break;
+	    }
+	    collection = node;
+	    if ((anchor = list_subtree(node, set,
+			    exp->u.ex_index)) == NULL) {
+		goto error;
+	    }
+	    node = *anchor;
+	    continue;
+
+	default:
+	    abort();
+	}
     }
+    parser->prs_collection = collection;
+    return anchor;
 
-    /*
-     * If vex_collection is NULL, it means the path leading down to
-     * the property either doesn't exist or the element types don't
-     * match; errno will already be set.
-     */
-    if (head->vex_collection == NULL) {
-	goto out;
-    }
-
-    /*
-     * Get the value from the bottom-most collection.
-     */
-    switch (head->vex_token) {
-    case T_DOT:
-	property = vnaproperty_map_get(head->vex_collection,
-		head->u.vex_name);
-	break;
-
-    case T_LBRACKET:
-	property = vnaproperty_list_get(head->vex_collection,
-		head->u.vex_index);
-	break;
-
-    default:
-	abort();
-    }
-
-out:
-    _vnaproperty_expr_free(head);
-    free((void *)vs.vs_input);
-    return property;
+error:
+    parser_free(parser);
+    return NULL;
 }
 
 /*
- * vnaproperty_expr_vtype: get the type of the given property expression
+ * get_node: parse the expression and return the indicated node
  *   @root:   property data root (can be NULL)
  *   @format: printf-like format string forming the property expression
  *   @ap:     variable argument pointer
  */
-vnaproperty_type_t vnaproperty_expr_vtype(const vnaproperty_t *root,
+static const vnaproperty_t *get_node(const vnaproperty_t *root,
 	const char *format, va_list ap)
 {
-    const vnaproperty_t *property;
+    parser_t parser;
+    scanner_t *scanner = &parser.prs_scn;
+    vnaproperty_t **anchor;
 
-    if ((property = _vnaproperty_expr_getobj(root, format, ap)) == NULL) {
-	return VNAPROPERTY_ERROR;
+    /*
+     * Parse the expression and descend to the requested node.
+     */
+    if ((anchor = parse_and_descend(&parser, (vnaproperty_t **)&root,
+		    /*set*/false, format, ap)) == NULL) {
+	return NULL;
     }
-    return property->vpr_type;
+
+    /*
+     * Make sure there are no unexpected tokens at the end of line.
+     */
+    if (scanner->scn_token != T_EOF) {
+	errno = EINVAL;
+	parser_free(&parser);
+	return NULL;
+    }
+
+    parser_free(&parser);
+    return *anchor;
 }
 
 /*
- * vnaproperty_expr_vcount: return count of elements in given collection
- *   @root:   property data root (can be NULL)
- *   @format: printf-like format string forming the property expression
- *   @ap:     variable argument pointer
+ * vnaproperty_free: free the given tree
+ *   @root: pointer to tree to free
  */
-int vnaproperty_expr_vcount(const vnaproperty_t *root,
-	const char *format, va_list ap)
+static void vnaproperty_free(vnaproperty_t *root)
 {
-    const vnaproperty_t *property;
+    if (root == NULL)
+	return;
 
-    if ((property = _vnaproperty_expr_getobj(root, format, ap)) == NULL) {
-	return -1;
-    }
-    switch (property->vpr_type) {
-    case VNAPROPERTY_MAP:
-	return vnaproperty_map_count(property);
+    assert(root->vpr_type == VNAPROPERTY_SCALAR ||
+           root->vpr_type == VNAPROPERTY_LIST   ||
+	   root->vpr_type == VNAPROPERTY_MAP);
+    switch (root->vpr_type) {
+    case VNAPROPERTY_SCALAR:
+	{
+	    vnaproperty_scalar_t *vpsp = (vnaproperty_scalar_t *)root;
+	    free((void *)vpsp->vps_value);
+	    (void)memset((void *)vpsp, 'X', sizeof(*vpsp));
+	}
+	break;
 
     case VNAPROPERTY_LIST:
-	return vnaproperty_list_count(property);
+	{
+	    vnaproperty_list_t *vplp  = (vnaproperty_list_t *)root;
+	    for (size_t s = 0; s < vplp->vpl_length; ++s) {
+		vnaproperty_free((vnaproperty_t *)vplp->vpl_vector[s]);
+	    }
+	    free((void *)vplp->vpl_vector);
+	    (void)memset((void *)vplp, 'X', sizeof(*vplp));
+	}
+	break;
+
+    case VNAPROPERTY_MAP:
+	{
+	    vnaproperty_map_t *vpmp = (vnaproperty_map_t *)root;
+	    vnaproperty_map_element_t *vmep, *next;
+
+	    for (vmep = vpmp->vpm_order_head; vmep != NULL; vmep = next) {
+		next = vmep->vme_order_next;
+		free((void *)vmep->vme_pair.vmpr_key);
+		vnaproperty_free((vnaproperty_t *)vmep->vme_pair.
+			vmpr_value);
+		memset((void *)vmep, 'X', sizeof(*vmep));
+		free((void *)vmep);
+		vmep = NULL;
+	    }
+	    free((void *)vpmp->vpm_hash_table);
+	    (void)memset((void *)vpmp, 'X', sizeof(*vpmp));
+	}
+	break;
+    }
+    free((void *)root);
+}
+
+
+/***********************************************************************
+ * External API
+ **********************************************************************/
+
+/*
+ * vnaproperty_vtype: get the type of the given property expression
+ *   @root:   property data root (can be NULL)
+ *   @format: printf-like format string forming the property expression
+ *   @ap:     variable argument pointer
+ *
+ * Return:
+ *   'm' map
+ *   'l' list
+ *   's' scalar
+ *   -1  error
+ */
+int vnaproperty_vtype(const vnaproperty_t *root, const char *format, va_list ap) {
+    const vnaproperty_t *node;
+
+    if ((node = get_node(root, format, ap)) == NULL) {
+	return VNAPROPERTY_ERROR;
+    }
+
+    /*
+     * Convert to character.
+     */
+    switch (node->vpr_type) {
+    case VNAPROPERTY_SCALAR:
+	return 's';
+
+    case VNAPROPERTY_MAP:
+	return 'm';
+
+    case VNAPROPERTY_LIST:
+	return 'l';
+
+    default:
+	return -1;
+    }
+}
+
+/*
+ * vnaproperty_vcount: return count of elements in given collection
+ *   @root:   property data root (can be NULL)
+ *   @format: printf-like format string forming the property expression
+ *   @ap:     variable argument pointer
+ */
+int vnaproperty_vcount(const vnaproperty_t *root,
+	const char *format, va_list ap)
+{
+    const vnaproperty_t *node;
+
+    if ((node = get_node(root, format, ap)) == NULL) {
+	return -1;
+    }
+    switch (node->vpr_type) {
+    case VNAPROPERTY_MAP:
+	return map_count(node);
+
+    case VNAPROPERTY_LIST:
+	return list_count(node);
 
     default:
 	break;
@@ -1254,27 +1526,27 @@ int vnaproperty_expr_vcount(const vnaproperty_t *root,
 }
 
 /*
- * vnaproperty_expr_vkeys: return a vector of keys for the given map expr
+ * vnaproperty_vkeys: return a vector of keys for the given map expr
  *   @root:   property data root (can be NULL)
  *   @format: printf-like format string forming the property expression
  *   @ap:     variable argument pointer
  */
-const char **vnaproperty_expr_vkeys(const vnaproperty_t *root,
+const char **vnaproperty_vkeys(const vnaproperty_t *root,
 	const char *format, va_list ap)
 {
-    const vnaproperty_t *property;
+    const vnaproperty_t *node;
     const vnaproperty_map_t *map;
     const vnaproperty_map_element_t *vmep;
     const char **vector, **cpp;
 
-    if ((property = _vnaproperty_expr_getobj(root, format, ap)) == NULL) {
+    if ((node = get_node(root, format, ap)) == NULL) {
 	return NULL;
     }
-    if (property->vpr_type != VNAPROPERTY_MAP) {
+    if (node->vpr_type != VNAPROPERTY_MAP) {
 	errno = EINVAL;
 	return NULL;
     }
-    map = (vnaproperty_map_t *)property;
+    map = (vnaproperty_map_t *)node;
     if ((vector = calloc(map->vpm_count + 1, sizeof(char *))) == NULL) {
 	return NULL;
     }
@@ -1288,319 +1560,890 @@ const char **vnaproperty_expr_vkeys(const vnaproperty_t *root,
 }
 
 /*
- * vnaproperty_expr_vget: get a property value from a property expression
+ * vnaproperty_vget: get a property value from a property expression
  *   @root:   property data root (can be NULL)
  *   @format: printf-like format string forming the property expression
  *   @ap:     variable argument pointer
  */
-const char *vnaproperty_expr_vget(const vnaproperty_t *root,
+const char *vnaproperty_vget(const vnaproperty_t *root,
 	const char *format, va_list ap)
 {
-    const vnaproperty_t *scalar;
+    const vnaproperty_t *node;
 
-    if ((scalar = _vnaproperty_expr_getobj(root, format, ap)) == NULL) {
+    if ((node = get_node(root, format, ap)) == NULL) {
 	return NULL;
     }
-    if (scalar->vpr_type != VNAPROPERTY_SCALAR) {
+    if (node->vpr_type != VNAPROPERTY_SCALAR) {
 	errno = EINVAL;
 	return NULL;
     }
-    return vnaproperty_scalar_get(scalar);
+    return scalar_get(node);
 }
 
 /*
- * vnaproperty_expr_vset: set a property value from a property expression
- *   @anchor: address of root property pointer
- *   @format: printf-like format string forming the property expression
- *   @ap:     variable argument pointer
+ * vnaproperty_vset: set a property value from a property expression
+ *   @rootptr: address of root property pointer
+ *   @format:  printf-like format string forming the property expression
+ *   @ap:      variable argument pointer
  */
-int vnaproperty_expr_vset(vnaproperty_t **anchor, const char *format,
-	va_list ap)
+int vnaproperty_vset(vnaproperty_t **rootptr, const char *format, va_list ap)
 {
-    vnaproperty_expr_t *head = NULL;
-    vnaproperty_scanner_t vs;
+    parser_t parser;
+    scanner_t *scanner = &parser.prs_scn;
+    vnaproperty_t **anchor;
     vnaproperty_t *value = NULL;
-    int rv, result = -1;
+    int rv = -1;
+
+    if ((anchor = parse_and_descend(&parser, rootptr, /*set*/true,
+		    format, ap)) == NULL) {
+	return -1;
+    }
 
     /*
-     * Parse the expression.
+     * Make sure we're not trying to assign to a map or list.
      */
-    if ((rv = _vnaproperty_parse(&vs, &head, *anchor, format, ap)) == -1)
-	goto out;
+    switch (parser.prs_tail->ex_type) {
+    case E_MAP_ELEMENT:
+    case E_LIST_ELEMENT:
+    case E_LIST_INSERT:
+    case E_LIST_APPEND:
+    case E_DOT:
+	break;
 
-    /*
-     * Make sure the current token is T_ASSIGN.  Allocate a new scalar
-     * property from the remaining input text.
-     */
-    if (vs.vs_token != T_ASSIGN) {
+    case E_MAP:
+    case E_LIST:
+    default:
 	errno = EINVAL;
 	goto out;
     }
-    if ((value = vnaproperty_scalar_alloc(vs.vs_position)) == NULL) {
-	goto out;
-    }
 
     /*
-     * Go through the expression list (working from leaf to root).
+     * Get the value to assign.
+     *   foo=text	set foo to a scalar with given text
+     *   foo#		set foo to null
      */
-    for (vnaproperty_expr_t *vexp = head; vexp != NULL; vexp = vexp->vex_next) {
-	vnaproperty_t *collection;
-
-	/*
-	 * If the current collection exists, use it; otherwise,
-	 * allocate a new one.
-	 */
-	if ((collection = vexp->vex_collection) == NULL) {
-	    switch (vexp->vex_token) {
-	    case T_DOT:
-		if ((collection = vnaproperty_map_alloc()) == NULL) {
-		    goto out;
-		}
-		break;
-
-	    case T_LBRACKET:
-		if ((collection = vnaproperty_list_alloc()) == NULL) {
-		    goto out;
-		}
-		break;
-
-	    default:
-		abort();
-	    }
-	}
-
-	/*
-	 * Add the value to the collection.
-	 */
-	switch (vexp->vex_token) {
-	case T_DOT:
-	    if (vnaproperty_map_set(collection, vexp->u.vex_name,
-			value) == -1) {
-		goto out;
-	    }
-	    break;
-
-	case T_LBRACKET:
-	    if (vnaproperty_list_set(collection, vexp->u.vex_index,
-			value) == -1) {
-		goto out;
-	    }
-	    break;
-
-	default:
-	    abort();
-	}
-
-	/*
-	 * If the current collection already existed, then we're done.
-	 * Otherwise, set value to our newly allocated collection and
-	 * keep going.
-	 */
-	if (vexp->vex_collection != NULL) {
-	    assert(collection == vexp->vex_collection);
-	    value = NULL;
-	    result = 0;
+    switch (scanner->scn_token) {
+    case T_ASSIGN:
+	value = scalar_alloc(scanner->scn_position);
+	if (value == NULL) {
 	    goto out;
 	}
-	assert(collection != NULL);
-	value = collection;
+	break;
+
+    case T_HASH:
+	break;
+
+    default:
+	errno = EINVAL;
+	goto out;
     }
 
     /*
-     * Replace *anchor with value.
+     * Free any old value and install the new value.
      */
-    assert(value != NULL);
     vnaproperty_free(*anchor);
     *anchor = value;
-    value = NULL;
-    result = 0;
+    rv = 0;
 
 out:
-    vnaproperty_free(value);
-    _vnaproperty_expr_free(head);
-    free((void *)vs.vs_input);
-    return result;
+    parser_free(&parser);
+    return rv;
 }
 
 /*
- * vnaproperty_expr_vdelete: delete the value described by format
- *   @anchor: address of root property pointer
+ * vnaproperty_vdelete: delete the value described by format
+ *   @rootptr:   address of root property pointer
  *   @format: printf-like format string forming the property expression
  *   @...:    optional variable arguments
  */
-int vnaproperty_expr_vdelete(vnaproperty_t **anchor, const char *format,
+int vnaproperty_vdelete(vnaproperty_t **rootptr, const char *format,
 	va_list ap)
 {
-    vnaproperty_expr_t *head = NULL;
-    vnaproperty_scanner_t vs;
-    vnaproperty_t *property;
-    int rv, result = -1;
+    parser_t parser;
+    scanner_t *scanner = &parser.prs_scn;
+    expr_t *tail;
+    vnaproperty_t **anchor, *collection;
+    int rv = -1;
 
     /*
-     * Parse the expression.
+     * Parse the expression and descend to the requested node.
      */
-    if ((rv = _vnaproperty_parse(&vs, &head, *anchor, format, ap)) == -1)
-	goto out;
+    if ((anchor = parse_and_descend(&parser, rootptr, /*set*/false,
+		    format, ap)) == NULL) {
+	return -1;
+    }
 
     /*
-     * Make sure the current token is T_EOF.
+     * Make sure there are no unexpected trailing tokens.
      */
-    if (vs.vs_token != T_EOF) {
+    if (scanner->scn_token != T_EOF) {
 	errno = EINVAL;
-	goto out;
-    }
-
-    /*
-     * If the expression list is '.' or empty, then delete the root.
-     */
-    if (head == NULL) {
-	vnaproperty_free(*anchor);
-	*anchor = NULL;
-	result = 0;
-	goto out;
-    }
-
-    /*
-     * If vex_collection is NULL, then the path leading down either
-     * doesn't all exist, or something along the way is the wrong
-     * type.  Errno is already set.
-     */
-    if ((property = head->vex_collection) == NULL) {
 	goto out;
     }
 
     /*
      * Delete the indicated key.
      */
-    switch (head->vex_token) {
-    case T_DOT:
-	result = vnaproperty_map_delete(property, head->u.vex_name);
+    tail = parser.prs_tail;
+    collection = parser.prs_collection;
+    switch (tail->ex_type) {
+    case E_MAP_ELEMENT:
+	assert(collection != NULL);
+	rv = map_delete(collection, tail->u.ex_name);
 	goto out;
 
-    case T_LBRACKET:
-	result = vnaproperty_list_delete(property, head->u.vex_index);
+    case E_LIST_ELEMENT:
+	assert(collection != NULL);
+	rv = list_delete(collection, tail->u.ex_index);
 	goto out;
 
     default:
-	abort();
+	vnaproperty_free(*anchor);
+	*anchor = NULL;
     }
+    rv = 0;
 
 out:
-    _vnaproperty_expr_free(head);
-    free((void *)vs.vs_input);
-    return result;
+    parser_free(&parser);
+    return rv;
 }
 
 /*
- * vnaproperty_expr_type: get the type of the given property expression
+ * vnaproperty_get_subtree: get subtree described by format
+ *   @root:   address of root property pointer
+ *   @format: printf-like format string forming the property expression
+ *   @ap:     variable arguments
+ */
+vnaproperty_t *vnaproperty_vget_subtree(const vnaproperty_t *root,
+	const char *format, va_list ap)
+{
+    parser_t parser;
+    scanner_t *scanner = &parser.prs_scn;
+    vnaproperty_t **anchor;
+
+    if ((anchor = parse_and_descend(&parser, (vnaproperty_t **)&root,
+		    /*set*/false, format, ap)) == NULL) {
+	return NULL;
+    }
+
+    /*
+     * Make sure there are no unexpected trailing tokens.
+     */
+    if (scanner->scn_token != T_EOF) {
+	errno = EINVAL;
+	anchor = NULL;
+	goto out;
+    }
+
+out:
+    parser_free(&parser);
+    return *anchor;
+}
+
+/*
+ * vnaproperty_set_subtree: make the tree conform and return address of subtree
+ *   @rootptr: address of root property pointer
+ *   @format:  printf-like format string forming the property expression
+ *   @ap:      variable arguments
+ */
+vnaproperty_t **vnaproperty_vset_subtree(vnaproperty_t **rootptr,
+	const char *format, va_list ap)
+{
+    parser_t parser;
+    scanner_t *scanner = &parser.prs_scn;
+    vnaproperty_t **anchor;
+
+    if ((anchor = parse_and_descend(&parser, rootptr,
+		    /*set*/true, format, ap)) == NULL) {
+	return NULL;
+    }
+
+    /*
+     * Make sure there are no unexpected trailing tokens.
+     */
+    if (scanner->scn_token != T_EOF) {
+	errno = EINVAL;
+	anchor = NULL;
+	goto out;
+    }
+
+out:
+    parser_free(&parser);
+    return anchor;
+}
+
+/*
+ * vnaproperty_type: get the type of the given property expression
  *   @root:   property data root (can be NULL)
  *   @format: printf-like format string forming the expression
  *   @...:    optional variable arguments
  */
-vnaproperty_type_t vnaproperty_expr_type(const vnaproperty_t *root,
-	const char *format, ...)
+int vnaproperty_type(const vnaproperty_t *root, const char *format, ...)
 {
     va_list ap;
-    vnaproperty_type_t type;
+    int type;
 
     va_start(ap, format);
-    type = vnaproperty_expr_vtype(root, format, ap);
+    type = vnaproperty_vtype(root, format, ap);
     va_end(ap);
 
     return type;
 }
 
 /*
- * vnaproperty_expr_count: return count of elements in given collection
+ * vnaproperty_count: return count of elements in given collection
  *   @root:   property data root (can be NULL)
  *   @format: printf-like format string forming the property expression
  *   @...:    optional variable arguments
  */
-int vnaproperty_expr_count(const vnaproperty_t *root,
+int vnaproperty_count(const vnaproperty_t *root,
 	const char *format, ...)
 {
     va_list ap;
     int count;
 
     va_start(ap, format);
-    count = vnaproperty_expr_vcount(root, format, ap);
+    count = vnaproperty_vcount(root, format, ap);
     va_end(ap);
 
     return count;
 }
 
 /*
- * vnaproperty_expr_keys: return a vector of keys for the given map expr
+ * vnaproperty_keys: return a vector of keys for the given map expr
  *   @root:   property data root (can be NULL)
  *   @format: printf-like format string forming the property expression
  *   @...:    optional variable arguments
  *
  * Caller can free the vector by a call to free.
  */
-const char **vnaproperty_expr_keys(const vnaproperty_t *root,
+const char **vnaproperty_keys(const vnaproperty_t *root,
 	const char *format, ...)
 {
     va_list ap;
     const char **keys;
 
     va_start(ap, format);
-    keys = vnaproperty_expr_vkeys(root, format, ap);
+    keys = vnaproperty_vkeys(root, format, ap);
     va_end(ap);
 
     return keys;
 }
 
 /*
- * vnaproperty_expr_get: get a property value from a property expression
+ * vnaproperty_get: get a property value from a property expression
  *   @root:   property data root (can be NULL)
  *   @format: printf-like format string forming the property expression
  *   @...:    optional variable arguments
  */
-const char *vnaproperty_expr_get(const vnaproperty_t *root,
+const char *vnaproperty_get(const vnaproperty_t *root,
 	const char *format, ...)
 {
     va_list ap;
     const char *value;
 
     va_start(ap, format);
-    value = vnaproperty_expr_vget(root, format, ap);
+    value = vnaproperty_vget(root, format, ap);
     va_end(ap);
 
     return value;
 }
 
 /*
- * vnaproperty_expr_set: set a property value from a property expression
- *   @anchor: address of root property pointer
- *   @format: printf-like format string forming the property expression
- *   @...:    optional variable arguments
+ * vnaproperty_set: set a property value from a property expression
+ *   @rootptr: address of root property pointer
+ *   @format:  printf-like format string forming the property expression
+ *   @...:     optional variable arguments
  */
-int vnaproperty_expr_set(vnaproperty_t **anchor, const char *format, ...)
+int vnaproperty_set(vnaproperty_t **rootptr, const char *format, ...)
 {
     va_list ap;
     int rv;
 
     va_start(ap, format);
-    rv = vnaproperty_expr_vset(anchor, format, ap);
+    rv = vnaproperty_vset(rootptr, format, ap);
     va_end(ap);
 
     return rv;
 }
 
 /*
- * vnaproperty_expr_delete: delete the value described by format
- *   @anchor: address of root property pointer
- *   @format: printf-like format string forming the property expression
- *   @...:    optional variable arguments
+ * vnaproperty_delete: delete the value described by format
+ *   @rootptr: address of root property pointer
+ *   @format:  printf-like format string forming the property expression
+ *   @...:     optional variable arguments
  */
-int vnaproperty_expr_delete(vnaproperty_t **anchor, const char *format, ...)
+int vnaproperty_delete(vnaproperty_t **rootptr, const char *format, ...)
 {
     va_list ap;
     int rv;
 
     va_start(ap, format);
-    rv = vnaproperty_expr_vdelete(anchor, format, ap);
+    rv = vnaproperty_vdelete(rootptr, format, ap);
     va_end(ap);
 
     return rv;
+}
+
+/*
+ * vnaproperty_get_subtree: get subtree described by format
+ *   @root:    address of root property pointer
+ *   @format:  printf-like format string forming the property expression
+ *   @...:     optional variable arguments
+ */
+vnaproperty_t *vnaproperty_get_subtree(const vnaproperty_t *root,
+	const char *format, ...)
+{
+    va_list ap;
+    vnaproperty_t *subtree;
+
+    va_start(ap, format);
+    subtree = vnaproperty_vget_subtree(root, format, ap);
+    va_end(ap);
+
+    return subtree;
+}
+
+/*
+ * vnaproperty_set_subtree: make the tree conform and return address of subtree
+ *   @rootptr: address of root property pointer
+ *   @format:  printf-like format string forming the property expression
+ *   @...:     optional variable arguments
+ */
+vnaproperty_t **vnaproperty_set_subtree(vnaproperty_t **rootptr,
+	const char *format, ...)
+{
+    va_list ap;
+    vnaproperty_t **subtree;
+
+    va_start(ap, format);
+    subtree = vnaproperty_vset_subtree(rootptr, format, ap);
+    va_end(ap);
+
+    return subtree;
+}
+
+/*
+ * vnaproperty_quote_key: quote a map ID that contains reserved chars
+ *   @key: map key to quote
+ * 
+ * Caller must free the returned memory by a call to free().
+ */
+char *vnaproperty_quote_key(const char *key)
+{
+    int length;
+    bool *map = NULL;
+    int n_special = 0;
+    char *result = NULL;
+    char *cur;
+
+    /*
+     * Handle NULL.
+     */
+    if (key == NULL) {
+	return NULL;
+    }
+
+    /*
+     * Handle empty string.
+     */
+    if (key[0] == '\000') {
+	result = strdup("");
+	goto out;
+    }
+
+    /*
+     * Allocate a vector of bool to record positions of special characters.
+     */
+    length = strlen(key);
+    if ((map = calloc(length, sizeof(bool))) == NULL) {
+	goto out;
+    }
+
+    /*
+     * Find the positions that require quotes.
+     */
+    if (!ISIDCHAR1(key[0]) || key[0] == '\\') {
+	map[0] = true;
+	++n_special;
+    }
+    {
+	int i;
+
+	for (i = 1; i < length; ++i) {
+	    if (!ISIDCHAR(key[i]) || key[i] == '\\') {
+		map[i] = true;
+		++n_special;
+	    }
+	}
+
+	/*
+	 * Trailing spaces are special.
+	 */
+	while (i > 1 && key[i - 1] == ' ') {
+	    map[--i] = true;
+	    ++n_special;
+	}
+    }
+
+    /*
+     * If no quotes required, return a copy of the original string.
+     */
+    if (n_special == 0) {
+	result = strdup(key);
+	goto out;
+    }
+
+    /*
+     * Form the new string.
+     */
+    if ((result = malloc(length + n_special + 1)) == NULL) {
+	goto out;
+    }
+    cur = result;
+    for (int i = 0; i < length; ++i) {
+	if (map[i]) {
+	    *cur++ = '\\';
+	}
+	*cur++ = key[i];
+    }
+    *cur = '\000';
+
+out:
+    free((void *)map);
+    return result;
+}
+
+/*
+ * dfs_copy: recursely copy properties
+ *   @destination: address of root of the destination tree
+ *   @source: root of the source tree
+ */
+static int dfs_copy(vnaproperty_t **destination, const vnaproperty_t *source)
+{
+    const char **keys = NULL;
+    const char *cp = NULL;
+    int count;
+
+    if (source == NULL) {
+        return 0;
+    }
+    switch (source->vpr_type) {
+    case VNAPROPERTY_SCALAR:
+	if ((cp = scalar_get(source)) != NULL) {
+	    if (vnaproperty_set(destination, ".=%s", cp) == -1) {
+		return -1;
+	    }
+	} else {
+	    if (vnaproperty_set(destination, ".#") == -1) {
+		return -1;
+	    }
+	}
+        break;
+
+    case VNAPROPERTY_MAP:
+        if ((keys = vnaproperty_keys(source, ".")) == NULL) {
+            return -1;
+        }
+        for (const char **cpp = keys; *cpp != NULL; ++cpp) {
+	    char *key = NULL;
+            vnaproperty_t **new_destination, *new_source;
+
+	    if ((key = vnaproperty_quote_key(*cpp)) == NULL) {
+                free((void *)keys);
+                return -1;
+	    }
+            new_destination = vnaproperty_set_subtree(destination, ".%s", key);
+            if (new_destination == NULL) {
+                free((void *)keys);
+		free((void *)key);
+                return -1;
+            }
+            new_source = vnaproperty_get_subtree(source, "%s", key);
+            if (dfs_copy(new_destination, new_source) == -1) {
+                free((void *)keys);
+		free((void *)key);
+                return -1;
+            }
+	    free((void *)key);
+        }
+        free((void *)keys);
+        break;
+
+    case VNAPROPERTY_LIST:
+        count = vnaproperty_count(source, ".");
+        for (int i = 0; i < count; ++i) {
+            vnaproperty_t **new_destination, *new_source;
+
+            new_destination = vnaproperty_set_subtree(destination, "[%d]", i);
+            if (new_destination == NULL) {
+                return -1;
+            }
+            new_source = vnaproperty_get_subtree(source, "[%d]", i);
+            if (dfs_copy(new_destination, new_source) == -1) {
+                return -1;
+            }
+        }
+        break;
+
+    default:
+        abort();
+    }
+    return 0;
+}
+
+/*
+ * vnaproperty_copy: copy a subtree
+ *   @destination: address of node where copy is placed
+ *   @source: subtree to copy
+ */
+int vnaproperty_copy(vnaproperty_t **destination, const vnaproperty_t *source)
+{
+    (void)vnaproperty_delete(destination, ".");
+    return dfs_copy(destination, source);
+}
+
+
+/***********************************************************************
+ * Undocumented YAML Import / Export
+ **********************************************************************/
+
+/*
+ * _vnaproperty_yaml_error: report an error
+ *   @vymlp:    common argument structure
+ *   @category: category of error
+ *   @format:   printf format string
+ */
+void _vnaproperty_yaml_error(const vnaproperty_yaml_t *vymlp,
+	vnaerr_category_t category, const char *format, ...)
+{
+    va_list ap;
+
+    va_start(ap, format);
+    _vnaerr_verror(vymlp->vyml_error_fn, vymlp->vyml_error_arg,
+	    category, format, ap);
+    va_end(ap);
+}
+
+/*
+ * is_yaml_null_value: test if a string is a yaml null value
+ */
+static bool is_yaml_null_value(const char *s)
+{
+    return (s[0] == '~' && s[1] == '\000') ||
+	strcmp(s, "null") == 0 ||
+	strcmp(s, "Null") == 0 ||
+	strcmp(s, "NULL") == 0;
+}
+
+/*
+ * add_mapping_entry: add a simple scalar tag to value mapping entry
+ *   @vymlp:    common argument structure
+ *   @t_map:    map into which we're adding
+ *   @key:      string valued key
+ *   @value:    tag of value to insert
+ */
+static int add_mapping_entry(vnaproperty_yaml_t *vymlp, int t_map,
+	const char *key, int t_value)
+{
+    yaml_document_t *document = vymlp->vyml_document;
+    int t_key;
+
+    errno = 0;
+    if ((t_key = yaml_document_add_scalar(document, NULL,
+		    (yaml_char_t *)key, strlen(key),
+		    YAML_ANY_SCALAR_STYLE)) == 0) {
+	if (errno == 0) {
+	    errno = EINVAL;
+	}
+	_vnaproperty_yaml_error(vymlp, VNAERR_SYSTEM,
+		"yaml_document_add_scalar: %s: %s",
+		vymlp->vyml_filename, strerror(errno));
+	return -1;
+    }
+    if (yaml_document_append_mapping_pair(document, t_map,
+		t_key, t_value) == 0) {
+	if (errno == 0) {
+	    errno = EINVAL;
+	}
+	_vnaproperty_yaml_error(vymlp, VNAERR_SYSTEM,
+		"yaml_document_add_mapping_pair: %s: %s",
+		vymlp->vyml_filename, strerror(errno));
+	return -1;
+    }
+    return 0;
+}
+
+/*
+ * _vnaproperty_yaml_import: import properties from the given YAML document
+ *   @vymlp:    common argument structure
+ *   @rootptr:  address of property tree root
+ *   @vp_node:  yaml node cast to void pointer
+ */
+int _vnaproperty_yaml_import(vnaproperty_yaml_t *vymlp,
+	vnaproperty_t **rootptr, void *vp_node)
+{
+    yaml_document_t *document = vymlp->vyml_document;
+    yaml_node_t *node = vp_node;
+
+    switch (node->type) {
+    case YAML_SCALAR_NODE:
+	/*
+	 * Handle NULL.
+	 *
+	 * Libyaml 0.2.2 parses untagged null values as !!str.	The scalar
+	 * style seems to be the most reliable way to distinguish ~ from
+	 * "~", so we use this instead of the tag.
+	 */
+	if (is_yaml_null_value((const char *)node->data.scalar.value)  &&
+		    node->data.scalar.style == YAML_PLAIN_SCALAR_STYLE) {
+	    return 0;	/* root is already NULL */
+	}
+
+	/*
+	 * Handle scalars.
+	 */
+	if (vnaproperty_set(rootptr, ".=%s",
+		    (const char *)node->data.scalar.value) == -1) {
+	    _vnaproperty_yaml_error(vymlp, VNAERR_SYSTEM,
+		    "_vnaproperty_set: %s: %s",
+		    vymlp->vyml_filename, strerror(errno));
+	    goto out;
+	}
+	return 0;
+
+    case YAML_MAPPING_NODE:
+	{
+	    yaml_node_pair_t *pair;
+
+	    if (vnaproperty_set_subtree(rootptr, "{}") == NULL) {
+		_vnaproperty_yaml_error(vymlp, VNAERR_SYSTEM,
+			"_vnaproperty_set_subtree: %s: %s",
+			vymlp->vyml_filename, strerror(errno));
+		goto out;
+	    }
+	    for (pair = node->data.mapping.pairs.start;
+		    pair < node->data.mapping.pairs.top; ++pair) {
+		yaml_node_t *key, *value;
+		vnaproperty_t **subtree;
+
+		key = yaml_document_get_node(document, pair->key);
+		if (key->type != YAML_SCALAR_NODE) {
+		    _vnaproperty_yaml_error(vymlp, VNAERR_WARNING,
+			    "%s (line %ld) warning: "
+			    "non-scalar property key ignored\n",
+			    vymlp->vyml_filename, key->start_mark.line + 1);
+		    continue;
+		}
+		value = yaml_document_get_node(document, pair->value);
+		if ((subtree = vnaproperty_set_subtree(rootptr, "%s",
+			    (const char *)key->data.scalar.value)) == NULL) {
+		    _vnaproperty_yaml_error(vymlp, VNAERR_SYSTEM,
+			    "_vnaproperty_set_subtree: %s: %s",
+			    vymlp->vyml_filename, strerror(errno));
+		    goto out;
+		}
+		if (_vnaproperty_yaml_import(vymlp, subtree, value) == -1) {
+		    goto out;
+		}
+	    }
+	    return 0;
+	}
+
+    case YAML_SEQUENCE_NODE:
+	{
+	    yaml_node_item_t *item;
+
+	    if (vnaproperty_set_subtree(rootptr, "[]") == NULL) {
+		_vnaproperty_yaml_error(vymlp, VNAERR_SYSTEM,
+			"_vnaproperty_set_subtree: %s: %s",
+			vymlp->vyml_filename, strerror(errno));
+		goto out;
+	    }
+	    for (item = node->data.sequence.items.start;
+		    item < node->data.sequence.items.top; ++item) {
+		int index = item - node->data.sequence.items.start;
+		yaml_node_t *value;
+		vnaproperty_t **subtree;
+
+		value = yaml_document_get_node(document, *item);
+		if ((subtree = vnaproperty_set_subtree(rootptr, "[%d]",
+				index)) == NULL) {
+		    _vnaproperty_yaml_error(vymlp, VNAERR_SYSTEM,
+			    "_vnaproperty_set_subtree: %s: %s",
+			    vymlp->vyml_filename, strerror(errno));
+		    goto out;
+		}
+		if (_vnaproperty_yaml_import(vymlp, subtree, value) == -1) {
+		    goto out;
+		}
+	    }
+	    return 0;
+	}
+
+    default:
+	abort();
+    }
+
+out:
+    return -1;
+}
+
+/*
+ * _vnaproperty_yaml_export: add a property list to the YAML document
+ *   @vymlp:    common argument structure
+ *   @document: yaml document
+ *   @root:     property list root
+ */
+int _vnaproperty_yaml_export(vnaproperty_yaml_t *vymlp,
+	const vnaproperty_t *root)
+{
+    yaml_document_t *document = vymlp->vyml_document;
+
+    /*
+     * Handle NULL
+     */
+    if (root == NULL) {
+	int scalar;
+	static const char *value = "~";
+
+	errno = 0;
+	if ((scalar = yaml_document_add_scalar(document, NULL,
+			(yaml_char_t *)value, strlen(value),
+			YAML_PLAIN_SCALAR_STYLE)) == 0) {
+	    if (errno == 0) {
+		errno = EINVAL;
+	    }
+	    _vnaproperty_yaml_error(vymlp, VNAERR_SYSTEM,
+		    "yaml_document_add_scalar: %s: %s",
+		    vymlp->vyml_filename, strerror(errno));
+	    return -1;
+	}
+	return scalar;
+    }
+
+    /*
+     * Handle scalars, maps and lists.
+     */
+    switch (root->vpr_type) {
+    case VNAPROPERTY_SCALAR:
+	{
+	    int scalar;
+	    const char *value;
+	    yaml_scalar_style_t style = YAML_ANY_SCALAR_STYLE;
+
+	    if ((value = vnaproperty_get(root, ".")) == NULL) {
+		_vnaproperty_yaml_error(vymlp, VNAERR_INTERNAL,
+			"%s: _vnaproperty_get: %s: %s",
+			__func__, vymlp->vyml_filename, strerror(errno));
+		return -1;
+	    }
+	    if (strchr(value, '\n') != NULL) {
+		style = YAML_LITERAL_SCALAR_STYLE;
+	    } else if (is_yaml_null_value(value)) {
+		style = YAML_DOUBLE_QUOTED_SCALAR_STYLE;
+	    }
+	    errno = 0;
+	    if ((scalar = yaml_document_add_scalar(document, NULL,
+			    (yaml_char_t *)value, strlen(value), style)) == 0) {
+		if (errno == 0) {
+		    errno = EINVAL;
+		}
+		_vnaproperty_yaml_error(vymlp, VNAERR_SYSTEM,
+			"yaml_document_add_scalar: %s: %s",
+			vymlp->vyml_filename, strerror(errno));
+		return -1;
+	    }
+	    return scalar;
+	}
+
+    case VNAPROPERTY_MAP:
+	{
+	    int map;
+	    const char **keys = NULL;
+
+	    if ((keys = vnaproperty_keys(root, "{}")) == NULL) {
+		_vnaproperty_yaml_error(vymlp, VNAERR_SYSTEM,
+			"vnaproperty_keys: %s", strerror(errno));
+		return -1;
+	    }
+	    errno = 0;
+	    if ((map = yaml_document_add_mapping(document, NULL,
+			    YAML_ANY_MAPPING_STYLE)) == 0) {
+		if (errno == 0) {
+		    errno = EINVAL;
+		}
+		_vnaproperty_yaml_error(vymlp, VNAERR_SYSTEM,
+			"yaml_document_add_mapping: %s: %s",
+			vymlp->vyml_filename, strerror(errno));
+		return -1;
+	    }
+	    for (const char **cpp = keys; *cpp != NULL; ++cpp) {
+		char *key = NULL;
+		vnaproperty_t *subtree;
+		int value;
+
+		if ((key = vnaproperty_quote_key(*cpp)) == NULL) {
+		    free((void *)keys);
+		    return -1;
+		}
+		subtree = vnaproperty_get_subtree(root, "%s", key);
+		if ((value = _vnaproperty_yaml_export(vymlp, subtree)) == -1) {
+		    free((void *)keys);
+		    free((void *)key);
+		    return -1;
+		}
+		if (add_mapping_entry(vymlp, map, key, value) == -1) {
+		    free((void *)keys);
+		    free((void *)key);
+		    return -1;
+		}
+		free((void *)key);
+	    }
+	    free((void *)keys);
+	    return map;
+	}
+
+    case VNAPROPERTY_LIST:
+	{
+	    int sequence;
+	    int count = vnaproperty_count(root, "[]");
+
+	    errno = 0;
+	    if ((sequence = yaml_document_add_sequence(document, NULL,
+			    YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
+		if (errno == 0) {
+		    errno = EINVAL;
+		}
+		_vnaproperty_yaml_error(vymlp, VNAERR_SYSTEM,
+			"yaml_document_add_sequence: %s: %s",
+			vymlp->vyml_filename, strerror(errno));
+		return -1;
+	    }
+	    for (int i = 0; i < count; ++i) {
+		vnaproperty_t *subtree;
+		int value;
+
+		subtree = vnaproperty_get_subtree(root, "[%d]", i);
+		if ((value = _vnaproperty_yaml_export(vymlp, subtree)) == -1) {
+		    return -1;
+		}
+		if (yaml_document_append_sequence_item(document, sequence,
+			    value) == 0) {
+		    if (errno == 0) {
+			errno = EINVAL;
+		    }
+		    _vnaproperty_yaml_error(vymlp, VNAERR_SYSTEM,
+			    "yaml_document_append_sequence_item: %s: %s",
+			    vymlp->vyml_filename, strerror(errno));
+		    return -1;
+		}
+	    }
+	    return sequence;
+	}
+
+    default:
+	break;
+    }
+    abort();
 }

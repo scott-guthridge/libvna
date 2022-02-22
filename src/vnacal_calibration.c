@@ -111,7 +111,7 @@ double _vnacal_calibration_get_fmax_bound(const vnacal_calibration_t *calp)
 void _vnacal_calibration_free(vnacal_calibration_t *calp)
 {
     if (calp != NULL) {
-	(void)vnaproperty_expr_delete(&calp->cal_properties, ".");
+	(void)vnaproperty_delete(&calp->cal_properties, ".");
 	for (int term = 0; term < calp->cal_error_terms; ++term) {
 	    free((void *)calp->cal_error_term_vector[term]);
 	}

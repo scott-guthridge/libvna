@@ -27,9 +27,8 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include "vnaproperty_internal.h"
+#include "vnaproperty.h"
 #include "libt.h"
-
 
 /*
  * Options
@@ -49,6 +48,7 @@ int opt_v = 0;
 
 /*
  * collection of words randomly chosen from /usr/share/dict/words
+ * plus a few special cases
  */
 static const char *words[] = {
     "done",
@@ -81,7 +81,9 @@ static const char *words[] = {
     "Wattenscheid",
     "imitator",
     "Evert",
-    "tropaeolaceous"
+    "tropaeolaceous",
+    "This is a phrase\\.",
+    "\\[specials and trailing spaces\\]\\ \\ "
 };
 #define N_WORDS		(sizeof(words) / sizeof(char *))
 
@@ -90,61 +92,72 @@ static const char *words[] = {
  */
 static libt_result_t test_vnaproperty_map()
 {
-    vnaproperty_t *map;
-    int length;
-    vnaproperty_t *first_scalar = NULL;
+    vnaproperty_t *root = NULL;
+    int type = -1;
+    int count, rv;
+    const char **keys = NULL;
     libt_result_t result = T_SKIPPED;
 
     /*
-     * Test alloc and get_type.
+     * Test alloc, type, count and keys of an empty map.
      */
-    map = vnaproperty_map_alloc();
-    if (map == NULL) {
-	(void)printf("vnaproperty_map_alloc: %s\n", strerror(errno));
+    if (vnaproperty_set_subtree(&root, "{}") == NULL) {
+	(void)printf("1: vnaproperty_set_subtree: %s\n", strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
-    if (vnaproperty_type(map) != VNAPROPERTY_MAP) {
-	(void)printf("vnaproperty_type(map) != VNAPROPERTY_MAP\n");
+    if ((type = vnaproperty_type(root, ".")) != 'm') {
+	(void)printf("2: vnaproperty_type: 0x%04X != 'm'\n",
+		(int)type);
 	result = T_FAIL;
 	goto out;
     }
+    if ((count = vnaproperty_count(root, ".")) != 0) {
+	(void)printf("3: vnaproperty_count: %d != 0\n", count);
+	result = T_FAIL;
+	goto out;
+    }
+    if ((keys = vnaproperty_keys(root, "{}")) == NULL) {
+	(void)printf("4: vnaproperty_keys: returned NULL\n");
+	result = T_FAIL;
+	goto out;
+    }
+    if (keys[0] != NULL) {
+	(void)printf("5: keys[0] (%s) != NULL\n", keys[0]);
+	result = T_FAIL;
+	goto out;
+    }
+    free((void *)keys);
+    keys = NULL;
 
     /*
      * Test set.
      */
     for (int i = 0; i < N_WORDS; ++i) {
-	vnaproperty_t *scalar;
-	char buf[3 * sizeof(int) + 1];
-
-	length = vnaproperty_map_count(map);
-	if (length == -1) {
-	    (void)printf("vnaproperty_map_count: %s (%d)\n",
-		    strerror(errno), i);
-	}
-	if (length != i) {
-	    (void)printf("vnaproperty_map_count mismatch (%d != %d)\n",
-		    (int)length, i);
+	if (vnaproperty_set(&root, "%s=%d", words[i], i) == -1) {
+	    (void)printf("10[%d]: vnaproperty_set: %s\n", i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
-	(void)sprintf(buf, "%d", i);
-	if ((scalar = vnaproperty_scalar_alloc(buf)) == NULL) {
-	    (void)printf("vnaproperty_scalar_alloc: %s\n", strerror(errno));
+	if ((count = vnaproperty_count(root, ".")) == -1) {
+	    (void)printf("11[%d]: vnaproperty_count: %s\n", i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
-	if (vnaproperty_map_set(map, words[i], scalar) == -1) {
-	    (void)printf("vnaproperty_map_set: %s (%d)\n",
-		    strerror(errno), i);
+	if (count != i + 1) {
+	    (void)printf("12[%d]: vnaproperty_count: %d != %d\n",
+		    i, count, i + 1);
 	    result = T_FAIL;
 	    goto out;
 	}
     }
-    length = vnaproperty_map_count(map);
-    if (length != N_WORDS) {
-	(void)printf("vnaproperty_map_count mismatch (%d != %d)\n",
-		(int)length, (int)N_WORDS);
+    if ((count = vnaproperty_count(root, ".")) == -1) {
+	(void)printf("13: vnaproperty_count: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
+    }
+    if (count != N_WORDS) {
+	(void)printf("14: vnaproperty_count: %d != %d\n", count, (int)N_WORDS);
 	result = T_FAIL;
 	goto out;
     }
@@ -153,45 +166,27 @@ static libt_result_t test_vnaproperty_map()
      * Test get.
      */
     for (int i = 0; i < N_WORDS; ++i) {
-	vnaproperty_t *scalar;
 	const char *value;
-	char buf[3 * sizeof(int) + 1];
 
-	(void)sprintf(buf, "%d", i);
-	if ((scalar = vnaproperty_map_get(map, words[i])) == NULL) {
-	    (void)printf("vnaproperty_map_get: %s (%s)\n",
-		    strerror(errno), words[i]);
+	errno = 0;
+	if ((value = vnaproperty_get(root, words[i])) == NULL) {
+	    (void)printf("20[%d]: vnaproperty_get: %s\n", i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
-	if (vnaproperty_type(scalar) != VNAPROPERTY_SCALAR) {
-	    (void)printf("retrieved list element %d not a scalar\n", i);
-	    result = T_FAIL;
-	    goto out;
-	}
-	if ((value = vnaproperty_scalar_get(scalar)) == NULL) {
-	    (void)printf("vnaproperty_scalar_get: %s (%d)\n",
-		    strerror(errno), i);
-	    result = T_FAIL;
-	    goto out;
-	}
-	if (strcmp(value, buf) != 0) {
-	    (void)printf("vnaproperty_list_get miscompare \"%s\" != \"%s\"\n",
-		value, buf);
+	if (atoi(value) != i) {
+	    (void)printf("21[%d]: vnaproperty_get: %s != %d\n", i, value, i);
 	    result = T_FAIL;
 	    goto out;
 	}
     }
-    first_scalar = vnaproperty_map_get(map, words[0]);
-    assert(first_scalar != NULL);
-    assert(vnaproperty_type(first_scalar) == VNAPROPERTY_SCALAR);
 
     /*
      * Test get of non-existent.
      */
     errno = 0;
-    if (vnaproperty_map_get(map, "NotInList") != NULL || errno != ENOENT) {
-	(void)printf("vnaproperty_map_get: %s (NotInList)\n",
+    if (vnaproperty_get(root, "NotInList") != NULL || errno != ENOENT) {
+	(void)printf("30: vnaproperty_get: %s (NotInList)\n",
 		strerror(errno));
 	result = T_FAIL;
 	goto out;
@@ -201,132 +196,86 @@ static libt_result_t test_vnaproperty_map()
      * Test change via set.
      */
     for (int i = N_WORDS-1; i >= 0; --i) {
-	vnaproperty_t *scalar;
-	char buf[3 * sizeof(int) + 2];
-
-	(void)sprintf(buf, "%d", -i);
-	if ((scalar = vnaproperty_scalar_alloc(buf)) == NULL) {
-	    (void)printf("vnaproperty_scalar_alloc: %s\n", strerror(errno));
+	if (vnaproperty_set(&root, "%s=%d", words[i], -i) == -1) {
+	    (void)printf("40[%d]: vnaproperty_set: %s\n", i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
-	if (vnaproperty_map_set(map, words[i], scalar) == -1) {
-	    (void)printf("vnaproperty_map_set: %s (%d)\n",
-		    strerror(errno), i);
+	if ((count = vnaproperty_count(root, ".")) == -1) {
+	    (void)printf("41: vnaproperty_count: %s\n", strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
-	length = vnaproperty_map_count(map);
-	if (length == -1) {
-	    (void)printf("vnaproperty_map_count: %s (%d)\n",
-		    strerror(errno), i);
-	}
-	if (length != N_WORDS) {
-	    (void)printf("vnaproperty_map_count mismatch (%d != %d)\n",
-		    (int)length, (int)N_WORDS);
+	if (count != N_WORDS) {
+	    (void)printf("42[%d]: vnaproperty_count: %d != %d\n", i, count, i);
 	    result = T_FAIL;
 	    goto out;
 	}
     }
     for (int i = 0; i < N_WORDS; ++i) {
-	vnaproperty_t *scalar;
 	const char *value;
-	char buf[3 * sizeof(int) + 2];
 
-	(void)sprintf(buf, "%d", -i);
-	if ((scalar = vnaproperty_map_get(map, words[i])) == NULL) {
-	    (void)printf("vnaproperty_map_get: %s (%s)\n",
-		    strerror(errno), words[i]);
+	errno = 0;
+	if ((value = vnaproperty_get(root, words[i])) == NULL) {
+	    (void)printf("43[%d]: vnaproperty_get: %s\n", i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
-	if (vnaproperty_type(scalar) != VNAPROPERTY_SCALAR) {
-	    (void)printf("retrieved list element %d not a scalar\n", i);
-	    result = T_FAIL;
-	    goto out;
-	}
-	if ((value = vnaproperty_scalar_get(scalar)) == NULL) {
-	    (void)printf("vnaproperty_scalar_get: %s (%d)\n",
-		    strerror(errno), i);
-	    result = T_FAIL;
-	    goto out;
-	}
-	if (strcmp(value, buf) != 0) {
-	    (void)printf("vnaproperty_list_get miscompare \"%s\" != \"%s\"\n",
-		value, buf);
+	if (atoi(value) != -i) {
+	    (void)printf("44[%d]: vnaproperty_get: %s != %d\n", i, value, -i);
 	    result = T_FAIL;
 	    goto out;
 	}
     }
-    if (vnaproperty_type(first_scalar) == VNAPROPERTY_SCALAR) {
-	(void)printf("first unheld scalar remained on re-set\n");
-	result = T_FAIL;
-	goto out;
-    }
-    first_scalar = vnaproperty_map_get(map, words[0]);
-    assert(first_scalar != NULL);
-    assert(vnaproperty_type(first_scalar) == VNAPROPERTY_SCALAR);
 
     /*
      * Test delete by deleting all the odd words.
      */
     for (int i = 0; i < N_WORDS / 2; ++i) {
-	if (vnaproperty_map_delete(map, words[2 * i + 1]) == -1) {
-	    (void)printf("vnaproperty_map_delete: %s (%s)\n",
-		    strerror(errno), words[i]);
+	if (vnaproperty_delete(&root, "%s", words[2 * i + 1]) == -1) {
+	    (void)printf("50[%d]: vnaproperty_delete: %s\n",
+		    i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
 	}
-	length = vnaproperty_map_count(map);
-	if (length == -1) {
-	    (void)printf("vnaproperty_map_count: %s (%d)\n",
-		    strerror(errno), i);
+	if ((count = vnaproperty_count(root, "{}")) == -1) {
+	    (void)printf("51: vnaproperty_count: %s\n", strerror(errno));
+	    result = T_FAIL;
+	    goto out;
 	}
-	if (length != N_WORDS - i - 1) {
-	    (void)printf("vnaproperty_map_count mismatch (%d != %d)\n",
-		    (int)length, (int)N_WORDS - i - 1);
+	if (count != N_WORDS - i - 1) {
+	    (void)printf("52[%d]: vnaproperty_count: %d != %d\n", i, count, i);
 	    result = T_FAIL;
 	    goto out;
 	}
     }
     for (int i = 0; i < N_WORDS; ++i) {
-	vnaproperty_t *scalar;
 	const char *value;
-	char buf[3 * sizeof(int) + 2];
 
 	errno = 0;
-	scalar = vnaproperty_map_get(map, words[i]);
-	if (i & 1) {	/* odd should no longer be there */
-	    if (scalar != NULL || errno != ENOENT) {
-		(void)printf("vnaproperty_scalar_get: %s "
-			"(still there %s)\n",
-			strerror(errno), words[i]);
+	value = vnaproperty_get(root, words[i]);
+	if (i & 1) {
+	    if (value != NULL) {
+		(void)printf("53[%d]: deleted element \"%s\" should be NULL\n",
+			i, value);
+		result = T_FAIL;
+		goto out;
+	    }
+	    if (errno != ENOENT) {
+		(void)printf("54[%d]: %s: errno should be ENOENT\n",
+			i, strerror(errno));
 		result = T_FAIL;
 		goto out;
 	    }
 	    continue;
 	}
-	if (scalar == NULL) {
-	    (void)printf("vnaproperty_map_get: %s (%s)\n",
-		    strerror(errno), words[i]);
+	if (value == NULL) {
+	    (void)printf("55[%d]: vnaproperty_get: unexpected NULL\n", i);
 	    result = T_FAIL;
 	    goto out;
 	}
-	if (vnaproperty_type(scalar) != VNAPROPERTY_SCALAR) {
-	    (void)printf("retrieved list element %d not a scalar\n", i);
-	    result = T_FAIL;
-	    goto out;
-	}
-	if ((value = vnaproperty_scalar_get(scalar)) == NULL) {
-	    (void)printf("vnaproperty_scalar_get: %s (%d)\n",
-		    strerror(errno), i);
-	    result = T_FAIL;
-	    goto out;
-	}
-	(void)sprintf(buf, "%d", -i);
-	if (strcmp(value, buf) != 0) {
-	    (void)printf("vnaproperty_list_get miscompare \"%s\" != \"%s\"\n",
-		value, buf);
+	if (atoi(value) != -i) {
+	    (void)printf("56[%d]: vnaproperty_get: %s != %d\n", i, value, -i);
 	    result = T_FAIL;
 	    goto out;
 	}
@@ -336,85 +285,57 @@ static libt_result_t test_vnaproperty_map()
      * Test delete of non-existent.
      */
     errno = 0;
-    if (vnaproperty_map_delete(map, "NotInList") != -1 || errno != ENOENT) {
-	(void)printf("vnaproperty_map_delete: %s (NotInList)\n",
-		strerror(errno));
+    if ((rv = vnaproperty_delete(&root, "NotInList")) != -1) {
+	(void)printf("60: delete of non-existent returned %d", rv);
 	result = T_FAIL;
 	goto out;
     }
-    length = vnaproperty_map_count(map);
-    if (length == -1) {
-	(void)printf("vnaproperty_map_count: %s (NotInList)\n",
-		strerror(errno));
-    }
-    if (length != (N_WORDS + 1) / 2) {
-	(void)printf("vnaproperty_map_count mismatch (%d != %d)\n",
-		(int)length, (int)(N_WORDS + 1) / 2);
+    if (errno != ENOENT) {
+	(void)printf("61: %s: errno should be ENOENT", strerror(errno));
 	result = T_FAIL;
 	goto out;
     }
-
-    /*
-     * Test iteration.
-     */
-    {
-	const vnaproperty_map_pair_t *vmprp;
-	int count = 0;
-
-	errno = 0;
-	if ((vmprp = vnaproperty_map_begin(map)) == NULL) {
-	    (void)printf("vnaproperty_map_begin: %s\n", strerror(errno));
-	    result = T_FAIL;
-	    goto out;
-	}
-	do {
-	    if (strcmp(vmprp->vmpr_key, words[2 * count]) != 0) {
-		(void)printf("iteration miscompare \"%s\" != \"%s\"\n",
-		    vmprp->vmpr_key, words[2 * count]);
-		result = T_FAIL;
-		goto out;
-	    }
-	    ++count;
-	    vmprp = vnaproperty_map_next(vmprp);
-	} while (vmprp != NULL);
-	if (count != (N_WORDS + 1) / 2) {
-	    (void)printf("iteration length mismatch (%d != %d)\n",
-		    (int)count, (int)(N_WORDS + 1) / 2);
-	    result = T_FAIL;
-	}
+    if ((count = vnaproperty_count(root, "{}")) == -1) {
+	(void)printf("62: vnaproperty_count: %s\n", strerror(errno));
+	result = T_FAIL;
+	goto out;
     }
-
-    /*
-     * Test hold and free.
-     */
-    {
-	vnaproperty_hold(map);
-	vnaproperty_free(map);
-	if (vnaproperty_type(map) != VNAPROPERTY_MAP) {
-	    (void)printf("held map type changed on free\n");
-	    result = T_FAIL;
-	    goto out;
-	}
-	if (vnaproperty_type(first_scalar) != VNAPROPERTY_SCALAR) {
-	    (void)printf("first held list scalar element type changed "
-		    "on free\n");
-	    result = T_FAIL;
-	    goto out;
-	}
-	vnaproperty_free(map);
-	if (vnaproperty_type(map) == VNAPROPERTY_LIST) {
-	    (void)printf("unheld map type remained on free\n");
-	    result = T_FAIL;
-	    goto out;
-	}
-	if (vnaproperty_type(first_scalar) == VNAPROPERTY_SCALAR) {
-	    (void)printf("first unheld list scalar element type "
-		    "remained on free\n");
-	    result = T_FAIL;
-	    goto out;
-	}
+    if (count != (N_WORDS + 1) / 2) {
+	(void)printf("63: vnaproperty_count: %d != %d\n",
+		count, (int)(N_WORDS + 1) / 2);
+	result = T_FAIL;
+	goto out;
     }
     result = T_PASS;
+
+    /*
+     * Test keys and quote_key.
+     */
+    if ((keys = vnaproperty_keys(root, ".")) == NULL) {
+	(void)printf("70: vnaproperty_keys: returned NULL\n");
+	result = T_FAIL;
+	goto out;
+    }
+    count = 0;
+    for (const char **cpp = keys; *cpp != NULL; ++cpp, ++count) {
+	char *quoted = vnaproperty_quote_key(*cpp);
+
+	if (strcmp(quoted, words[2 * count]) != 0) {
+	    (void)printf("71[%d]: key \"%s\" != \"%s\"\n",
+		count, quoted, words[2 * count]);
+	    free((void *)quoted);
+	    result = T_FAIL;
+	    goto out;
+	}
+	free((void *)quoted);
+    }
+    if (count != (N_WORDS + 1) / 2) {
+	(void)printf("72: vnaproperty_keys returned only %d of %d keys\n",
+		count, (int)(N_WORDS + 1) / 2);
+	result = T_FAIL;
+	goto out;
+    }
+    free((void *)keys);
 
 out:
     libt_report(result);;
