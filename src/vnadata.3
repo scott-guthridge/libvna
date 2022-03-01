@@ -114,7 +114,7 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .\" --------------------------------------------------------------------------
 .SS "Data Elements"
 .PP
-.BI "double complex vnadata_get_cell(vnadata_t *" vdp ", int " findex " ,
+.BI "double complex vnadata_get_cell(vnadata_t *" vdp ", int " findex ,
 .if n .in +4n
 .BI "int " row ", int " column );
 .if n .in -4n
@@ -338,8 +338,7 @@ internally by vnadata.
 .SS "Ordinary System Impedances"
 .PP
 The \fBvnadata_get_z0\fP() and \fBvnadata_set_z0\fP() functions get and
-set the system impedance (also known as reference impedance) for the
-given \fIport\fP.
+set the system impedance for the given \fIport\fP.
 The \fBvnadata_get_z0_vector\fP() and \fBvnadata_set_z0_vector\fP()
 functions get and set system impedances for all ports, where the length
 of \fIz0_vector\fP is the maximum of \fIrows\fP and \fIcolumns\fP.
@@ -396,7 +395,7 @@ the data.
 If \fIfilename\fP ends with \.ts, \.s1p, \.s2p, \.s3p or \.s4p, then
 \fBvnadata_load\fP() loads Touchstone format with version determined
 from the contents of the file.
-If \fIfilename\fP ends \.npd, then \fBvnadata_load\fP() loads NPD format.
+If \fIfilename\fP ends in \.npd, then \fBvnadata_load\fP() loads NPD format.
 If the type cannot be determined from \fIfilename\fP, and the
 \fBvnadata_t\fP structure already has a filetype set through
 \fBvnadata_set_filetype\fP() or a previous load, it uses the existing
@@ -504,7 +503,7 @@ after a call to \fBvnadata_load\fP(), \fBvnadata_fload\fP() or
 .PP
 If \fBvnadata_set_format\fP() isn't called, \fBvnadata_save\fP() and
 \fBvnadata_fsave\fP() take the parameter type from the \fBvnadata_t\fP
-structure, use default coordinates \(lqri\(rq.
+structure and use default coordinates \(lqri\(rq.
 .\"
 .PP
 The \fBvnadata_get_fprecision\fP(), \fBvnadata_set_fprecision\fP(),
@@ -528,24 +527,6 @@ See \fBvnaerr\fP(3).
 .SH EXAMPLES
 .nf
 .ft CW
-/*
- * Vector Network Analyzer Library
- * Copyright © 2020, 2021 D Scott Guthridge <scott_guthridge@rompromity.net>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published
- * by the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #include <complex.h>
 #include <math.h>
 #include <stdio.h>
@@ -693,7 +674,7 @@ int main(int argc, char **argv)
 }
 .ft R
 .fi
-.\\"
+.\"
 .SH "SEE ALSO"
 .BR vnacal "(3), " vnacal_new "(3), " vnaconv "(3), " vnaerr "(3),"
 .BR vnacal_parameter "(3)"

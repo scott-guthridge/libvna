@@ -74,7 +74,8 @@ int main(int argc, char **argv)
     }
 
     /*
-     * Save the parameters in Z real-imaginary, S dB, and Zin magnitude-angle formats.
+     * Save the parameters in Z real-imaginary, S dB, and Zin
+     * magnitude-angle formats.
      */
     if (vnadata_set_format(vdp, "Zri,SdB,Zinma") == -1) {
 	exit(4);

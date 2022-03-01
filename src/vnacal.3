@@ -246,7 +246,7 @@ The following sections document these functions in more detail.
 .PP
 \fBvnacal_create\fP() and \fBvnacal_load\fP() return pointers to opaque
 \fBvnacal_t\fP structures used by the other vnacal library functions.
-\fBvnacal_create\fP() is used when we're starting a new calibration;
+\fBvnacal_create\fP() is used when we're creating a new calibration file;
 \fBvnacal_load\fP() is used to load previously saved calibration data
 from a file.
 The \fBvnacal_t\fP structure is a container that stores one or more
@@ -507,9 +507,9 @@ For example vnacal_property_delete(vcp, set, "detectorMatrix") deletes
 ".") deletes all properties.
 .PP
 The \fBvnacal_property_type\fP() function returns 'm' if the descriptor
-refers to a key-value map, 'l' if the descriptor refers to a list, or
-'s' if the descriptor refers to a scalar.
-Given the detectorMatrix example above:
+refers to a key-value map, 'l' if the descriptor refers to a list, or 's'
+if the descriptor refers to a scalar.  Given the detectorMatrix example
+above:
 .sp
 .RS +4n
 vnacal_property_type(vcp, ci, ".") returns 'm',
@@ -610,5 +610,5 @@ Example programs can be found in <install-prefix>/share/doc/libvna.
 .\" .fi
 .\"
 .SH "SEE ALSO"
-.BR vnacal "(3), " vnaconv "(3), " vnadata "(3), " vnaerr "(3),"
+.BR vnacal_new "(3), " vnaconv "(3), " vnadata "(3), " vnaerr "(3),"
 .BR vnacal_parameter "(3), " vnaproperty "(3)"

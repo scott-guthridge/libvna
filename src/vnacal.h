@@ -652,6 +652,7 @@ extern int vnacal_apply_m(vnacal_t *vcp, int ci,
 	double complex *const *m, int m_rows, int m_columns,
 	vnadata_t *s_parameters);
 
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

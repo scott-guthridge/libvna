@@ -18,7 +18,7 @@
 .TH VNACAL_NEW 3 "FEB 2021" GNU
 .nh
 .SH NAME
-vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new_add_single_reflect, vnacal_new_add_single_reflect_m, vnacal_new_add_double_reflect, vnacal_new_add_double_reflect_m, vnacal_new_add_through, vnacal_new_add_through_m, vnacal_new_add_line, vnacal_new_add_line_m, vnacal_new_add_mapped_matrix, vnacal_new_add_mapped_matrix_m, vnacal_new_solve, vnacal_new_free \- find error parameters from measured standards
+vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new_add_single_reflect, vnacal_new_add_single_reflect_m, vnacal_new_add_double_reflect, vnacal_new_add_double_reflect_m, vnacal_new_add_through, vnacal_new_add_through_m, vnacal_new_add_line, vnacal_new_add_line_m, vnacal_new_add_mapped_matrix, vnacal_new_add_mapped_matrix_m, vnacal_new_solve, vnacal_new_free \- find error terms from measured standards
 .\"
 .SH SYNOPSIS
 .B #include <vnacal.h>
@@ -147,9 +147,9 @@ Link with \fI-lvna\fP \fI-lyaml\fP \fI-lm\fP.
 .sp
 .\"
 .SH DESCRIPTION
-These functions find error parameters for vector network analyzers (VNAs)
+These functions find error terms for vector network analyzers (VNAs)
 from measurements of calibration standards.
-The resulting error parameters can be subsequently used to correct for
+The resulting error terms can be subsequently used to correct for
 errors when measuring an unknown device under test (DUT).
 .PP
 The overall flow is as follows.
@@ -176,12 +176,12 @@ following values:
 .TS
 tab(;);
 ll.
-VNACAL_T8; 8-term T parameters
-VNACAL_U8; 8-term U (inverse T) parameters
+VNACAL_T8; 8-term T terms
+VNACAL_U8; 8-term U (inverse T) terms
 VNACAL_TE10; 8-term T plus off-diagonal E11 leakage terms
 VNACAL_UE10; 8-term U plus off-diagonal E11 leakage terms
-VNACAL_T16;16-term T parameters
-VNACAL_U16;16-term U (inverse T) parameters
+VNACAL_T16;16-term T terms
+VNACAL_U16;16-term U (inverse T) terms
 VNACAL_UE14;14-term columns x (rows x 1) U7 systems
 VNACAL_E12;12-term generalized classic SOLT
 .TE
@@ -202,7 +202,7 @@ If instead of having detect-only ports, a given VNA has some number of
 transmit-only ports, it can be modeled by making \fIcolumns\fP greater
 than \fIrows\fP.
 In all cases, however, the low-numbered ports forming the square portion
-of the matrix must both be able to both transmit and detect, i.e. for the
+of the matrix must be able to both transmit and detect, i.e. for the
 purpose of calibration, any detect-only or transmit-only ports must be
 given the highest port numbers, and the VNA cannot have both.
 .\"
@@ -273,7 +273,7 @@ series of rows x 1 independent systems.
 Because of this, this type is able to correct errors in a switch that
 lies between the detectors and device under test.
 It's the only type with this property.
-Internally, E12 is computed using U parameters; therefore, any of the
+Internally, E12 is computed using U terms; therefore, any of the
 calibration techniques that work for T and U also work for E12.
 At least four two-port standards are needed to solve the 2x2 E12
 calibration.
@@ -318,25 +318,24 @@ measurement matrix using
 .el \{\
 \fIb a\fP^-1.
 .\}
-For E12 error terms, the calibration is a \fIcolumns\fP long sequence
-of independent \fIrows\fP x 1 systems; therefore, \fIa\fP is a row of
-1x1 matrices, or equivalently a row vector of reference values.
+For E12 and UE14 error terms, the calibration is a \fIcolumns\fP long
+sequence of independent \fIrows\fP x 1 systems; therefore, \fIa\fP is
+a row of 1x1 matrices, or equivalently a row vector of reference values.
 If the VNA doesn't measure separate a and b parameters, use the \fIm\fP
 form.
-Whichever form is used should be used consistently for both calibration
-and application.
+Use the same form consistently between calibration and application.
 .PP
 It's always permitted to specify the full \fIrows\fP x \fIcolumns\fP
 measurement matrix representing all VNA ports, even though the calibration
-standard may have fewer ports \- for calibration types with inter-port
-leakage terms, specifying the full matrix is helpful in determining
-leakage terms.
-It's usually also possible, however, to give an abbreviated measurement
-matrix where the number of rows or columns is equal to the number of
-ports of the standard being measured.
-For example, in type T8, if we're adding a through standard, the
-measurement matrix can be \fIrows\fP x \fIcolumns\fP, 2 x \fIcolumns\fP,
-\fIrows\fP x 2, or 2x2.
+standard may have fewer ports.
+For calibration types with inter-port leakage terms, specifying the full
+matrix is helpful for determining leakage terms.
+However, it's usually also possible to give an abbreviated measurement
+matrix in which either the number of rows or the number of columns is equal
+to the number of ports of the standard being measured.
+For example, in type T8, if we're adding a reflect standard, the
+measurement matrix can be \fIrows\fP x \fIcolumns\fP, 1 x \fIcolumns\fP,
+\fIrows\fP x 1, or 1x1.
 In T16, however, \fIb_columns\fP or \fIm_columns\fP must be the full
 set of calibration columns, and in U16, \fIb_rows\fP or \fIm_rows\fP
 must be the full set of calibration rows.
@@ -364,7 +363,7 @@ used by the other functions.
 The \fIvcp\fP parameter is a pointer to a \fBvnacal_t\fP structure obtained
 from \fBvnacal_create\fP() or \fBvnacal_load\fP().
 The \fItype\fP, \fIrows\fP and \fIcolumns\fP parameters determine the
-type and dimensions of error parameters as described above.
+type and dimensions of error terms as described above.
 The \fIfrequencies\fP parameter gives the number of frequency points in
 the calibration.
 .PP
@@ -412,7 +411,7 @@ It may be \s-2NULL\s+2 if the number of VNA ports is equal to the
 number of ports of the standard and the ports are connected in order.
 .PP
 \fBvnacal_new_solve\fP() uses the added measurements to solve for
-the error parameters.  It returns 0 on success.
+the error terms.  It returns 0 on success.
 After calling \fBvnacal_new_solve\fP(), it is permitted to add additional
 measurements and repeat the call, for example if \fBvnacal_new_solve\fP()
 fails due to an insufficient number of measurements.
@@ -441,5 +440,5 @@ A function was called with an invalid parameter.
 .\" .SH BUGS
 .\"
 .SH "SEE ALSO"
-.BR vnacal_new "(3), " vnaconv "(3), " vnadata "(3), " vnaerr "(3),"
+.BR vnacal "(3), " vnaconv "(3), " vnadata "(3), " vnaerr "(3),"
 .BR vnacal_parameter "(3)"
