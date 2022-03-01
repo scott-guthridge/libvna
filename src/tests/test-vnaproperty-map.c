@@ -169,7 +169,7 @@ static libt_result_t test_vnaproperty_map()
 	const char *value;
 
 	errno = 0;
-	if ((value = vnaproperty_get(root, words[i])) == NULL) {
+	if ((value = vnaproperty_get(root, "%s", words[i])) == NULL) {
 	    (void)printf("20[%d]: vnaproperty_get: %s\n", i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
@@ -216,7 +216,7 @@ static libt_result_t test_vnaproperty_map()
 	const char *value;
 
 	errno = 0;
-	if ((value = vnaproperty_get(root, words[i])) == NULL) {
+	if ((value = vnaproperty_get(root, "%s", words[i])) == NULL) {
 	    (void)printf("43[%d]: vnaproperty_get: %s\n", i, strerror(errno));
 	    result = T_FAIL;
 	    goto out;
@@ -253,7 +253,7 @@ static libt_result_t test_vnaproperty_map()
 	const char *value;
 
 	errno = 0;
-	value = vnaproperty_get(root, words[i]);
+	value = vnaproperty_get(root, "%s", words[i]);
 	if (i & 1) {
 	    if (value != NULL) {
 		(void)printf("53[%d]: deleted element \"%s\" should be NULL\n",
