@@ -11,10 +11,11 @@ Prerequisites:
 
     - You'll need to install the libyaml development package:
 
-	Fedora, RedHat, Centos
+	Fedora, RedHat, Centos, SUSE, etc.
 	    sudo yum install libyaml-devel
 
 	Debian, Ubuntu
+	    sudo apt-get update
 	    sudo apt-get install libyaml-dev
 
 	If all else fails, download and build from source:
@@ -22,28 +23,64 @@ Prerequisites:
 
 
 Build, Test and Install:
-    ./bootstrap		# If building from git; skip if building from tarball.
-    ./configure
-    make
-    make check
-    sudo make install
+    - If building from git, you'll need these.  If you already have a
+      tarball, you can skip this step.
 
-    The files are installed in /usr/local/ 
-	/usr/local/include/*.h
-	/usr/local/lib/libvna.so.*
-	/usr/local/share/doc/libvna/*
-	/usr/local/share/man/man3/*.3
+	Fedora, RedHat, Centos, SUSE
+	    sudo yum install git make autoconf libtool
 
-    The example programs and README-EXAMPLES files are copied into
-    /usr/local/share/doc/libvna.  The README-EXAMPLES is worded for
-    someone building the example programs by hand after the library
-    has been installed on the system.  After running a make all here,
-    though, the examples will already be built in the src/ directory.
+	Debian, Ubuntu
+	    sudo apt-get update
+	    sudo apt-get install git make autoconf libtool
+
+	mkdir m4
+	./bootstrap
+
+    - All builds...
+	./configure
+	make
+	make -j8 check
+
+    - Install to /usr/local	[But see other options below first.]
+	sudo make install
+
+	The files are installed in:
+	    /usr/local/include/*.h
+	    /usr/local/lib/libvna.so.*
+	    /usr/local/share/doc/libvna/*
+	    /usr/local/share/man/man3/*.3
+
+	The example programs and README-EXAMPLES files are copied into
+	/usr/local/share/doc/libvna.  The README-EXAMPLES is worded for
+	someone building the example programs by hand after the library
+	has been installed on the system.  After running a make all here,
+	though, the examples will already be built in the src/ directory.
+
+    - Build RPM Packages and Install to /usr
+
+	The source RPM appears in rpm/libvna-*.src.rpm.  Binary RPMs
+	appear in an architecture-specific subdirectory, e.g. rpm/x86-64/.
+
+	When installing from RPM, the installed files go into the
+	standard system directories such as /usr/include, /usr/lib64,
+	/usr/share/doc, and /usr/share/man instead of /usr/local/
+
+	sudo yum install rpm-build
+
+	make rpm
+	sudo rpm -U rpm/*/*.rpm
+
+	make srcrpm			# optional install source package
+	sudo rpm -U rpm/*.src.rpm
 
 
-If you have gnuplot installed, you can see an interesting example of
-VNA calibration at work by running:
-    make plot
+    - Build Debian Packages and install to /usr
+
+	sudo apt-get update
+	sudo apt-get install build-essential devscripts
+	make deb
+
+	( cd deb; sudo apt install ./*.deb )
 
 
 Fixing library path problems:
@@ -67,16 +104,13 @@ To build PDF versions of the man pages (requries pdfroff):
     The .pdf files appear in src/
 
 
-To build RPM files:
-    make srcrpm
-    make rpm
-
-    The source RPM appears in rpm/libvna-*.src.rpm.  Binary RPMs appear
-    in an architecture-specific subdirectory, e.g. rpm/x86-64/.
-
-    When installing from RPM, the installed files go into the standard
-    system directories such as /usr/include, /usr/lib64, /usr/share/doc,
-    and /usr/share/man instead of /usr/local/
+If install gnuplot, you can see an interesting example of VNA calibration
+at work by running make plot.  The example illustrates correction of
+errors from a particularly bad VNA that has a stray parallel capacitance
+of 318pF between port 1 and group, and a stray inductance of 796 nH
+in series with port 2.  These values were chosen to make the VNA stray
+reactances resonate with the DUT.  See src/vnacal-SOLT-example.c
+    make plot
 
 
 Creating a new release (for git developers only)
@@ -98,14 +132,8 @@ If you'd like to help, please contact me.  The main things I could use
 help on right now are:
 
     - A review of the API
-    	- Does it make sense?  Is it the right abstraction?
-	- Does it allow for future extensions without breaking binary
-	  compatibility.
-	- What's missing?
-
-    - A review of the code (nearly 50000 lines of source code)
-
+    - A review of the code (over 50000 lines of source code)
     - There's also a TODO list in src/
 
-Finally, please make suggestions on how the library could be improved.
+Please make suggestions on how the library could be improved.
 

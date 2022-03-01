@@ -78,19 +78,19 @@ test_vnacommon_qrsolve2_LDADD = libt.a $(top_builddir)/src/libvna.la -lm
 test_vnacommon_qrsolve2_LDFLAGS = -static
 
 test_vnaproperty_scalar_SOURCES = test-vnaproperty-scalar.c
-test_vnaproperty_scalar_LDADD = libt.a $(top_builddir)/src/libvna.la
+test_vnaproperty_scalar_LDADD = libt.a $(top_builddir)/src/libvna.la -lyaml
 test_vnaproperty_scalar_LDFLAGS = -static
 
 test_vnaproperty_list_SOURCES = test-vnaproperty-list.c
-test_vnaproperty_list_LDADD = libt.a $(top_builddir)/src/libvna.la
+test_vnaproperty_list_LDADD = libt.a $(top_builddir)/src/libvna.la -lyaml
 test_vnaproperty_list_LDFLAGS = -static
 
 test_vnaproperty_map_SOURCES = test-vnaproperty-map.c
-test_vnaproperty_map_LDADD = libt.a $(top_builddir)/src/libvna.la
+test_vnaproperty_map_LDADD = libt.a $(top_builddir)/src/libvna.la -lyaml
 test_vnaproperty_map_LDFLAGS = -static
 
 test_vnaproperty_expr_SOURCES = test-vnaproperty-expr.c
-test_vnaproperty_expr_LDADD = libt.a $(top_builddir)/src/libvna.la
+test_vnaproperty_expr_LDADD = libt.a $(top_builddir)/src/libvna.la -lyaml
 test_vnaproperty_expr_LDFLAGS = -static
 
 test_vnaconv_2x2_SOURCES = test-vnaconv-2x2.c

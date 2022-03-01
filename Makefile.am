@@ -1,10 +1,29 @@
 ACLOCAL_AMFLAGS= -I m4
 libvna_ladir= $(libdir)
 
-SUBDIRS= rpm src
+SUBDIRS= src deb rpm
 
 dist_doc_DATA= COPYING README-EXAMPLES
 dist_noinst_SCRIPTS= bootstrap
+
+dist_noinst_DATA = \
+	debian/changelog \
+	debian/control \
+	debian/copyright \
+	debian/libvna-dev.dirs \
+	debian/libvna-dev.examples \
+	debian/libvna-dev.install \
+	debian/libvna-dev.manpages \
+	debian/libvna.dirs \
+	debian/libvna.install \
+	debian/postinst_run \
+	debian/postrm_run \
+	debian/rules \
+	debian/source/format \
+	debian/source/options
+
+deb: dist
+	(cd deb && $(MAKE) $(AM_MAKEFLAGS) $@)
 
 srcrpm rpm rpms: dist
 	(cd rpm && $(MAKE) $(AM_MAKEFLAGS) $@)

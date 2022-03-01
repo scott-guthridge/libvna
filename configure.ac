@@ -41,6 +41,7 @@ LT_INIT
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
     Makefile
+    deb/Makefile
     rpm/Makefile
     rpm/libvna.spec
     src/Makefile

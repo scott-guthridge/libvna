@@ -26,16 +26,6 @@
      other pairs Y-Z H-G A-B.  And we're using them in vnacal.
      DONE
 
-   - Change the vnacal_parameter indexes to avoid small positive
-     integers for possible future intermixing with port numbers.  Keep 0
-     for VNACAL_MATCH.  Avoid -1, which is the error return.  Losing
-     VNACAL_ONE == 1 is minor since it doesn't extend to VNACAL_SHORT
-     == -1, and this isn't a good thing to rely on anyway, especially
-     if you don't realize you're relying on it.  Instead of negative,
-     use a high positive bit.  This has the added advantage of helping
-     to validate that a given index is valid, i.e.  high bit must be
-     zero and next to high bit must be 1.
-
     - Disallow rectangular S parameter matrices?  We keep going back
       and forth on this.  Arguments against rectangular S matrices:
         - They don't accurately reflect any DUT.  All S parameters
@@ -55,6 +45,16 @@
         - Though they can't be saved in Touchstone, it's not uncommon
 	  to see S11, S21 only in spreadsheet form.
       DONE
+
+   - Change the vnacal_parameter indexes to avoid small positive
+     integers for possible future intermixing with port numbers.  Keep 0
+     for VNACAL_MATCH.  Avoid -1, which is the error return.  Losing
+     VNACAL_ONE == 1 is minor since it doesn't extend to VNACAL_SHORT
+     == -1, and this isn't a good thing to rely on anyway, especially
+     if you don't realize you're relying on it.  Instead of negative,
+     use a high positive bit.  This has the added advantage of helping
+     to validate that a given index is valid, i.e.  high bit must be
+     zero and next to high bit must be 1.
 
     - Audit the API for whether frequencies or frequency_vector
       comes first.  In general, the pointer should come first, but in
@@ -77,8 +77,9 @@
 == Installation Packaging Improvements ==
 
     - Add debian package support
+    DONE
 
-== Example Code Improvements ==
+== Example Improvements ==
 
     - Add vnacal-T16-example.c using T-MM-SS-SM-MS standards.
       Approach: generally follow the example of vnacal-TSD-example, but

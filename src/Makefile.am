@@ -73,6 +73,11 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnaproperty_export_yaml_to_file.c
 
 
+#
+# Remove .la files from install
+#
+install-exec-hook:
+	( cd ${DESTDIR}${libdir} && ${RM} ${lib_LTLIBRARIES} )
 
 #
 # Man pages
@@ -88,7 +93,7 @@ noinst_PROGRAMS = vnaproperty-example vnacal-SOLT-example vnacal-TSD-example \
 		  vnaconv-example vnadata-example convert-parameters
 
 vnaproperty_example_SOURCES = vnaproperty-example.c
-vnaproperty_example_LDADD = libvna.la
+vnaproperty_example_LDADD = libvna.la -lyaml
 vnaproperty_example_LDFLAGS = -static
 
 vnacal_SOLT_example_SOURCES = vnacal-SOLT-example.c

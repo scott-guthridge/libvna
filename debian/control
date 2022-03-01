@@ -1,0 +1,29 @@
+Source: libvna
+Priority: optional
+Maintainer: Scott Guthridge <scott_guthridge@rompromity.net>
+Build-Depends: debhelper-compat (= 13), autotools-dev, libyaml-dev
+Standards-Version: 4.5.1
+Section: libs
+Homepage: https://github.com/scott-guthridge/libvna
+Rules-Requires-Root: no
+
+Package: libvna-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: libvna (= ${binary:Version}), ${misc:Depends}
+Description: Vector Network Analyzer Library (development package)
+ Library for vector network analyzers: provides calibration using 8 and
+ 16 term T parameters, 12-term E parameters (classic SOLT) and others,
+ parameter conversion, and loading and storing of network parameter data
+ in Touchstone 1, Touchstone 2 and network parameter data (.ndp) formats.
+
+Package: libvna
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Vector Network Analyzer Library
+ Library for vector network analyzers: provides calibration using 8 and
+ 16 term T parameters, 12-term E parameters (classic SOLT) and others,
+ parameter conversion, and loading and storing of network parameter data
+ in Touchstone 1, Touchstone 2 and network parameter data (.ndp) formats.
