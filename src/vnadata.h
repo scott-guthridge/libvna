@@ -39,20 +39,22 @@ extern "C" {
 
 /*
  * vnadata_parameter_type_t: parameter type
- *   When updating, also update vnadata_get_type_name.
+ *   When changing, also update vnadata_get_type_name and conversion_table
+ *   in vnadata_convert.c.
  */
 typedef enum vnadata_parameter_type {
     VPT_UNDEF	=  0,
     VPT_S	=  1,
-    VPT_Z	=  2,
-    VPT_Y	=  3,
-    VPT_T	=  4,
-    VPT_H	=  5,
-    VPT_G	=  6,
-    VPT_A	=  7,
-    VPT_B	=  8,
-    VPT_ZIN	=  9,
-    VPT_NTYPES	= 10,
+    VPT_T	=  2,
+   _VPT_U	=  3,	/* reserved */
+    VPT_Z	=  4,
+    VPT_Y	=  5,
+    VPT_H	=  6,
+    VPT_G	=  7,
+    VPT_A	=  8,
+    VPT_B	=  9,
+    VPT_ZIN	= 10,
+    VPT_NTYPES	= 11,
 } vnadata_parameter_type_t;
 
 /*

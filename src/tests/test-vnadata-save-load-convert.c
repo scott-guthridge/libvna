@@ -683,11 +683,14 @@ static libt_result_t test_vnadata_slc()
 		    }
 		    break;
 
+		case _VPT_U:
+		    continue;
+
+		case VPT_T:
 		case VPT_H:
 		case VPT_G:
 		case VPT_A:
 		case VPT_B:
-		case VPT_T:
 		    result = test_vnadata_slc_helper(trial, filetype,
 			    type, 2, 2);
 		    if (result != T_PASS) {

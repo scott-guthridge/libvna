@@ -409,6 +409,11 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 		type_vector = st_types;
 		break;
 
+	    case VPT_T:
+		name = "T";
+		type_vector = st_types;
+		break;
+
 	    case VPT_Z:
 		name = "Z";
 		type_vector = z_types;
@@ -417,11 +422,6 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 	    case VPT_Y:
 		name = "Y";
 		type_vector = y_types;
-		break;
-
-	    case VPT_T:
-		name = "T";
-		type_vector = st_types;
 		break;
 
 	    case VPT_H:
@@ -1261,9 +1261,9 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 		}
 		/*FALLTHROUGH*/
 
+	    case VPT_T:
 	    case VPT_Z:
 	    case VPT_Y:
-	    case VPT_T:
 	    case VPT_H:
 	    case VPT_G:
 	    case VPT_A:

@@ -24,6 +24,7 @@
    - Reserve a spot for U parameters after T.  U parameters may not
      be a standard, but they pretty obviously belong with all the
      other pairs Y-Z H-G A-B.  And we're using them in vnacal.
+     DONE
 
    - Change the vnacal_parameter indexes to avoid small positive
      integers for possible future intermixing with port numbers.  Keep 0

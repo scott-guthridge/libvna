@@ -35,6 +35,10 @@ const char *vnadata_get_type_name(vnadata_parameter_type_t type)
 	return "undefined";
     case VPT_S:
 	return "S";
+    case VPT_T:
+	return "T";
+    case _VPT_U:
+	return "U";
     case VPT_Z:
 	return "Z";
     case VPT_Y:
@@ -47,8 +51,6 @@ const char *vnadata_get_type_name(vnadata_parameter_type_t type)
 	return "A";
     case VPT_B:
 	return "B";
-    case VPT_T:
-	return "T";
     case VPT_ZIN:
 	return "Zin";
     default:

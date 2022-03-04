@@ -173,11 +173,14 @@ static libt_result_t test_vnadata_basic()
 		}
 		break;
 
+	    case _VPT_U:
+		continue;
+
+	    case VPT_T:
 	    case VPT_H:
 	    case VPT_G:
 	    case VPT_A:
 	    case VPT_B:
-	    case VPT_T:
 		result = test_vnadata_basic_helper(trial, vdp, type, 2, 2);
 		if (result != T_PASS) {
 		    goto out;
