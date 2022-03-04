@@ -41,38 +41,53 @@ vnaerr_error_fn_t \- vector network analyzer library error reporting
 .fi
 .\"
 .PP
-.BI "typedef void vnaerr_error_fn_t(vnaerr_category_t " category ,
+.BI "typedef void vnaerr_error_fn_t(const char *" message ", void *" error_arg ,
 .if n \{\
 .in +4
 .\}
-.BI "const char *" message ", void *" error_arg );
+.BI "vnaerr_category_t " category );
 .if n \{\
 .in -4
 .\}
 .\"
+.\"
 .SH DESCRIPTION
-The \fBvnacal_calset_alloc\fP(), \fBvnacal_create\fP(),
-\fBvnacal_load\fP(), and \fBvnadata_alloc\fP() functions take an optional
-function pointer, \fIerror_fn\fP, which the library calls to report
-detailed error messages.
+Several vnacal library functions including \fBvnacal_create\fP(),
+\fBvnacal_load\fP(), and \fBvnadata_alloc\fP() take an optional function
+pointer, \fIerror_fn\fP, which the library calls to report detailed
+error messages.
+.\"
 .PP
-The \fIcategory\fP argument to \fIerror_fn\fP() broadly classifies
-the error.
-Error categories are described in more detail below.
 The \fImessage\fP argument is a one-line error message without a newline
 character.
 Messages have some structure depending on the category, e.g.
 \s-2VNAERR_USAGE\s+2 messages always begin with the name of the libvna
-function that failed followed by a colon, and \s-2VNAERR_SYNTAX\s+2
-messages always begin with the filename and line number where the error
-was found, but in general, messages are meant to be human readable rather
-than easily machine parsible.
+function that failed followed by a colon.
+Similarly, \s-2VNAERR_SYNTAX\s+2 messages always begin with the filename
+and line number where the syntax error was found.
+In general, though, messages are meant to be more human readable than
+machine parsible.
+Errors in the categories \s-2VNAERR_USAGE\s+2 and \s-2VNAERR_INTERNAL\s+2
+indicate software bugs, thus their primary audience is code developers.
+These messages display the name of the function and debug data intended
+to help find the problem.
+Errors in other categories, however, indicate system errors or syntax
+errors in parsed files, etc., and are intended more for end users.
+These messages may still mention system functions such as malloc, but
+avoid giving library function names and other details meaningful only
+to someone looking at source code.
+.\"
+.PP
 The \fBerror_arg\fP argument is a pointer to arbitrary user data passed
 through to the error function.
-It's useful to pass context information without having to use global
-variables.
+This is useful to pass context information to the error handler without
+having to use global variables.
+.\"
 .PP
-Error category can be any of the following:
+The \fIcategory\fP argument to \fIerror_fn\fP() provides a broad
+categorization of the error.
+It can be any of the following values:
+.\"
 .IP "\s-2VNAERR_SYSTEM\s+2"
 A library function such as \fBmalloc\fP() or \fBfopen\fP() failed.
 The message begins with the name of the function that failed, any
@@ -80,42 +95,49 @@ necessary context information such as a filename, and the system error
 message.  Example:
 .sp
 \(lqfopen: testdata.s2p: No such file or directory\(rq
+.\"
 .IP "\s-2VNAERR_USAGE\s+2"
 A libvna function was called with an invalid argument or invalid
 combination of arguments.  The message begins with the name of the
-libvna function that followed by a description of the problem.
+libvna function followed by a description of the problem.
 Example:
 .sp
 \(lqvnadata_set_file_type: -7: invalid type\(rq
+.\"
 .IP "\s-2VNAERR_VERSION\s+2"
 A file given to \fBvnacal_load\fP() or \fBvnadata_load\fP() has a
 version number unknown to the library.  Example:
 .sp
 mycalfile.vnacal (line 1) error: unsupported version 9.0
+.\"
 .IP "\s-2VNAERR_SYNTAX\s+2"
 A file given to \fBvnacal_load\fP() or \fBvnadata_load\fP() contains
 a syntax error, has missing or conflicting information, or is otherwise
 not well-formed.  Example:
 .sp
 \(lqdata.s2p (line 70) error: expected 9 fields; found 10\(rq
+.\"
 .IP "\s-2VNAERR_WARNING\s+2"
 The library detected something unexpected but not serious enough to
 report failure.
 Example:
 .sp
 \(lqmyfile.ts (line 1) warning: file contains dubious [Version] 1.0 line\(rq
+.\"
 .IP "\s-2VNAERR_MATH\s+2"
 The library detected a singular matrix or a numerical solution did not
 converge.
 Example:
 .sp
 \(lqvnacal_new_add_double_reflect: 'a' matrix is singular at frequency index 5\(rq
+.\"
 .IP "\s-2VNAERR_INTERNAL\s+2"
 The library detected an internal inconsistency.  The message starts
 with the internal function that failed followed by details useful to a
 developer to find and fix the problem.
 Example:
 \(lq_add_properties: vnaproperty_list_get: mycal.vnacal: Invalid argument\(rq
+.\"
 .PP
 Whether or not a non-\s-2NULL\s+2 \fIerror_fn\fP argument was supplied, the
 library functions set \fBerrno\fP before returning failure as shown in the

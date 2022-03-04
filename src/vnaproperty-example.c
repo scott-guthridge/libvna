@@ -25,8 +25,8 @@
 /*
  * errfn: report YAML errors
  */
-static void errfn(vnaerr_category_t category,
-	const char *message, void *error_arg)
+static void errfn(const char *message, void *error_arg,
+	vnaerr_category_t category)
 {
     fprintf(stderr, "%s\n", message);
 }

@@ -379,12 +379,12 @@ static void delete_delay_s(vnacal_t *vcp, int (*delay_s)[2])
 
 /*
  * error_fn: print errors from the vnacal library
- *   @category: category of error (ignored here)
  *   @message: single line error message without a newline
  *   @error_arg: passed through to the error function (unused here)
+ *   @category: category of error (ignored here)
  */
-static void error_fn(vnaerr_category_t category, const char *message,
-	void *error_arg)
+static void error_fn(const char *message, void *error_arg,
+	vnaerr_category_t category)
 {
     (void)fprintf(stderr, "example: %s\n", message);
 }

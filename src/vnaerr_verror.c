@@ -82,11 +82,11 @@ void _vnaerr_verror(vnaerr_error_fn_t *error_fn, void *error_arg,
     if (error_fn != NULL) {
 	if (vasprintf(&message, format, ap) == -1) {
 	    errno = new_errno;
-	    (*error_fn)(category, strerror(new_errno), error_arg);
+	    (*error_fn)(strerror(new_errno), error_arg, category);
 	    goto out;
 	}
 	errno = new_errno;
-	(*error_fn)(category, message, error_arg);
+	(*error_fn)(message, error_arg, category);
     }
 
 out:

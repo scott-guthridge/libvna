@@ -61,11 +61,11 @@ static const char *pathname = file;
 
 /*
  * error_fn: error reporting function
- *   @category: error category
  *   @message: error message
  *   @arg: (unused)
+ *   @category: error category (unused)
  */
-static void error_fn(vnaerr_category_t category, const char *message, void *arg)
+static void error_fn(const char *message, void *arg, vnaerr_category_t category)
 {
     (void)fprintf(stderr, "%s: %s\n", progname, message);
 }

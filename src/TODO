@@ -19,6 +19,7 @@
 == Finalizing the API's ==
 
    - Switch the error callback parameter order to put category last.
+     DONE
 
    - Reserve a spot for U parameters after T.  U parameters may not
      be a standard, but they pretty obviously belong with all the

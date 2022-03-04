@@ -50,7 +50,7 @@ vnacal_t *_vnacal_alloc(const char *function,
 		    strerror(errno));
 	    message[sizeof(message)-1] = '\000';
 	    errno = saved_errno;
-	    (*error_fn)(VNAERR_SYSTEM, message, error_arg);
+	    (*error_fn)(message, error_arg, VNAERR_SYSTEM);
 	    errno = saved_errno;
 	}
 	return NULL;

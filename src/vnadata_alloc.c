@@ -254,7 +254,7 @@ vnadata_t *vnadata_alloc(vnaerr_error_fn_t *error_fn, void *error_arg)
 		    strerror(errno));
 	    message[sizeof(message)-1] = '\000';
 	    errno = saved_errno;
-	    (*error_fn)(VNAERR_SYSTEM, message, error_arg);
+	    (*error_fn)(message, error_arg, VNAERR_SYSTEM);
 	    errno = saved_errno;
 	}
 	return NULL;

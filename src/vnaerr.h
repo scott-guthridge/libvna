@@ -38,12 +38,12 @@ typedef enum vnaerr_category {
 
 /*
  * vnaerr_error_fn_t: error reporting function type
- *   @category: category of error
  *   @message: error message without newline
  *   @error_arg: user-supplied argument passed through to error function
+ *   @category: category of error
  */
-typedef void vnaerr_error_fn_t(vnaerr_category_t category,
-	const char *message, void *error_arg);
+typedef void vnaerr_error_fn_t(const char *message, void *error_arg,
+	vnaerr_category_t category);
 
 #ifdef __cplusplus
 } /* extern "C" */
