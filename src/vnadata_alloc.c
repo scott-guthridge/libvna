@@ -305,6 +305,7 @@ static int validate_type(const char *function, vnadata_internal_t *vdip,
 
 	/* two-port only */
     case VPT_T:
+    case VPT_U:
     case VPT_H:
     case VPT_G:
     case VPT_A:

@@ -129,6 +129,11 @@ static int parse_format(vnadata_format_descriptor_t *vfdp, const char *format)
 	vfdp->vfd_parameter = VPT_T;
 	goto parse_coordinates;
 
+    case 'u':
+	++cur;
+	vfdp->vfd_parameter = VPT_U;
+	goto parse_coordinates;
+
     case 'v':
 	if (strncmp(cur, "vswr", 4) == 0) {
 	    cur += 4;

@@ -95,6 +95,19 @@ const char *_vnadata_format_to_name(const vnadata_format_descriptor_t *vfdp)
 	    }
 	    break;
 
+	case VPT_U:
+	    switch (vfdp->vfd_format) {
+	    case VNADATA_FORMAT_REAL_IMAG:
+		return "Uri";
+	    case VNADATA_FORMAT_MAG_ANGLE:
+		return "Uma";
+	    case VNADATA_FORMAT_DB_ANGLE:
+		return "UdB";
+	    default:
+		break;
+	    }
+	    break;
+
 	case VPT_Z:
 	    switch (vfdp->vfd_format) {
 	    case VNADATA_FORMAT_REAL_IMAG:

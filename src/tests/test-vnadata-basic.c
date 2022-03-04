@@ -173,10 +173,8 @@ static libt_result_t test_vnadata_basic()
 		}
 		break;
 
-	    case _VPT_U:
-		continue;
-
 	    case VPT_T:
+	    case VPT_U:
 	    case VPT_H:
 	    case VPT_G:
 	    case VPT_A:

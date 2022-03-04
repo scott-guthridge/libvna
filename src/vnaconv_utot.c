@@ -18,43 +18,32 @@
 
 #include "archdep.h"
 
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
-#include "vnadata_internal.h"
+#include <complex.h>
+#include <math.h>
+#include "vnaconv_internal.h"
 
 
 /*
- * vnadata_get_type_name: convert parameter type to name
- *   @type: parameter type
+ * vnaconv_utot: convert u-parameters to t-parameters
  */
-const char *vnadata_get_type_name(vnadata_parameter_type_t type)
+void vnaconv_utot(const double complex (*u)[2], double complex (*t)[2])
 {
-    switch (type) {
-    case VPT_UNDEF:
-	return "undefined";
-    case VPT_S:
-	return "S";
-    case VPT_T:
-	return "T";
-    case VPT_U:
-	return "U";
-    case VPT_Z:
-	return "Z";
-    case VPT_Y:
-	return "Y";
-    case VPT_H:
-	return "H";
-    case VPT_G:
-	return "G";
-    case VPT_A:
-	return "A";
-    case VPT_B:
-	return "B";
-    case VPT_ZIN:
-	return "Zin";
-    default:
-	break;
-    }
-    return NULL;
+    const double complex u11 = u[0][0];
+    const double complex u12 = u[0][1];
+    const double complex u21 = u[1][0];
+    const double complex u22 = u[1][1];
+    const double complex d = u11 * u22 - u12 * u21;
+#define T11	t[0][0]
+#define T12	t[0][1]
+#define T21	t[1][0]
+#define T22	t[1][1]
+
+    T11 =  u22 / d;
+    T12 = -u12 / d;
+    T21 = -u21 / d;
+    T22 =  u11 / d;
 }
+#undef T22
+#undef T21
+#undef T12
+#undef T11

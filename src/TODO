@@ -116,6 +116,7 @@
       practice today.  There is an alternate representation of T parameters,
       where the two rows are swapped, but they're essentially still T.
       At minimum, reserve a type slot for U.
+      DONE
 
     - Bring back vnacal_apply_t from the git history (consider renaming to
       vnacal_map_t to better match what it does and avoid confusion with the

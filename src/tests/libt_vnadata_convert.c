@@ -13,6 +13,20 @@
 #include "libt.h"
 #include "libt_vnadata.h"
 
+/*
+ * libt_vnadata_convert: convert the parameter type
+ *   @in:      input matrix
+ *   @out:     output matrix
+ *   @z0:      reference impedance
+ *   @rows:    number of rows in input matrix
+ *   @columns: number of columns in input matrix
+ *   old_type: old parameter type
+ *   new_type: new parameter type
+ *
+ * This function duplicates the functionality in vnadata_convert, but
+ * takes a different approach making it more likely that the code and
+ * test don't have the same bug.
+ */
 void libt_vnadata_convert(const double complex *in, double complex *out,
 	const double complex *z0, int rows, int columns,
 	vnadata_parameter_type_t old_type, vnadata_parameter_type_t new_type)
@@ -31,6 +45,10 @@ void libt_vnadata_convert(const double complex *in, double complex *out,
 	case VPT_T:
 	    assert(rows == 2 && columns == 2);
 	    vnaconv_stot((const row2_t *)in, (row2_t *)out);
+	    return;
+	case VPT_U:
+	    assert(rows == 2 && columns == 2);
+	    vnaconv_stou((const row2_t *)in, (row2_t *)out);
 	    return;
 	case VPT_Z:
 	    assert(rows == columns);
@@ -77,6 +95,9 @@ void libt_vnadata_convert(const double complex *in, double complex *out,
 			rows * columns * sizeof(double complex));
 	    }
 	    return;
+	case VPT_U:
+	    vnaconv_ttou((const row2_t *)in, (row2_t *)out);
+	    return;
 	case VPT_Z:
 	    vnaconv_ttoz((const row2_t *)in, (row2_t *)out, z0);
 	    return;
@@ -103,6 +124,47 @@ void libt_vnadata_convert(const double complex *in, double complex *out,
 	}
 	break;
 
+    case VPT_U:
+	assert(rows == 2 && columns == 2);
+	switch (new_type) {
+	case VPT_S:
+	    vnaconv_utos((const row2_t *)in, (row2_t *)out);
+	    return;
+	case VPT_T:
+	    vnaconv_utot((const row2_t *)in, (row2_t *)out);
+	    return;
+	case VPT_U:
+	    if (out != in) {
+		(void)memcpy((void *)out, (void *)in,
+			rows * columns * sizeof(double complex));
+	    }
+	    return;
+	case VPT_Z:
+	    vnaconv_utoz((const row2_t *)in, (row2_t *)out, z0);
+	    return;
+	case VPT_Y:
+	    vnaconv_utoy((const row2_t *)in, (row2_t *)out, z0);
+	    return;
+	case VPT_H:
+	    vnaconv_utoh((const row2_t *)in, (row2_t *)out, z0);
+	    return;
+	case VPT_G:
+	    vnaconv_utog((const row2_t *)in, (row2_t *)out, z0);
+	    return;
+	case VPT_A:
+	    vnaconv_utoa((const row2_t *)in, (row2_t *)out, z0);
+	    return;
+	case VPT_B:
+	    vnaconv_utob((const row2_t *)in, (row2_t *)out, z0);
+	    return;
+	case VPT_ZIN:
+	    vnaconv_utozi((const row2_t *)in, out, z0);
+	    return;
+	default:
+	    break;
+	}
+	break;
+
     case VPT_Z:
 	switch (new_type) {
 	case VPT_S:
@@ -112,6 +174,10 @@ void libt_vnadata_convert(const double complex *in, double complex *out,
 	case VPT_T:
 	    assert(rows == 2 && columns == 2);
 	    vnaconv_ztot((const row2_t *)in, (row2_t *)out, z0);
+	    return;
+	case VPT_U:
+	    assert(rows == 2 && columns == 2);
+	    vnaconv_ztou((const row2_t *)in, (row2_t *)out, z0);
 	    return;
 	case VPT_Z:
 	    assert(rows == columns);
@@ -159,6 +225,10 @@ void libt_vnadata_convert(const double complex *in, double complex *out,
 	    assert(rows == 2 && columns == 2);
 	    vnaconv_ytot((const row2_t *)in, (row2_t *)out, z0);
 	    return;
+	case VPT_U:
+	    assert(rows == 2 && columns == 2);
+	    vnaconv_ytou((const row2_t *)in, (row2_t *)out, z0);
+	    return;
 	case VPT_Z:
 	    assert(rows == columns);
 	    vnaconv_ytozn(in, out, rows);
@@ -204,6 +274,9 @@ void libt_vnadata_convert(const double complex *in, double complex *out,
 	case VPT_T:
 	    vnaconv_htot((const row2_t *)in, (row2_t *)out, z0);
 	    return;
+	case VPT_U:
+	    vnaconv_htou((const row2_t *)in, (row2_t *)out, z0);
+	    return;
 	case VPT_Z:
 	    vnaconv_htoz((const row2_t *)in, (row2_t *)out);
 	    return;
@@ -241,6 +314,9 @@ void libt_vnadata_convert(const double complex *in, double complex *out,
 	    return;
 	case VPT_T:
 	    vnaconv_gtot((const row2_t *)in, (row2_t *)out, z0);
+	    return;
+	case VPT_U:
+	    vnaconv_gtou((const row2_t *)in, (row2_t *)out, z0);
 	    return;
 	case VPT_Z:
 	    vnaconv_gtoz((const row2_t *)in, (row2_t *)out);
@@ -280,6 +356,9 @@ void libt_vnadata_convert(const double complex *in, double complex *out,
 	case VPT_T:
 	    vnaconv_atot((const row2_t *)in, (row2_t *)out, z0);
 	    return;
+	case VPT_U:
+	    vnaconv_atou((const row2_t *)in, (row2_t *)out, z0);
+	    return;
 	case VPT_Z:
 	    vnaconv_atoz((const row2_t *)in, (row2_t *)out);
 	    return;
@@ -317,6 +396,9 @@ void libt_vnadata_convert(const double complex *in, double complex *out,
 	    return;
 	case VPT_T:
 	    vnaconv_btot((const row2_t *)in, (row2_t *)out, z0);
+	    return;
+	case VPT_U:
+	    vnaconv_btou((const row2_t *)in, (row2_t *)out, z0);
 	    return;
 	case VPT_Z:
 	    vnaconv_btoz((const row2_t *)in, (row2_t *)out);

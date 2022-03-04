@@ -77,6 +77,11 @@
 #define B21	b[1][0]
 #define B22	b[1][1]
 
+#define U11	u[0][0]
+#define U12	u[0][1]
+#define U21	u[1][0]
+#define U22	u[1][1]
+
 #define X11	x[0][0]
 #define X12	x[0][1]
 #define X21	x[1][0]
@@ -129,6 +134,7 @@ static libt_result_t test_conversions_2x2()
 	double complex v1, i1, v2, i2;
 	double complex s[2][2];
 	double complex t[2][2];
+	double complex u[2][2];
 	double complex z[2][2];
 	double complex y[2][2];
 	double complex h[2][2];
@@ -183,6 +189,13 @@ static libt_result_t test_conversions_2x2()
 	}
 	TEST_EQUAL(T11 * a2 + T12 * b2, b1, "stot: T11,T12");
 	TEST_EQUAL(T21 * a2 + T22 * b2, a1, "stot: T22,T22");
+
+	vnaconv_stou(s, u);
+	if (opt_v) {
+	    libt_print_cmatrix("u", *u, 2, 2);
+	}
+	TEST_EQUAL(U11 * b1 + U12 * a1, a2, "stou: U11,U12");
+	TEST_EQUAL(U21 * b1 + U22 * a1, b2, "stou: U22,U22");
 
 	vnaconv_stoz(s, z, z0);
 	if (opt_v) {
@@ -254,6 +267,13 @@ static libt_result_t test_conversions_2x2()
 	TEST_EQUAL(X22, S22, "ttos: S22");
 
 	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_ttou(t, x);
+	TEST_EQUAL(X11, U11, "ttou: U11");
+	TEST_EQUAL(X12, U12, "ttou: U12");
+	TEST_EQUAL(X21, U21, "ttou: U21");
+	TEST_EQUAL(X22, U22, "ttou: U22");
+
+	(void)memset((void *)x, 0, sizeof(x));
 	vnaconv_ttoz(t, x, z0);
 	TEST_EQUAL(X11, Z11, "ttoz: Z11");
 	TEST_EQUAL(X12, Z12, "ttoz: Z12");
@@ -301,6 +321,67 @@ static libt_result_t test_conversions_2x2()
 	TEST_EQUAL(xi[1], zi[1], "ttozi: zi1");
 
 	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_utos(u, x);
+	TEST_EQUAL(X11, S11, "utos: S11");
+	TEST_EQUAL(X12, S12, "utos: S12");
+	TEST_EQUAL(X21, S21, "utos: S21");
+	TEST_EQUAL(X22, S22, "utos: S22");
+
+	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_utot(u, x);
+	TEST_EQUAL(X11, T11, "utot: T11");
+	TEST_EQUAL(X12, T12, "utot: T12");
+	TEST_EQUAL(X21, T21, "utot: T21");
+	TEST_EQUAL(X22, T22, "utot: T22");
+
+	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_utoz(u, x, z0);
+	TEST_EQUAL(X11, Z11, "utoz: Z11");
+	TEST_EQUAL(X12, Z12, "utoz: Z12");
+	TEST_EQUAL(X21, Z21, "utoz: Z21");
+	TEST_EQUAL(X22, Z22, "utoz: Z22");
+
+	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_utoy(u, x, z0);
+	TEST_EQUAL(X11, Y11, "utoy: Y11");
+	TEST_EQUAL(X12, Y12, "utoy: Y12");
+	TEST_EQUAL(X21, Y21, "utoy: Y21");
+	TEST_EQUAL(X22, Y22, "utoy: Y22");
+
+	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_utoh(u, x, z0);
+	TEST_EQUAL(X11, H11, "utoh: H11");
+	TEST_EQUAL(X12, H12, "utoh: H12");
+	TEST_EQUAL(X21, H21, "utoh: H21");
+	TEST_EQUAL(X22, H22, "utoh: H22");
+
+	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_utog(u, x, z0);
+	TEST_EQUAL(X11, G11, "utog: G11");
+	TEST_EQUAL(X12, G12, "utog: G12");
+	TEST_EQUAL(X21, G21, "utog: G21");
+	TEST_EQUAL(X22, G22, "utog: G22");
+
+	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_utoa(u, x, z0);
+	TEST_EQUAL(X11, A11, "utoa: A11");
+	TEST_EQUAL(X12, A12, "utoa: A12");
+	TEST_EQUAL(X21, A21, "utoa: A21");
+	TEST_EQUAL(X22, A22, "utoa: A22");
+
+	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_utob(u, x, z0);
+	TEST_EQUAL(X11, B11, "utob: B11");
+	TEST_EQUAL(X12, B12, "utob: B12");
+	TEST_EQUAL(X21, B21, "utob: B21");
+	TEST_EQUAL(X22, B22, "utob: B22");
+
+	(void)memset((void *)xi, 0, sizeof(xi));
+	vnaconv_utozi(u, xi, z0);
+	TEST_EQUAL(xi[0], zi[0], "utozi: zi0");
+	TEST_EQUAL(xi[1], zi[1], "utozi: zi1");
+
+	(void)memset((void *)x, 0, sizeof(x));
 	vnaconv_ztos(z, x, z0);
 	TEST_EQUAL(X11, S11, "ztos: S11");
 	TEST_EQUAL(X12, S12, "ztos: S12");
@@ -320,6 +401,13 @@ static libt_result_t test_conversions_2x2()
 	TEST_EQUAL(X12, T12, "ztot: T12");
 	TEST_EQUAL(X21, T21, "ztot: T21");
 	TEST_EQUAL(X22, T22, "ztot: T22");
+
+	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_ztou(z, x, z0);
+	TEST_EQUAL(X11, U11, "ztou: U11");
+	TEST_EQUAL(X12, U12, "ztou: U12");
+	TEST_EQUAL(X21, U21, "ztou: U21");
+	TEST_EQUAL(X22, U22, "ztou: U22");
 
 	(void)memset((void *)x, 0, sizeof(x));
 	vnaconv_ztoy(z, x);
@@ -383,6 +471,13 @@ static libt_result_t test_conversions_2x2()
 	TEST_EQUAL(X22, T22, "ytot: T22");
 
 	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_ytou(y, x, z0);
+	TEST_EQUAL(X11, U11, "ytou: U11");
+	TEST_EQUAL(X12, U12, "ytou: U12");
+	TEST_EQUAL(X21, U21, "ytou: U21");
+	TEST_EQUAL(X22, U22, "ytou: U22");
+
+	(void)memset((void *)x, 0, sizeof(x));
 	vnaconv_ytoz(y, x);
 	TEST_EQUAL(X11, Z11, "ytoz: Y11");
 	TEST_EQUAL(X12, Z12, "ytoz: Y12");
@@ -442,6 +537,13 @@ static libt_result_t test_conversions_2x2()
 	TEST_EQUAL(X22, T22, "htot: T22");
 
 	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_htou(h, x, z0);
+	TEST_EQUAL(X11, U11, "htou: U11");
+	TEST_EQUAL(X12, U12, "htou: U12");
+	TEST_EQUAL(X21, U21, "htou: U21");
+	TEST_EQUAL(X22, U22, "htou: U22");
+
+	(void)memset((void *)x, 0, sizeof(x));
 	vnaconv_htoz(h, x);
 	TEST_EQUAL(X11, Z11, "htoz: Y11");
 	TEST_EQUAL(X12, Z12, "htoz: Y12");
@@ -494,6 +596,13 @@ static libt_result_t test_conversions_2x2()
 	TEST_EQUAL(X12, T12, "gtot: T12");
 	TEST_EQUAL(X21, T21, "gtot: T21");
 	TEST_EQUAL(X22, T22, "gtot: T22");
+
+	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_gtou(g, x, z0);
+	TEST_EQUAL(X11, U11, "gtou: U11");
+	TEST_EQUAL(X12, U12, "gtou: U12");
+	TEST_EQUAL(X21, U21, "gtou: U21");
+	TEST_EQUAL(X22, U22, "gtou: U22");
 
 	(void)memset((void *)x, 0, sizeof(x));
 	vnaconv_gtoz(g, x);
@@ -550,6 +659,13 @@ static libt_result_t test_conversions_2x2()
 	TEST_EQUAL(X22, T22, "atot: T22");
 
 	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_atou(a, x, z0);
+	TEST_EQUAL(X11, U11, "atou: U11");
+	TEST_EQUAL(X12, U12, "atou: U12");
+	TEST_EQUAL(X21, U21, "atou: U21");
+	TEST_EQUAL(X22, U22, "atou: U22");
+
+	(void)memset((void *)x, 0, sizeof(x));
 	vnaconv_atoz(a, x);
 	TEST_EQUAL(X11, Z11, "atoz: Y11");
 	TEST_EQUAL(X12, Z12, "atoz: Y12");
@@ -602,6 +718,13 @@ static libt_result_t test_conversions_2x2()
 	TEST_EQUAL(X12, T12, "btot: T12");
 	TEST_EQUAL(X21, T21, "btot: T21");
 	TEST_EQUAL(X22, T22, "btot: T22");
+
+	(void)memset((void *)x, 0, sizeof(x));
+	vnaconv_btou(b, x, z0);
+	TEST_EQUAL(X11, U11, "btou: U11");
+	TEST_EQUAL(X12, U12, "btou: U12");
+	TEST_EQUAL(X21, U21, "btou: U21");
+	TEST_EQUAL(X22, U22, "btou: U22");
 
 	(void)memset((void *)x, 0, sizeof(x));
 	vnaconv_btoz(b, x);

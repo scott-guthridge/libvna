@@ -250,8 +250,9 @@ Link with \fI-lvna\fP \fI-lm\fP.
 These functions store and manage electrical network parameter data.
 Internally, the data are stored as a vector of matrices, one per frequency.
 The matrix may contain any of s (scattering), t (scattering transfer),
-z (impedance), y (admittance), h (hybrid), g (inverse-hybrid), a (ABCD),
-b (inverse ABCD) or zin (input impedance) parameters.
+u (inverse scattering transfer) z (impedance), y (admittance), h (hybrid),
+g (inverse-hybrid), a (ABCD), b (inverse ABCD) or zin (input impedance)
+parameters.
 .\" --------------------------------------------------------------------------
 .SS "Allocation and Initialization"
 .PP
@@ -265,9 +266,9 @@ The \fBvnadata_init\fP() function sets the dimensions and parameter
 type of the \fBvnadata_t\fP structure, initializes all frequency and
 data cells to zero, and initializes all z0 entries to the default of
 50 ohms.
-The \fItype\fP argument must be one of: VPT_UNDEF, VPT_S, VPT_Z, VPT_Y,
-VPT_T, VPT_H, VPT_G, VPT_A, VPT_B, or VPT_ZIN, and the dimensions must
-be consistent with the parameter type.
+The \fItype\fP argument must be one of: VPT_UNDEF, VPT_S, VPT_T, VPT_U,
+VPT_Z, VPT_Y, VPT_H, VPT_G, VPT_A, VPT_B, or VPT_ZIN, and the dimensions
+must be consistent with the parameter type.
 .\"
 .PP
 The \fBvnadata_alloc_and_init\fP() function is a combination
@@ -383,7 +384,7 @@ If \fIvdp_out\fP refers to the same structure as \fIvdp_in\fP, then an
 in-place conversion is done.
 If \fIvdp_out\fP is not the same as \fIvdp_in\fP and \fInew_parameter\fP
 is the same type as the input matrix, the data are simply copied.
-\fBvnadata_convert\fP() supports all 56 parameter conversions plus 8
+\fBvnadata_convert\fP() supports all 72 parameter conversions plus 9
 conversions from parameter data to input impedances at each port.
 .\" --------------------------------------------------------------------------
 .SS "Load and Save"
@@ -465,6 +466,7 @@ of the following specifiers:
 l l.
 S[ri|ma|dB]	scattering parameters
 T[ri|ma|dB]	scattering-transfer parameters
+U[ri|ma|dB]	inverse scattering-transfer parameters
 Z[ri|ma]	impedance parameters
 Y[ri|ma]	admittance parameters
 H[ri|ma]	hybrid parameters

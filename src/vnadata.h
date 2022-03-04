@@ -46,7 +46,7 @@ typedef enum vnadata_parameter_type {
     VPT_UNDEF	=  0,
     VPT_S	=  1,
     VPT_T	=  2,
-   _VPT_U	=  3,	/* reserved */
+    VPT_U	=  3,
     VPT_Z	=  4,
     VPT_Y	=  5,
     VPT_H	=  6,

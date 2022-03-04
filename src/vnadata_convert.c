@@ -99,41 +99,47 @@ typedef enum conversion_code {
      * Group 2x2_no_xtoy: 2-port to 2-port without Z0
      */
     T0StoT = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  0),
-    T0TtoS = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  1),
+    T0StoU = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  1),
 
-    T0ZtoH = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  2),
-    T0ZtoG = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  3),
-    T0ZtoA = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  4),
-    T0ZtoB = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  5),
+    T0TtoS = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  2),
+    T0TtoU = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  3),
 
-    T0YtoH = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  6),
-    T0YtoG = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  7),
-    T0YtoA = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  8),
-    T0YtoB = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  9),
+    T0UtoS = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  4),
+    T0UtoT = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  5),
 
-    T0HtoZ = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 10),
-    T0HtoY = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 11),
-    T0HtoG = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 12),
-    T0HtoA = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 13),
-    T0HtoB = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 14),
+    T0ZtoH = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  6),
+    T0ZtoG = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  7),
+    T0ZtoA = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  8),
+    T0ZtoB = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy,  9),
 
-    T0GtoZ = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 15),
-    T0GtoY = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 16),
-    T0GtoH = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 17),
-    T0GtoA = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 18),
-    T0GtoB = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 19),
+    T0YtoH = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 10),
+    T0YtoG = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 11),
+    T0YtoA = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 12),
+    T0YtoB = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 13),
 
-    T0AtoZ = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 20),
-    T0AtoY = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 21),
-    T0AtoH = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 22),
-    T0AtoG = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 23),
-    T0AtoB = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 24),
+    T0HtoZ = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 14),
+    T0HtoY = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 15),
+    T0HtoG = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 16),
+    T0HtoA = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 17),
+    T0HtoB = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 18),
 
-    T0BtoZ = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 25),
-    T0BtoY = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 26),
-    T0BtoH = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 27),
-    T0BtoG = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 28),
-    T0BtoA = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 29),
+    T0GtoZ = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 19),
+    T0GtoY = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 20),
+    T0GtoH = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 21),
+    T0GtoA = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 22),
+    T0GtoB = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 23),
+
+    T0AtoZ = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 24),
+    T0AtoY = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 25),
+    T0AtoH = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 26),
+    T0AtoG = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 27),
+    T0AtoB = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 28),
+
+    T0BtoZ = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 29),
+    T0BtoY = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 30),
+    T0BtoH = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 31),
+    T0BtoG = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 32),
+    T0BtoA = MAKE_CODE(DIM_2x2 | Z0_NO  | CONV_xtoy, 33),
 
     /*
      * Group 2x2_yes_xtoy: 2-port to 2-port with Z0
@@ -150,30 +156,44 @@ typedef enum conversion_code {
     T1TtoA = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy,  8),
     T1TtoB = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy,  9),
 
-    T1ZtoT = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 10),
+    T1UtoZ = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 10),
+    T1UtoY = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 11),
+    T1UtoH = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 12),
+    T1UtoG = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 13),
+    T1UtoA = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 14),
+    T1UtoB = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 15),
 
-    T1YtoT = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 11),
+    T1ZtoT = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 16),
+    T1ZtoU = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 17),
 
-    T1HtoS = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 12),
-    T1HtoT = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 13),
+    T1YtoT = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 18),
+    T1YtoU = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 19),
 
-    T1GtoS = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 14),
-    T1GtoT = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 15),
+    T1HtoS = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 20),
+    T1HtoT = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 21),
+    T1HtoU = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 22),
 
-    T1AtoS = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 16),
-    T1AtoT = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 17),
+    T1GtoS = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 23),
+    T1GtoT = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 24),
+    T1GtoU = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 25),
 
-    T1BtoS = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 18),
-    T1BtoT = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 19),
+    T1AtoS = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 26),
+    T1AtoT = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 27),
+    T1AtoU = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 28),
+
+    T1BtoS = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 29),
+    T1BtoT = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 30),
+    T1BtoU = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoy, 31),
 
     /*
      * Group 2x2_yes_x2I: 2-port to Zin vector
      */
     T1TtoI = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoI,  0),
-    T1HtoI = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoI,  1),
-    T1GtoI = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoI,  2),
-    T1AtoI = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoI,  3),
-    T1BtoI = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoI,  4),
+    T1UtoI = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoI,  1),
+    T1HtoI = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoI,  2),
+    T1GtoI = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoI,  3),
+    T1AtoI = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoI,  4),
+    T1BtoI = MAKE_CODE(DIM_2x2 | Z0_YES | CONV_xtoI,  5),
 
     /*
      * Group NxN_no_xtoy: N-port to N-port, no Z0
@@ -227,15 +247,15 @@ typedef enum conversion_code {
 static const conversion_code_t conversion_table[VPT_NTYPES][VPT_NTYPES] = {
      /*  -       S       T       U       Z       Y       H       G       A       B       I  */
 /*-*/{ ASAME,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL },
-/*S*/{ INVAL,  ASAME, T0StoT,  INVAL, N1StoZ, N1StoY, T1StoH, T1StoG, T1StoA, T1StoB, N1StoI },
-/*T*/{ INVAL, T0TtoS,  TSAME,  INVAL, T1TtoZ, T1TtoY, T1TtoH, T1TtoG, T1TtoA, T1TtoB, T1TtoI },
-/*U*/{ INVAL,  INVAL,  INVAL,  TSAME,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL },
-/*Z*/{ INVAL, N1ZtoS, T1ZtoT,  INVAL,  NSAME, N0ZtoY, T0ZtoH, T0ZtoG, T0ZtoA, T0ZtoB, N1ZtoI },
-/*Y*/{ INVAL, N1YtoS, T1YtoT,  INVAL, N0YtoZ,  NSAME, T0YtoH, T0YtoG, T0YtoA, T0YtoB, N1YtoI },
-/*H*/{ INVAL, T1HtoS, T1HtoT,  INVAL, T0HtoZ, T0HtoY,  TSAME, T0HtoG, T0HtoA, T0HtoB, T1HtoI },
-/*G*/{ INVAL, T1GtoS, T1GtoT,  INVAL, T0GtoZ, T0GtoY, T0GtoH,  TSAME, T0GtoA, T0GtoB, T1GtoI },
-/*A*/{ INVAL, T1AtoS, T1AtoT,  INVAL, T0AtoZ, T0AtoY, T0AtoH, T0AtoG,  TSAME, T0AtoB, T1AtoI },
-/*B*/{ INVAL, T1BtoS, T1BtoT,  INVAL, T0BtoZ, T0BtoY, T0BtoH, T0BtoG, T0BtoA,  TSAME, T1BtoI },
+/*S*/{ INVAL,  ASAME, T0StoT, T0StoU, N1StoZ, N1StoY, T1StoH, T1StoG, T1StoA, T1StoB, N1StoI },
+/*T*/{ INVAL, T0TtoS,  TSAME, T0TtoU, T1TtoZ, T1TtoY, T1TtoH, T1TtoG, T1TtoA, T1TtoB, T1TtoI },
+/*U*/{ INVAL, T0UtoS, T0UtoT,  TSAME, T1UtoZ, T1UtoY, T1UtoH, T1UtoG, T1UtoA, T1UtoB, T1UtoI },
+/*Z*/{ INVAL, N1ZtoS, T1ZtoT, T1ZtoU,  NSAME, N0ZtoY, T0ZtoH, T0ZtoG, T0ZtoA, T0ZtoB, N1ZtoI },
+/*Y*/{ INVAL, N1YtoS, T1YtoT, T1YtoU, N0YtoZ,  NSAME, T0YtoH, T0YtoG, T0YtoA, T0YtoB, N1YtoI },
+/*H*/{ INVAL, T1HtoS, T1HtoT, T1HtoU, T0HtoZ, T0HtoY,  TSAME, T0HtoG, T0HtoA, T0HtoB, T1HtoI },
+/*G*/{ INVAL, T1GtoS, T1GtoT, T1GtoU, T0GtoZ, T0GtoY, T0GtoH,  TSAME, T0GtoA, T0GtoB, T1GtoI },
+/*A*/{ INVAL, T1AtoS, T1AtoT, T1AtoU, T0AtoZ, T0AtoY, T0AtoH, T0AtoG,  TSAME, T0AtoB, T1AtoI },
+/*B*/{ INVAL, T1BtoS, T1BtoT, T1BtoU, T0BtoZ, T0BtoY, T0BtoH, T0BtoG, T0BtoA,  TSAME, T1BtoI },
 /*I*/{ INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  VSAME }
 };
 
@@ -245,8 +265,13 @@ static const conversion_code_t conversion_table[VPT_NTYPES][VPT_NTYPES] = {
 static void (*group_2x2_no_xtoy[])(const double complex (*in)[2],
 	double complex (*out)[2]) = {
     [GET_INDEX(T0StoT)] = vnaconv_stot,
+    [GET_INDEX(T0StoU)] = vnaconv_stou,
 
     [GET_INDEX(T0TtoS)] = vnaconv_ttos,
+    [GET_INDEX(T0TtoU)] = vnaconv_ttou,
+
+    [GET_INDEX(T0UtoS)] = vnaconv_utos,
+    [GET_INDEX(T0UtoT)] = vnaconv_utot,
 
     [GET_INDEX(T0ZtoH)] = vnaconv_ztoh,
     [GET_INDEX(T0ZtoG)] = vnaconv_ztog,
@@ -300,21 +325,34 @@ static void (*group_2x2_yes_xtoy[])(const double complex (*in)[2],
     [GET_INDEX(T1TtoA)] = vnaconv_ttoa,
     [GET_INDEX(T1TtoB)] = vnaconv_ttob,
 
+    [GET_INDEX(T1UtoZ)] = vnaconv_utoz,
+    [GET_INDEX(T1UtoY)] = vnaconv_utoy,
+    [GET_INDEX(T1UtoH)] = vnaconv_utoh,
+    [GET_INDEX(T1UtoG)] = vnaconv_utog,
+    [GET_INDEX(T1UtoA)] = vnaconv_utoa,
+    [GET_INDEX(T1UtoB)] = vnaconv_utob,
+
     [GET_INDEX(T1ZtoT)] = vnaconv_ztot,
+    [GET_INDEX(T1ZtoU)] = vnaconv_ztou,
 
     [GET_INDEX(T1YtoT)] = vnaconv_ytot,
+    [GET_INDEX(T1YtoU)] = vnaconv_ytou,
 
     [GET_INDEX(T1HtoS)] = vnaconv_htos,
     [GET_INDEX(T1HtoT)] = vnaconv_htot,
+    [GET_INDEX(T1HtoU)] = vnaconv_htou,
 
     [GET_INDEX(T1GtoS)] = vnaconv_gtos,
     [GET_INDEX(T1GtoT)] = vnaconv_gtot,
+    [GET_INDEX(T1GtoU)] = vnaconv_gtou,
 
     [GET_INDEX(T1AtoT)] = vnaconv_atot,
     [GET_INDEX(T1AtoS)] = vnaconv_atos,
+    [GET_INDEX(T1AtoU)] = vnaconv_atou,
 
     [GET_INDEX(T1BtoS)] = vnaconv_btos,
-    [GET_INDEX(T1BtoT)] = vnaconv_btot
+    [GET_INDEX(T1BtoT)] = vnaconv_btot,
+    [GET_INDEX(T1BtoU)] = vnaconv_btou
 };
 
 /*
@@ -323,6 +361,7 @@ static void (*group_2x2_yes_xtoy[])(const double complex (*in)[2],
 static void (*group_2x2_yes_xtoI[])(const double complex (*in)[2],
 	double complex *out, const double complex *z0) = {
     [GET_INDEX(T1TtoI)] = vnaconv_ttozi,
+    [GET_INDEX(T1UtoI)] = vnaconv_utozi,
     [GET_INDEX(T1HtoI)] = vnaconv_htozi,
     [GET_INDEX(T1GtoI)] = vnaconv_gtozi,
     [GET_INDEX(T1AtoI)] = vnaconv_atozi,

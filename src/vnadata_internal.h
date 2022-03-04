@@ -38,7 +38,7 @@
  * _VNADATA_IS_POWER: return true if parameter represents power or log-power
  */
 #define _VNADATA_IS_POWER(parameter) \
-	((parameter) == VPT_S || (parameter) == VPT_T)
+	((parameter) == VPT_S || (parameter) == VPT_T || (parameter) == VPT_U)
 
 /*
  * _VNADATA_IS_MATRIX: return true if parameter represents a convertible matrix

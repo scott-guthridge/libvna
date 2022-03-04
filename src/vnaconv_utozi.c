@@ -18,43 +18,25 @@
 
 #include "archdep.h"
 
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
-#include "vnadata_internal.h"
+#include <complex.h>
+#include <math.h>
+#include "vnaconv_internal.h"
 
 
 /*
- * vnadata_get_type_name: convert parameter type to name
- *   @type: parameter type
+ * vnaconv_utozi: calculate the two-port input port impedances
  */
-const char *vnadata_get_type_name(vnadata_parameter_type_t type)
+void vnaconv_utozi(const double complex (*u)[2], double complex *zi,
+	const double complex *z0)
 {
-    switch (type) {
-    case VPT_UNDEF:
-	return "undefined";
-    case VPT_S:
-	return "S";
-    case VPT_T:
-	return "T";
-    case VPT_U:
-	return "U";
-    case VPT_Z:
-	return "Z";
-    case VPT_Y:
-	return "Y";
-    case VPT_H:
-	return "H";
-    case VPT_G:
-	return "G";
-    case VPT_A:
-	return "A";
-    case VPT_B:
-	return "B";
-    case VPT_ZIN:
-	return "Zin";
-    default:
-	break;
-    }
-    return NULL;
+    const double complex u11 = u[0][0];
+    const double complex u12 = u[0][1];
+    const double complex u21 = u[1][0];
+    const double complex z1  = z0[0];
+    const double complex z2  = z0[1];
+    const double complex z1c = conj(z1);
+    const double complex z2c = conj(z2);
+
+    zi[0] = (u11 * z1c - u12 * z1) / (u11 + u12);
+    zi[1] = (u11 * z2c + u21 * z2) / (u11 - u21);
 }

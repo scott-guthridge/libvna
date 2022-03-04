@@ -526,6 +526,9 @@ static const file_format_t format_table[] = {
     { "TRI",		VPT_T,		false,	true  },
     { "TMA",		VPT_T,		false,	true  },
     { "TDB",		VPT_T,		false,	true  },
+    { "URI",		VPT_U,		false,	true  },
+    { "UMA",		VPT_U,		false,	true  },
+    { "UDB",		VPT_U,		false,	true  },
     { "ARI",		VPT_A,		false,  true  },
     { "AMA",		VPT_A,		false,  true  },
     { "BRI",		VPT_B,		false,  true  },
@@ -683,10 +686,8 @@ static libt_result_t test_vnadata_slc()
 		    }
 		    break;
 
-		case _VPT_U:
-		    continue;
-
 		case VPT_T:
+		case VPT_U:
 		case VPT_H:
 		case VPT_G:
 		case VPT_A:
