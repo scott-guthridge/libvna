@@ -179,13 +179,9 @@ typedef enum conversion_code {
     /*
      * Group NxN_yes_x2I: N-port to Zin vector
      */
-    N1ZtoI = MAKE_CODE(DIM_NxN | Z0_YES | CONV_xtoI,  0),
-    N1YtoI = MAKE_CODE(DIM_NxN | Z0_YES | CONV_xtoI,  1),
-
-    /*
-     * Group MxN_yes_x2I: MxN to Zin vector
-     */
-    A1StoI = MAKE_CODE(DIM_ANY | Z0_YES | CONV_xtoI,  0),
+    N1StoI = MAKE_CODE(DIM_NxN | Z0_YES | CONV_xtoI,  0),
+    N1ZtoI = MAKE_CODE(DIM_NxN | Z0_YES | CONV_xtoI,  1),
+    N1YtoI = MAKE_CODE(DIM_NxN | Z0_YES | CONV_xtoI,  2),
 
     /*
      * Input and output types the same -- no conversion.
@@ -218,7 +214,7 @@ typedef enum conversion_code {
 static const conversion_code_t conversion_table[VPT_NTYPES][VPT_NTYPES] = {
      /*  -       S       Z       Y       T       H       G       A       B       I  */
 /*-*/{ ASAME,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL,  INVAL },
-/*S*/{ INVAL,  ASAME, N1StoZ, N1StoY, T0StoT, T1StoH, T1StoG, T1StoA, T1StoB, A1StoI },
+/*S*/{ INVAL,  ASAME, N1StoZ, N1StoY, T0StoT, T1StoH, T1StoG, T1StoA, T1StoB, N1StoI },
 /*Z*/{ INVAL, N1ZtoS,  NSAME, N0ZtoY, T1ZtoT, T0ZtoH, T0ZtoG, T0ZtoA, T0ZtoB, N1ZtoI },
 /*Y*/{ INVAL, N1YtoS, N0YtoZ,  NSAME, T1YtoT, T0YtoH, T0YtoG, T0YtoA, T0YtoB, N1YtoI },
 /*T*/{ INVAL, T0TtoS, T1TtoZ, T1TtoY,  TSAME, T1TtoH, T1TtoG, T1TtoA, T1TtoB, T1TtoI },
@@ -330,16 +326,9 @@ static void (*group_NxN_yes_xtoy[])(const double complex *in,
  */
 static void (*group_NxN_yes_xtoI[])(const double complex *in,
 	double complex *out, const double complex *z0, int n) = {
+    [GET_INDEX(N1StoI)] = vnaconv_stozin,
     [GET_INDEX(N1ZtoI)] = vnaconv_ztozin,
     [GET_INDEX(N1YtoI)] = vnaconv_ytozin
-};
-
-/*
- * group_MxN_yes_xtoI: MxN to Zin vector conversion functions with z0
- */
-static void (*group_MxN_yes_xtoI[])(const double complex *in,
-	double complex *out, const double complex *z0, int m, int n) = {
-    [GET_INDEX(A1StoI)] = vnaconv_stozimn,
 };
 
 /*
@@ -599,20 +588,6 @@ int vnadata_convert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
 	    for (int findex = 0; findex < vdp_in->vd_frequencies; ++findex) {
 		(*fn)(vdp_in->vd_data[findex], vdp_out->vd_data[findex],
 		    get_fz0_vector(vdip_in, findex), vdp_in->vd_rows);
-	    }
-	}
-	break;
-
-    case DIM_ANY | Z0_YES | CONV_xtoI:
-	{
-	    void (*fn)(const double complex *in, double complex *out,
-		    const double complex *z0, int rows, int columns);
-
-	    fn = group_MxN_yes_xtoI[index];
-	    for (int findex = 0; findex < vdp_in->vd_frequencies; ++findex) {
-		(*fn)(vdp_in->vd_data[findex], vdp_out->vd_data[findex],
-		    get_fz0_vector(vdip_in, findex), vdp_in->vd_rows,
-		    vdp_in->vd_columns);
 	    }
 	}
 	break;

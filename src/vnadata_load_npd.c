@@ -34,8 +34,9 @@
  */
 typedef enum npd_record_type {
     T_KVERSION,
-    T_KROWS,
-    T_KCOLUMNS,
+    T_KROWS,		/* for compatibility */
+    T_KCOLUMNS,		/* for compatibility */
+    T_KPORTS,
     T_KFREQUENCIES,
     T_KPARAMETERS,
     T_KFPRECISION,
@@ -291,6 +292,10 @@ static int scan_line(npd_scan_state_t *nssp)
 		nssp->nss_record_type = T_KPARAMETERS;
 		return 0;
 	    }
+	    if (strcmp(&FIELD(nssp, 0)[2], "ports") == 0) {
+		nssp->nss_record_type = T_KPORTS;
+		return 0;
+	    }
 	    break;
 
 	case 'r':
@@ -404,7 +409,6 @@ int _vnadata_load_npd(vnadata_internal_t *vdip, FILE *fp, const char *filename)
     int rows = -1;
     int columns = -1;
     int ports = -1;
-    int diagonals = -1;
     int frequencies = -1;
     int rv = -1;
     int n_fields = 1;
@@ -455,13 +459,23 @@ int _vnadata_load_npd(vnadata_internal_t *vdip, FILE *fp, const char *filename)
 	    }
 	    continue;
 
+	case T_KPORTS:
+	    if (ports != -1) {
+		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
+			"redundant ports line", nss.nss_filename, nss.nss_line);
+		goto out;
+	    }
+	    if (expect_nnint_arg(&nss, &ports) == -1) {
+		goto out;
+	    }
+	    if (scan_line(&nss) == -1) {
+		goto out;
+	    }
+	    continue;
+
 	case T_KROWS:
 	    if (expect_nnint_arg(&nss, &rows) == -1) {
 		goto out;
-	    }
-	    if (columns >= 0) {
-		diagonals = MIN(rows, columns);
-		ports     = MAX(rows, columns);
 	    }
 	    if (scan_line(&nss) == -1) {
 		goto out;
@@ -471,10 +485,6 @@ int _vnadata_load_npd(vnadata_internal_t *vdip, FILE *fp, const char *filename)
 	case T_KCOLUMNS:
 	    if (expect_nnint_arg(&nss, &columns) == -1) {
 		goto out;
-	    }
-	    if (rows >= 0) {
-		diagonals = MIN(rows, columns);
-		ports     = MAX(rows, columns);
 	    }
 	    if (scan_line(&nss) == -1) {
 		goto out;
@@ -553,9 +563,20 @@ int _vnadata_load_npd(vnadata_internal_t *vdip, FILE *fp, const char *filename)
 
 
 	case T_KZ0:
+	    if (ports < 0) {	/* compatibility with earlier code */
+		if (rows >= 0 && columns >= 0) {
+		    if (rows != columns) {
+			_vnadata_error(vdip, VNAERR_SYNTAX,
+				"%s (line %d) error: rows and columns must be "
+				"equal", nss.nss_filename, nss.nss_line);
+			goto out;
+		    }
+		    ports = columns;
+		}
+	    }
 	    if (ports < 0) {
 		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
-			"rows and columns must come before #:z0",
+			"ports must come before #:z0",
 			nss.nss_filename, nss.nss_line);
 		goto out;
 	    }
@@ -618,15 +639,20 @@ int _vnadata_load_npd(vnadata_internal_t *vdip, FILE *fp, const char *filename)
 	}
 	break;
     }
-    if (rows < 0) {
-	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
-		"required keyword #:rows missing",
-		nss.nss_filename, nss.nss_line);
-	goto out;
+    if (ports < 0) {	/* compatibility with earlier code */
+	if (rows >= 0 && columns >= 0) {
+	    if (rows != columns) {
+		_vnadata_error(vdip, VNAERR_SYNTAX,
+			"%s (line %d) error: rows and columns must be "
+			"equal", nss.nss_filename, nss.nss_line);
+		goto out;
+	    }
+	    ports = columns;
+	}
     }
-    if (columns < 0) {
+    if (ports < 0) {
 	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
-		"required keyword #:columns missing",
+		"required keyword #:ports missing",
 		nss.nss_filename, nss.nss_line);
 	goto out;
     }
@@ -657,7 +683,7 @@ int _vnadata_load_npd(vnadata_internal_t *vdip, FILE *fp, const char *filename)
     for (int i = 0; i < vdip->vdi_format_count; ++i) {
 	const vnadata_format_descriptor_t *vfdp = &vdip->vdi_format_vector[i];
 	vnadata_parameter_type_t type;
-	int drows = rows, dcolumns = columns;
+	int drows = ports, dcolumns = ports;
 	int fields = 2 * drows * dcolumns;
 	int quality = 0;
 
@@ -680,7 +706,7 @@ int _vnadata_load_npd(vnadata_internal_t *vdip, FILE *fp, const char *filename)
 	    case VNADATA_FORMAT_IL:
 	    case VNADATA_FORMAT_RL:
 	    case VNADATA_FORMAT_VSWR:
-		fields = diagonals;
+		fields = ports;
 		break;
 
 	    default:
@@ -690,13 +716,6 @@ int _vnadata_load_npd(vnadata_internal_t *vdip, FILE *fp, const char *filename)
 
 	case VPT_Z:
 	case VPT_Y:
-	    if (rows != columns) {
-		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
-			"%s parameters require a square matrix",
-			nss.nss_filename, nss.nss_line,
-			vnadata_get_type_name(vfdp->vfd_parameter));
-		goto out;
-	    }
 	    break;
 
 	case VPT_T:
@@ -704,7 +723,7 @@ int _vnadata_load_npd(vnadata_internal_t *vdip, FILE *fp, const char *filename)
 	case VPT_G:
 	case VPT_A:
 	case VPT_B:
-	    if (rows != 2 || columns != 2) {
+	    if (ports != 2) {
 		_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
 			"%s parameters require a 2x2 matrix",
 			nss.nss_filename, nss.nss_line,
@@ -715,8 +734,8 @@ int _vnadata_load_npd(vnadata_internal_t *vdip, FILE *fp, const char *filename)
 
 	case VPT_ZIN:
 	    drows = 1;
-	    dcolumns = diagonals;
-	    fields = 2 * diagonals;
+	    dcolumns = ports;
+	    fields = 2 * ports;
 	    break;
 
 	default:

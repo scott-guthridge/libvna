@@ -42,7 +42,7 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnaconv_htos.c vnaconv_htot.c vnaconv_htoy.c vnaconv_htoz.c \
 	vnaconv_htozi.c vnaconv_stoa.c vnaconv_stob.c vnaconv_stog.c \
 	vnaconv_stoh.c vnaconv_stot.c vnaconv_stoy.c vnaconv_stoyn.c \
-	vnaconv_stoz.c vnaconv_stozi.c vnaconv_stozimn.c vnaconv_stozin.c \
+	vnaconv_stoz.c vnaconv_stozi.c vnaconv_stozin.c \
 	vnaconv_stozn.c vnaconv_ttoa.c vnaconv_ttob.c vnaconv_ttog.c \
 	vnaconv_ttoh.c vnaconv_ttos.c vnaconv_ttoy.c vnaconv_ttoz.c \
 	vnaconv_ttozi.c vnaconv_ytoa.c vnaconv_ytob.c vnaconv_ytog.c \

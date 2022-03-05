@@ -46,10 +46,14 @@
 	  match, thus S12 and S22 have no effect on the measurements
 	  of S11 and S21.
 	- They cannot be saved in either Touchstone format.
-
+	- In NPD format, the definition of rows, columns is unintuitive
+	  because for example, when saving a Zin row vector, we still
+	  write rows = columns = ports, since that's what we'd have to
+	  do if we saved both S and Zin together.
       Arguments for keeping rectangular S matrices:
         - Though they can't be saved in Touchstone, it's not uncommon
 	  to see S11, S21 only in spreadsheet form.
+      DONE
 
     - Audit the API for whether frequencies or frequency_vector
       comes first.  In general, the pointer should come first, but in

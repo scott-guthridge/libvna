@@ -256,11 +256,6 @@ static libt_result_t test_conversions_3x3()
 	}
 
 	(void)memset((void *)xi, 0, sizeof(xi));
-	vnaconv_stozimn(*s, xi, z0, 3, 3);
-	TEST_EQUAL(xi[0], zi[0], "stozimn: zi0");
-	TEST_EQUAL(xi[1], zi[1], "stozimn: zi1");
-
-	(void)memset((void *)xi, 0, sizeof(xi));
 	vnaconv_ztozin(*z, xi, z0, 3);
 	TEST_EQUAL(xi[0], zi[0], "ztozi: zi0");
 	TEST_EQUAL(xi[1], zi[1], "ztozi: zi1");

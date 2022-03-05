@@ -155,6 +155,23 @@ static int run_trial(int trial, vnadata_filetype_t filetype,
 		    tdp->td_vector[findex], z0_vector, tdp->td_rows,
 		    tdp->td_columns, VPT_S, type);
 	}
+	if (opt_v >= 2) {
+	    (void)printf("After conversion to %s:\n",
+		    vnadata_get_type_name(type));
+	    for (int findex = 0; findex < FREQUENCIES; ++findex) {
+		for (int row = 0; row < rows; ++row) {
+		    for (int column = 0; column < columns; ++column) {
+			int cell = row * columns + column;
+			double complex value = tdp->td_vector[findex][cell];
+
+			(void)printf("  %9.6f%+9.6fj",
+				creal(value), cimag(value));
+		    }
+		    (void)printf("\n");
+		}
+		(void)printf("\n");
+	    }
+	}
     }
 
     /*
@@ -646,20 +663,6 @@ static libt_result_t test_vnadata_slc()
 		    continue;
 
 		case VPT_S:
-		    if (filetype == VNADATA_FILETYPE_NPD) {
-			for (int rows = 1; rows <= 5; ++rows) {
-			    for (int columns = 1; columns <= 5; ++columns) {
-				result = test_vnadata_slc_helper(trial,
-					filetype, type, rows, columns);
-				if (result != T_PASS) {
-				    goto out;
-				}
-			    }
-			}
-			break;
-		    }
-		    /*FALLTHROUGH*/
-
 		case VPT_Z:
 		case VPT_Y:
 		    {

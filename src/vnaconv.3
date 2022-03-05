@@ -19,7 +19,7 @@
 .TH VNACONV 3 "JULY 2017" GNU
 .nh
 .SH NAME
-vnaconv_stoz, vnaconv_stoy, vnaconv_stot, vnaconv_stoh, vnaconv_stog, vnaconv_stoa, vnaconv_stob, vnaconv_ztos, vnaconv_ztoy, vnaconv_ztot, vnaconv_ztoh, vnaconv_ztog, vnaconv_ztoa, vnaconv_ztob, vnaconv_ytos, vnaconv_ytoz, vnaconv_ytot, vnaconv_ytoh, vnaconv_ytog, vnaconv_ytoa, vnaconv_ytob, vnaconv_ttos, vnaconv_ttoz, vnaconv_ttoy, vnaconv_ttoh, vnaconv_ttog, vnaconv_ttoa, vnaconv_ttob, vnaconv_htoz, vnaconv_htoy, vnaconv_htog, vnaconv_htoa, vnaconv_htob, vnaconv_htos, vnaconv_htot, vnaconv_gtos, vnaconv_gtot, vnaconv_gtoz, vnaconv_gtoy, vnaconv_gtoh, vnaconv_gtoa, vnaconv_gtob, vnaconv_atos, vnaconv_atot, vnaconv_atoz, vnaconv_atoy, vnaconv_atoh, vnaconv_atog, vnaconv_atob, vnaconv_btos, vnaconv_btot, vnaconv_btoz, vnaconv_btoy, vnaconv_btoh, vnaconv_btog, vnaconv_btoa, vnaconv_stozi, vnaconv_ztozi, vnaconv_ytozi, vnaconv_ttozi, vnaconv_htozi, vnaconv_gtozi, vnaconv_atozi, vnaconv_btozi, vnaconv_stozn, vnaconv_stoyn, vnaconv_ztosn, vnaconv_ztoyn, vnaconv_ytozn, vnaconv_ytosn, vnaconv_stozin, vnaconv_ztozin, vnaconv_ytozin, vnaconv_stozimn \- convert 2-port and N-port network parameters
+vnaconv_stoz, vnaconv_stoy, vnaconv_stot, vnaconv_stoh, vnaconv_stog, vnaconv_stoa, vnaconv_stob, vnaconv_ztos, vnaconv_ztoy, vnaconv_ztot, vnaconv_ztoh, vnaconv_ztog, vnaconv_ztoa, vnaconv_ztob, vnaconv_ytos, vnaconv_ytoz, vnaconv_ytot, vnaconv_ytoh, vnaconv_ytog, vnaconv_ytoa, vnaconv_ytob, vnaconv_ttos, vnaconv_ttoz, vnaconv_ttoy, vnaconv_ttoh, vnaconv_ttog, vnaconv_ttoa, vnaconv_ttob, vnaconv_htoz, vnaconv_htoy, vnaconv_htog, vnaconv_htoa, vnaconv_htob, vnaconv_htos, vnaconv_htot, vnaconv_gtos, vnaconv_gtot, vnaconv_gtoz, vnaconv_gtoy, vnaconv_gtoh, vnaconv_gtoa, vnaconv_gtob, vnaconv_atos, vnaconv_atot, vnaconv_atoz, vnaconv_atoy, vnaconv_atoh, vnaconv_atog, vnaconv_atob, vnaconv_btos, vnaconv_btot, vnaconv_btoz, vnaconv_btoy, vnaconv_btoh, vnaconv_btog, vnaconv_btoa, vnaconv_stozi, vnaconv_ztozi, vnaconv_ytozi, vnaconv_ttozi, vnaconv_htozi, vnaconv_gtozi, vnaconv_atozi, vnaconv_btozi, vnaconv_stozn, vnaconv_stoyn, vnaconv_ztosn, vnaconv_ztoyn, vnaconv_ytozn, vnaconv_ytosn, vnaconv_stozin, vnaconv_ztozin, vnaconv_ytozin \- convert 2-port and N-port network parameters
 .\"
 .SH SYNOPSIS
 .SS "Include and Link"
@@ -446,13 +446,6 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .in +4n
 .BI "const double complex *" z0 ", int " n ");"
 .in -4n
-.SS "Rectangular Matrix to Input Impedance"
-.PP
-.BI "void vnaconv_stozimn(const double complex *" s ", double complex *" zi ,
-.in +4n
-.BI "const double complex *" z0 ", int " rows ", int " columns ");"
-.in -4n
-.sp
 .\"
 .SH DESCRIPTION
 These functions convert between various mathematical representations
@@ -764,13 +757,6 @@ For example, \fBvnaconv_stozi\fP() finds the input impedances from a
 2x2 s-parameter matrix, while \fBvnaconv_ztozin\fP() finds the input
 impedances from an \fIn\fP by \fIn\fP z-parameter matrix.
 The \fIzi\fP and \fIz0\fP vectors must have length \fIn\fP.
-.PP
-The special-case function \fBvnaconv_stozimn\fP() finds the input
-impedances for the ports along the major diagonal of an m by n rectangular
-s-parameter matrix when all other ports are terminated at the system
-impedances.
-The \fIzi\fP and \fIz0\fP vectors must have length at least
-MIN(\fIrows\fP, \fIcolumns\fP).
 .\"
 .SH "RETURN VALUE"
 All functions return void.  The result matrix may contain inf or nan

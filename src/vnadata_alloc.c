@@ -289,12 +289,10 @@ static int validate_type(const char *function, vnadata_internal_t *vdip,
      * dimensions.
      */
     switch (type) {
-	/* generic */
-    case VPT_UNDEF:
-    case VPT_S:
+    case VPT_UNDEF:	/* any dimensions */
 	break;
 
-	/* square only */
+    case VPT_S:		/* square only */
     case VPT_Z:
     case VPT_Y:
 	if (rows != columns) {
@@ -319,8 +317,7 @@ static int validate_type(const char *function, vnadata_internal_t *vdip,
 	}
 	break;
 
-	/* vector only */
-    case VPT_ZIN:
+    case VPT_ZIN:	/* row vector only */
 	if (rows != 1) {
 	    _vnadata_error(vdip, VNAERR_USAGE,
 		    "%s: invalid data dimensions: %d x %d: "

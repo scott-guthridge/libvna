@@ -57,7 +57,8 @@ void libt_vnadata_convert(const double complex *in, double complex *out,
 	    vnaconv_stot((const row2_t *)in, (row2_t *)out);
 	    return;
 	case VPT_ZIN:
-	    vnaconv_stozimn(in, out, z0, rows, columns);
+	    assert(rows == columns);
+	    vnaconv_stozin(in, out, z0, rows);
 	    return;
 	default:
 	    break;

@@ -145,12 +145,6 @@ extern void vnaconv_ztoyn(const double complex *z, double complex *y, int n);
 extern void vnaconv_ztozin(const double complex *z, double complex *zi,
 	const double complex *z0, int n);
 
-/*
- * MxN conversions
- */
-extern void vnaconv_stozimn(const double complex *s, double complex *zi,
-	const double complex *z0, int rows, int columns);
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

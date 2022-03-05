@@ -192,7 +192,7 @@ static int convert_input(const char *function, vnadata_internal_t *vdip,
 static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 {
     vnadata_t *vdp = &vdip->vdi_vd;
-    int rows, columns, ports, diagonals;
+    int rows, ports;
     int output_fields = 1;
     int current_field = 0;
     int field_width;
@@ -209,19 +209,16 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
     }
 
     /*
-     * Get the number of rows and columns.  We have to do a little
-     * munging here if the vdp's parameter type is Zin because a Zin
-     * vector is really a diagonal matrix stored as a row vector.  We
-     * want to report the dimensions of the underlying matrix, not the
-     * vector.
+     * Get the number of rows and columns.  Columns is the number
+     * of ports.
      */
-    rows    = vnadata_get_rows(vdp);
-    columns = vnadata_get_columns(vdp);
+    rows  = vnadata_get_rows(vdp);
+    ports = vnadata_get_columns(vdp);
     if (vdp->vd_type == VPT_ZIN) {
-	rows = columns;
+	assert(rows == 1);
+    } else {
+	assert(rows == ports);
     }
-    ports     = MAX(rows, columns);
-    diagonals = MIN(rows, columns);
 
     /*
      * Determine the number of digits needed to display both a single
@@ -256,10 +253,10 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 	case VNADATA_FORMAT_MAG_ANGLE:
 	case VNADATA_FORMAT_REAL_IMAG:
 	    if (vfdp->vfd_parameter != VPT_ZIN) {
-		output_fields += 2 * rows * columns;
+		output_fields += 2 * rows * ports;
 		parameter_width = MAX(parameter_width, 1 + port_pair_width);
 	    } else {
-		output_fields += diagonals;
+		output_fields += ports;
 		parameter_width = MAX(parameter_width, 3 + port_width);
 	    }
 	    break;
@@ -268,22 +265,22 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 	case VNADATA_FORMAT_PRL:
 	case VNADATA_FORMAT_SRC:
 	case VNADATA_FORMAT_SRL:
-	    output_fields += 2 * diagonals;
+	    output_fields += 2 * ports;
 	    parameter_width = MAX(parameter_width, 3 + port_width);
 	    break;
 
 	case VNADATA_FORMAT_IL:
-	    output_fields += rows * columns - diagonals;
+	    output_fields += ports * (ports - 1);
 	    parameter_width = MAX(parameter_width, 2 + port_pair_width);
 	    break;
 
 	case VNADATA_FORMAT_RL:
-	    output_fields += diagonals;
+	    output_fields += ports;
 	    parameter_width = MAX(parameter_width, 2 + port_width);
 	    break;
 
 	case VNADATA_FORMAT_VSWR:
-	    output_fields += diagonals;
+	    output_fields += ports;
 	    parameter_width = MAX(parameter_width, 4 + port_width);
 	    break;
 
@@ -299,8 +296,7 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
      */
     (void)fprintf(fp, "#NPD\n");
     (void)fprintf(fp, "#:version 1.0\n");
-    (void)fprintf(fp, "#:rows %d\n", rows);
-    (void)fprintf(fp, "#:columns %d\n", columns);
+    (void)fprintf(fp, "#:ports %d\n", ports);
     (void)fprintf(fp, "#:frequencies %d\n", vnadata_get_frequencies(vdp));
     (void)fprintf(fp, "#:parameters %s\n", vdip->vdi_format_string);
     (void)fprintf(fp, "#:z0");
@@ -371,8 +367,8 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 	     * Handle Zin.
 	     */
 	    if (vfdp->vfd_parameter == VPT_ZIN) {
-		for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-		    (void)sprintf(parameter_buf, "Zin%d", diagonal + 1);
+		for (int port = 0; port < ports; ++port) {
+		    (void)sprintf(parameter_buf, "Zin%d", port + 1);
 		    (void)fprintf(fp, "# field %*d: %-*s",
 			field_width, ++current_field,
 			parameter_width, parameter_buf);
@@ -453,9 +449,9 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 		/*NOTREACHED*/
 	    }
 	    for (int row = 0; row < rows; ++row) {
-		for (int column = 0; column < columns; ++column) {
+		for (int column = 0; column < ports; ++column) {
 		    const char *type = (type_vector[1] == NULL) ?
-			type_vector[0] : type_vector[row * columns + column];
+			type_vector[0] : type_vector[row * ports + column];
 
 		    if (ports <= 9) {
 			(void)sprintf(parameter_buf, "%s%d%d",
@@ -502,8 +498,8 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 
 	case VNADATA_FORMAT_PRC:
 	    assert(vfdp->vfd_parameter == VPT_ZIN);
-            for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-                (void)sprintf(parameter_buf, "PRC%d", diagonal + 1);
+            for (int port = 0; port < ports; ++port) {
+                (void)sprintf(parameter_buf, "PRC%d", port + 1);
                 (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
                     field_width, ++current_field, parameter_width,
 		    parameter_buf);
@@ -515,8 +511,8 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 
 	case VNADATA_FORMAT_PRL:
 	    assert(vfdp->vfd_parameter == VPT_ZIN);
-            for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-                (void)sprintf(parameter_buf, "PRL%d", diagonal + 1);
+            for (int port = 0; port < ports; ++port) {
+                (void)sprintf(parameter_buf, "PRL%d", port + 1);
                 (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
                     field_width, ++current_field, parameter_width,
 		    parameter_buf);
@@ -528,8 +524,8 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 
 	case VNADATA_FORMAT_SRC:
 	    assert(vfdp->vfd_parameter == VPT_ZIN);
-            for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-                (void)sprintf(parameter_buf, "SRC%d", diagonal + 1);
+            for (int port = 0; port < ports; ++port) {
+                (void)sprintf(parameter_buf, "SRC%d", port + 1);
                 (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
                     field_width, ++current_field, parameter_width,
 		    parameter_buf);
@@ -541,8 +537,8 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 
 	case VNADATA_FORMAT_SRL:
 	    assert(vfdp->vfd_parameter == VPT_ZIN);
-            for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-                (void)sprintf(parameter_buf, "SRL%d", diagonal + 1);
+            for (int port = 0; port < ports; ++port) {
+                (void)sprintf(parameter_buf, "SRL%d", port + 1);
                 (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
                     field_width, ++current_field, parameter_width,
 		    parameter_buf);
@@ -555,7 +551,7 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 	case VNADATA_FORMAT_IL:
 	    assert(vfdp->vfd_parameter == VPT_S);
 	    for (int row = 0; row < rows; ++row) {
-		for (int column = 0; column < columns; ++column) {
+		for (int column = 0; column < ports; ++column) {
 		    if (row == column) {
 			continue;
 		    }
@@ -575,8 +571,8 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 
 	case VNADATA_FORMAT_RL:
 	    assert(vfdp->vfd_parameter == VPT_S);
-            for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-                (void)sprintf(parameter_buf, "RL%d", diagonal + 1);
+            for (int port = 0; port < ports; ++port) {
+                (void)sprintf(parameter_buf, "RL%d", port + 1);
                 (void)fprintf(fp, "# field %*d: %-*s magnitude (dB)\n",
                     field_width, ++current_field, parameter_width,
 		    parameter_buf);
@@ -585,8 +581,8 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 
 	case VNADATA_FORMAT_VSWR:
 	    assert(vfdp->vfd_parameter == VPT_S);
-            for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
-                (void)sprintf(parameter_buf, "VSWR%d", diagonal + 1);
+            for (int port = 0; port < ports; ++port) {
+                (void)sprintf(parameter_buf, "VSWR%d", port + 1);
                 (void)fprintf(fp, "# field %*d: %-*s\n",
                     field_width, ++current_field, parameter_width,
 		    parameter_buf);
@@ -711,7 +707,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 {
     vnadata_internal_t *vdip;
     vnadata_parameter_type_t type;
-    int rows, columns, ports, diagonals, frequencies;
+    int rows, ports, frequencies;
     bool promote_ts2 = false;
     int aprecision;
     int rc = -1;
@@ -756,9 +752,9 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 
     /*
      * Get the characteristics of network parameter data and make sure
-     * the parameter type is known.  For VPT_ZIN, the data are stored
-     * as a row vector, but they really represent a diagonal matrix --
-     * set diagonals accordingly.
+     * the parameter type is known.  Note that for VPT_ZIN, the data
+     * are stored as a row vector, but they really represent a diagonal
+     * matrix.
      */
     type = vdp->vd_type;
     if (type == VPT_UNDEF) {
@@ -768,23 +764,17 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 	goto out;
     }
     rows             = vdp->vd_rows;
-    columns          = vdp->vd_columns;
-    ports            = MAX(rows, columns);
-    if (type != VPT_ZIN) {
-	diagonals    = MIN(rows, columns);
-    } else {
-	diagonals    = columns;
-    }
+    ports            = vdp->vd_columns;
     frequencies      = vdp->vd_frequencies;
     frequency_vector = vdp->vd_frequency_vector;
 
     /*
-     * If any dimension is zero, fail.
+     * If we don't have at least one port, fail.
      */
-    if (rows == 0 || columns == 0) {
+    if (ports < 1) {
 	_vnadata_error(vdip, VNAERR_USAGE,
 		"%s: invalid data dimensions: %d x %d",
-		function, rows, columns);
+		function, rows, ports);
 	goto out;
     }
     if (frequencies == 0) {
@@ -891,17 +881,6 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 			function, _vnadata_format_to_name(vfdp));
 		goto out;
 	    }
-	}
-
-	/*
-	 * Touchstone format supports only square matrices with at least
-	 * one port.
-	 */
-	if (rows != columns || ports < 1) {
-	    _vnadata_error(vdip, VNAERR_USAGE, "%s: "
-		    "cannot save %d x %d matrix in Touchstone file type",
-		    function, rows, columns);
-	    goto out;
 	}
 
 	/*
@@ -1222,7 +1201,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 		switch (vfdp->vfd_format) {
 		case VNADATA_FORMAT_IL:
 		    for (int row = 0; row < rows; ++row) {
-			for (int column = 0; column < columns; ++column) {
+			for (int column = 0; column < ports; ++column) {
 			    double complex value;
 
 			    if (row == column) {
@@ -1232,7 +1211,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 				    column);
 			    (void)fputc(' ', fp);
 			    last_arg = format == vdip->vdi_format_count - 1 &&
-				row == rows - 1 && column == columns - 1;
+				row == rows - 1 && column == ports - 1;
 			    print_value(fp, vdip->vdi_dprecision,
 				    /*plus=*/true, /*pad=*/!last_arg,
 				    -20.0 * log10(cabs(value)));
@@ -1242,14 +1221,13 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 		    break;
 
 		case VNADATA_FORMAT_RL:
-		    for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
+		    for (int port = 0; port < ports; ++port) {
 			double complex value;
 
-			value = vnadata_get_cell(matrix, findex, diagonal,
-				diagonal);
+			value = vnadata_get_cell(matrix, findex, port, port);
 			(void)fputc(' ', fp);
 			last_arg = format == vdip->vdi_format_count - 1 &&
-			    diagonal == diagonals - 1;
+			    port == ports - 1;
 			print_value(fp, vdip->vdi_dprecision,
 				/*plus=*/true, /*pad=*/!last_arg,
 				-20.0 * log10(cabs(value)));
@@ -1258,18 +1236,17 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 		    break;
 
 		case VNADATA_FORMAT_VSWR:
-		    for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
+		    for (int port = 0; port < ports; ++port) {
 			double complex sxx;
 			double a;
 			double vswr;
 
-			sxx = vnadata_get_cell(matrix, findex,
-				diagonal, diagonal);
+			sxx = vnadata_get_cell(matrix, findex, port, port);
 			a = cabs(sxx);
 			vswr = (1.0 + a) / fabs(1.0 - a);
 			(void)fputc(' ', fp);
 			last_arg = format == vdip->vdi_format_count - 1 &&
-			    diagonal == diagonals - 1;
+			    port == ports - 1;
 			print_value(fp, vdip->vdi_dprecision,
 				/*plus=*/false, /*pad=*/!last_arg, vswr);
 		    }
@@ -1292,7 +1269,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 	    case VPT_A:
 	    case VPT_B:
 		for (int row = 0; row < rows; ++row) {
-		    for (int column = 0; column < columns; ++column) {
+		    for (int column = 0; column < ports; ++column) {
 			double complex value;
 			vnadata_filetype_t filetype = vdip->vdi_filetype;
 
@@ -1318,7 +1295,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 			 */
 			if (filetype == VNADATA_FILETYPE_TOUCHSTONE1 &&
 				ports == 2) {
-			    assert(rows == columns);
+			    assert(rows == ports);
 			    value = vnadata_get_cell(matrix, findex,
 				    column, row);
 			} else {
@@ -1359,7 +1336,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 
 			case VNADATA_FORMAT_REAL_IMAG:
 			    last_arg = format == vdip->vdi_format_count - 1 &&
-				row == rows - 1 && column == columns - 1;
+				row == rows - 1 && column == ports - 1;
 			    (void)fputc(' ', fp);
 			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/true, creal(value));
@@ -1378,10 +1355,10 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 
 	    case VPT_ZIN:
 		data = vnadata_get_matrix(matrix, findex);
-		for (int diagonal = 0; diagonal < diagonals; ++diagonal) {
+		for (int port = 0; port < ports; ++port) {
 		    double complex value;
 
-		    value = data[diagonal];
+		    value = data[port];
 		    switch (vfdp->vfd_format) {
 		    case VNADATA_FORMAT_MAG_ANGLE:
 			(void)fprintf(fp, "  ");
@@ -1400,7 +1377,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 
 		    case VNADATA_FORMAT_REAL_IMAG:
 			last_arg = format == vdip->vdi_format_count - 1 &&
-			    diagonal == diagonals - 1;
+			    port == ports - 1;
 			(void)fputc(' ', fp);
 			print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				/*pad=*/true, creal(value));
@@ -1415,7 +1392,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 			    double zr, zi;
 			    double r, x, c;
 
-			    z = data[diagonal];
+			    z = data[port];
 			    zr = creal(z);
 			    zi = cimag(z);
 			    r = (zr*zr + zi*zi) / zr;
@@ -1427,7 +1404,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 				    /*pad=*/true, r);
 			    (void)fputc(' ', fp);
 			    last_arg = format == vdip->vdi_format_count - 1 &&
-				diagonal == diagonals - 1;
+				port == ports - 1;
 			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/!last_arg, c);
 			}
@@ -1439,7 +1416,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 			    double zr, zi;
 			    double r, x, l;
 
-			    z = data[diagonal];
+			    z = data[port];
 			    zr = creal(z);
 			    zi = cimag(z);
 			    r = (zr*zr + zi*zi) / zr;
@@ -1450,7 +1427,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 				    /*pad=*/true, r);
 			    (void)fputc(' ', fp);
 			    last_arg = format == vdip->vdi_format_count - 1 &&
-				diagonal == diagonals - 1;
+				port == ports - 1;
 			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/!last_arg, l);
 			}
@@ -1462,7 +1439,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 			    double zr, zi;
 			    double c;
 
-			    z = data[diagonal];
+			    z = data[port];
 			    zr = creal(z);
 			    zi = cimag(z);
 			    c = -1.0 /
@@ -1472,7 +1449,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 				    /*pad=*/true, zr);
 			    (void)fputc(' ', fp);
 			    last_arg = format == vdip->vdi_format_count - 1 &&
-				diagonal == diagonals - 1;
+				port == ports - 1;
 			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/!last_arg, c);
 			}
@@ -1484,7 +1461,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 			    double zr, zi;
 			    double l;
 
-			    z = data[diagonal];
+			    z = data[port];
 			    zr = creal(z);
 			    zi = cimag(z);
 			    l = zi / (2.0 * M_PI * frequency_vector[findex]);
@@ -1493,7 +1470,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 				    /*pad=*/true, zr);
 			    (void)fputc(' ', fp);
 			    last_arg = format == vdip->vdi_format_count - 1 &&
-				diagonal == diagonals - 1;
+				port == ports - 1;
 			    print_value(fp, vdip->vdi_dprecision, /*plus=*/true,
 				    /*pad=*/!last_arg, l);
 			}

@@ -150,7 +150,6 @@ static libt_result_t test_vnadata_basic()
 	for (vnadata_parameter_type_t type = 0; type < VPT_NTYPES; ++type) {
 	    switch (type) {
 	    case VPT_UNDEF:
-	    case VPT_S:
 		for (int rows = 0; rows < 10; ++rows) {
 		    for (int columns = 0; columns < 10; ++columns) {
 			result = test_vnadata_basic_helper(trial, vdp, type,
@@ -162,6 +161,7 @@ static libt_result_t test_vnadata_basic()
 		}
 		break;
 
+	    case VPT_S:
 	    case VPT_Z:
 	    case VPT_Y:
 		for (int ports = 0; ports < 10; ++ports) {
