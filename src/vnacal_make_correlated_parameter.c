@@ -33,12 +33,12 @@
  * vnacal_make_correlated_parameter: create unknown parameter related by sigma
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @other: another parameter close to this one
- *   @sigma_frequencies: length of sigma_frequency_vector and sigma_vector
  *   @sigma_frequency_vector: vector of increasing frequency values
+ *   @sigma_frequencies: length of sigma_frequency_vector and sigma_vector
  *   @sigma_vector: frequency dependent parameter deviation from other
  */
 int vnacal_make_correlated_parameter(vnacal_t *vcp, int other,
-	int sigma_frequencies, const double *sigma_frequency_vector,
+	const double *sigma_frequency_vector, int sigma_frequencies,
 	const double *sigma_vector)
 {
     vnacal_parameter_t *vpmrp_other;

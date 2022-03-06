@@ -246,8 +246,9 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
      * in libt_vnacal_calculate_measurements.
      */
     for (int i = 0; i < N; ++i) {
-	if ((actual[i] = vnacal_make_vector_parameter(vcp, FREQUENCIES,
-		ttp->tt_frequency_vector, actual_values[i])) == -1) {
+	if ((actual[i] = vnacal_make_vector_parameter(vcp,
+			ttp->tt_frequency_vector, FREQUENCIES,
+			actual_values[i])) == -1) {
 	    result = T_FAIL;
 	    goto out;
 	}
@@ -257,31 +258,31 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
      * Create the unknown parameters.
      */
     if ((unknown[GAMMA] = vnacal_make_correlated_parameter(vcp, VNACAL_MATCH,
-		    FREQUENCIES, ttp->tt_frequency_vector,
+		    ttp->tt_frequency_vector, FREQUENCIES,
 		    sigma_a)) == -1) {
 	result = T_FAIL;
 	goto out;
     }
     if ((unknown[P1] = vnacal_make_correlated_parameter(vcp, VNACAL_MATCH,
-		    FREQUENCIES, ttp->tt_frequency_vector,
+		    ttp->tt_frequency_vector, FREQUENCIES,
 		    sigma_r)) == -1) {
 	result = T_FAIL;
 	goto out;
     }
     if ((unknown[P2] = vnacal_make_correlated_parameter(vcp, VNACAL_MATCH,
-		    FREQUENCIES, ttp->tt_frequency_vector,
+		    ttp->tt_frequency_vector, FREQUENCIES,
 		    sigma_r)) == -1) {
 	result = T_FAIL;
 	goto out;
     }
     if ((unknown[P3] = vnacal_make_correlated_parameter(vcp, VNACAL_ONE,
-		    FREQUENCIES, ttp->tt_frequency_vector,
+		    ttp->tt_frequency_vector, FREQUENCIES,
 		    sigma_st)) == -1) {
 	result = T_FAIL;
 	goto out;
     }
     if ((unknown[P4] = vnacal_make_correlated_parameter(vcp, unknown[GAMMA],
-		    FREQUENCIES, ttp->tt_frequency_vector,
+		    ttp->tt_frequency_vector, FREQUENCIES,
 		    sigma_l)) == -1) {
 	result = T_FAIL;
 	goto out;
@@ -296,25 +297,25 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
 	goto out;
     }
     if ((unknown[P7] = vnacal_make_correlated_parameter(vcp, unknown[GAMMA],
-		    FREQUENCIES, ttp->tt_frequency_vector,
+		    ttp->tt_frequency_vector, FREQUENCIES,
 		    sigma_l)) == -1) {
 	result = T_FAIL;
 	goto out;
     }
     if ((unknown[P8] = vnacal_make_correlated_parameter(vcp, unknown[P5],
-		    FREQUENCIES, ttp->tt_frequency_vector,
+		    ttp->tt_frequency_vector, FREQUENCIES,
 		    sigma_st)) == -1) {
 	result = T_FAIL;
 	goto out;
     }
     if ((unknown[P9] = vnacal_make_correlated_parameter(vcp, unknown[P6],
-		    FREQUENCIES, ttp->tt_frequency_vector,
+		    ttp->tt_frequency_vector, FREQUENCIES,
 		    sigma_o)) == -1) {
 	result = T_FAIL;
 	goto out;
     }
     if ((unknown[P10] = vnacal_make_correlated_parameter(vcp, unknown[GAMMA],
-		    FREQUENCIES, ttp->tt_frequency_vector,
+		    ttp->tt_frequency_vector, FREQUENCIES,
 		    sigma_l)) == -1) {
 	result = T_FAIL;
 	goto out;

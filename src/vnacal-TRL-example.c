@@ -543,8 +543,8 @@ static void make_calibration()
 	vnaconv_atos(abcd, s, z0);
 	s21_vector[findex] = s[1][0];
     }
-    if ((line_guess = vnacal_make_vector_parameter(vcp, C_FREQUENCIES,
-		    frequency_vector, s21_vector)) == -1) {
+    if ((line_guess = vnacal_make_vector_parameter(vcp,
+		    frequency_vector, C_FREQUENCIES, s21_vector)) == -1) {
 	exit(4);
     }
     if ((unknown_line = vnacal_make_unknown_parameter(vcp, line_guess)) == -1) {

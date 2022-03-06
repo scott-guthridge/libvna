@@ -316,8 +316,9 @@ extern int vnacal_make_scalar_parameter(vnacal_t *vcp, double complex gamma);
  *   @frequency_vector: vector of increasing frequency values
  *   @gamma_vector: vector of per-frequency gamma values
  */
-extern int vnacal_make_vector_parameter(vnacal_t *vcp, int frequencies,
-	const double *frequency_vector, const double complex *gamma_vector);
+extern int vnacal_make_vector_parameter(vnacal_t *vcp,
+	const double *frequency_vector, int frequencies,
+	const double complex *gamma_vector);
 
 /*
  * vnacal_make_unknown_parameter: create an unknown parameter
@@ -330,12 +331,12 @@ extern int vnacal_make_unknown_parameter(vnacal_t *vcp, int initial_guess);
  * vnacal_make_correlated_parameter: create unknown parameter related by sigma
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @other: another parameter close to this one
- *   @sigma_frequencies: length of frequency_vector and sigma_vector
  *   @sigma_frequency_vector: vector of increasing frequency values
+ *   @sigma_frequencies: length of frequency_vector and sigma_vector
  *   @sigma_vector: frequency dependent parameter deviation from other
  */
 extern int vnacal_make_correlated_parameter(vnacal_t *vcp, int other,
-	int sigma_frequencies, const double *sigma_frequency_vector,
+	const double *sigma_frequency_vector, int sigma_frequencies,
 	const double *sigma_vector);
 
 /*

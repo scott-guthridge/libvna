@@ -32,12 +32,13 @@
 /*
  * vnacal_make_vector_parameter: create frequency-dependent parameter
  *   @vcp: pointer returned from vnacal_create or vnacal_load
- *   @frequencies: length of frequency_vector and gamma_vector
  *   @frequency_vector: vector of increasing frequency values
+ *   @frequencies: length of frequency_vector and gamma_vector
  *   @gamma_vector: vector of per-frequency gamma values
  */
-int vnacal_make_vector_parameter(vnacal_t *vcp, int frequencies,
-	const double *frequency_vector, const double complex *gamma_vector)
+int vnacal_make_vector_parameter(vnacal_t *vcp,
+	const double *frequency_vector, int frequencies,
+	const double complex *gamma_vector)
 {
     vnacal_parameter_t *vpmrp;
 

@@ -37,44 +37,28 @@ ll.
 .BI "double complex " gamma );
 .\"
 .PP
-.ie t \{\
-.BI "int vnacal_make_vector_parameter(vnacal_t *" vcp ", int " frequencies ,
-.in +4n
-.BI "const double *" frequency_vector ", const double complex *" gamma_vector );
-.\}
-.el \{\
 .BI "int vnacal_make_vector_parameter(vnacal_t *" vcp ,
-.in +4n
-.BI "int " frequencies ", const double *" frequency_vector ,
-.br
+.RS +4n
+.BI "const double *" frequency_vector ", int " frequencies ,
+.if n .br
 .BI "const double complex *" gamma_vector );
-.in -4n
-.\}
+.RS -4n
 .\"
 .PP
 .BI "int vnacal_make_unknown_parameter(vnacal_t *" vcp ", int " initial_guess );
 .PP
 .BI "int vnacal_make_correlated_parameter(vnacal_t *" vcp ", int " other ,
-.ie n \{\
-.in +4n
-.BI "int " sigma_frequencies ", const double *" sigma_frequency_vector ,
-.br
+.RS +4n
+.BI "const double *" sigma_frequency_vector ", int " sigma_frequencies ,
+.if n .br
 .BI "const double *" sigma_vector );
-.in -4n
-.\}
-.el \{\
-.BI "int " sigma_frequencies ,
-.in +4n
-.BI "const double *" sigma_frequency_vector ", const double *" sigma_vector );
-.in -4n
-.\}
-.if n .in -4n
+.RS -4n
 .\"
 .PP
 .BI "double complex vnacal_get_parameter_value(vnacal_t *" vcp ,
-.if n .in +4n
+.if n .RS +4n
 .BI "int " parameter ", double " frequency );
-.if n .in -4n
+.if n .RS -4n
 .\"
 .PP
 .BI "int vnacal_delete_parameter(vnacal_t *" vcp ", int " parameter );

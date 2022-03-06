@@ -55,6 +55,7 @@
       comes first.  In general, the pointer should come first, but in
       vnacal_make_correlated_parameter, the length applies to two vectors.
       Check all and evaluate.
+      DONE
 
     - Before the 1.0 release, change "VNACAL" to "VNACal" in the vnacal
       save file and reset the version number to 1.0.  Make vnacal_load

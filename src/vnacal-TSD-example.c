@@ -354,7 +354,7 @@ static void get_delay_parameters(vnacal_t *vcp,
     for (int row = 0; row < 2; ++row) {
 	for (int column = 0; column < 2; ++column) {
 	    if ((delay_s[row][column] = vnacal_make_vector_parameter(vcp,
-			    frequencies, frequency_vector,
+			    frequency_vector, frequencies,
 			    s[row][column])) == -1) {
 		exit(3);
 	    }

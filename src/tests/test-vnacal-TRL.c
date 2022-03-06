@@ -276,13 +276,15 @@ static libt_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
 	int p_actual = -1, p_guess = -1;
 	int s_matrix[2][2];
 
-	if ((p_actual = vnacal_make_vector_parameter(vcp, TRL_FREQUENCIES,
-			ttp->tt_frequency_vector, r_actual)) == -1) {
+	if ((p_actual = vnacal_make_vector_parameter(vcp,
+			ttp->tt_frequency_vector, TRL_FREQUENCIES,
+			r_actual)) == -1) {
 	    result = T_FAIL;
 	    goto out;
 	}
-	if ((p_guess = vnacal_make_vector_parameter(vcp, TRL_FREQUENCIES,
-			ttp->tt_frequency_vector, r_guess)) == -1) {
+	if ((p_guess = vnacal_make_vector_parameter(vcp,
+			ttp->tt_frequency_vector, TRL_FREQUENCIES,
+			r_guess)) == -1) {
 	    result = T_FAIL;
 	    goto out;
 	}
@@ -316,13 +318,15 @@ static libt_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
 	int p_actual = -1, p_guess = -1;
 	int s_matrix[2][2];
 
-	if ((p_actual = vnacal_make_vector_parameter(vcp, TRL_FREQUENCIES,
-			ttp->tt_frequency_vector, l_actual)) == -1) {
+	if ((p_actual = vnacal_make_vector_parameter(vcp,
+			ttp->tt_frequency_vector, TRL_FREQUENCIES,
+			l_actual)) == -1) {
 	    result = T_FAIL;
 	    goto out;
 	}
-	if ((p_guess = vnacal_make_vector_parameter(vcp, TRL_FREQUENCIES,
-			ttp->tt_frequency_vector, l_guess)) == -1) {
+	if ((p_guess = vnacal_make_vector_parameter(vcp,
+			ttp->tt_frequency_vector, TRL_FREQUENCIES,
+			l_guess)) == -1) {
 	    result = T_FAIL;
 	    goto out;
 	}
