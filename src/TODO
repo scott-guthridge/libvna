@@ -66,6 +66,7 @@
       save file and reset the version number to 1.0.  Make vnacal_load
       recognize capital VNACAL versions for compatibility, mapping old
       2.0 to new 0.2 and old 3.0 to new 1.0.
+      DONE
 
    - Add vnacal_property_get_subtree, vnacal_property_set_subtree functions.
      DONE

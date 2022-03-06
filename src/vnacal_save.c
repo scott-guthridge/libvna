@@ -894,7 +894,7 @@ int vnacal_save(vnacal_t *vcp, const char *pathname)
     /*
      * Write the output file.
      */
-    (void)fprintf(fp, "#VNACAL 3.0\n");
+    (void)fprintf(fp, "#VNACal 1.0\n");
     if (!yaml_emitter_initialize(&emitter)) {
 	if (errno == 0) {
 	    errno = EINVAL;

@@ -759,7 +759,7 @@ static int parse_matrices(vnacal_load_state_t *vlsp, const vnacal_layout_t *vlp,
 		    packed_em[term][m_column] = em[term];
 		}
 	    }
-	    if (vlsp->vls_major_version == 2) {
+	    if (vlsp->vls_major_version == 0) {	/* pre-release v2.0 */
 		double complex **e_matrices[3] = {
 		    &packed_el[0][0], &packed_er[0][0], &packed_em[0][0]
 		};
@@ -924,7 +924,7 @@ static int parse_data(vnacal_load_state_t *vlsp, const vnacal_layout_t *vlp,
 	/*
 	 * Make sure we have the required error terms matrices.
 	 */
-	if (vlsp->vls_major_version == 2) {
+	if (vlsp->vls_major_version == 0) {
 	    required_matrices |= 1 << E;
 
 	} else switch (calp->cal_type) {
@@ -1126,7 +1126,7 @@ static int parse_set(vnacal_load_state_t *vlsp, yaml_node_t *node)
 		vcp->vc_filename, node->start_mark.line + 1);
 	return -1;
     }
-    if (vlsp->vls_major_version == 2) {
+    if (vlsp->vls_major_version == 0) {
 	if (type != (vnacal_type_t)-1 && type != VNACAL_E12) {
 	    _vnacal_error(vcp, VNAERR_SYNTAX,
 		    "%s (line %d) error: type unexpected in version %d.%d",
@@ -1236,7 +1236,7 @@ static int parse_document(vnacal_load_state_t *vlsp, yaml_node_t *node)
 	 * Process calibrations.
 	 */
 	if (strcmp((const char *)key->data.scalar.value, "calibrations") == 0 ||
-		(vlsp->vls_major_version == 2 &&
+		(vlsp->vls_major_version == 0 &&
 		 strcmp((const char *)key->data.scalar.value, "sets") == 0)) {
 	    if (parse_calibrations(vlsp, value) == -1) {
 		return -1;
@@ -1264,6 +1264,7 @@ vnacal_t *vnacal_load(const char *pathname,
     yaml_parser_t parser;
     yaml_node_t *root;
     bool delete_document = false;
+    char line_buf[81];
 
     /*
      * Allocate the vnacal_t structure.
@@ -1297,18 +1298,50 @@ vnacal_t *vnacal_load(const char *pathname,
 	vnacal_free(vcp);
 	return NULL;
     }
-    if (fscanf(fp, "#VNACAL %d.%d",
-		&vls.vls_major_version, &vls.vls_minor_version) != 2) {
+    if (fgets(line_buf, sizeof(line_buf), fp) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line 1) error: "
-		"expected #VNACAL <major>.<minor>",
+		"expected #VNACal <major>.<minor>",
 		vcp->vc_filename);
 	goto error;
     }
-    if (vls.vls_major_version < 2 || vls.vls_major_version >= 4) {
+    line_buf[sizeof(line_buf) - 1] = '\000';
+    if (sscanf(line_buf, "#VNACal %d.%d",
+		&vls.vls_major_version, &vls.vls_minor_version) != 2) {
+	int old_major, old_minor;
+
+	/*
+	 * We maintain compatibility with two older versions of the
+	 * calibration file.  Before libvna version 1.0, the #VNACal
+	 * line was all upper case and there were two versions supported:
+	 * 2.x and 3.x.  The old 2.x supports only E12 terms and stores
+	 * the error terms differently in a different format.  The old
+	 * 3.x is the same as the new 1.0.
+	 *
+	 * Here, we map the old 2.x to 0.2, and the old 3.x to 1.0.
+	 */
+	if (sscanf(line_buf, "#VNACAL %d.%d", &old_major, &old_minor) != 2) {
+	    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line 1) error: "
+		    "expected #VNACal <major>.<minor>",
+		    vcp->vc_filename);
+	    goto error;
+	}
+	if (old_major == 2) {
+	    vls.vls_major_version = 0;	/* renumber old 2.x to 0.2 */
+	    vls.vls_minor_version = 2;
+	} else if (old_major == 3) {
+	    vls.vls_major_version = 1;	/* renumber old 3.x to 1.0 */
+	    vls.vls_minor_version = 0;
+	} else {
+	    _vnacal_error(vcp, VNAERR_VERSION, "%s (line 1) error: "
+		    "unsupported pre-release version %d.%d",
+		    vcp->vc_filename, old_major, old_minor);
+	    goto error;
+	}
+    }
+    if (vls.vls_major_version > 1) {
 	_vnacal_error(vcp, VNAERR_VERSION, "%s (line 1) error: "
 		"unsupported version %d.%d",
-		vcp->vc_filename, vls.vls_major_version,
-		vls.vls_minor_version);
+		vcp->vc_filename, vls.vls_major_version, vls.vls_minor_version);
 	goto error;
     }
     yaml_parser_initialize(&parser);
