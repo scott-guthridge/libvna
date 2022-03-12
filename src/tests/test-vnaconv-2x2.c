@@ -145,6 +145,9 @@ static libt_result_t test_conversions_2x2()
 	double complex xi[2];
 	double complex zi[2];
 
+	/*
+	 * Set up test values.
+	 */
 	Z1  = libt_crandn();
 	Z2  = libt_crandn();
 	z1c = conj(Z1);
@@ -164,6 +167,16 @@ static libt_result_t test_conversions_2x2()
 	i1 = k1i * (a1 - b1) / creal(Z1);
 	i2 = k2i * (a2 - b2) / creal(Z2);
 
+	/*
+	 * Calculate input impedance looking into each DUT port assuming
+	 * that the other ports are terminated in their system impedances,
+	 * i.e. not driven.  Because of this definition, it's not simply
+	 * v1 / i1 and v2 / i2.  which would be the effective impedance
+	 * given that the other ports are also driven.
+	 */
+	zi[0] = (S11 * Z1 + z1c) / (1.0 - S11);
+	zi[1] = (S22 * Z2 + z2c) / (1.0 - S22);
+
 	if (opt_v) {
 	    (void)printf("Test conversions: trial %3d\n",
 		    trial);
@@ -177,6 +190,7 @@ static libt_result_t test_conversions_2x2()
 		creal(v1), cimag(v1), creal(i1), cimag(i1));
 	    (void)printf("v2 %9.5f%+9.5fj  i2 %9.5f%+9.5fj\n",
 		creal(v2), cimag(v2), creal(i2), cimag(i2));
+	    (void)libt_print_cmatrix("zi", zi, 2, 1);
 	    (void)printf("\n");
 	    libt_print_cmatrix("s", *s, 2, 2);
 	}
@@ -249,10 +263,10 @@ static libt_result_t test_conversions_2x2()
 	TEST_EQUAL(B11 * v1 + B12 * i1,  v2, "stob: B11,B12");
 	TEST_EQUAL(B21 * v1 + B22 * i1, -i2, "stob: B21,B22");
 
-	vnaconv_stozi(s, zi, z0);
-	if (opt_v) {
-	    libt_print_cmatrix("zi", zi, 2, 1);
-	}
+	(void)memset((void *)xi, 0, sizeof(xi));
+	vnaconv_stozi(s, xi, z0);
+	TEST_EQUAL(xi[0], zi[0], "stozi: zi0");
+	TEST_EQUAL(xi[1], zi[1], "stozi: zi1");
 
 	(void)memset((void *)xi, 0, sizeof(xi));
 	vnaconv_stozin(*s, xi, z0, 2);

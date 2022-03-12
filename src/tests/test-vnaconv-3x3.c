@@ -130,6 +130,9 @@ static libt_result_t test_conversions_3x3()
 	double complex xi[3];
 	double complex zi[3];
 
+	/*
+	 * Set up test values.
+	 */
 	Z1  = libt_crandn();
 	Z2  = libt_crandn();
 	Z3  = libt_crandn();
@@ -161,6 +164,17 @@ static libt_result_t test_conversions_3x3()
 	i2 = k2i * (a2 - b2) / creal(Z2);
 	i3 = k3i * (a3 - b3) / creal(Z3);
 
+	/*
+	 * Calculate input impedance looking into each DUT port assuming
+	 * that the other ports are terminated in their system impedances,
+	 * i.e. not driven.  Because of this definition, it's not simply
+	 * v1 / i1, v2 / i2, etc. which would be the effective impedance
+	 * given that the other ports are also driven.
+	 */
+	zi[0] = (S11 * Z1 + z1c) / (1.0 - S11);
+        zi[1] = (S22 * Z2 + z2c) / (1.0 - S22);
+	zi[2] = (S33 * Z3 + z3c) / (1.0 - S33);
+
 	if (opt_v) {
 	    (void)printf("Test conversions: trial %3d\n",
 		    trial);
@@ -179,6 +193,7 @@ static libt_result_t test_conversions_3x3()
 		creal(v2), cimag(v2), creal(i2), cimag(i2));
 	    (void)printf("v3 %9.5f%+9.5fj  i3 %9.5f%+9.5fj\n",
 		creal(v3), cimag(v3), creal(i3), cimag(i3));
+	    libt_print_cmatrix("zi", zi, 3, 1);
 	    (void)printf("\n");
 	    libt_print_cmatrix("s", *s, 3, 3);
 	}
@@ -250,22 +265,23 @@ static libt_result_t test_conversions_3x3()
 	TEST_EQUAL(X32, Z32, "ytoz: Z32");
 	TEST_EQUAL(X33, Z33, "ytoz: Z33");
 
-	vnaconv_stozin(*s, zi, z0, 3);
-	if (opt_v) {
-	    libt_print_cmatrix("zi", zi, 3, 1);
-	}
+	(void)memset((void *)xi, 0, sizeof(xi));
+	vnaconv_stozin(*s, xi, z0, 3);
+	TEST_EQUAL(xi[0], zi[0], "stozin: Zi1");
+	TEST_EQUAL(xi[1], zi[1], "stozin: Zi2");
+	TEST_EQUAL(xi[2], zi[2], "stozin: Zi3");
 
 	(void)memset((void *)xi, 0, sizeof(xi));
 	vnaconv_ztozin(*z, xi, z0, 3);
-	TEST_EQUAL(xi[0], zi[0], "ztozi: zi0");
-	TEST_EQUAL(xi[1], zi[1], "ztozi: zi1");
-	TEST_EQUAL(xi[2], zi[2], "ztozi: zi1");
+	TEST_EQUAL(xi[0], zi[0], "ztozin: Zi1");
+	TEST_EQUAL(xi[1], zi[1], "ztozin: Zi2");
+	TEST_EQUAL(xi[2], zi[2], "ztozin: Zi3");
 
 	(void)memset((void *)xi, 0, sizeof(xi));
 	vnaconv_ytozin(*y, xi, z0, 3);
-	TEST_EQUAL(xi[0], zi[0], "ytozi: zi0");
-	TEST_EQUAL(xi[1], zi[1], "ytozi: zi1");
-	TEST_EQUAL(xi[2], zi[2], "ytozi: zi1");
+	TEST_EQUAL(xi[0], zi[0], "ytozin: Zi1");
+	TEST_EQUAL(xi[1], zi[1], "ytozin: Zi2");
+	TEST_EQUAL(xi[2], zi[2], "ytozin: Zi3");
 
 
 	if (opt_v) {
