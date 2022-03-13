@@ -305,50 +305,6 @@ extern int vnaproperty_import_yaml_from_file(vnaproperty_t **rootptr, FILE *fp,
 extern int vnaproperty_export_yaml_to_file(const vnaproperty_t *root, FILE *fp,
 	const char *filename, vnaerr_error_fn_t *error_fn, void *error_arg);
 
-/***********************************************************************
- * ZZ: delete me
- * Undocumented YAML Import / Export
- *
- * The _vnaproperty_yaml_import and _vnaproperty_yaml_export functions
- * build property trees from YAML subtrees, and build YAML subtrees from
- * a property trees, respectively.  These are public so that they can
- * be used in libraries that are friendly with this one.  They remain
- * undocumented, however, to avoid creating dependencies on libyaml in
- * our external API, making it possible to switch to newer versions of
- * libyaml or to other YAML libraries without breaking compatibility.
- * Note that we pass pointers to the libyaml types as pointer to void
- * so that this file doesn't have to include libyaml.h.
- *
- **********************************************************************/
-
-/*
- * vnaproperty_yaml_t: common argument structure for yaml import/export
- */
-typedef struct vnaproperty_yaml {
-    void	       *vyml_document;	/* yaml_document_t */
-    const char         *vyml_filename;	/* filename for error messages */
-    vnaerr_error_fn_t  *vyml_error_fn;	/* error reporting function */
-    void	       *vyml_error_arg;	/* argument to error function */
-} vnaproperty_yaml_t;
-
-/*
- * _vnaproperty_yaml_import: import properties from a YAML document
- *   @vymlp:     common argument structure
- *   @rootptr:   address of vnaproperty root
- *   @yaml_node: YAML node type cast to void pointer
- */
-extern int _vnaproperty_yaml_import(vnaproperty_yaml_t *vymlp,
-	vnaproperty_t **rootptr, void *yaml_node);
-
-/*
- * _vnaproperty_yaml_export: export properties to a YAML document
- *   @vymlp:     common argument structure
- *   @root:      address of vnaproperty root
- *
- * Returns the index of a YAML node, or -1 on error.
- */
-extern int _vnaproperty_yaml_export(vnaproperty_yaml_t *vymlp,
-	const vnaproperty_t *root);
 
 #ifdef __cplusplus
 } /* extern "C" */

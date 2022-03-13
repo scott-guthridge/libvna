@@ -101,6 +101,24 @@ typedef struct vnaproperty_map {
     vnaproperty_map_element_t *vpm_order_tail;
 } vnaproperty_map_t;
 
+/*
+ * vnaproperty_yaml_t: common argument structure for yaml import/export
+ */
+typedef struct vnaproperty_yaml {
+    void	       *vyml_document;	/* yaml_document_t */
+    const char         *vyml_filename;	/* filename for error messages */
+    vnaerr_error_fn_t  *vyml_error_fn;	/* error reporting function */
+    void	       *vyml_error_arg;	/* argument to error function */
+} vnaproperty_yaml_t;
+
+/* _vnaproperty_yaml_import: import properties from a YAML document */
+extern int _vnaproperty_yaml_import(vnaproperty_yaml_t *vymlp,
+	vnaproperty_t **rootptr, void *yaml_node);
+
+/* _vnaproperty_yaml_export: export properties to a YAML document */
+extern int _vnaproperty_yaml_export(vnaproperty_yaml_t *vymlp,
+	const vnaproperty_t *root);
+
 /* _vnaproperty_yaml_error: report an error */
 extern void _vnaproperty_yaml_error(const vnaproperty_yaml_t *vymlp,
 	vnaerr_category_t category, const char *format, ...)
