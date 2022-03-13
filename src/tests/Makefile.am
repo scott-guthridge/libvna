@@ -1,6 +1,6 @@
 #
 # Vector Network Analyzer Library
-# Copyright © 2020, 2021 D Scott Guthridge <scott_guthridge@rompromity.net>
+# Copyright © 2020-2022 D Scott Guthridge <scott_guthridge@rompromity.net>
 #
 ACLOCAL_AMFLAGS= -I m4
 

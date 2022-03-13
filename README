@@ -1,5 +1,5 @@
 LIBVNA: Vector Network Analyzer Library
-Copyright © 2020, 2021 D Scott Guthridge <scott-guthridge@rompromity.net>
+Copyright © 2020-2022 D Scott Guthridge <scott-guthridge@rompromity.net>
 
 Library for vector network analyzers: provides calibration using 8 and
 16 term T parameters, 12-term E parameters (classic SOLT) and others,
