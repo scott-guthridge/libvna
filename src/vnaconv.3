@@ -610,18 +610,18 @@ vnaconv_stozn(&s[0][0], &z[0][0], z0, 3);
 .\"
 .PP
 In order to give a more detailed description of the various parameter
-matrices, we must first give a few definitions.  Let:
+matrices, we must first give a few definitions:
 .sp
 .in +4n
-a1 and a2 be the incident voltages into ports 1 and 2,
+a1 and a2 are the incident voltages into ports 1 and 2,
 .br
-b1 and b2 be the reflected voltages out of ports 1 and 2,
+b1 and b2 are the reflected voltages out of ports 1 and 2,
 .br
-v1 and v2 be the voltages at ports 1 and 2,
+v1 and v2 are the voltages at ports 1 and 2,
 .br
-i1 and i2 be the currents into ports 1 and 2, and
+i1 and i2 are the currents into ports 1 and 2, and
 .br
-Z1 and Z2 be the system impedances the device sees looking out of
+Z1 and Z2 are the system impedances the device sees looking out of
 its ports.
 .in -4n
 .sp
@@ -641,14 +641,14 @@ are:
 .EQ
 matrix{
     lcol{
-        { A sub i = { 1 over 2 } { K sub i } ( { V sub i } + { I sub i } { Z sub i } ) }
+        { a sub i = { 1 over 2 } { K sub i } ( { V sub i } + { I sub i } { Z sub i } ) }
         above
-        { B sub i = { 1 over 2 } { K sub i } ( { V sub i } - { I sub i } { Z sub i sup * } ) }
+        { b sub i = { 1 over 2 } { K sub i } ( { V sub i } - { I sub i } { Z sub i sup * } ) }
     }
     lcol{
-        { V sub i } = { { { A sub i } { Z sub i sup * } + { B sub i } { Z sub i } } over { { K sub i } re({ Z sub i }) } }
+        { V sub i } = { { { a sub i } { Z sub i sup * } + { b sub i } { Z sub i } } over { { K sub i } re({ Z sub i }) } }
         above
-        { I sub i } = { { { A sub i } - { B sub i } } over { { K sub i } re({ Z sub i }) } }
+        { I sub i } = { { { a sub i } - { b sub i } } over { { K sub i } re({ Z sub i }) } }
     }
 }
 .EN
@@ -683,10 +683,10 @@ parameters.  The \fBs\fP (scattering) parameters satisfy:
 .in +4n
 .ie t \{\
 .EQ
-left [ matrix{ ccol{ { B sub 1 } above { B sub 2 } } } right ] ~=~
+left [ matrix{ ccol{ { b sub 1 } above { b sub 2 } } } right ] ~=~
 left [ matrix{ ccol{ { s sub 11 } above { s sub 21 } }
                ccol{ { s sub 12 } above { s sub 22 } } } right ] ~
-left [ matrix{ ccol{ { A sub 1 } above { A sub 2 } } } right ]
+left [ matrix{ ccol{ { a sub 1 } above { a sub 2 } } } right ]
 .EN
 .\}
 .el \{\
@@ -704,10 +704,10 @@ The \fBt\fP (scattering-transfer) parameters satisfy:
 .in +4n
 .ie t \{\
 .EQ
-left [ matrix{ ccol{ { B sub 1 } above { A sub 1 } } } right ] ~=~
+left [ matrix{ ccol{ { b sub 1 } above { a sub 1 } } } right ] ~=~
 left [ matrix{ ccol{ { t sub 11 } above { t sub 21 } }
                ccol{ { t sub 12 } above { t sub 22 } } } right ] ~
-left [ matrix{ ccol{ { A sub 2 } above { B sub 2 } } } right ]
+left [ matrix{ ccol{ { a sub 2 } above { b sub 2 } } } right ]
 .EN
 .\}
 .el \{\

@@ -386,7 +386,7 @@ See \fBvnacal_parameter\fP(3).
 \fBvnacal_new_add_double_reflect\fP() and
 \fBvnacal_new_add_double_reflect_m\fP() add the measurement of a two
 reflect standards with parameter handles \fIs11\fP and \fIs22\fP, on
-VNA ports \fIport1\fP and \fIport2\fP, respectively.
+VNA \fIport1\fP and \fIport2\fP, respectively.
 The s12 and s21 parameters of the standard must be zero.
 .PP
 \fBvnacal_new_add_through\fP() and \fBvnacal_new_add_through_m\fP()
@@ -394,8 +394,7 @@ add the measurement of a perfect through standard (s11 = 0, s12 = 1,
 s21 = 1, s22 = 0) between \fIport1\fP and \fIport2\fP.
 .PP
 \fBvnacal_new_add_line\fP() and \fBvnacal_new_add_line_m\fP() add the
-measurement of an arbitrary 2x2 standard on VNA ports \fIport1\fP and
-\fIport2\fP.
+measurement of an arbitrary 2x2 standard on VNA \fIport1\fP and \fIport2\fP.
 The \fIs_2x2\fP argument is a pointer to the first element of a 2x2
 matrix of parameter handles.
 .PP
