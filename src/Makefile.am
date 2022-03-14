@@ -74,12 +74,6 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 
 
 #
-# Remove .la files from install
-#
-install-exec-hook:
-	( cd ${DESTDIR}${libdir} && ${RM} ${lib_LTLIBRARIES} )
-
-#
 # Man pages
 #
 dist_man_MANS = vnacal.3 vnacal_new.3 vnacal_parameter.3 vnaconv.3 \

@@ -16,6 +16,7 @@ dist_noinst_DATA = \
 	debian/libvna-dev.manpages \
 	debian/libvna.dirs \
 	debian/libvna.install \
+	debian/not-installed \
 	debian/postinst_run \
 	debian/postrm_run \
 	debian/rules \

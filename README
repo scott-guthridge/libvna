@@ -7,19 +7,19 @@ parameter conversion, and loading and storing of network parameter data
 in Touchstone 1, Touchstone 2 and network parameter data (.npd) formats.
 
 Prerequisites:
-    - You'll need a C99 level C compiler such as gcc or clang.
+  - A C99 level C compiler such as gcc or clang
+  - make
+  - libyaml development package
 
-    - You'll need to install the libyaml development package:
+    Fedora, RedHat, Centos, SUSE, etc. RPM-based distros
+	sudo yum install gcc make libyaml-devel
 
-	Fedora, RedHat, Centos, SUSE, etc.
-	    sudo yum install libyaml-devel
+    Debian, Ubuntu
+	sudo apt-get update
+	sudo apt-get install gcc make libyaml-dev
 
-	Debian, Ubuntu
-	    sudo apt-get update
-	    sudo apt-get install libyaml-dev
-
-	If all else fails, download and build from source:
-	    https://pyyaml.org/wiki/LibYAML
+   If libyaml-dev isn't available for your system, you can download
+   and build the source from here: https://pyyaml.org/wiki/LibYAML
 
 
 Build, Test and Install:
@@ -56,6 +56,21 @@ Build, Test and Install:
 	has been installed on the system.  After running a make all here,
 	though, the examples will already be built in the src/ directory.
 
+	Fixing library path problems:
+	    Some Linux distros (such as Fedora 31) don't include
+	    /usr/local/lib in the default dyanamic library search path.
+	    If you get an error like the following when trying to run
+	    a program you linked against libvna:
+
+		error while loading shared libraries: libvna.so.0:
+		cannot open shared object file: No such file or directory
+
+	    Add /usr/local/lib to the default library search path:
+
+	    sudo sh -c 'echo "/usr/local/lib" >> /etc/ld.so.conf.d/local.conf'
+	    sudo chmod 644 /etc/ld.so.conf.d/local.conf
+	    sudo ldconfig
+
     - Build RPM Packages and Install to /usr
 
 	The source RPM appears in rpm/libvna-*.src.rpm.  Binary RPMs
@@ -83,33 +98,18 @@ Build, Test and Install:
 	( cd deb; sudo apt install ./*.deb )
 
 
-Fixing library path problems:
-    Some Linux distros (such as Fedora 31) don't include /usr/local/lib
-    in the default dyanamic library search path.  If you get an error like
-    the following when trying to run a program you linked against libvna:
-
-	error while loading shared libraries: libvna.so.0: cannot open
-	shared object file: No such file or directory
-
-    Add /usr/local/lib to the default library search path:
-
-    	sudo sh -c 'echo "/usr/local/lib" >> /etc/ld.so.conf.d/local.conf'
-	sudo chmod 644 /etc/ld.so.conf.d/local.conf
-	sudo ldconfig
-
-
 To build PDF versions of the man pages (requries pdfroff):
     make pdfman
 
     The .pdf files appear in src/
 
 
-If install gnuplot, you can see an interesting example of VNA calibration
-at work by running make plot.  The example illustrates correction of
-errors from a particularly bad VNA that has a stray parallel capacitance
-of 318pF between port 1 and group, and a stray inductance of 796 nH
-in series with port 2.  These values were chosen to make the VNA stray
-reactances resonate with the DUT.  See src/vnacal-SOLT-example.c
+If you install gnuplot, you can see an interesting example of VNA
+calibration at work by running make plot.  The example illustrates
+correction of errors from a particularly bad VNA that has a stray parallel
+capacitance of 318pF between port 1 and group, and a stray inductance
+of 796 nH in series with port 2.  These values were chosen to make the
+VNA stray reactances resonate with the DUT.  See src/vnacal-SOLT-example.c
     make plot
 
 
@@ -133,7 +133,7 @@ help on right now are:
 
     - A review of the API
     - A review of the code (over 50000 lines of source code)
-    - There's also a TODO list in src/
+    - There's a TODO list in src/
 
 Please make suggestions on how the library could be improved.
 
