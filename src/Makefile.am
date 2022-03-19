@@ -114,7 +114,9 @@ convert_parameters_SOURCES = convert-parameters.c
 convert_parameters_LDADD = libvna.la -lm
 convert_parameters_LDFLAGS = -static
 
-dist_doc_DATA = BFCV-4085+_Plus25DegC.s2p MwT-1F.s2p \
+examplesdir = $(docdir)/examples
+
+dist_examples_DATA = BFCV-4085+_Plus25DegC.s2p MwT-1F.s2p \
 	vnacal-SOLT-example.c vnacal-SOLT-example.gnuplot \
 	vnacal-TSD-example.c vnacal-TSD-example.gnuplot \
 	vnacal-TRL-example.c vnacal-TRL-example.gnuplot \
