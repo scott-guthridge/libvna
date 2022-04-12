@@ -13,12 +13,10 @@ dist_noinst_DATA = \
 	debian/changelog \
 	debian/control \
 	debian/copyright \
-	debian/libvna-dev.dirs \
 	debian/libvna-dev.docs \
 	debian/libvna-dev.examples \
 	debian/libvna-dev.install \
 	debian/libvna-dev.manpages \
-	debian/libvna.dirs \
 	debian/libvna.install \
 	debian/not-installed \
 	debian/postinst_run \
