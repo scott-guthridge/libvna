@@ -1,6 +1,6 @@
 Name: @PACKAGE_TARNAME@
 Version: @PACKAGE_VERSION@
-Release: 1%{?dist}
+Release: 1
 Summary: Electrical Network Parameter Library
 Group: Applications/Engineering
 License: GPLv3+
