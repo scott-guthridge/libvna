@@ -27,11 +27,11 @@ Build, Test and Install:
       tarball, you can skip this step.
 
 	Fedora, RedHat, Centos, SUSE
-	    sudo yum install git make autoconf libtool
+	    sudo yum install git make autoconf automake libtool
 
 	Debian, Ubuntu
 	    sudo apt-get update
-	    sudo apt-get install git make autoconf libtool
+	    sudo apt-get install git make autoconf automake libtool
 
 	mkdir m4
 	./bootstrap
