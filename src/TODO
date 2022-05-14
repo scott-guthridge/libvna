@@ -1,3 +1,11 @@
+== Misc ==
+
+    - Split the build instructions out of README.  In README, include only
+      generic information that makes sense when intalled in /usr/share/doc/*/.
+
+    - Rename El (leakage) to Ed (directivity), and Ef (forward) to Et
+      (transmission tracking).  Maintain compatiblity with .vnacal files.
+
 == Measurement Tolerance & Error ==
 
     - Add a special-case solver in vnacal_new_solve for TRL analytically
