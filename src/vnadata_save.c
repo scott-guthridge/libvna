@@ -978,10 +978,10 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 	    }
 
 	    /*
-	     * If return loss is requested, make sure the matrix has
+	     * If insertion loss is requested, make sure the matrix has
 	     * off-diagonal elements.
 	     */
-	    if (vfdp->vfd_format == VNADATA_FORMAT_RL && ports < 2) {
+	    if (vfdp->vfd_format == VNADATA_FORMAT_IL && ports < 2) {
 		_vnadata_error(vdip, VNAERR_USAGE, "%s: "
 			"return loss requires at least one "
 			"off-diagonal element", function);

@@ -588,9 +588,9 @@ static libt_result_t test_vnadata_slc_helper(int trial,
 	    continue;
 	}
 	/*
-	 * Return loss requires at least one off-diagonal element.
+	 * Insertion loss requires at least one off-diagonal element.
 	 */
-	if (strcasecmp(ffp->ff_name, "RL") == 0 && columns < 2) {
+	if (strcasecmp(ffp->ff_name, "IL") == 0 && columns < 2) {
 	    continue;
 	}
 	/*
