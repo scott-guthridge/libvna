@@ -324,7 +324,7 @@ typedef struct vnacal_new_measurement {
     bool *vnm_reachability_matrix;
 
     /* pointer to the associated vnacal_new_t structure */
-    struct vnacal_new *vnm_ncp;
+    struct vnacal_new *vnm_vnp;
 
     /* next in list of measured calibration standards */
     struct vnacal_new_measurement *vnm_next;

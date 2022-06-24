@@ -52,7 +52,7 @@ static int add_term(const char *function, vnacal_new_measurement_t *vnmp,
 	vnacal_new_coefficient_t ***vncppp_anchor, int coefficient,
 	bool negative, int m, int s)
 {
-    vnacal_new_t *vnp = vnmp->vnm_ncp;
+    vnacal_new_t *vnp = vnmp->vnm_vnp;
     vnacal_t *vcp = vnp->vn_vcp;
     vnacal_new_coefficient_t *vncp;
 
@@ -83,7 +83,7 @@ static int add_term(const char *function, vnacal_new_measurement_t *vnmp,
 static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 	vnacal_new_equation_t ***vneppp_anchor, int eq_row, int eq_column)
 {
-    vnacal_new_t *vnp = vnmp->vnm_ncp;
+    vnacal_new_t *vnp = vnmp->vnm_vnp;
     vnacal_t *vcp = vnp->vn_vcp;
     const vnacal_layout_t *vlp = &vnp->vn_layout;
     const int m_rows = VL_M_ROWS(vlp);
@@ -1022,7 +1022,7 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 		"calloc %s", strerror(errno));
 	goto out;
     }
-    vnmp->vnm_ncp = vnp;
+    vnmp->vnm_vnp = vnp;
 
     /*
      * If no 'a' matrix was given, just copy the m vectors.

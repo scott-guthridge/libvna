@@ -240,7 +240,7 @@ int vnacal_new_set_z0(vnacal_new_t *vnp, double complex z0)
 void _vnacal_new_free_measurement(vnacal_new_measurement_t *vnmp)
 {
     if (vnmp != NULL) {
-	vnacal_new_t *vnp = vnmp->vnm_ncp;
+	vnacal_new_t *vnp = vnmp->vnm_vnp;
 	const int m_rows    = vnp->vn_layout.vl_m_rows;
 	const int m_columns = vnp->vn_layout.vl_m_columns;
 
