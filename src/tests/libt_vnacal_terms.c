@@ -603,18 +603,18 @@ void libt_vnacal_print_error_terms(const libt_vnacal_terms_t *ttp)
 
 	case VNACAL_U16:
 	    {
-		double complex *um = &e[VL_US_OFFSET(vlp)];
+		double complex *um = &e[VL_UM_OFFSET(vlp)];
 		double complex *ui = &e[VL_UI_OFFSET(vlp)];
 		double complex *ux = &e[VL_UX_OFFSET(vlp)];
-		double complex *us = &e[VL_UM_OFFSET(vlp)];
-		const int um_rows    = VL_US_ROWS(vlp);
-		const int um_columns = VL_US_COLUMNS(vlp);
+		double complex *us = &e[VL_US_OFFSET(vlp)];
+		const int um_rows    = VL_UM_ROWS(vlp);
+		const int um_columns = VL_UM_COLUMNS(vlp);
 		const int ui_rows    = VL_UI_ROWS(vlp);
 		const int ui_columns = VL_UI_COLUMNS(vlp);
 		const int ux_rows    = VL_UX_ROWS(vlp);
 		const int ux_columns = VL_UX_COLUMNS(vlp);
-		const int us_rows    = VL_UM_ROWS(vlp);
-		const int us_columns = VL_UM_COLUMNS(vlp);
+		const int us_rows    = VL_US_ROWS(vlp);
+		const int us_columns = VL_US_COLUMNS(vlp);
 
 		for (int row = 0; row < um_rows; ++row) {
 		    for (int column = 0; column < um_columns; ++column) {
