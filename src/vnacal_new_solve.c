@@ -788,14 +788,14 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	 * the solve for x step until we have suitable convergence.
 	 *
 	 * Following is a brief derivation of the variable projection method.
-	 * 
+	 *
 	 * Our goal is to minimize the system A(p) x = b in a least-squares
 	 * sense, where A(p) is matrix valued function of vector p, b is a
 	 * known vector, and x and p are the unknown vectors we need to find
 	 * to minimize:
 	 *
 	 *     || b - A(p) x ||^2
-	 * 
+	 *
 	 * There must be an orthogonal matrix Q that diagonalizes A to R.
 	 * Both of the new resulting matrices still depend on p.
 	 *
@@ -1707,7 +1707,6 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 	 * then the system is nonlinear then use the iterative solver.
 	 */
 	if (unknown_parameters == 0 && vnp->vn_m_error_vector == NULL) {
-	
 	    if (analytic_solve(&ss, x_vector, x_length) == -1) {
 		goto out;
 	    }

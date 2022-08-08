@@ -1926,7 +1926,7 @@ vnaproperty_t **vnaproperty_set_subtree(vnaproperty_t **rootptr,
 /*
  * vnaproperty_quote_key: quote a map ID that contains reserved chars
  *   @key: map key to quote
- * 
+ *
  * Caller must free the returned memory by a call to free().
  */
 char *vnaproperty_quote_key(const char *key)

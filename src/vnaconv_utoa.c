@@ -50,7 +50,6 @@ void vnaconv_utoa(const double complex (*u)[2], double complex (*a)[2],
            -u21 * z1c * z2  + u22 * z1  * z2) / d;
     A21 = (-u11 - u12 + u21 + u22) / d;
     A22 = (-u11 * z2c - u12 * z2c - u21 * z2 - u22 * z2) / d;
-    
 }
 #undef A22
 #undef A21

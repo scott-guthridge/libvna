@@ -268,7 +268,7 @@ extern int vnaproperty_copy(vnaproperty_t **destination,
 /*
  * vnaproperty_quote_key: quote a map ID that contains spaces or reserved chars
  *   @key: map key to quote
- * 
+ *
  * Caller must free the returned memory by a call to free().
  */
 extern char *vnaproperty_quote_key(const char *key);
