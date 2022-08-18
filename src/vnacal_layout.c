@@ -217,7 +217,7 @@ void _vnacal_layout(vnacal_layout_t *vlp, vnacal_type_t type,
 	    const int er_offset = el_offset + el_terms;
 	    const int et_offset = er_offset + er_terms;
 	    const int em_offset = et_offset + et_terms;
-	    const int e_terms   = et_offset + em_terms;
+	    const int e_terms   = em_offset + em_terms;
 
 	    vlp->vl_el_offset	= el_offset;
 	    vlp->vl_er_offset	= er_offset;
