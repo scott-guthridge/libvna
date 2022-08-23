@@ -20,7 +20,7 @@
 #define _LIBT_VNACAL_H
 
 #include <stdbool.h>
-#include "vnacal_internal.h"
+#include "vnacal_new_internal.h"
 
 #ifdef __cplusplus
 extern "C" {

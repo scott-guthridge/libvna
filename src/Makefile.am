@@ -15,6 +15,7 @@ SUBDIRS= . tests
 include_HEADERS = vnacal.h vnaconv.h vnadata.h vnaerr.h vnaproperty.h
 lib_LTLIBRARIES = libvna.la
 libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
+	vnacal_new_internal.h \
 	vnacal_add_calibration.c vnacal_apply.c vnacal_calibration.c \
 	vnacal_create.c vnacal_delete_calibration.c \
 	vnacal_delete_parameter.c vnacal_error.c vnacal_find_calibration.c \

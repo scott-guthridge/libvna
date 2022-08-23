@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "vnacal_internal.h"
+#include "vnacal_new_internal.h"
 
 #ifndef DBL_EPSILON
 #define DBL_EPSILON	1.0e-9

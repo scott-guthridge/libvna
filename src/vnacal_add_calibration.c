@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "vnacal_internal.h"
+#include "vnacal_new_internal.h"
 
 /*
  * vnacal_add_calibration: add a newly solved calibration to the vnacal_t
