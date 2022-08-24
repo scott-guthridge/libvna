@@ -83,7 +83,7 @@ static libt_result_t run_vnacal_save_load_trial(int trial)
 	VNACAL_T16, VNACAL_U16, VNACAL_UE14, VNACAL_E12
     };
     libt_vnacal_terms_t *ttp_table[8] =
-        { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+	{ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
     vnacal_t *vcp = NULL;
     const int types = sizeof(type_table) / sizeof(vnacal_type_t);
     const int dimensions = sizeof(dimension_table) / sizeof(int [2]);

@@ -40,7 +40,7 @@ void vnaconv_utoy(const double complex (*u)[2], double complex (*y)[2],
     const double k1i = sqrt(fabs(creal(z1)));
     const double k2i = sqrt(fabs(creal(z2)));
     const double complex d = u11 * z1c * z2c - u12 * z1 * z2c
-                           + u21 * z1c * z2  - u22 * z1 * z2;
+			   + u21 * z1c * z2  - u22 * z1 * z2;
 #define Y11	y[0][0]
 #define Y12	y[0][1]
 #define Y21	y[1][0]

@@ -163,7 +163,7 @@ static void make_random_parameters(double complex *r_actual,
 	*r_guess = libt_crandn();
 	*l_guess = libt_crandn();
 	temp = distance2 / (creal(*r_guess * conj(*r_guess)) +
-	                    creal(*l_guess * conj(*l_guess)));
+			    creal(*l_guess * conj(*l_guess)));
 	temp = 0.45 * sqrt(temp);	/* maximum magnitude */
 	temp *= random() / RAND_MAX;
 	*r_guess = temp * *r_guess + *r_actual;
@@ -223,7 +223,7 @@ static libt_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
      */
     for (int findex = 0; findex < TRL_FREQUENCIES; ++findex) {
 	make_random_parameters(&r_actual[findex], &l_actual[findex],
-		               &r_guess[findex],  &l_guess[findex]);
+			       &r_guess[findex],  &l_guess[findex]);
     }
     if (opt_v > 1) {
 	(void)printf("actual:\n");

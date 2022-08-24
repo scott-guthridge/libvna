@@ -30,7 +30,7 @@ extern double complex _vnacommon_lu(complex double *a, int *row_index, int n);
 
 /* _vnacommon_mmultiply: find C = A x B */
 extern void _vnacommon_mmultiply(double complex *c, const double complex *a,
-        const double complex *b, int m, int n, int o);
+	const double complex *b, int m, int n, int o);
 
 /* _vnacommon_mldivide: find X = A^-1 * B, X mxn, A mxm, B mxn (A destroyed) */
 double complex _vnacommon_mldivide(complex double *x, complex double *a,

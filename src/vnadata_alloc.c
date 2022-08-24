@@ -527,7 +527,7 @@ void vnadata_free(vnadata_t *vdp)
 
 	assert(vdip->vdi_magic == VDI_MAGIC);
 	vdip->vdi_magic = -1;
-        free((void *)vdip->vdi_format_string);
+	free((void *)vdip->vdi_format_string);
 	free((void *)vdip->vdi_format_vector);
 	if (vdip->vdi_flags & VF_PER_F_Z0) {
 	    for (int findex = 0; findex < vdip->vdi_f_allocation; ++findex) {

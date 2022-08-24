@@ -42,7 +42,7 @@ void vnaconv_ttoy(const double complex (*t)[2], double complex (*y)[2],
     const double z1r = creal(z1);
     const double z2r = creal(z2);
     const double complex d = t11 * z1  * z2 - t12 * z1  * z2c +
-                             t21 * z1c * z2 - t22 * z1c * z2c;
+			     t21 * z1c * z2 - t22 * z1c * z2c;
 #define Y11	y[0][0]
 #define Y12	y[0][1]
 #define Y21	y[1][0]

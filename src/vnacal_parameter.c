@@ -231,7 +231,7 @@ static void _vnacal_free_parameter(vnacal_parameter_t *vpmrp)
 	}
 	free((void *)vpmrp->vpmr_sigma_vector);
 	free((void *)vpmrp->vpmr_sigma_spline);
-        /*FALLTHROUGH*/
+	/*FALLTHROUGH*/
 
     case VNACAL_UNKNOWN:
 	if (vpmrp->vpmr_other != NULL) {

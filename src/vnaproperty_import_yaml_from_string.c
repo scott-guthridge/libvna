@@ -54,7 +54,7 @@ int vnaproperty_import_yaml_from_string(vnaproperty_t **rootptr,
 
     yaml_parser_initialize(&parser);
     yaml_parser_set_input_string(&parser,
-        (const unsigned char *)input, strlen(input));
+	(const unsigned char *)input, strlen(input));
     if (!yaml_parser_load(&parser, &document)) {
 	_vnaproperty_yaml_error(&vyml, VNAERR_SYNTAX, "%s (line %ld) error: %s",
 		vyml.vyml_filename, (long)parser.problem_mark.line + 1,

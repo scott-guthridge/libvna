@@ -499,7 +499,7 @@ static inline int vnadata_set_from_vector(vnadata_t *vdp, int row, int column,
     }
 #endif /* VNADATA_NO_BOUNDS_CHECK */
     for (int findex = 0; findex < vdp->vd_frequencies; ++findex) {
-        vdp->vd_data[findex][row * vdp->vd_columns + column] = vector[findex];
+	vdp->vd_data[findex][row * vdp->vd_columns + column] = vector[findex];
     }
     return 0;
 }

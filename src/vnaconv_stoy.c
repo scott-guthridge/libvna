@@ -41,7 +41,7 @@ void vnaconv_stoy(const double complex (*s)[2], double complex (*y)[2],
     const double k2i = sqrt(fabs(creal(z2)));
     const double complex dy = s11 * s22 - s12 * s21;
     const double complex d = dy * z1 * z2 + z1c * z2c
-                     + s11 * z1 * z2c + s22 * z2 * z1c;
+		     + s11 * z1 * z2c + s22 * z2 * z1c;
 #define Y11	y[0][0]
 #define Y12	y[0][1]
 #define Y21	y[1][0]

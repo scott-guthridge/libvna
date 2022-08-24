@@ -143,7 +143,7 @@ static int vna_measure(measurement_t measurement,
 	case LOAD_CALIBRATION:
 	    /*
 	     * The load calibration is in parallel with the stray
-             * capacitance on port 1.  Port 1 picks up yet more
+	     * capacitance on port 1.  Port 1 picks up yet more
 	     * internal noise.
 	     */
 	    detector1 = -s / (s + 2*W1);
@@ -283,7 +283,7 @@ static void make_calibration()
      * Through calibration.
      */
     vna_measure(THROUGH_CALIBRATION, C_FREQUENCIES,
-        NULL, m_vector1, m_vector2);
+	NULL, m_vector1, m_vector2);
     vnacal_new_add_through_m(vnp, &m[0][0], C_ROWS, C_COLUMNS, 1, 2);
 
     /*

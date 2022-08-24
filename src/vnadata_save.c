@@ -503,55 +503,55 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 
 	case VNADATA_FORMAT_PRC:
 	    assert(vfdp->vfd_parameter == VPT_ZIN);
-            for (int port = 0; port < ports; ++port) {
-                (void)sprintf(parameter_buf, "PRC%d", port + 1);
-                (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
-                    field_width, ++current_field, parameter_width,
+	    for (int port = 0; port < ports; ++port) {
+		(void)sprintf(parameter_buf, "PRC%d", port + 1);
+		(void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
+		    field_width, ++current_field, parameter_width,
 		    parameter_buf);
-                (void)fprintf(fp, "# field %*d: %-*s C         (farads)\n",
-                    field_width, ++current_field, parameter_width,
+		(void)fprintf(fp, "# field %*d: %-*s C         (farads)\n",
+		    field_width, ++current_field, parameter_width,
 		    parameter_buf);
-            }
-            break;
+	    }
+	    break;
 
 	case VNADATA_FORMAT_PRL:
 	    assert(vfdp->vfd_parameter == VPT_ZIN);
-            for (int port = 0; port < ports; ++port) {
-                (void)sprintf(parameter_buf, "PRL%d", port + 1);
-                (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
-                    field_width, ++current_field, parameter_width,
+	    for (int port = 0; port < ports; ++port) {
+		(void)sprintf(parameter_buf, "PRL%d", port + 1);
+		(void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
+		    field_width, ++current_field, parameter_width,
 		    parameter_buf);
-                (void)fprintf(fp, "# field %*d: %-*s L         (henries)\n",
-                    field_width, ++current_field, parameter_width,
+		(void)fprintf(fp, "# field %*d: %-*s L         (henries)\n",
+		    field_width, ++current_field, parameter_width,
 		    parameter_buf);
-            }
-            break;
+	    }
+	    break;
 
 	case VNADATA_FORMAT_SRC:
 	    assert(vfdp->vfd_parameter == VPT_ZIN);
-            for (int port = 0; port < ports; ++port) {
-                (void)sprintf(parameter_buf, "SRC%d", port + 1);
-                (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
-                    field_width, ++current_field, parameter_width,
+	    for (int port = 0; port < ports; ++port) {
+		(void)sprintf(parameter_buf, "SRC%d", port + 1);
+		(void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
+		    field_width, ++current_field, parameter_width,
 		    parameter_buf);
-                (void)fprintf(fp, "# field %*d: %-*s C         (farads)\n",
-                    field_width, ++current_field, parameter_width,
+		(void)fprintf(fp, "# field %*d: %-*s C         (farads)\n",
+		    field_width, ++current_field, parameter_width,
 		    parameter_buf);
-            }
-            break;
+	    }
+	    break;
 
 	case VNADATA_FORMAT_SRL:
 	    assert(vfdp->vfd_parameter == VPT_ZIN);
-            for (int port = 0; port < ports; ++port) {
-                (void)sprintf(parameter_buf, "SRL%d", port + 1);
-                (void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
-                    field_width, ++current_field, parameter_width,
+	    for (int port = 0; port < ports; ++port) {
+		(void)sprintf(parameter_buf, "SRL%d", port + 1);
+		(void)fprintf(fp, "# field %*d: %-*s R         (ohms)\n",
+		    field_width, ++current_field, parameter_width,
 		    parameter_buf);
-                (void)fprintf(fp, "# field %*d: %-*s L         (henries)\n",
-                    field_width, ++current_field, parameter_width,
+		(void)fprintf(fp, "# field %*d: %-*s L         (henries)\n",
+		    field_width, ++current_field, parameter_width,
 		    parameter_buf);
-            }
-            break;
+	    }
+	    break;
 
 	case VNADATA_FORMAT_IL:
 	    assert(vfdp->vfd_parameter == VPT_S);
@@ -572,27 +572,27 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
 			parameter_width, parameter_buf);
 		}
 	    }
-            break;
+	    break;
 
 	case VNADATA_FORMAT_RL:
 	    assert(vfdp->vfd_parameter == VPT_S);
-            for (int port = 0; port < ports; ++port) {
-                (void)sprintf(parameter_buf, "RL%d", port + 1);
-                (void)fprintf(fp, "# field %*d: %-*s magnitude (dB)\n",
-                    field_width, ++current_field, parameter_width,
+	    for (int port = 0; port < ports; ++port) {
+		(void)sprintf(parameter_buf, "RL%d", port + 1);
+		(void)fprintf(fp, "# field %*d: %-*s magnitude (dB)\n",
+		    field_width, ++current_field, parameter_width,
 		    parameter_buf);
-            }
-            break;
+	    }
+	    break;
 
 	case VNADATA_FORMAT_VSWR:
 	    assert(vfdp->vfd_parameter == VPT_S);
-            for (int port = 0; port < ports; ++port) {
-                (void)sprintf(parameter_buf, "VSWR%d", port + 1);
-                (void)fprintf(fp, "# field %*d: %-*s\n",
-                    field_width, ++current_field, parameter_width,
+	    for (int port = 0; port < ports; ++port) {
+		(void)sprintf(parameter_buf, "VSWR%d", port + 1);
+		(void)fprintf(fp, "# field %*d: %-*s\n",
+		    field_width, ++current_field, parameter_width,
 		    parameter_buf);
-            }
-            break;
+	    }
+	    break;
 
 	default:
 	    abort();

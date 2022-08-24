@@ -293,7 +293,7 @@ static libt_result_t test_vnacal_apply()
 		if (result != T_PASS)
 		    goto out;
 	    }
-        }
+	}
     }
     result = T_PASS;
 

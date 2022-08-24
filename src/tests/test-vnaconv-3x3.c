@@ -172,7 +172,7 @@ static libt_result_t test_conversions_3x3()
 	 * given that the other ports are also driven.
 	 */
 	zi[0] = (S11 * Z1 + z1c) / (1.0 - S11);
-        zi[1] = (S22 * Z2 + z2c) / (1.0 - S22);
+	zi[1] = (S22 * Z2 + z2c) / (1.0 - S22);
 	zi[2] = (S33 * Z3 + z3c) / (1.0 - S33);
 
 	if (opt_v) {

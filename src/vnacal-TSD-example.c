@@ -231,11 +231,11 @@ static int vna_measure(measurement_t measurement,
 	     * simple form.
 	     */
 	    temp1[0][0] = (port1_abcd[0][1] - port1_abcd[1][1] * Z0) /
-	                  (port1_abcd[0][1] + port1_abcd[1][1] * Z0);
+			  (port1_abcd[0][1] + port1_abcd[1][1] * Z0);
 	    temp1[0][1] = 0.0;
 	    temp1[1][0] = 0.0;
 	    temp1[1][1] = (port2_abcd[0][1] - port2_abcd[0][0] * Z0) /
-	                  (port2_abcd[0][1] + port2_abcd[0][0] * Z0);
+			  (port2_abcd[0][1] + port2_abcd[0][0] * Z0);
 	    multiply(temp1, a, b);
 	    break;
 

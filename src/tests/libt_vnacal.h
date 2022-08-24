@@ -103,26 +103,26 @@ extern libt_vnacal_terms_t *libt_vnacal_make_random_calibration(vnacal_t *vcp,
 
 /* libt_vnacal_print_standard: show a calibration standard */
 extern void libt_vnacal_print_standard(vnacal_t *vcp, const int *s,
-        int s_rows, int s_columns, int frequencies,
+	int s_rows, int s_columns, int frequencies,
 	const double *frequency_vector, const int *port_map);
 
 /* libt_vnacal_add_single_reflect: measure a single reflect standard */
 extern int libt_vnacal_add_single_reflect(const libt_vnacal_terms_t *ttp,
-        libt_vnacal_measurements_t *tmp, int s11, int port);
+	libt_vnacal_measurements_t *tmp, int s11, int port);
 
 /* libt_vnacal_add_double_reflect: measure a double reflect standard */
 extern int libt_vnacal_add_double_reflect(const libt_vnacal_terms_t *ttp,
-        libt_vnacal_measurements_t *tmp, int s11, int s22,
+	libt_vnacal_measurements_t *tmp, int s11, int s22,
 	int port1, int port2);
 
 /* libt_vnacal_add_through: measure a through standard */
 extern int libt_vnacal_add_through(const libt_vnacal_terms_t *ttp,
-        libt_vnacal_measurements_t *tmp, int port1, int port2);
+	libt_vnacal_measurements_t *tmp, int port1, int port2);
 
 /* libt_vnacal_add_line: measure a line standard between the given ports */
 extern int libt_vnacal_add_line(const libt_vnacal_terms_t *ttp,
-        libt_vnacal_measurements_t *tmp, const int *s_2x2,
-        int port1, int port2);
+	libt_vnacal_measurements_t *tmp, const int *s_2x2,
+	int port1, int port2);
 
 /* libt_vnacal_alloc_measurements: allocate test measurements */
 extern libt_vnacal_measurements_t *libt_vnacal_alloc_measurements(
@@ -132,13 +132,13 @@ extern libt_vnacal_measurements_t *libt_vnacal_alloc_measurements(
 /* libt_vnacal_calculate_measurements: calculate measurements of standard */
 extern int libt_vnacal_calculate_measurements(
 	const libt_vnacal_terms_t *ttp,
-        libt_vnacal_measurements_t *tmp,
-        const int *s_matrix, int s_matrix_rows, int s_matrix_columns,
-        const int *port_map);
+	libt_vnacal_measurements_t *tmp,
+	const int *s_matrix, int s_matrix_rows, int s_matrix_columns,
+	const int *port_map);
 
 /* libt_vnacal_print_measurements: print the measured values */
 extern void libt_vnacal_print_measurements(libt_vnacal_measurements_t *tmp,
-        int frequencies);
+	int frequencies);
 
 /* libt_vnacal_free_measurements: free a libt_vnacal_measurements_t structure */
 extern void libt_vnacal_free_measurements(libt_vnacal_measurements_t *tmp);

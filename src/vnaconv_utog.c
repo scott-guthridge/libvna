@@ -49,7 +49,7 @@ void vnaconv_utog(const double complex (*u)[2], double complex (*g)[2],
     G12 = -k1i / k2i * (z2 + z2c) / d;
     G21 =  k2i / k1i * (u11 * u22 - u12 * u21) * (z1 + z1c) / d;
     G22 = (u11 * z1c * z2c - u12 * z1  * z2c
-         + u21 * z1c * z2  - u22 * z1  * z2)  / d;
+	 + u21 * z1c * z2  - u22 * z1  * z2)  / d;
 }
 #undef G22
 #undef G21

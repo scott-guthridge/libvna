@@ -282,7 +282,7 @@ extern vnacal_calibration_t *_vnacal_get_calibration(const vnacal_t *vcp,
 
 /* _vnacal_add_calibration_common */
 extern int _vnacal_add_calibration_common(const char *function, vnacal_t *vcp,
-        vnacal_calibration_t *calp, const char *name);
+	vnacal_calibration_t *calp, const char *name);
 
 /* _vnacal_get_parameter: return a pointer to the parameter */
 extern vnacal_parameter_t *_vnacal_get_parameter(vnacal_t *vcp, int parameter);

@@ -499,7 +499,7 @@ static int list_check_allocation(vnaproperty_list_t *vplp, size_t size)
 	return -1;
     }
     (void)memset((void *)&new_vector[vplp->vpl_allocation], 0,
-                 (new_allocation - vplp->vpl_allocation) *
+		 (new_allocation - vplp->vpl_allocation) *
 		 sizeof(vnaproperty_t *));
     vplp->vpl_vector = new_vector;
     vplp->vpl_allocation = new_allocation;
@@ -590,7 +590,7 @@ static vnaproperty_t **list_insert(vnaproperty_t *list, int index)
 	return NULL;
     }
     (void)memmove((void *)&vplp->vpl_vector[index + 1],
-                  (void *)&vplp->vpl_vector[index],
+		  (void *)&vplp->vpl_vector[index],
 		  (vplp->vpl_length - index) * sizeof(vnaproperty_t *));
     vplp->vpl_vector[index] = NULL;
     ++vplp->vpl_length;
@@ -639,7 +639,7 @@ static int list_delete(vnaproperty_t *list, int index)
 	return -1;
     }
     (void)memmove((void *)&vplp->vpl_vector[index],
-                  (void *)&vplp->vpl_vector[index + 1],
+		  (void *)&vplp->vpl_vector[index + 1],
 		  (vplp->vpl_length - index) * sizeof(vnaproperty_t *));
     vplp->vpl_vector[--vplp->vpl_length] = NULL;
     return 0;
@@ -1411,7 +1411,7 @@ static void vnaproperty_free(vnaproperty_t *root)
 	return;
 
     assert(root->vpr_type == VNAPROPERTY_SCALAR ||
-           root->vpr_type == VNAPROPERTY_LIST   ||
+	   root->vpr_type == VNAPROPERTY_LIST   ||
 	   root->vpr_type == VNAPROPERTY_MAP);
     switch (root->vpr_type) {
     case VNAPROPERTY_SCALAR:
@@ -2026,7 +2026,7 @@ static int dfs_copy(vnaproperty_t **destination, const vnaproperty_t *source)
     int count;
 
     if (source == NULL) {
-        return 0;
+	return 0;
     }
     switch (source->vpr_type) {
     case VNAPROPERTY_SCALAR:
@@ -2039,55 +2039,55 @@ static int dfs_copy(vnaproperty_t **destination, const vnaproperty_t *source)
 		return -1;
 	    }
 	}
-        break;
+	break;
 
     case VNAPROPERTY_MAP:
-        if ((keys = vnaproperty_keys(source, ".")) == NULL) {
-            return -1;
-        }
-        for (const char **cpp = keys; *cpp != NULL; ++cpp) {
+	if ((keys = vnaproperty_keys(source, ".")) == NULL) {
+	    return -1;
+	}
+	for (const char **cpp = keys; *cpp != NULL; ++cpp) {
 	    char *key = NULL;
-            vnaproperty_t **new_destination, *new_source;
+	    vnaproperty_t **new_destination, *new_source;
 
 	    if ((key = vnaproperty_quote_key(*cpp)) == NULL) {
-                free((void *)keys);
-                return -1;
+		free((void *)keys);
+		return -1;
 	    }
-            new_destination = vnaproperty_set_subtree(destination, ".%s", key);
-            if (new_destination == NULL) {
-                free((void *)keys);
+	    new_destination = vnaproperty_set_subtree(destination, ".%s", key);
+	    if (new_destination == NULL) {
+		free((void *)keys);
 		free((void *)key);
-                return -1;
-            }
-            new_source = vnaproperty_get_subtree(source, "%s", key);
-            if (dfs_copy(new_destination, new_source) == -1) {
-                free((void *)keys);
+		return -1;
+	    }
+	    new_source = vnaproperty_get_subtree(source, "%s", key);
+	    if (dfs_copy(new_destination, new_source) == -1) {
+		free((void *)keys);
 		free((void *)key);
-                return -1;
-            }
+		return -1;
+	    }
 	    free((void *)key);
-        }
-        free((void *)keys);
-        break;
+	}
+	free((void *)keys);
+	break;
 
     case VNAPROPERTY_LIST:
-        count = vnaproperty_count(source, ".");
-        for (int i = 0; i < count; ++i) {
-            vnaproperty_t **new_destination, *new_source;
+	count = vnaproperty_count(source, ".");
+	for (int i = 0; i < count; ++i) {
+	    vnaproperty_t **new_destination, *new_source;
 
-            new_destination = vnaproperty_set_subtree(destination, "[%d]", i);
-            if (new_destination == NULL) {
-                return -1;
-            }
-            new_source = vnaproperty_get_subtree(source, "[%d]", i);
-            if (dfs_copy(new_destination, new_source) == -1) {
-                return -1;
-            }
-        }
-        break;
+	    new_destination = vnaproperty_set_subtree(destination, "[%d]", i);
+	    if (new_destination == NULL) {
+		return -1;
+	    }
+	    new_source = vnaproperty_get_subtree(source, "[%d]", i);
+	    if (dfs_copy(new_destination, new_source) == -1) {
+		return -1;
+	    }
+	}
+	break;
 
     default:
-        abort();
+	abort();
     }
     return 0;
 }

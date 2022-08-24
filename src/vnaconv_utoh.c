@@ -48,7 +48,7 @@ void vnaconv_utoh(const double complex (*u)[2], double complex (*h)[2],
 #define H22	h[1][1]
 
     H11 = (u11 * z1c * z2c - u12 * z1  * z2c
-         + u21 * z1c * z2 - u22 * z1  * z2) / d;
+	 + u21 * z1c * z2 - u22 * z1  * z2) / d;
     H12 =  k1i / k2i * (z2 + z2c) / d;
     H21 = -k2i / k1i * (u11 * u22 - u12 * u21) * (z1 + z1c) / d;
     H22 = (u11 + u12 - u21 - u22) / d;

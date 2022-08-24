@@ -48,7 +48,7 @@ void vnaconv_utob(const double complex (*u)[2], double complex (*b)[2],
 
     B11 =  (u11 * z2c + u12 *z2c + u21 * z2 + u22 * z2) / d;
     B12 = (-u11 * z1c * z2c + u12 * z1  * z2c
-           -u21 * z2  * z1c + u22 * z1  * z2) / d;
+	   -u21 * z2  * z1c + u22 * z1  * z2) / d;
     B21 = (-u11 - u12 + u21 + u22) / d;
     B22 =  (u11 * z1c - u12 * z1 - u21 * z1c + u22 * z1) / d;
 }

@@ -572,7 +572,7 @@ int _vnacal_apply_common(vnacal_apply_args_t vaa)
     if ((calp = _vnacal_get_calibration(vcp, vaa.vaa_ci)) == NULL) {
 	_vnacal_error(vcp, VNAERR_USAGE, "%s: invalid calibration index: %d",
 		vaa.vaa_function, vaa.vaa_ci);
-        return -1;
+	return -1;
     }
     c_type    = calp->cal_type;
     c_rows    = calp->cal_rows;
@@ -588,7 +588,7 @@ int _vnacal_apply_common(vnacal_apply_args_t vaa)
     if (vaa.vaa_frequency_vector == NULL) {
 	_vnacal_error(vcp, VNAERR_USAGE, "%s: invalid NULL frequency vector",
 		vaa.vaa_function);
-        return -1;
+	return -1;
     }
     if (vaa.vaa_frequencies < 0) {
 	_vnacal_error(vcp, VNAERR_USAGE, "%s: invalid frequency count: %d",

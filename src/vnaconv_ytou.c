@@ -46,13 +46,13 @@ void vnaconv_ytou(const double complex (*y)[2], double complex (*u)[2],
 #define U22	u[1][1]
 
     U11 = (-1.0 - y11 * z1  - y11 * y22 * z1  * z2
-                + y12 * y21 * z1  * z2  - y22 * z2)  / d;
+		+ y12 * y21 * z1  * z2  - y22 * z2)  / d;
     U12 =  (1.0 - y11 * z1c - y11 * y22 * z1c * z2
-                + y12 * y21 * z1c * z2  + y22 * z2)  / d;
+		+ y12 * y21 * z1c * z2  + y22 * z2)  / d;
     U21 = (-1.0 - y11 * z1  + y11 * y22 * z1  * z2c
-                - y12 * y21 * z1  * z2c + y22 * z2c) / d;
+		- y12 * y21 * z1  * z2c + y22 * z2c) / d;
     U22 =  (1.0 - y11 * z1c + y11 * y22 * z1c * z2c
-                - y12 * y21 * z1c * z2c - y22 * z2c) / d;
+		- y12 * y21 * z1c * z2c - y22 * z2c) / d;
 }
 #undef U22
 #undef U21

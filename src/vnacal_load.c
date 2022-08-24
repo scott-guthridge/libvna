@@ -593,23 +593,23 @@ static int parse_matrices(vnacal_load_state_t *vlsp, const vnacal_layout_t *vlp,
 	return 0;
 
     case VNACAL_T16:
-        {
-            const int ts_rows    = VL_TS_ROWS(vlp);
-            const int ts_columns = VL_TS_COLUMNS(vlp);
-            const int ts_offset  = VL_TS_OFFSET(vlp);
-            const int ti_rows    = VL_TI_ROWS(vlp);
-            const int ti_columns = VL_TI_COLUMNS(vlp);
-            const int ti_offset  = VL_TI_OFFSET(vlp);
-            const int tx_rows    = VL_TX_ROWS(vlp);
-            const int tx_columns = VL_TX_COLUMNS(vlp);
-            const int tx_offset  = VL_TX_OFFSET(vlp);
-            const int tm_rows    = VL_TM_ROWS(vlp);
-            const int tm_columns = VL_TM_COLUMNS(vlp);
-            const int tm_offset  = VL_TM_OFFSET(vlp);
-            double complex **ts = &e[ts_offset];
-            double complex **ti = &e[ti_offset];
-            double complex **tx = &e[tx_offset];
-            double complex **tm = &e[tm_offset];
+	{
+	    const int ts_rows    = VL_TS_ROWS(vlp);
+	    const int ts_columns = VL_TS_COLUMNS(vlp);
+	    const int ts_offset  = VL_TS_OFFSET(vlp);
+	    const int ti_rows    = VL_TI_ROWS(vlp);
+	    const int ti_columns = VL_TI_COLUMNS(vlp);
+	    const int ti_offset  = VL_TI_OFFSET(vlp);
+	    const int tx_rows    = VL_TX_ROWS(vlp);
+	    const int tx_columns = VL_TX_COLUMNS(vlp);
+	    const int tx_offset  = VL_TX_OFFSET(vlp);
+	    const int tm_rows    = VL_TM_ROWS(vlp);
+	    const int tm_columns = VL_TM_COLUMNS(vlp);
+	    const int tm_offset  = VL_TM_OFFSET(vlp);
+	    double complex **ts = &e[ts_offset];
+	    double complex **ti = &e[ti_offset];
+	    double complex **tx = &e[tx_offset];
+	    double complex **tm = &e[tm_offset];
 
 	    if (parse_matrix(vlsp, ts, ts_rows, ts_columns,
 			matrices[TS], false) == -1) {
@@ -821,7 +821,7 @@ static int parse_data(vnacal_load_state_t *vlsp, const vnacal_layout_t *vlp,
 	return -1;
     }
     for (item = node->data.sequence.items.start;
-         item < node->data.sequence.items.top; ++item) {
+	 item < node->data.sequence.items.top; ++item) {
 	int findex = item - node->data.sequence.items.start;
 	yaml_node_t *child = yaml_document_get_node(&vlsp->vls_document,
 		*item);
@@ -1022,7 +1022,7 @@ static int parse_set(vnacal_load_state_t *vlsp, yaml_node_t *node)
 	return -1;
     }
     for (pair = node->data.mapping.pairs.start;
-         pair < node->data.mapping.pairs.top; ++pair) {
+	 pair < node->data.mapping.pairs.top; ++pair) {
 	yaml_node_t *key, *value;
 
 	/*
@@ -1183,7 +1183,7 @@ static int parse_calibrations(vnacal_load_state_t *vlsp, yaml_node_t *node)
 	return -1;
     }
     for (item = node->data.sequence.items.start;
-         item < node->data.sequence.items.top; ++item) {
+	 item < node->data.sequence.items.top; ++item) {
 	yaml_node_t *child = yaml_document_get_node(&vlsp->vls_document,
 		*item);
 
@@ -1211,7 +1211,7 @@ static int parse_document(vnacal_load_state_t *vlsp, yaml_node_t *node)
 	return -1;
     }
     for (pair = node->data.mapping.pairs.start;
-         pair < node->data.mapping.pairs.top; ++pair) {
+	 pair < node->data.mapping.pairs.top; ++pair) {
 	yaml_node_t *key, *value;
 
 	/*

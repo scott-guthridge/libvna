@@ -135,10 +135,10 @@ static libt_result_t test_vnacal_new_random()
     libt_result_t result = T_FAIL;
 
     for (int trial = 1; trial <= 12; ++trial) {
-        for (int si = 0; si < sizeof(sizes) / sizeof(int); ++si) {
-            for (int sj = 0; sj < sizeof(sizes) / sizeof(int); ++sj) {
-                int rows = sizes[si];
-                int columns = sizes[sj];
+	for (int si = 0; si < sizeof(sizes) / sizeof(int); ++si) {
+	    for (int sj = 0; sj < sizeof(sizes) / sizeof(int); ++sj) {
+		int rows = sizes[si];
+		int columns = sizes[sj];
 
 		for (int ti = 0; ti < sizeof(types) / sizeof(types[0]); ++ti) {
 		    vnacal_type_t type = types[ti];
@@ -162,8 +162,8 @@ static libt_result_t test_vnacal_new_random()
 		    if (result != T_PASS)
 			goto out;
 		}
-            }
-        }
+	    }
+	}
     }
     result = T_PASS;
 
