@@ -82,7 +82,6 @@ static void make_random_parameters(double complex *r_actual,
 {
     double actual_magnitude;
     double actual_angle;
-    double distance2;
 
     /*
      * Find actual reflect.  Magnitude is constrained to 0.25 .. 1.0;
@@ -95,7 +94,7 @@ static void make_random_parameters(double complex *r_actual,
     /*
      * Find the actual line.  Magnitude is constrained from 0.25 .. 1.0;
      * angle is constrained to 20..160 or 200..350 degrees to prevent
-     * it from being * too close to through.
+     * it from being too close to through.
      */
     actual_magnitude = 0.25 + 0.75 * random() / RAND_MAX;
     actual_angle = 140.0 * (2.0 * random() / RAND_MAX - 1.0);
@@ -113,61 +112,44 @@ static void make_random_parameters(double complex *r_actual,
      *    1/R, 1/L
      *   -1/R, 1/L
      *
-     * We need an initial guess that's always closer to the first solution
-     * than to the others.  Stategy: find the minimum distance from
-     * the first solution to each of the others in 4-space.  Choose a
-     * gaussian random vector to serve as the uniform direction in
-     * 4-space between the actual and guess.  Scale the vector to be
-     * less than half of the distance calculated in the first step.
-     * Add the actual answer to produce the guess values.
+     * We need initial guesses that's always closer to the actual solution
+     * than to the others.  Stategy: working separately for R and L,
+     * choose a random new point starting at the actual solution. Check
+     * the distance to each other point, removing 10% margin from the
+     * others.  If not closest to the original, loop back and choose a
+     * new point.
      */
-    {
-	double complex ri = 1.0 / *r_actual, li = 1.0 / *l_actual;
-	double complex ctemp1, ctemp2;
-	double dtemp;
+    for (;;) {
+	double complex guess = *r_actual + 0.05 * libt_crandn();
+	double d1, d2;
 
-	/*
-	 * Find squared distance to -R, L
-	 */
-	ctemp1 = -*r_actual - *r_actual;
-	distance2 = creal(ctemp1 * conj(ctemp1));
-
-	/*
-	 * Find squared distance to 1/R, 1/L
-	 */
-	ctemp1 = ri - *r_actual;
-	ctemp2 = li - *l_actual;
-	dtemp = creal(ctemp1 * conj(ctemp1)) + creal(ctemp2 * conj(ctemp2));
-	if (dtemp < distance2) {
-	    distance2 = dtemp;
+	d1 = cabs(guess - *r_actual);
+	d2 = cabs(guess + *r_actual) * 0.90;
+	if (d2 < d1) {
+	    continue;
 	}
-
-	/*
-	 * Find squared distance to -1/R, 1/L
-	 */
-	ctemp1 = -ri - *r_actual;
-	dtemp = creal(ctemp1 * conj(ctemp1)) + creal(ctemp2 * conj(ctemp2));
-	if (dtemp < distance2) {
-	    distance2 = dtemp;
+	d2 = cabs(guess - 1.0 / *r_actual) * 0.90;
+	if (d2 < d1) {
+	    continue;
 	}
+	d2 = cabs(guess + 1.0 / *r_actual) * 0.90;
+	if (d2 < d1) {
+	    continue;
+	}
+	*r_guess = guess;
+	break;
     }
-    assert(distance2 > 0.0);
+    for (;;) {
+	double complex guess = *l_actual + 0.05 * libt_crandn();
+	double d1, d2;
 
-    /*
-     * Choose gaussian random guess values and normalize to be less
-     * than half of sqrt(distance2).
-     */
-    {
-	double temp;
-
-	*r_guess = libt_crandn();
-	*l_guess = libt_crandn();
-	temp = distance2 / (creal(*r_guess * conj(*r_guess)) +
-			    creal(*l_guess * conj(*l_guess)));
-	temp = 0.45 * sqrt(temp);	/* maximum magnitude */
-	temp *= random() / RAND_MAX;
-	*r_guess = temp * *r_guess + *r_actual;
-	*l_guess = temp * *l_guess + *l_actual;
+	d1 = cabs(guess - *l_actual);
+	d2 = cabs(guess - 1.0 / *l_actual) * 0.90;
+	if (d2 < d1) {
+	    continue;
+	}
+	*l_guess = guess;
+	break;
     }
 }
 
@@ -217,6 +199,14 @@ static libt_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
 	goto out;
     }
     vnp = ttp->tt_vnp;
+
+    /*
+     * Tighten the unknown parameter tolerance.
+     */
+    if (vnacal_new_set_p_tolerance(vnp, 1.0e-8) == -1) {
+	result = T_FAIL;
+	goto out;
+    }
 
     /*
      * Generate random reflect and line parameters.
@@ -499,6 +489,6 @@ main(int argc, char **argv)
 	}
 	break;
     }
-    libt_isequal_eps = 0.01;
+    libt_isequal_eps = 1.0e-3;
     exit(test_vnacal_trl());
 }

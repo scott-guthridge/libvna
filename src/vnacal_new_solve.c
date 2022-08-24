@@ -28,10 +28,6 @@
 #include <string.h>
 #include "vnacal_new_internal.h"
 
-#ifndef DBL_EPSILON
-#define DBL_EPSILON	1.0e-9
-#endif /* DBL_EPSILON */
-
 //#define DEBUG
 
 /*
@@ -634,7 +630,7 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	/* rank of a_matrix */
 	int rank;
 
-	/* sum of squares of d_vector */
+	/* sum of squared magnitudes of the elements of d_vector */
 	double sum_d_squared;
 
 	/*
@@ -1077,6 +1073,17 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	(void)printf("# best_sum_d_squared %13.6e\n", best_sum_d_squared);
 #endif /* DEBUG */
 
+        /*
+         * If the error is within the target tolerance, stop.
+         */
+        if (sum_d_squared / (double)p_length <= vnp->vn_p_tolerance *
+                                                vnp->vn_p_tolerance) {
+#ifdef DEBUG
+	    (void)printf("# stop: converged\n");
+#endif /* DEBUG */
+	    break;
+	}
+
 	/*
 	 * If we have the best solution so far (or the first solution),
 	 * add the new correction to ss_p_vector and remember the solution.
@@ -1156,15 +1163,6 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	    }
 #endif /* DEBUG */
 	    backtrack_count = 0;
-
-	/*
-	 * If the squared error is nearly zero, stop.
-	 */
-	} else if (cabs(sum_d_squared) / p_length <= DBL_EPSILON) {
-#ifdef DEBUG
-	    (void)printf("# stop: converged\n");
-#endif /* DEBUG */
-	    break;
 
 	/*
 	 * The new solution is worse: we must have over-corrected.  Use a
@@ -1737,17 +1735,17 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 	/*
 	 * Copy from x_vector to e_vector, inserting the unity term.
 	 */
-        for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
-            int unity_index = _vl_unity_offset(vlp_in, sindex);
+	for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
+	    int unity_index = _vl_unity_offset(vlp_in, sindex);
 	    const int offset = sindex * (vlp_in->vl_t_terms - 1);
 
-            for (int k = 0; k < unity_index; ++k) {
-                e_vector[eterm_index++] = x_vector[offset + k];
-            }
-            e_vector[eterm_index++] = 1.0;
-            for (int k = unity_index; k < vlp_in->vl_t_terms - 1; ++k) {
-                e_vector[eterm_index++] = x_vector[offset + k];
-            }
+	    for (int k = 0; k < unity_index; ++k) {
+		e_vector[eterm_index++] = x_vector[offset + k];
+	    }
+	    e_vector[eterm_index++] = 1.0;
+	    for (int k = unity_index; k < vlp_in->vl_t_terms - 1; ++k) {
+		e_vector[eterm_index++] = x_vector[offset + k];
+	    }
 	}
 
 	/*
