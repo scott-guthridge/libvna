@@ -64,7 +64,7 @@ int vnacal_new_set_m_error(vnacal_new_t *vnp,
 		"noise_error_vector must be non-NULL");
 	return -1;
     }
-    if (noise_error_vector == NULL) {
+    if (noise_error_vector != NULL) {
 	for (int i = 0; i < frequencies; ++i) {
 	    if (noise_error_vector[i] <= 0) {
 		_vnacal_error(vcp, VNAERR_USAGE,
@@ -74,7 +74,7 @@ int vnacal_new_set_m_error(vnacal_new_t *vnp,
 	    }
 	}
     }
-    if (tracking_error_vector == NULL) {
+    if (tracking_error_vector != NULL) {
 	for (int i = 0; i < frequencies; ++i) {
 	    if (tracking_error_vector[i] < 0) {
 		_vnacal_error(vcp, VNAERR_USAGE,
