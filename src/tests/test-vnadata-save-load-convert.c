@@ -35,6 +35,7 @@
 
 
 #define N_TRIALS	4
+#define TEST_FULL_PRECISION
 
 /*
  * Options
@@ -195,9 +196,6 @@ static int run_trial(int trial, vnadata_filetype_t filetype,
      * Set both frequency and data precision to maximum, which
      * uses hexadecimal floating point notation to avoid losing
      * any precision in save and load.
-     *
-     * This is ifdefed out by default to avoid test failures on
-     * architectures that don't support hexadecimal floating point.
      */
     if (vnadata_set_fprecision(vdp, VNADATA_MAX_PRECISION) == -1) {
 	libt_fail("vnadata_set_fprecision: returned -1\n");
@@ -784,7 +782,7 @@ int main(int argc, char **argv)
 #ifdef TEST_FULL_PRECISION
     libt_isequal_init();
 #else
-    libt_isequal_eps = 0.1;
+    libt_isequal_eps = 0.01;
 #endif
 
     exit(test_vnadata_slc());
