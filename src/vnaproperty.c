@@ -1472,7 +1472,8 @@ static void vnaproperty_free(vnaproperty_t *root)
  *   's' scalar
  *   -1  error
  */
-int vnaproperty_vtype(const vnaproperty_t *root, const char *format, va_list ap) {
+int vnaproperty_vtype(const vnaproperty_t *root, const char *format, va_list ap)
+{
     const vnaproperty_t *node;
 
     if ((node = get_node(root, format, ap)) == NULL) {

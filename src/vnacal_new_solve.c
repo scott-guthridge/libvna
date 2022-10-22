@@ -1073,11 +1073,11 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	(void)printf("# best_sum_d_squared %13.6e\n", best_sum_d_squared);
 #endif /* DEBUG */
 
-        /*
-         * If the error is within the target tolerance, stop.
-         */
-        if (sum_d_squared / (double)p_length <= vnp->vn_p_tolerance *
-                                                vnp->vn_p_tolerance) {
+	/*
+	 * If the error is within the target tolerance, stop.
+	 */
+	if (sum_d_squared / (double)p_length <= vnp->vn_p_tolerance *
+						vnp->vn_p_tolerance) {
 #ifdef DEBUG
 	    (void)printf("# stop: converged\n");
 #endif /* DEBUG */

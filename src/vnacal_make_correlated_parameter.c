@@ -74,8 +74,8 @@ int vnacal_make_correlated_parameter(vnacal_t *vcp, int other,
     }
 
     /*
-     * If sigma_frequencies == 1, ignore sigma_frequency_vector.  If it's greater
-     * than 1, handle it here.
+     * If sigma_frequencies == 1, ignore sigma_frequency_vector.  If it's
+     * greater than 1, handle it here.
      */
     if (sigma_frequencies > 1) {
 	/*

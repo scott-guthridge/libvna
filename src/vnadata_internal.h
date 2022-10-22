@@ -47,9 +47,9 @@
 	((parameter) != VPT_UNDEF && (parameter) != VPT_ZIN)
 
 /*
- * vnadata_format_descriptor_t: describes whether a load/save field is real or complex,
- *	and whether it should be printed as scalar, decibels, rectangular,
- *      polar, RC, RL, or VSWR
+ * vnadata_format_descriptor_t: describes whether a load/save field is real
+ *	or complex, and whether it should be printed as scalar, decibels,
+ *	rectangular, polar, RC, RL, or VSWR
  */
 typedef enum vnadata_format {
     VNADATA_FORMAT_DB_ANGLE,	/* dB and angle */
