@@ -34,7 +34,15 @@
 #include "libt_vnacal.h"
 
 
-#define NTRIALS		600
+#define NTRIALS		50
+
+/*
+ * MAX_FAILURES: number of allowed failures
+ *   Because this calibration method is stochastic in nature, a certain
+ *   percentage of trials will fail.  Permit a small number of failures.
+ *   The first 2 times is for T16 and U16.
+ */
+#define MAX_FAILURES	((2 * 2 * NTRIALS) / 100)	/* 2% */
 
 /*
  * Command Line Options
@@ -67,7 +75,7 @@ static void error_fn(const char *message, void *arg, vnaerr_category_t category)
 /*
  * FREQUENCIES: number of frequency points to test
  */
-#define FREQUENCIES	1/*ZZ:5*/
+#define FREQUENCIES	5
 
 /*
  * standards_t
@@ -89,9 +97,9 @@ typedef enum {
 
 /*
  * Quadratic approximations of the sigma curves given in the paper.
- * With t in GHz, the sigma value is:
+ * With f in GHz, the sigma value is:
  *
- *    10^(coef[0] + coef[1] * t + coef[2] * t^2 - 6)
+ *    10^(coef[0] + coef[1] * f + coef[2] * f^2 - 6)
  */
 static const double sigma_r_coef[] = {
     3.0143e+00,  0.0,         0.0
@@ -187,7 +195,16 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
      */
     for (int findex = 0; findex < FREQUENCIES; ++findex) {
 	double g = ttp->tt_frequency_vector[findex] / 1.0e+9;
+	double complex actual_short = -1.0 + 0.1 * libt_crandn();
+	double complex actual_open  =  1.0 + 0.1 * libt_crandn();
 
+	if (opt_v > 1) {
+	    (void)printf("%7.1e Hz\n", ttp->tt_frequency_vector[findex]);
+	    (void)printf("  actual_short: %12.5e %+12.5ej\n",
+		    creal(actual_short), cimag(actual_short));
+	    (void)printf("  actual_open:  %12.5e %+12.5ej\n",
+		    creal(actual_open), cimag(actual_open));
+	}
 	sigma_r[findex]  = SIGMA(sigma_r_coef, g);
 	sigma_st[findex] = SIGMA(sigma_st_coef, g);
 	sigma_l[findex]  = SIGMA(sigma_l_coef, g);
@@ -201,20 +218,22 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
 	actual_values[P2][findex]    =  0.0 + sigma_r[findex] * libt_crandn();
 	actual_values[P3][findex]    =  1.0 + sigma_st[findex] * libt_crandn();
 	actual_values[P4][findex]    =  actual_values[GAMMA][findex] +
-					      sigma_l[findex] * libt_crandn();
-	actual_values[P5][findex]    = -1.0 + sigma_a[findex] * libt_crandn();
-	actual_values[P6][findex]    =  1.0 + sigma_a[findex] * libt_crandn();
+					    sigma_l[findex] * libt_crandn();
+	actual_values[P5][findex]    =  actual_short +
+					    sigma_st[findex] * libt_crandn();
+	actual_values[P6][findex]    =  actual_open +
+					    sigma_o[findex] * libt_crandn();
 	actual_values[P7][findex]    =  actual_values[GAMMA][findex] +
-					      sigma_l[findex] * libt_crandn();
+					    sigma_l[findex] * libt_crandn();
 	actual_values[P8][findex]    =  actual_values[P5][findex] +
-					      sigma_st[findex] * libt_crandn();
+					    sigma_st[findex] * libt_crandn();
 	actual_values[P9][findex]    =  actual_values[P6][findex] +
-					      sigma_o[findex] * libt_crandn();
+					    sigma_o[findex] * libt_crandn();
 	actual_values[P10][findex]   =  actual_values[GAMMA][findex] +
-					      sigma_l[findex] * libt_crandn();
+					    sigma_l[findex] * libt_crandn();
     }
     if (opt_v > 1) {
-	(void)printf("actual:\n");
+	(void)printf("\nactual:\n");
 	for (int findex = 0; findex < FREQUENCIES; ++findex) {
 	    (void)printf("%7.1e Hz\n", ttp->tt_frequency_vector[findex]);
 	    (void)printf("  sigma_r  %e\n", sigma_r[findex]);
@@ -557,12 +576,16 @@ static libt_result_t test_vnacal_van_hamme()
     static vnacal_type_t type_array[] = {
 	VNACAL_T16, VNACAL_U16
     };
+    int fail_count = 0;
 
     for (int trial = 0; trial < NTRIALS; ++trial) {
 	for (int t_index = 0; t_index < 2; ++t_index) {
 	    result = run_vnacal_van_hamme_trial(trial, type_array[t_index]);
-	    if (result != T_PASS)
-		goto out;
+	    if (result != T_PASS) {
+		if (++fail_count > MAX_FAILURES) {
+		    goto out;
+		}
+	    }
 	}
     }
     result = T_PASS;
