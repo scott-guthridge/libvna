@@ -34,7 +34,7 @@
 #include "libt_vnacal.h"
 
 
-#define NTRIALS		67
+#define NTRIALS		12
 
 /*
  * Command Line Options
@@ -134,7 +134,7 @@ static libt_result_t test_vnacal_new_random()
     };
     libt_result_t result = T_FAIL;
 
-    for (int trial = 1; trial <= 12; ++trial) {
+    for (int trial = 1; trial <= NTRIALS; ++trial) {
 	for (int si = 0; si < sizeof(sizes) / sizeof(int); ++si) {
 	    for (int sj = 0; sj < sizeof(sizes) / sizeof(int); ++sj) {
 		int rows = sizes[si];
