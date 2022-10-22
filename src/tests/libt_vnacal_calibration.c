@@ -361,6 +361,7 @@ void libt_vnacal_print_calibration(vnacal_calibration_t *calp)
 		    }
 		}
 	    }
+	    break;
 
 	default:
 	    abort();
