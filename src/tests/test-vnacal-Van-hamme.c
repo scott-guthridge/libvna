@@ -324,6 +324,8 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
     /*
      * Set the measurement error.
      */
+    libt_vnacal_sigma_t = sigma_tr;
+    libt_vnacal_sigma_n = sigma_fl;
     if (vnacal_new_set_m_error(vnp, ttp->tt_frequency_vector,
 		FREQUENCIES, sigma_fl, sigma_tr) == -1) {
 	result = T_FAIL;

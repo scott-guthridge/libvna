@@ -29,14 +29,14 @@
 #include "libt_vnacal.h"
 
 /*
- * libt_vnacal_sigma_n: standard deviation of noise to add to measurements
+ * libt_vnacal_sigma_n: per-freq vector of noise to add to measurements
  */
-double libt_vnacal_sigma_n = 0.0;
+const double *libt_vnacal_sigma_n = NULL;
 
 /*
- * libt_vnacal_sigma_t: standard deviation of tracking error to add to meas.
+ * libt_vnacal_sigma_t: per-freq vector of error to add to measurements
  */
-double libt_vnacal_sigma_t = 0.0;
+const double *libt_vnacal_sigma_t = NULL;
 
 /*
  * libt_vnacal_alloc_measurements: allocate test measurements
@@ -746,12 +746,17 @@ int libt_vnacal_calculate_measurements(const libt_vnacal_terms_t *ttp,
 	}
 
 	/*
-	 * Add random measurement error if configured.
+	 * Add per-frequency random measurement error if configured.
 	 */
-	if (libt_vnacal_sigma_n != 0.0 || libt_vnacal_sigma_t != 0.0) {
+	if (libt_vnacal_sigma_t != NULL) {
 	    for (int cell = 0; cell < b_rows * b_columns; ++cell) {
-		m[cell] += libt_vnacal_sigma_t * m[cell] * libt_crandn();
-		m[cell] += libt_vnacal_sigma_n * libt_crandn();
+		m[cell] += libt_vnacal_sigma_t[findex] * m[cell] *
+		    libt_crandn();
+	    }
+	}
+	if (libt_vnacal_sigma_n != NULL) {
+	    for (int cell = 0; cell < b_rows * b_columns; ++cell) {
+		m[cell] += libt_vnacal_sigma_n[findex] * libt_crandn();
 	    }
 	}
 

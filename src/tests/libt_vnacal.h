@@ -65,11 +65,11 @@ extern bool opt_a;
 /* opt_v: test output verbosity */
 extern int opt_v;
 
-/* libt_vnacal_sigma_n: standard deviation of noise to add to measurements */
-extern double libt_vnacal_sigma_n;
+/* libt_vnacal_sigma_n: per-f vector of noise to add to measurements */
+extern const double *libt_vnacal_sigma_n;
 
-/* libt_vnacal_sigma_t: standard deviation of tracking error to add to meas. */
-extern double libt_vnacal_sigma_t;
+/* libt_vnacal_sigma_t: per-f vector of tracking error to add to measurements */
+extern const double *libt_vnacal_sigma_t;
 
 /*
  * Flags for libt_vnacal_generate_error_tersm
