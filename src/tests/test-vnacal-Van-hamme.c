@@ -124,7 +124,7 @@ static const double sigma_tr_coef[] = {
 };
 
 /*
- * SIGMA: calculation sigma from coefficient array and frequency, f, in GHz
+ * SIGMA: calculate sigma from coefficient array and frequency, f, in GHz
  */
 #define SIGMA(coef, g) \
 	pow(10.0, (coef)[0] + (coef)[1] * (g) + (coef)[2] * (g)*(g) - 6.0)

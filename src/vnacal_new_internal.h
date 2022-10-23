@@ -122,8 +122,10 @@ typedef struct vnacal_new_equation {
     /* associated measured calibration standard */
     struct vnacal_new_measurement *vne_vnmp;
 
-    /* equation row and column */
+    /* measurement row associated with this equation */
     int vne_row;
+
+    /* measurement column associated with this equation */
     int vne_column;
 
     /* linked list of terms */
@@ -148,7 +150,7 @@ typedef struct vnacal_new_measurement {
     /* transitive closure of vnm_s_matrix */
     bool *vnm_reachability_matrix;
 
-    /* pointer to the associated vnacal_new_t structure */
+    /* associated vnacal_new_t structure */
     struct vnacal_new *vnm_vnp;
 
     /* next in list of measured calibration standards */

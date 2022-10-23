@@ -43,25 +43,25 @@
 #define DIVIDE_AND_ROUND_UP(a, b)	(((a) + (b) - 1) / (b))
 
 /*
- * leakage_term_t: used to collect leakage terms
+ * vnacal_new_leakage_term_t: leakage term outside the linear system
  */
-typedef struct leakage_term {
-    double complex lt_sum;	/* sum of the samples */
-    double lt_sumsq;	        /* sum of the squares of the magnitudes */
-    int lt_count;		/* count of samples */
-} leakage_term_t;
+typedef struct vnacal_new_leakage_term {
+    double complex vnlt_sum;	/* sum of the samples */
+    double vnlt_sumsq;	        /* sum of the squares of the magnitudes */
+    int vnlt_count;		/* count of samples */
+} vnacal_new_leakage_term_t;
 
 /*
- * solve_state: iterate over vnacal_new_coefficient_t's
+ * vnacal_new_solve_state: iterate over vnacal_new_coefficient_t's
  */
-typedef struct solve_state {
+typedef struct vnacal_new_solve_state {
     /*
      * Common Data
      */
-    vnacal_new_t *ss_vnp;		/* new calibration structure */
-    leakage_term_t *ss_leakage_vector;	/* leakage term vector */
-    int *ss_leakage_map;		/* leakage term map */
-    double complex **ss_p_vector;	/* unknown parameter by index, findex */
+    vnacal_new_t *vnss_vnp;		/* new calibration structure */
+    vnacal_new_leakage_term_t *vnss_leakage_vector;/* leakage term vector */
+    int *vnss_leakage_map;		/* leakage term map */
+    double complex **vnss_p_vector;	/* unknown parameter by index, findex */
 
     /*
      * Equation Iterator
@@ -72,117 +72,118 @@ typedef struct solve_state {
 	EI_TERM,			/* in term list */
 	EI_END_EQUATION,		/* no remaining terms */
 	EI_END_SYSTEM			/* no remaining equations */
-    } ss_state;				/* iterator state */
-    int ss_findex;			/* current frequency index */
-    vnacal_new_system_t *ss_vnsp;	/* currrent system */
-    vnacal_new_equation_t *ss_vnep;	/* current equation */
-    vnacal_new_measurement_t *ss_vnmp;	/* current measurement */
-    vnacal_new_coefficient_t *ss_vncp;	/* current term */
-    double complex *ss_m_matrix;	/* matrix of cached m values */
-    double complex *ss_s_matrix;	/* matrix of cached s values */
-    uint32_t *ss_m_bitmap;		/* valid cells in ss_m_matrix */
-    uint32_t *ss_s_bitmap;		/* valid cells in ss_s_matrix */
-} solve_state_t;
+    } vnss_state;			/* iterator state */
+    int vnss_findex;			/* current frequency index */
+    vnacal_new_system_t *vnss_vnsp;	/* currrent system */
+    vnacal_new_equation_t *vnss_vnep;	/* current equation */
+    vnacal_new_measurement_t *vnss_vnmp;/* current measurement */
+    vnacal_new_coefficient_t *vnss_vncp;/* current term */
+    double complex *vnss_m_matrix;	/* matrix of cached m values */
+    double complex *vnss_s_matrix;	/* matrix of cached s values */
+    uint32_t *vnss_m_bitmap;		/* valid cells in vnss_m_matrix */
+    uint32_t *vnss_s_bitmap;		/* valid cells in vnss_s_matrix */
+} vnacal_new_solve_state_t;
 
 /*
- * start_new_system: prepare to iterate over system
- *   @ssp:    pointer state structure
- *   @vnsp:   system of equations to iterate over
+ * vs_start_system: prepare equation iterator for new system
+ *   @vnssp: solve state structure
+ *   @vnsp:  vnacal_new_system_t structure
  */
-static void start_new_system(solve_state_t *ssp, vnacal_new_system_t *vnsp)
+static inline void vs_start_system(vnacal_new_solve_state_t *vnssp,
+	vnacal_new_system_t *vnsp)
 {
-    ssp->ss_state  = EI_START_SYSTEM;
-    ssp->ss_vnsp   = vnsp;
-    ssp->ss_vnep   = NULL;
-    ssp->ss_vnmp   = NULL;
-    ssp->ss_vncp   = NULL;
+    vnssp->vnss_state = EI_START_SYSTEM;
+    vnssp->vnss_vnsp  = vnsp;
+    vnssp->vnss_vnep  = NULL;
+    vnssp->vnss_vnmp  = NULL;
+    vnssp->vnss_vncp  = NULL;
 }
 
 /*
- * get_equation: position to the next equation in the system
- *   @ssp: pointer state structure
+ * vs_next_equation: move to the next equation in the system
+ *   @vnssp: solve state structure
  */
-static bool get_equation(solve_state_t *ssp)
+static bool vs_next_equation(vnacal_new_solve_state_t *vnssp)
 {
     for (;;) {
 	vnacal_new_equation_t *vnep;
 
 	/*
-	 * If we're starting a new system, set ss_vnep to the first
+	 * If we're starting a new system, set vnss_vnep to the first
 	 * equation.  If we're already started, advance to the next
 	 * equation.  If we're at the end, keep returning false.
 	 */
-	switch (ssp->ss_state) {
+	switch (vnssp->vnss_state) {
 	case EI_START_SYSTEM:
-	    ssp->ss_vnep = ssp->ss_vnsp->vns_equation_list;
-	    ssp->ss_state = EI_START_EQUATION;
+	    vnssp->vnss_vnep = vnssp->vnss_vnsp->vns_equation_list;
+	    vnssp->vnss_state = EI_START_EQUATION;
 	    break;
 
 	case EI_START_EQUATION:
 	case EI_TERM:
 	case EI_END_EQUATION:
-	    ssp->ss_vnep = ssp->ss_vnep->vne_next;
-	    ssp->ss_state = EI_START_EQUATION;
+	    vnssp->vnss_vnep = vnssp->vnss_vnep->vne_next;
+	    vnssp->vnss_state = EI_START_EQUATION;
 	    break;
 
 	case EI_END_SYSTEM:
 	    return false;
 	}
-	if ((vnep = ssp->ss_vnep) == NULL) {
-	    ssp->ss_state = EI_END_SYSTEM;
+	if ((vnep = vnssp->vnss_vnep) == NULL) {
+	    vnssp->vnss_state = EI_END_SYSTEM;
 	    return false;
 	}
 
 	/*
 	 * Success
 	 */
-	ssp->ss_vncp = NULL;
+	vnssp->vnss_vncp = NULL;
 	break;
     }
     return true;
 }
 
 /*
- * get_coefficient: get the next coefficient in the system
- *   @ssp: pointer state structure
+ * vs_next_coefficient: move to the next coefficient
+ *   @vnssp: solve state structure
  */
-static bool get_coefficient(solve_state_t *ssp)
+static bool vs_next_coefficient(vnacal_new_solve_state_t *vnssp)
 {
-    vnacal_new_t *vnp = ssp->ss_vnp;
+    vnacal_new_t *vnp = vnssp->vnss_vnp;
     const vnacal_layout_t *vlp = &vnp->vn_layout;
     const int m_rows    = VL_M_ROWS(vlp);
     const int m_columns = VL_M_COLUMNS(vlp);
     const int s_rows    = VL_S_ROWS(vlp);
     const int s_columns = VL_S_COLUMNS(vlp);
-    vnacal_new_equation_t *vnep = ssp->ss_vnep;
+    vnacal_new_equation_t *vnep = vnssp->vnss_vnep;
     vnacal_new_measurement_t *vnmp = vnep->vne_vnmp;
     vnacal_new_coefficient_t *vncp;
 
     /*
-     * If we're starting a new equation, set ss_vncp to the first
+     * If we're starting a new equation, set vnss_vncp to the first
      * term.  If we're already in the term list, advance to the next
      * term.  If we're at the end of the equation, keep returning false;
      */
-    switch (ssp->ss_state) {
+    switch (vnssp->vnss_state) {
     case EI_START_SYSTEM:
-	abort();			/* must call get_equation first */
+	abort();		/* must call vs_next_equation first */
 	break;
 
     case EI_START_EQUATION:
-	ssp->ss_vncp = ssp->ss_vnep->vne_coefficient_list;
-	ssp->ss_state = EI_TERM;
+	vnssp->vnss_vncp = vnssp->vnss_vnep->vne_coefficient_list;
+	vnssp->vnss_state = EI_TERM;
 	break;
 
     case EI_TERM:
-	ssp->ss_vncp = ssp->ss_vncp->vnc_next;
+	vnssp->vnss_vncp = vnssp->vnss_vncp->vnc_next;
 	break;
 
     case EI_END_EQUATION:
     case EI_END_SYSTEM:
 	return false;
     }
-    if ((vncp = ssp->ss_vncp) == NULL) {
-	ssp->ss_state = EI_END_EQUATION;
+    if ((vncp = vnssp->vnss_vncp) == NULL) {
+	vnssp->vnss_state = EI_END_EQUATION;
 	return false;
     }
 
@@ -190,101 +191,158 @@ static bool get_coefficient(solve_state_t *ssp)
      * If we're starting a new measurement, clear the cached m and
      * s matrices.
      */
-    if (vnep->vne_vnmp != ssp->ss_vnmp) {
-	(void)memset((void *)ssp->ss_m_matrix, 0,
+    if (vnep->vne_vnmp != vnssp->vnss_vnmp) {
+	(void)memset((void *)vnssp->vnss_m_matrix, 0,
 		m_rows * m_columns * sizeof(double complex));
-	(void)memset((void *)ssp->ss_s_matrix, 0,
+	(void)memset((void *)vnssp->vnss_s_matrix, 0,
 		s_rows * s_columns * sizeof(double complex));
-	(void)memset((void *)ssp->ss_m_bitmap, 0,
+	(void)memset((void *)vnssp->vnss_m_bitmap, 0,
 		DIVIDE_AND_ROUND_UP(m_rows * m_columns, 32) *
 		sizeof(uint32_t));
-	(void)memset((void *)ssp->ss_s_bitmap, 0,
+	(void)memset((void *)vnssp->vnss_s_bitmap, 0,
 		DIVIDE_AND_ROUND_UP(s_rows * s_columns, 32) *
 		sizeof(uint32_t));
-	ssp->ss_vnmp = vnmp;
+	vnssp->vnss_vnmp = vnmp;
     }
 
     return true;
 }
 
 /*
- * get_m_by_cell: get measurement by cell for the current equation
+ * vs_get_coefficient: return the current coefficient index or -1 for RHS
+ *   @vnssp: solve state structure
  */
-static double complex get_m_by_cell(solve_state_t *ssp, int m_cell)
+static inline int vs_get_coefficient(const vnacal_new_solve_state_t *vnssp)
 {
-    vnacal_new_t *vnp = ssp->ss_vnp;
+    return vnssp->vnss_vncp->vnc_coefficient;
+}
+
+/*
+ * vs_get_negative: test if the currnet coefficient has a minus sign
+ *   @vnssp: solve state structure
+ */
+static inline bool vs_get_negative(const vnacal_new_solve_state_t *vnssp)
+{
+    return vnssp->vnss_vncp->vnc_negative;
+}
+
+/*
+ * vs_get_m_by_cell: get measurement by cell for the current equation
+ *   @vnssp: solve state structure
+ *   @m_cell: index of measurement cell in matrix
+ */
+static double complex vs_get_m_by_cell(vnacal_new_solve_state_t *vnssp,
+	int m_cell)
+{
+    vnacal_new_t *vnp = vnssp->vnss_vnp;
     const vnacal_layout_t *vlp = &vnp->vn_layout;
     const int m_columns = VL_M_COLUMNS(vlp);
-    const int findex = ssp->ss_findex;
-    vnacal_new_equation_t *vnep = ssp->ss_vnep;
+    const int findex = vnssp->vnss_findex;
+    vnacal_new_equation_t *vnep = vnssp->vnss_vnep;
     vnacal_new_measurement_t *vnmp = vnep->vne_vnmp;
 
     assert(m_cell >= 0);
-    if (!(ssp->ss_m_bitmap[m_cell / 32] & (1U << (m_cell % 32)))) {
+    if (!(vnssp->vnss_m_bitmap[m_cell / 32] & (1U << (m_cell % 32)))) {
 	const int m_row    = m_cell / m_columns;
 	const int m_column = m_cell % m_columns;
-	leakage_term_t *leakage_vector = ssp->ss_leakage_vector;
+	vnacal_new_leakage_term_t *leakage_vector = vnssp->vnss_leakage_vector;
 	double complex leakage = 0.0;
 	double complex value;
 
 	if (m_row != m_column && leakage_vector != NULL) {
-	    const int term = ssp->ss_leakage_map[m_cell];
-	    const leakage_term_t *ltp = &leakage_vector[term];
+	    const int term = vnssp->vnss_leakage_map[m_cell];
+	    const vnacal_new_leakage_term_t *vnltp = &leakage_vector[term];
 
-	    if (ltp->lt_count > 0) {
-		leakage = ltp->lt_sum / ltp->lt_count;
+	    if (vnltp->vnlt_count > 0) {
+		leakage = vnltp->vnlt_sum / vnltp->vnlt_count;
 	    }
 	}
 	value = vnmp->vnm_m_matrix[m_cell][findex] - leakage;
-	ssp->ss_m_matrix[m_cell] = value;
-	ssp->ss_m_bitmap[m_cell / 32] |= (1U << (m_cell % 32));
+	vnssp->vnss_m_matrix[m_cell] = value;
+	vnssp->vnss_m_bitmap[m_cell / 32] |= (1U << (m_cell % 32));
     }
-    return ssp->ss_m_matrix[m_cell];
+    return vnssp->vnss_m_matrix[m_cell];
 }
 
 /*
- * get_m: get measurement associated with the current coefficient (or -1)
- *   @ssp: pointer state structure
+ * vs_have_m: test if the current coefficient has an m factor
+ *   @vnssp: solve state structure
  */
-static double complex get_m(solve_state_t *ssp)
+static inline bool vs_have_m(vnacal_new_solve_state_t *vnssp)
 {
-    vnacal_new_coefficient_t *vncp = ssp->ss_vncp;
+    return vnssp->vnss_vncp->vnc_m_cell >= 0;
+}
+
+/*
+ * vs_get_m: return the m value for the current coefficient
+ *   @vnssp: solve state structure
+ */
+static inline double complex vs_get_m(vnacal_new_solve_state_t *vnssp)
+{
+    vnacal_new_coefficient_t *vncp = vnssp->vnss_vncp;
     const int m_cell = vncp->vnc_m_cell;
 
-    return get_m_by_cell(ssp, m_cell);
+    return vs_get_m_by_cell(vnssp, m_cell);
 }
 
 /*
- * get_s: get s-parameter value associated with the current coefficient (or -1)
- *   @ssp: pointer state structure
+ * vs_get_m_cell: get the index in the m matrix for the current coefficient
+ *   @vnssp: solve state structure
  */
-static double complex get_s(solve_state_t *ssp)
+static inline int vs_get_m_cell(const vnacal_new_solve_state_t *vnssp)
 {
-    vnacal_new_t *vnp = ssp->ss_vnp;
-    const int findex = ssp->ss_findex;
-    vnacal_new_equation_t *vnep = ssp->ss_vnep;
+    return vnssp->vnss_vncp->vnc_m_cell;
+}
+
+/*
+ * vs_have_s: test if the current coefficient has an s factor
+ *   @vnssp: solve state structure
+ */
+static inline bool vs_have_s(const vnacal_new_solve_state_t *vnssp)
+{
+    return vnssp->vnss_vncp->vnc_s_cell >= 0;
+}
+
+/*
+ * vs_get_s: return the s value for the current coefficient
+ *   @vnssp: solve state structure
+ */
+static inline double complex vs_get_s(vnacal_new_solve_state_t *vnssp)
+{
+    vnacal_new_t *vnp = vnssp->vnss_vnp;
+    const int findex = vnssp->vnss_findex;
+    vnacal_new_equation_t *vnep = vnssp->vnss_vnep;
     vnacal_new_measurement_t *vnmp = vnep->vne_vnmp;
-    vnacal_new_coefficient_t *vncp = ssp->ss_vncp;
+    vnacal_new_coefficient_t *vncp = vnssp->vnss_vncp;
     const int s_cell = vncp->vnc_s_cell;
     const double frequency = vnp->vn_frequency_vector[findex];
 
     assert(s_cell >= 0);
-    if (!(ssp->ss_s_bitmap[s_cell / 32] & (1U << (s_cell % 32)))) {
+    if (!(vnssp->vnss_s_bitmap[s_cell / 32] & (1U << (s_cell % 32)))) {
 	vnacal_new_parameter_t *vnprp;
 	double complex value;
 
 	vnprp = vnmp->vnm_s_matrix[vncp->vnc_s_cell];
 	assert(vnprp != NULL);
 	if (vnprp->vnpr_unknown) {
-	    value = ssp->ss_p_vector[vnprp->vnpr_unknown_index][findex];
+	    value = vnssp->vnss_p_vector[vnprp->vnpr_unknown_index][findex];
 	} else {
 	    value = _vnacal_get_parameter_value_i(vnprp->vnpr_parameter,
 		    frequency);
 	}
-	ssp->ss_s_matrix[s_cell] = value;
-	ssp->ss_s_bitmap[s_cell / 32] |= (1U << (s_cell % 32));
+	vnssp->vnss_s_matrix[s_cell] = value;
+	vnssp->vnss_s_bitmap[s_cell / 32] |= (1U << (s_cell % 32));
     }
-    return ssp->ss_s_matrix[s_cell];
+    return vnssp->vnss_s_matrix[s_cell];
+}
+
+/*
+ * vs_get_s_cell: get the index in the s matrix for the current coefficient
+ *   @vnssp: solve state structure
+ */
+static inline int vs_get_s_cell(const vnacal_new_solve_state_t *vnssp)
+{
+    return vnssp->vnss_vncp->vnc_s_cell;
 }
 
 #ifdef DEBUG
@@ -330,15 +388,15 @@ static void print_cmatrix(const char *name, double complex *a, int m, int n)
 #endif
 
 /*
- * analytic_solve: solve for the error terms where all s-parameters are known
- *   @ssp: pointer to state structure
+ * _vnacal_new_solve_simple: solve error terms where all s-parameters are known
+ *   @vnssp: solve state structure
  *   @x_vector: vector of unknowns filled in by this function
  *   @x_length: length of x_vector
  */
-static int analytic_solve(solve_state_t *ssp, double complex *x_vector,
-	int x_length)
+static int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
+	double complex *x_vector, int x_length)
 {
-    vnacal_new_t *vnp = ssp->ss_vnp;
+    vnacal_new_t *vnp = vnssp->vnss_vnp;
     vnacal_t *vcp = vnp->vn_vcp;
     const vnacal_layout_t *vlp = &vnp->vn_layout;
     const int unknowns = vlp->vl_t_terms - 1;
@@ -363,24 +421,22 @@ static int analytic_solve(solve_state_t *ssp, double complex *x_vector,
 	    }
 	    b_vector[i] = 0.0;
 	}
-	start_new_system(ssp, vnsp);
-	while (get_equation(ssp)) {
-	    while (get_coefficient(ssp)) {
-		const vnacal_new_coefficient_t *vncp = ssp->ss_vncp;
-		double complex value = vncp->vnc_negative ? -1.0 : 1.0;
-		int m_cell = vncp->vnc_m_cell;
-		int s_cell = vncp->vnc_s_cell;
+	vs_start_system(vnssp, vnsp);
+	while (vs_next_equation(vnssp)) {
+	    while (vs_next_coefficient(vnssp)) {
+		int coefficient = vs_get_coefficient(vnssp);
+		double complex value = vs_get_negative(vnssp) ? -1.0 : 1.0;
 
-		if (m_cell >= 0) {
-		    value *= get_m(ssp);
+		if (vs_have_m(vnssp)) {
+		    value *= vs_get_m(vnssp);
 		}
-		if (s_cell >= 0) {
-		    value *= get_s(ssp);
+		if (vs_have_s(vnssp)) {
+		    value *= vs_get_s(vnssp);
 		}
-		if (vncp->vnc_coefficient == -1) {
+		if (coefficient == -1) {
 		    b_vector[eq_count] = value;
 		} else {
-		    a_matrix[eq_count][vncp->vnc_coefficient] = value;
+		    a_matrix[eq_count][coefficient] = value;
 		}
 	    }
 	    ++eq_count;
@@ -426,7 +482,7 @@ static int analytic_solve(solve_state_t *ssp, double complex *x_vector,
 
 /*
  * calc_weights: compute w_vector from x_vector, p_vector
- *   @ssp: pointer to state structure
+ *   @vnssp: solve state structure
  *   @x_vector: current error parameter solution
  *   @w_vector: new weight vector
  *
@@ -435,11 +491,11 @@ static int analytic_solve(solve_state_t *ssp, double complex *x_vector,
  * the way we represent equations in order to do it right. This is kind
  * of close, though.
  */
-static void calc_weights(solve_state_t *ssp,
+static void calc_weights(vnacal_new_solve_state_t *vnssp,
 	const double complex *x_vector, double *w_vector)
 {
-    vnacal_new_t *vnp = ssp->ss_vnp;
-    const int findex = ssp->ss_findex;
+    vnacal_new_t *vnp = vnssp->vnss_vnp;
+    const int findex = vnssp->vnss_findex;
     const vnacal_layout_t *vlp = &vnp->vn_layout;
     const int m_cells = VL_M_COLUMNS(vlp) * VL_M_ROWS(vlp);
     vnacal_new_m_error_t *m_error_vector = vnp->vn_m_error_vector;
@@ -452,27 +508,25 @@ static void calc_weights(solve_state_t *ssp,
 	vnacal_new_system_t *vnsp = &vnp->vn_system_vector[sindex];
 	int offset = sindex * (vlp->vl_t_terms - 1);
 
-	start_new_system(ssp, vnsp);
-	while (get_equation(ssp)) {
+	vs_start_system(vnssp, vnsp);
+	while (vs_next_equation(vnssp)) {
 	    double u = 0.0;
 
 	    for (int m_cell = 0; m_cell < m_cells; ++m_cell) {
 		m_weight_vector[m_cell] = 0.0;
 	    }
-	    while (get_coefficient(ssp)) {
-		const vnacal_new_coefficient_t *vncp = ssp->ss_vncp;
-		int coefficient = vncp->vnc_coefficient;
-		int m_cell = vncp->vnc_m_cell;
-		int s_cell = vncp->vnc_s_cell;
+	    while (vs_next_coefficient(vnssp)) {
+		int coefficient = vs_get_coefficient(vnssp);
+		int m_cell = vs_get_m_cell(vnssp);
 
 		if (m_cell >= 0) {
 		    double complex v = 1.0;
 
-		    if (vncp->vnc_negative) {
+		    if (vs_get_negative(vnssp)) {
 			v *= -1.0;
 		    }
-		    if (s_cell >= 0) {
-			v *= get_s(ssp);
+		    if (vs_have_s(vnssp)) {
+			v *= vs_get_s(vnssp);
 		    }
 		    if (coefficient >= 0) {
 			v *= x_vector[offset + coefficient];
@@ -497,7 +551,7 @@ static void calc_weights(solve_state_t *ssp,
 		    /*
 		     * Add the squared error contributed by m_cell.
 		     */
-		    m = get_m_by_cell(ssp, m_cell);
+		    m = vs_get_m_by_cell(vnssp, m_cell);
 		    temp = noise * noise +
 			tracking * tracking * creal(m * conj(m));
 		    u += creal(v * conj(v)) * temp;
@@ -514,28 +568,29 @@ static void calc_weights(solve_state_t *ssp,
 }
 
 /*
- * iterative_solve: solve for both error terms and unknown s-parameters
- *   @ssp: pointer to state structure
+ * _vnacal_new_solve_auto: solve for both error terms and unknown s-parameters
+ *   @vnssp: solve state structure
  *   @x_vector: vector of unknowns filled in by this function
  *   @x_length: length of x_vector
  *
- * This implementation is based on the algorithm described in H.Van Hamme
+ * This implementation is based on the algorithm described in H. Van Hamme
  * and M. Vanden Bossche, "Flexible vector network analyzer calibration
  * with accuracy bounds using an 8-term or a 16-term error correction
  * model," in IEEE Transactions on Microwave Theory and Techniques,
- * vol. 42, no. 6, pp. 976-987, June 1994, doi: 10.1109/22.293566.
- * There are a few differences, however.  For example, instead of
- * calculating the error bounds on the error parameters, we use
- * calc_rms_error to calculate error in terms of measurement error.
+ * vol. 42, no. 6, pp. 976-987, June 1994, doi: 10.1109/22.293566.  There
+ * are a few differences, however.  For example, instead of calculating
+ * the error bounds on the error parameters, we simply test if the data
+ * are consistent with the given linear model and error model.  Also,
+ * we do the equation weighting wrong instead of using the "V" matrices.
  */
-static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
-	int x_length)
+static int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
+	double complex *x_vector, int x_length)
 {
     /* pointer to vnacal_new_t structore */
-    vnacal_new_t *vnp = ssp->ss_vnp;
+    vnacal_new_t *vnp = vnssp->vnss_vnp;
 
     /* current frequency index */
-    const int findex = ssp->ss_findex;
+    const int findex = vnssp->vnss_findex;
 
     /* current frequency */
     const double frequency = vnp->vn_frequency_vector[findex];
@@ -615,7 +670,7 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
     }
 
     /*
-     * Iterate using Gauss-Newton to find the unknown parameters, ss_p_vector.
+     * Iterate using Gauss-Newton to find the unknown parameters, vnss_p_vector.
      */
     for (int iteration = 0; /*EMPTY*/; ++iteration) {
 	/* coefficient matrix of the linear error term system */
@@ -674,7 +729,7 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	    int offset = sindex * (vlp->vl_t_terms - 1);
 
 	    /*
-	     * The start_new_system, get_equation and get_coefficient
+	     * The vs_start_system, vs_next_equation and vs_next_coefficient
 	     * functions are abstract iterators that systematically
 	     * go through the equations added via vnacal_new_add_*.
 	     *
@@ -686,27 +741,25 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	     * of solving them, we create one big (possibly sparse)
 	     * matrix equation representing them all.
 	     */
-	    start_new_system(ssp, vnsp);
-	    while (get_equation(ssp)) {
-		while (get_coefficient(ssp)) {
-		    const vnacal_new_coefficient_t *vncp = ssp->ss_vncp;
-		    double complex v = vncp->vnc_negative ? -1.0 : 1.0;
-		    int m_cell = vncp->vnc_m_cell;
-		    int s_cell = vncp->vnc_s_cell;
+	    vs_start_system(vnssp, vnsp);
+	    while (vs_next_equation(vnssp)) {
+		while (vs_next_coefficient(vnssp)) {
+		    int coefficient = vs_get_coefficient(vnssp);
+		    double complex v = vs_get_negative(vnssp) ? -1.0 : 1.0;
 
-		    if (m_cell >= 0) {
-			v *= get_m(ssp);
+		    if (vs_have_m(vnssp)) {
+			v *= vs_get_m(vnssp);
+		    }
+		    if (vs_have_s(vnssp)) {
+			v *= vs_get_s(vnssp);
 		    }
 		    if (w_vector != NULL) {
 			v *= w_vector[equation];
 		    }
-		    if (s_cell >= 0) {
-			v *= get_s(ssp);
-		    }
-		    if (vncp->vnc_coefficient == -1) {
+		    if (coefficient == -1) {
 			b_vector[equation] = v;
 		    } else {
-			a_matrix[equation][offset + vncp->vnc_coefficient] = v;
+			a_matrix[equation][offset + coefficient] = v;
 		    }
 		}
 		++equation;
@@ -750,7 +803,7 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	 *
 	 * If we haven't already done so, allocate w_vector and
 	 * best_w_vector, compute weights based on the initial guesses
-	 * of ss_p_vector, and restart the loop from the top.
+	 * of vnss_p_vector, and restart the loop from the top.
 	 */
 	if (vnp->vn_m_error_vector != NULL && w_vector == NULL) {
 	    if ((w_vector = malloc(equations * sizeof(double))) == NULL) {
@@ -769,7 +822,7 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	    for (int i = 0; i < equations; ++i) {
 		w_vector[i] = 1.0;
 	    }
-	    calc_weights(ssp, x_vector, w_vector);
+	    calc_weights(vnssp, x_vector, w_vector);
 #ifdef DEBUG
 	    print_rmatrix("w", w_vector, equations, 1);
 #endif /* DEBUG */
@@ -781,8 +834,8 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
     (void)printf("p = [\n");
     for (int i = 0; i < p_length; ++i) {
 	(void)printf("  %f%+fj\n",
-		creal(ssp->ss_p_vector[i][findex]),
-		cimag(ssp->ss_p_vector[i][findex]));
+		creal(vnssp->vnss_p_vector[i][findex]),
+		cimag(vnssp->vnss_p_vector[i][findex]));
     }
     (void)printf("]\n\n");
 #endif /* DEBUG */
@@ -935,15 +988,14 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	    vnacal_new_system_t *vnsp = &vnp->vn_system_vector[sindex];
 	    int offset = sindex * (vlp->vl_t_terms - 1);
 
-	    start_new_system(ssp, vnsp);
-	    while (get_equation(ssp)) {
-		vnacal_new_equation_t *vnep = ssp->ss_vnep;
+	    vs_start_system(vnssp, vnsp);
+	    while (vs_next_equation(vnssp)) {
+		vnacal_new_equation_t *vnep = vnssp->vnss_vnep;
 		vnacal_new_measurement_t *vnmp = vnep->vne_vnmp;
 
-		while (get_coefficient(ssp)) {
-		    const vnacal_new_coefficient_t *vncp = ssp->ss_vncp;
-		    int coefficient = vncp->vnc_coefficient;
-		    int s_cell = vncp->vnc_s_cell;
+		while (vs_next_coefficient(vnssp)) {
+		    int coefficient = vs_get_coefficient(vnssp);
+		    int s_cell = vs_get_s_cell(vnssp);
 		    vnacal_new_parameter_t *vnprp = NULL;
 
 		    /*
@@ -956,12 +1008,11 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 		     */
 		    if (s_cell >= 0 && (vnprp =
 				vnmp->vnm_s_matrix[s_cell])->vnpr_unknown) {
-			double complex v = vncp->vnc_negative ? -1.0 : 1.0;
-			int m_cell = vncp->vnc_m_cell;
+			double complex v = vs_get_negative(vnssp) ? -1.0 : 1.0;
 			int unknown = vnprp->vnpr_unknown_index;
 
-			if (m_cell >= 0) {
-			    v *= get_m(ssp);
+			if (vs_have_m(vnssp)) {
+			    v *= vs_get_m(vnssp);
 			}
 			if (w_vector != NULL) {
 			    v *= w_vector[equation];
@@ -1043,12 +1094,12 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 		pindex1 = vnprp1->vnpr_unknown_index;
 		j_matrix[j_row][pindex1] = coefficient;	/* partial derivative */
 		k_vector[j_row] += coefficient *
-		    ssp->ss_p_vector[pindex1][findex];	/* contr. to residual */
+		    vnssp->vnss_p_vector[pindex1][findex];/*contr. to residual*/
 		if (vnprp2->vnpr_unknown) {
 		    int pindex2 = vnprp2->vnpr_unknown_index;
 		    j_matrix[j_row][pindex2] = -coefficient; /* partial drvtv */
 		    k_vector[j_row] -= coefficient *
-			ssp->ss_p_vector[pindex2][findex];   /* resid */
+			vnssp->vnss_p_vector[pindex2][findex];   /* resid */
 		} else { /* known parameter value */
 		    k_vector[j_row] -= coefficient *	/* contr. to resid */
 			_vnacal_get_parameter_value_i(vnprp2->vnpr_parameter,
@@ -1065,7 +1116,7 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 
 	/*
 	 * Solve the j_matrix, k_vector system to create d_vector, the
-	 * Gauss-Newton correction to ss_p_vector.
+	 * Gauss-Newton correction to vnss_p_vector.
 	 */
 	if (j_rows == p_length) {
 	    double complex determinant;
@@ -1118,7 +1169,7 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 
 	/*
 	 * If we have the best solution so far (or the first solution),
-	 * add the new correction to ss_p_vector and remember the solution.
+	 * add the new correction to vnss_p_vector and remember the solution.
 	 */
 	if (sum_d_squared < best_sum_d_squared) {
 	    double sum_p_squared = 0.0;
@@ -1128,15 +1179,15 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 #endif /* DEBUG */
 	    /*
 	     * Limit the magnitude of d_vector to keep it smaller than
-	     * the magnitude of ss_p_vector (or smaller than one if
-	     * ss_p_vector is less than one).  This improves stability
+	     * the magnitude of vnss_p_vector (or smaller than one if
+	     * vnss_p_vector is less than one).  This improves stability
 	     * at the cost of slowing convergence.  It makes it less
 	     * likely that we jump into an adjacent basin of attraction.
 	     * We use one over the golden ratio as the maximum norm of
-	     * d_vector relative to ss_p_vector (or one).
+	     * d_vector relative to vnss_p_vector (or one).
 	     */
 	    for (int i = 0; i < p_length; ++i) {
-		double complex p = ssp->ss_p_vector[i][findex];
+		double complex p = vnssp->vnss_p_vector[i][findex];
 
 		sum_p_squared += creal(p * conj(p));
 	    }
@@ -1160,7 +1211,7 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	    (void)memcpy((void *)best_x_vector, (void *)x_vector,
 		    x_length * sizeof(double complex));
 	    for (int i = 0; i < p_length; ++i) {
-		best_p_vector[i] = ssp->ss_p_vector[i][findex];
+		best_p_vector[i] = vnssp->vnss_p_vector[i][findex];
 		best_d_vector[i] = d_vector[i];
 	    }
 	    if (w_vector != NULL) {
@@ -1173,7 +1224,7 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	     * Update the weight vector.
 	     */
 	    if (w_vector != NULL) {
-		calc_weights(ssp, x_vector, w_vector);
+		calc_weights(vnssp, x_vector, w_vector);
 #ifdef DEBUG
 		for (int i = 0; i < equations; ++i) {
 		    (void)printf("# w[%2d] = %f\n", i, w_vector[i]);
@@ -1182,16 +1233,16 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	    }
 
 	    /*
-	     * Apply d_vector to ss_p_vector.
+	     * Apply d_vector to vnss_p_vector.
 	     */
 	    for (int i = 0; i < p_length; ++i) {
-		ssp->ss_p_vector[i][findex] += d_vector[i];
+		vnssp->vnss_p_vector[i][findex] += d_vector[i];
 	    }
 #ifdef DEBUG
 	    for (int i = 0; i < p_length; ++i) {
 		(void)printf("# p[%2d] = %13.6e %+13.6ej\n", i,
-			creal(ssp->ss_p_vector[i][findex]),
-			cimag(ssp->ss_p_vector[i][findex]));
+			creal(vnssp->vnss_p_vector[i][findex]),
+			cimag(vnssp->vnss_p_vector[i][findex]));
 	    }
 #endif /* DEBUG */
 	    backtrack_count = 0;
@@ -1218,20 +1269,20 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 		    creal(best_d_vector[i]),
 		    cimag(best_d_vector[i]));
 #endif /* DEBUG */
-		ssp->ss_p_vector[i][findex] =
+		vnssp->vnss_p_vector[i][findex] =
 		    best_p_vector[i] + best_d_vector[i];
 	    }
 #ifdef DEBUG
 	    for (int i = 0; i < p_length; ++i) {
 		(void)printf("# p[%2d] = %13.6e %+13.6ej\n", i,
-			creal(ssp->ss_p_vector[i][findex]),
-			cimag(ssp->ss_p_vector[i][findex]));
+			creal(vnssp->vnss_p_vector[i][findex]),
+			cimag(vnssp->vnss_p_vector[i][findex]));
 	    }
 #endif /* DEBUG */
 	    if (w_vector != NULL) {
 		(void)memcpy((void *)w_vector, (void *)best_w_vector,
 			equations * sizeof(double));
-		calc_weights(ssp, x_vector, w_vector);
+		calc_weights(vnssp, x_vector, w_vector);
 #ifdef DEBUG
 		print_rmatrix("w", w_vector, equations, 1);
 #endif /* DEBUG */
@@ -1257,7 +1308,7 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
     (void)memcpy((void *)x_vector, (void *)best_x_vector,
 	    x_length * sizeof(double complex));
     for (int i = 0; i < p_length; ++i) {
-	ssp->ss_p_vector[i][findex] = best_p_vector[i];
+	vnssp->vnss_p_vector[i][findex] = best_p_vector[i];
     }
 success:
     rv = 0;
@@ -1271,17 +1322,17 @@ out:
 
 /*
  * calc_rms_error: calculate the RMS error of the solution, normalized to 1
- *   @ssp: pointer to state structure
+ *   @vnssp: solve state structure
  *   @x_vector: vector of unknowns filled in by this function
  *   @x_length: length of x_vector
  */
-static double calc_rms_error(solve_state_t *ssp,
+static double calc_rms_error(vnacal_new_solve_state_t *vnssp,
 	double complex *x_vector, int x_length)
 {
-    vnacal_new_t *vnp = ssp->ss_vnp;
-    const int findex = ssp->ss_findex;
+    vnacal_new_t *vnp = vnssp->vnss_vnp;
+    const int findex = vnssp->vnss_findex;
     const double frequency = vnp->vn_frequency_vector[findex];
-    leakage_term_t *leakage_vector = ssp->ss_leakage_vector;
+    vnacal_new_leakage_term_t *leakage_vector = vnssp->vnss_leakage_vector;
     const int correlated = vnp->vn_correlated_parameters;
     const vnacal_new_m_error_t *m_error_vector = vnp->vn_m_error_vector;
     const vnacal_layout_t *vlp = &vnp->vn_layout;
@@ -1306,20 +1357,18 @@ static double calc_rms_error(solve_state_t *ssp,
 	vnacal_new_system_t *vnsp = &vnp->vn_system_vector[sindex];
 	int offset = sindex * (vlp->vl_t_terms - 1);
 
-	start_new_system(ssp, vnsp);
-	while (get_equation(ssp)) {
+	vs_start_system(vnssp, vnsp);
+	while (vs_next_equation(vnssp)) {
 	    double complex residual = 0.0;
 	    double u = 0.0;
 
 	    for (int i = 0; i < w_terms; ++i) {
 		w_term_vector[i] = 0.0;
 	    }
-	    while (get_coefficient(ssp)) {
-		const vnacal_new_coefficient_t *vncp = ssp->ss_vncp;
-		int coefficient = vncp->vnc_coefficient;
-		int m_cell = vncp->vnc_m_cell;
-		int s_cell = vncp->vnc_s_cell;
-		double complex v = vncp->vnc_negative ? -1.0 : 1.0;
+	    while (vs_next_coefficient(vnssp)) {
+		int coefficient = vs_get_coefficient(vnssp);
+		double complex v = vs_get_negative(vnssp) ? -1.0 : 1.0;
+		int m_cell = vs_get_m_cell(vnssp);
 
 		if (coefficient >= 0) {
 		    assert(offset + coefficient < x_length);
@@ -1327,11 +1376,11 @@ static double calc_rms_error(solve_state_t *ssp,
 		} else {
 		    v *= -1.0;
 		}
-		if (s_cell >= 0) {
-		    v *= get_s(ssp);
+		if (vs_have_s(vnssp)) {
+		    v *= vs_get_s(vnssp);
 		}
-		if (m_cell >= 0) {
-		    double complex m = get_m(ssp);
+		if (vs_have_m(vnssp)) {
+		    double complex m = vs_get_m(vnssp);
 		    double t;
 
 		    int i = is_t ? m_cell % VL_M_COLUMNS(vlp) :
@@ -1373,9 +1422,9 @@ static double calc_rms_error(solve_state_t *ssp,
 		double complex v;
 		double sigma;
 
-		v = ssp->ss_p_vector[vnprp1->vnpr_unknown_index][findex];
+		v = vnssp->vnss_p_vector[vnprp1->vnpr_unknown_index][findex];
 		if (vnprp2->vnpr_unknown) {
-		    v -= ssp->ss_p_vector[vnprp2->vnpr_unknown_index][findex];
+		    v -= vnssp->vnss_p_vector[vnprp2->vnpr_unknown_index][findex];
 		} else {
 		    v -= _vnacal_get_parameter_value_i(vnprp2->vnpr_parameter,
 				frequency);
@@ -1395,17 +1444,17 @@ static double calc_rms_error(solve_state_t *ssp,
 	    for (int column = 0; column < m_columns; ++column) {
 		if (row != column) {
 		    const int m_cell = row * m_columns + column;
-		    const int term = ssp->ss_leakage_map[m_cell];
-		    const leakage_term_t *ltp = &leakage_vector[term];
+		    const int term = vnssp->vnss_leakage_map[m_cell];
+		    const vnacal_new_leakage_term_t *vnltp = &leakage_vector[term];
 		    double value;
 
-		    if (ltp->lt_count > 1) {
-			double complex sum_x = ltp->lt_sum;
-			const int n = ltp->lt_count;
+		    if (vnltp->vnlt_count > 1) {
+			double complex sum_x = vnltp->vnlt_sum;
+			const int n = vnltp->vnlt_count;
 			double n_mean_squared;
 
 			n_mean_squared = creal(sum_x * conj(sum_x)) / n;
-			value = (ltp->lt_sumsq - n_mean_squared);
+			value = (vnltp->vnlt_sumsq - n_mean_squared);
 			if (m_error_vector != NULL) {
 			    double weight = 1.0 / (noise * noise +
 				    n_mean_squared / n * tracking * tracking);
@@ -1431,7 +1480,7 @@ static double calc_rms_error(solve_state_t *ssp,
  *   @e: input and output vector
  *   @vlp_in: input layout
  *   @vlp_out: output layout
- *   @ss.ss_leakage_map: map m_cell to external leakage term
+ *   @leakage_map: map m_cell to external leakage term
  *
  * Do the matrix conversion:
  *   El = -Um^-1 Ui + El_in
@@ -1448,7 +1497,7 @@ static double calc_rms_error(solve_state_t *ssp,
  */
 static int convert_ue14_to_e12(double complex *e,
 	const vnacal_layout_t *vlp_in, const vnacal_layout_t *vlp_out,
-	const int *_leakage_map)
+	const int *leakage_map)
 {
     const int m_rows     = VL_M_ROWS(vlp_in);
     const int m_columns  = VL_M_COLUMNS(vlp_in);
@@ -1487,7 +1536,7 @@ static int convert_ue14_to_e12(double complex *e,
 	    if (m_row == m_column) {
 		el[m_row] = -ui[0] / um[m_column];
 	    } else {
-		el[m_row] = el_in[_leakage_map[m_cell]];
+		el[m_row] = el_in[leakage_map[m_cell]];
 	    }
 
 	    /*
@@ -1526,23 +1575,23 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
     vnacal_layout_t vl_e12;
     const vnacal_type_t type_in = VL_TYPE(vlp_in);
     vnacal_type_t type_out = type_in;
-    const int m_rows = VL_M_ROWS(vlp_in);
+    const int m_rows    = VL_M_ROWS(vlp_in);
     const int m_columns = VL_M_COLUMNS(vlp_in);
-    const int s_rows = VL_S_ROWS(vlp_in);
+    const int s_rows    = VL_S_ROWS(vlp_in);
     const int s_columns = VL_S_COLUMNS(vlp_in);
     const int leakage_terms = VL_EL_TERMS(vlp_in);
     const int error_terms_in = VL_ERROR_TERMS(vlp_in);
     int error_terms_out = error_terms_in;
-    solve_state_t ss;
+    vnacal_new_solve_state_t vnss;
     vnacal_calibration_t *calp = NULL;
     int rc = -1;
 
     /*
      * Init the state structure.
      */
-    (void)memset((void *)&ss, 0, sizeof(solve_state_t));
-    ss.ss_vnp = vnp;
-    ss.ss_state = EI_END_SYSTEM;
+    (void)memset((void *)&vnss, 0, sizeof(vnacal_new_solve_state_t));
+    vnss.vnss_vnp = vnp;
+    vnss.vnss_state = EI_END_SYSTEM;
 
     /*
      * Make sure the frequency vector was given.
@@ -1561,12 +1610,12 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
     if (leakage_terms != 0) {
 	int term = 0;
 
-	if ((ss.ss_leakage_vector = calloc(leakage_terms,
-			sizeof(leakage_term_t))) == NULL) {
+	if ((vnss.vnss_leakage_vector = calloc(leakage_terms,
+			sizeof(vnacal_new_leakage_term_t))) == NULL) {
 	    _vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	    goto out;
 	}
-	if ((ss.ss_leakage_map = calloc(m_rows * m_columns,
+	if ((vnss.vnss_leakage_map = calloc(m_rows * m_columns,
 			sizeof(int))) == NULL) {
 	    _vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	    goto out;
@@ -1576,9 +1625,9 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 		const int m_cell = m_row * m_columns + m_column;
 
 		if (m_row == m_column) {
-		    ss.ss_leakage_map[m_cell] = -1;
+		    vnss.vnss_leakage_map[m_cell] = -1;
 		} else {
-		    ss.ss_leakage_map[m_cell] = term++;
+		    vnss.vnss_leakage_map[m_cell] = term++;
 		}
 	    }
 	}
@@ -1589,13 +1638,13 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
      * frequency, of vectors of unknown parameter values.
      */
     if (unknown_parameters != 0) {
-	if ((ss.ss_p_vector = calloc(unknown_parameters,
+	if ((vnss.vnss_p_vector = calloc(unknown_parameters,
 			sizeof(double complex *))) == NULL) {
 	    _vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	    goto out;
 	}
 	for (int i = 0; i < unknown_parameters; ++i) {
-	    if ((ss.ss_p_vector[i] = calloc(frequencies,
+	    if ((vnss.vnss_p_vector[i] = calloc(frequencies,
 			    sizeof(double complex))) == NULL) {
 		_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s",
 			strerror(errno));
@@ -1608,22 +1657,22 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
      * Allocate matrices to cache calculated m and s values to save
      * from having to continually recalculate
      */
-    if ((ss.ss_m_matrix = calloc(m_rows * m_columns,
+    if ((vnss.vnss_m_matrix = calloc(m_rows * m_columns,
 		    sizeof(double complex))) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	goto out;
     }
-    if ((ss.ss_s_matrix = calloc(s_rows * s_columns,
+    if ((vnss.vnss_s_matrix = calloc(s_rows * s_columns,
 		    sizeof(double complex))) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	goto out;
     }
-    if ((ss.ss_m_bitmap = calloc(DIVIDE_AND_ROUND_UP(m_rows * m_columns,
+    if ((vnss.vnss_m_bitmap = calloc(DIVIDE_AND_ROUND_UP(m_rows * m_columns,
 		    32), sizeof(uint32_t))) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	goto out;
     }
-    if ((ss.ss_s_bitmap = calloc(DIVIDE_AND_ROUND_UP(s_rows * s_columns,
+    if ((vnss.vnss_s_bitmap = calloc(DIVIDE_AND_ROUND_UP(s_rows * s_columns,
 		    32), sizeof(uint32_t))) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	goto out;
@@ -1665,14 +1714,14 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 	/*
 	 * Save the current frequency index in the state structure.
 	 */
-	ss.ss_findex = findex;
+	vnss.vnss_findex = findex;
 
 	/*
 	 * Initialize the unknown parameter values.
 	 */
 	for (vnacal_new_parameter_t *vnprp = vnp->vn_unknown_parameter_list;
 		vnprp != NULL; vnprp = vnprp->vnpr_next_unknown) {
-	    ss.ss_p_vector[vnprp->vnpr_unknown_index][findex] =
+	    vnss.vnss_p_vector[vnprp->vnpr_unknown_index][findex] =
 		_vnacal_get_parameter_value_i(vnprp->vnpr_parameter, frequency);
 	}
 
@@ -1681,14 +1730,14 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 	 * linear system.
 	 */
 	if (leakage_terms != 0) {
-	    leakage_term_t *ltp;
+	    vnacal_new_leakage_term_t *vnltp;
 	    vnacal_new_measurement_t *vnmp;
 
 	    for (int term = 0; term < leakage_terms; ++term) {
-		ltp = &ss.ss_leakage_vector[term];
-		ltp->lt_sum   = 0.0;
-		ltp->lt_sumsq = 0.0;
-		ltp->lt_count = 0;
+		vnltp = &vnss.vnss_leakage_vector[term];
+		vnltp->vnlt_sum   = 0.0;
+		vnltp->vnlt_sumsq = 0.0;
+		vnltp->vnlt_count = 0;
 	    }
 	    for (vnmp = vnp->vn_measurement_list; vnmp != NULL;
 		    vnmp = vnmp->vnm_next) {
@@ -1696,7 +1745,7 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 		    for (int column = 0; column < m_columns; ++column) {
 			const int m_cell = row * m_columns + column;
 			const int s_cell = row * s_columns + column;
-			const int term = ss.ss_leakage_map[m_cell];
+			const int term = vnss.vnss_leakage_map[m_cell];
 			double complex m;
 
 			if (row == column) {
@@ -1709,17 +1758,17 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 			    continue;
 			}
 			m = vnmp->vnm_m_matrix[m_cell][findex];
-			ltp = &ss.ss_leakage_vector[term];
-			ltp->lt_sum   += m;
-			ltp->lt_sumsq += creal(m * conj(m));
-			++ltp->lt_count;
+			vnltp = &vnss.vnss_leakage_vector[term];
+			vnltp->vnlt_sum   += m;
+			vnltp->vnlt_sumsq += creal(m * conj(m));
+			++vnltp->vnlt_count;
 		    }
 		}
 	    }
 	    for (int term = 0; term < leakage_terms; ++term) {
-		ltp = &ss.ss_leakage_vector[term];
+		vnltp = &vnss.vnss_leakage_vector[term];
 
-		if (ltp->lt_count == 0) {
+		if (vnltp->vnlt_count == 0) {
 		    _vnacal_error(vcp, VNAERR_MATH, "vnacal_new_solve: "
 			    "leakage term system is singular");
 		    goto out;
@@ -1735,11 +1784,11 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 	 * then the system is nonlinear then use the iterative solver.
 	 */
 	if (unknown_parameters == 0 && vnp->vn_m_error_vector == NULL) {
-	    if (analytic_solve(&ss, x_vector, x_length) == -1) {
+	    if (_vnacal_new_solve_simple(&vnss, x_vector, x_length) == -1) {
 		goto out;
 	    }
 	} else {
-	    if (iterative_solve(&ss, x_vector, x_length) == -1) {
+	    if (_vnacal_new_solve_auto(&vnss, x_vector, x_length) == -1) {
 		goto out;
 	    }
 	}
@@ -1751,7 +1800,7 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 	if (vnp->vn_m_error_vector != NULL) {
 	    double error;
 
-	    error = calc_rms_error(&ss, x_vector, x_length);
+	    error = calc_rms_error(&vnss, x_vector, x_length);
 #ifdef DEBUG
 	    (void)printf("# findex %d error %13.6e\n", findex, error);
 #endif /* DEBUG */
@@ -1782,11 +1831,11 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 	 * Add the leakage terms.
 	 */
 	for (int term = 0; term < leakage_terms; ++term) {
-	    leakage_term_t *ltp = &ss.ss_leakage_vector[term];
+	    vnacal_new_leakage_term_t *vnltp = &vnss.vnss_leakage_vector[term];
 	    double complex el;
 
-	    if (ltp->lt_count != 0) {
-		el = ltp->lt_sum / ltp->lt_count;
+	    if (vnltp->vnlt_count != 0) {
+		el = vnltp->vnlt_sum / vnltp->vnlt_count;
 	    } else {
 		el = 0.0;
 	    }
@@ -1799,7 +1848,7 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 	 */
 	if (type_in == _VNACAL_E12_UE14) {
 	    rc = convert_ue14_to_e12(e_vector, vlp_in, vlp_out,
-		    ss.ss_leakage_map);
+		    vnss.vnss_leakage_map);
 	    if (rc == -1) {
 		_vnacal_error(vcp, VNAERR_MATH, "vnacal_new_solve: "
 			"singular system");
@@ -1843,9 +1892,9 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 	(void)memcpy((void *)vpmrp->vpmr_frequency_vector,
 		(void *)vnp->vn_frequency_vector,
 		frequencies * sizeof(double));
-	assert(ss.ss_p_vector[index] != NULL);
-	vpmrp->vpmr_gamma_vector = ss.ss_p_vector[index];
-	ss.ss_p_vector[index] = NULL;
+	assert(vnss.vnss_p_vector[index] != NULL);
+	vpmrp->vpmr_gamma_vector = vnss.vnss_p_vector[index];
+	vnss.vnss_p_vector[index] = NULL;
     }
 
     /*
@@ -1858,18 +1907,18 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 
 out:
     _vnacal_calibration_free(calp);
-    free((void *)ss.ss_s_bitmap);
-    free((void *)ss.ss_m_bitmap);
-    free((void *)ss.ss_s_matrix);
-    free((void *)ss.ss_m_matrix);
-    if (ss.ss_p_vector != NULL) {
+    free((void *)vnss.vnss_s_bitmap);
+    free((void *)vnss.vnss_m_bitmap);
+    free((void *)vnss.vnss_s_matrix);
+    free((void *)vnss.vnss_m_matrix);
+    if (vnss.vnss_p_vector != NULL) {
 	for (int i = unknown_parameters - 1; i >= 0; --i) {
-	    free((void *)ss.ss_p_vector[i]);
+	    free((void *)vnss.vnss_p_vector[i]);
 	}
-	free((void *)ss.ss_p_vector);
+	free((void *)vnss.vnss_p_vector);
     }
-    free((void *)ss.ss_leakage_map);
-    free((void *)ss.ss_leakage_vector);
+    free((void *)vnss.vnss_leakage_map);
+    free((void *)vnss.vnss_leakage_vector);
     return rc;
 }
 

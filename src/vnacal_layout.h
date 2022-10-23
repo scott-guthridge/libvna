@@ -281,7 +281,7 @@ typedef struct vnacal_layout {
  *      Us is an s_columns x 1      diagonal matrix
  *      El is m_rows x 1            rectangular matrix, off diagonal terms only
  *
- * We can solve for M column by column as follows:
+ * We can solve for M column within each column as follows:
  *
  *  M(:,1) = El(:,1) + A^-1 B with:
  *      A = c1_um11 - c1_ux11 s11               - c1_ux22 s12
