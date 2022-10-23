@@ -1254,7 +1254,12 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
     if (VL_IS_UE14(vlp)) {
 	for (int eq_column = 0; eq_column < full_m_columns; ++eq_column) {
 	    for (int eq_row = 0; eq_row < full_s_rows; ++eq_row) {
-		if (s_row_given[eq_row] && m_column_given[eq_column]) {
+		const int s_cell = eq_row * full_s_columns + eq_column;
+
+		if (s_row_given[eq_row] && m_column_given[eq_column] &&
+			(eq_row == eq_column ||
+			 vnmp->vnm_reachability_matrix == NULL ||
+			 vnmp->vnm_reachability_matrix[s_cell])) {
 		    rc = add_equation(function, vnmp, &vnepp_anchor,
 			    eq_row, eq_column);
 		    if (rc == -1) {
@@ -1266,7 +1271,12 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
     } else if (ptype == 'T') {
 	for (int eq_row = 0; eq_row < full_m_rows; ++eq_row) {
 	    for (int eq_column = 0; eq_column < full_s_columns; ++eq_column) {
-		if (m_row_given[eq_row] && s_column_given[eq_column]) {
+		const int s_cell = eq_row * full_s_columns + eq_column;
+
+		if (m_row_given[eq_row] && s_column_given[eq_column] &&
+			(eq_row == eq_column ||
+			 vnmp->vnm_reachability_matrix == NULL ||
+			 vnmp->vnm_reachability_matrix[s_cell])) {
 		    rc = add_equation(function, vnmp, &vnepp_anchor,
 			    eq_row, eq_column);
 		    if (rc == -1) {
@@ -1278,7 +1288,12 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
     } else {
 	for (int eq_row = 0; eq_row < full_s_rows; ++eq_row) {
 	    for (int eq_column = 0; eq_column < full_m_columns; ++eq_column) {
-		if (s_row_given[eq_row] && m_column_given[eq_column]) {
+		const int s_cell = eq_row * full_s_columns + eq_column;
+
+		if (s_row_given[eq_row] && m_column_given[eq_column] &&
+			(eq_row == eq_column ||
+			 vnmp->vnm_reachability_matrix == NULL ||
+			 vnmp->vnm_reachability_matrix[s_cell])) {
 		    rc = add_equation(function, vnmp, &vnepp_anchor,
 			    eq_row, eq_column);
 		    if (rc == -1) {

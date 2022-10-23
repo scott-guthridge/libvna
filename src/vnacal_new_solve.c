@@ -104,15 +104,8 @@ static void start_new_system(solve_state_t *ssp, vnacal_new_system_t *vnsp)
  */
 static bool get_equation(solve_state_t *ssp)
 {
-    vnacal_new_t *vnp = ssp->ss_vnp;
-    const vnacal_layout_t *vlp = &vnp->vn_layout;
-    vnacal_type_t type = VL_TYPE(vlp);
-    const int s_columns = VL_S_COLUMNS(vlp);
-
     for (;;) {
 	vnacal_new_equation_t *vnep;
-	vnacal_new_measurement_t *vnmp;
-	int eq_row, eq_column, eq_cell;
 
 	/*
 	 * If we're starting a new system, set ss_vnep to the first
@@ -138,21 +131,6 @@ static bool get_equation(solve_state_t *ssp)
 	if ((vnep = ssp->ss_vnep) == NULL) {
 	    ssp->ss_state = EI_END_SYSTEM;
 	    return false;
-	}
-	vnmp      = vnep->vne_vnmp;
-	eq_row    = vnep->vne_row;
-	eq_column = vnep->vne_column;
-	eq_cell   = eq_row * s_columns + eq_column;
-
-	/*
-	 * If we're in a calibration type that doesn't handle off-diagonal
-	 * leakage terms within the linear system and there's no signal
-	 * path through the calibration standard for the current equation,
-	 * then skip the equation.
-	 */
-	if (type != VNACAL_T16 && type != VNACAL_U16 && eq_row != eq_column &&
-		!vnmp->vnm_reachability_matrix[eq_cell]) {
-	    continue;
 	}
 
 	/*
