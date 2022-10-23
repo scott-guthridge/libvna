@@ -28,7 +28,7 @@
 #include <string.h>
 #include "vnacal_new_internal.h"
 
-//#define DEBUG
+/* #define DEBUG */
 
 /*
  * PHI_INV: inverse of the golden ratio
@@ -309,6 +309,48 @@ static double complex get_s(solve_state_t *ssp)
     return ssp->ss_s_matrix[s_cell];
 }
 
+#ifdef DEBUG
+/*
+ * print_rmatrix: print an m by n serialized real matrix in octave form
+ *   @name: name of matrix
+ *   @a: pointer to first element of matrix
+ *   @m: number of rows
+ *   @n: number of columns
+ */
+static void print_rmatrix(const char *name, double *a, int m, int n)
+{
+    (void)printf("%s = [\n", name);
+    for (int i = 0; i < m; ++i) {
+	for (int j = 0; j < n; ++j) {
+	    (void)printf(" %9.5f", a[i * n + j]);
+	}
+	(void)printf("\n");
+    }
+    (void)printf("]\n");
+}
+
+/*
+ * print_cmatrix: print an m by n serialized complex matrix in octave form
+ *   @name: name of matrix
+ *   @a: pointer to first element of matrix
+ *   @m: number of rows
+ *   @n: number of columns
+ */
+static void print_cmatrix(const char *name, double complex *a, int m, int n)
+{
+    (void)printf("%s = [\n", name);
+    for (int i = 0; i < m; ++i) {
+	for (int j = 0; j < n; ++j) {
+	    double complex v = a[i * n + j];
+
+	    (void)printf(" %9.5f%+9.5fj", creal(v), cimag(v));
+	}
+	(void)printf("\n");
+    }
+    (void)printf("]\n");
+}
+#endif
+
 /*
  * analytic_solve: solve for the error terms where all s-parameters are known
  *   @ssp: pointer to state structure
@@ -365,6 +407,10 @@ static int analytic_solve(solve_state_t *ssp, double complex *x_vector,
 	    }
 	    ++eq_count;
 	}
+#ifdef DEBUG
+	print_cmatrix("a", &a_matrix[0][0], eq_count, x_length);
+	print_cmatrix("b", b_vector, eq_count, 1);
+#endif /* DEBUG */
 
 	/*
 	 * Solve for the unknowns, using LU decomposition if a_matrix
@@ -399,7 +445,6 @@ static int analytic_solve(solve_state_t *ssp, double complex *x_vector,
     }
     return 0;
 }
-
 
 /*
  * calc_weights: compute w_vector from x_vector, p_vector
@@ -755,9 +800,22 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 		w_vector[i] = 1.0;
 	    }
 	    calc_weights(ssp, x_vector, w_vector);
+#ifdef DEBUG
+	    print_rmatrix("w", w_vector, equations, 1);
+#endif /* DEBUG */
 	    --iteration;
 	    continue;
 	}
+
+#ifdef DEBUG
+    (void)printf("p = [\n");
+    for (int i = 0; i < p_length; ++i) {
+	(void)printf("  %f%+fj\n",
+		creal(ssp->ss_p_vector[i][findex]),
+		cimag(ssp->ss_p_vector[i][findex]));
+    }
+    (void)printf("]\n\n");
+#endif /* DEBUG */
 
 	/*
 	 * If there are no unknown parameters, we're done.
@@ -958,6 +1016,10 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	    }
 	}
 	assert(equation == equations);
+#ifdef DEBUG
+	print_cmatrix("a", &a_matrix[0][0], equations, x_length);
+	print_cmatrix("b", b_vector, equations, 1);
+#endif /* DEBUG */
 
 	/*
 	 * Add an additional row to j_matrix and k_vector for each
@@ -1026,6 +1088,10 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	    }
 	    assert(j_row == j_rows);
 	}
+#ifdef DEBUG
+	print_cmatrix("j", &j_matrix[0][0], j_rows, p_length);
+	print_cmatrix("k", k_vector, j_rows, 1);
+#endif /* DEBUG */
 
 	/*
 	 * Solve the j_matrix, k_vector system to create d_vector, the
@@ -1054,11 +1120,7 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 	}
 #ifdef DEBUG
 	(void)printf("# findex %d iteration %d\n", findex, iteration);
-	for (int i = 0; i < p_length; ++i) {
-	    (void)printf("# d[%2d] = %13.6e %+13.6ej\n", i,
-		    creal(d_vector[i]),
-		    cimag(d_vector[i]));
-	}
+	print_cmatrix("d", d_vector, p_length, 1);
 #endif /* DEBUG */
 
 	/*
@@ -1201,9 +1263,7 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
 			equations * sizeof(double));
 		calc_weights(ssp, x_vector, w_vector);
 #ifdef DEBUG
-		for (int i = 0; i < equations; ++i) {
-		    (void)printf("# w[%2d] = %f\n", i, w_vector[i]);
-		}
+		print_rmatrix("w", w_vector, equations, 1);
 #endif /* DEBUG */
 	    }
 	}
