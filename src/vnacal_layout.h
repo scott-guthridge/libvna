@@ -141,12 +141,30 @@ typedef struct vnacal_layout {
 	((type) == VNACAL_E12 || VNACAL_IS_UE14(type))
 
 /*
- * VNACAL_HAS_COLUMN_SYSTEMS: return true if each column is a separate system
+ * VL_HAS_COLUMN_SYSTEMS: return true if each column is a separate system
  *   @vlp: pointer to vnacal_layout_t structure
  */
 #define VL_HAS_COLUMN_SYSTEMS(vlp) \
 	VNACAL_HAS_COLUMN_SYSTEMS((vlp)->vl_type)
 
+/*
+ * VNACAL_HAS_OUTSIDE_LEAKAGE_TERMS: has leakage terms outside of linear system?
+ *   @type: error term type
+ */
+#define VNACAL_HAS_OUTSIDE_LEAKAGE_TERMS(type) \
+    ((type) == VNACAL_TE10 || \
+     (type) == VNACAL_UE10 || \
+     (type) == VNACAL_UE14 || \
+     (type) == _VNACAL_E12_UE14 || \
+     (type) == VNACAL_E12)
+
+/*
+ * VNACAL_HAS_OUTSIDE_LEAKAGE_TERMS: has leakage terms outside of linear system?
+ *   @vlp: pointer to vnacal_layout_t structure
+ *   @type: error term type
+ */
+#define VL_HAS_OUTSIDE_LEAKAGE_TERMS(vlp) \
+	VNACAL_HAS_OUTSIDE_LEAKAGE_TERMS((vlp)->vl_type)
 
 /***********************************************************************
  * T terms: 2x2 T matrix of matrices:

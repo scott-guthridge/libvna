@@ -137,9 +137,12 @@ typedef struct vnacal_new_equation {
 } vnacal_new_equation_t;
 
 /*
- * vnacal_new_measurement_t: measurement of a calibration standard
+ * vnacal_new_measurement_t: a measured calibration standard
  */
 typedef struct vnacal_new_measurement {
+    /* index of this struct */
+    int vnm_index;
+
     /* m_rows x m_columns matrix of vectors of per-frequency measurements
        of the standard */
     double complex **vnm_m_matrix;
@@ -228,17 +231,20 @@ struct vnacal_new {
     /* vector of linear systems of equations */
     vnacal_new_system_t *vn_system_vector;
 
-    /* total number of equations */
+    /* total number of equations in all systems */
     int vn_equations;
 
     /* maximum number of equations in any system */
     int vn_max_equations;
 
-    /* list of measurements of calibration standards */
+    /* list of measured standards */
     vnacal_new_measurement_t *vn_measurement_list;
 
-    /* address where next measurement should be added */
+    /* address where next measured standard should be added */
     vnacal_new_measurement_t **vn_measurement_anchor;
+
+    /* count of measured standards */
+    int vn_measurement_count;
 
     /* solved error parameters */
     vnacal_calibration_t *vn_calibration;

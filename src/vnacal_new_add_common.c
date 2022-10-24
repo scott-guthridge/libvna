@@ -1309,6 +1309,7 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
      */
     *vnp->vn_measurement_anchor = vnmp;
     vnp->vn_measurement_anchor = &vnmp->vnm_next;
+    vnmp->vnm_index = vnp->vn_measurement_count++;
     vnmp = NULL; /* no longer ours to free */
 
     /*
