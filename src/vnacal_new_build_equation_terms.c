@@ -216,8 +216,8 @@ static void print_equation(const vnacal_new_equation_t *vnep)
  *   @xindex: column in expanded coefficient matrix or -1 for right hand side
  *   @v_columns: number of columns in v_matrix
  *   @negative: true if term has a minus sign
- *   @m: index of measurement in vnsm_m_matrix or -1
- *   @s: index of parameter   in vnsm_s_matrix or -1
+ *   @m: index of measurement in vnmm_m_matrix or -1
+ *   @s: index of parameter   in vnmm_s_matrix or -1
  *   @v: index of value       in vnsp_v_matrix or -1
  */
 static int add_term(vnacal_new_measurement_t *vnmp,

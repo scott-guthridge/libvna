@@ -108,11 +108,11 @@ static void calc_weights(vnacal_new_solve_state_t *vnssp,
 	vs_start_system(vnssp, sindex);
 	while (vs_next_equation(vnssp)) {
 	    vnacal_new_measurement_t *vnmp;
-	    vnacal_new_ms_matrices_t *vnmmp;
+	    vnacal_new_msv_matrices_t *vnmmp;
 	    double u = 0.0;
 
 	    vnmp = vnssp->vnss_vnep->vne_vnmp;
-	    vnmmp = &vnssp->vnss_ms_matrices[vnmp->vnm_index];
+	    vnmmp = &vnssp->vnss_msv_matrices[vnmp->vnm_index];
 	    for (int m_cell = 0; m_cell < m_cells; ++m_cell) {
 		m_weight_vector[m_cell] = 0.0;
 	    }

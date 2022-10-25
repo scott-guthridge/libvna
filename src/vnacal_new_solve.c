@@ -27,6 +27,10 @@
 #include <string.h>
 #include "vnacal_new_internal.h"
 
+/*
+ * _vnacal_new_solve_enable_v: hidden global for test
+ */
+bool _vnacal_new_solve_enable_v = false;
 
 /*
  * _vnacal_new_solve_init: initialize the solve state structure
@@ -41,6 +45,8 @@ int _vnacal_new_solve_init(vnacal_new_solve_state_t *vnssp, vnacal_new_t *vnp)
     const int m_columns = VL_M_COLUMNS(vlp);
     const int s_rows    = VL_S_ROWS(vlp);
     const int s_columns = VL_S_COLUMNS(vlp);
+    const int v_rows    = VL_V_ROWS(vlp);
+    const int v_columns = VL_V_COLUMNS(vlp);
 
     /*
      * Start initializing the solve state structure.
@@ -50,18 +56,18 @@ int _vnacal_new_solve_init(vnacal_new_solve_state_t *vnssp, vnacal_new_t *vnp)
     vnssp->vnss_findex = -1;
 
     /*
-     * Allocate a vector of vnacal_new_ms_matrices_t structures,
+     * Allocate a vector of vnacal_new_msv_matrices_t structures,
      * each corresponding to the measured standard with same index.
      */
-    if ((vnssp->vnss_ms_matrices = calloc(vnp->vn_measurement_count,
-		    sizeof(vnacal_new_ms_matrices_t))) == NULL) {
+    if ((vnssp->vnss_msv_matrices = calloc(vnp->vn_measurement_count,
+		    sizeof(vnacal_new_msv_matrices_t))) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	return -1;
     }
     for (vnacal_new_measurement_t *vnmp = vnp->vn_measurement_list;
 	    vnmp != NULL; vnmp = vnmp->vnm_next) {
 	int index = vnmp->vnm_index;
-	vnacal_new_ms_matrices_t *vnmmp = &vnssp->vnss_ms_matrices[index];
+	vnacal_new_msv_matrices_t *vnmmp = &vnssp->vnss_msv_matrices[index];
 
 	/*
 	 * Set the back pointer.
@@ -82,6 +88,52 @@ int _vnacal_new_solve_init(vnacal_new_solve_state_t *vnssp, vnacal_new_t *vnp)
 	    _vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	    vs_free(vnssp);
 	    return -1;
+	}
+
+#if 1 /* temporary */
+	/*
+	 * If enabled, allocate V matrices.
+	 */
+	if (_vnacal_new_solve_enable_v) {	/*}*/
+#else /* future */
+	/*
+	 * If any system is over-determined and we known the measurement
+	 * errors, allocate V matrices.
+	 */
+	if (vnp->vn_max_equations > vlp->vl_t_terms - 1 &&
+		vnp->vn_m_error_vector != NULL) {
+#endif
+	    /*
+	     * Allocate a vector of pointers to v matrices, one for
+	     * each system.
+	     */
+	    if ((vnmmp->vnsm_v_matrices = calloc(vnp->vn_systems,
+			    sizeof(double complex *))) == NULL) {
+		_vnacal_error(vcp, VNAERR_SYSTEM,
+			"calloc: %s", strerror(errno));
+		vs_free(vnssp);
+		return -1;
+	    }
+
+	    /*
+	     * For each over-determined system, allocate the v matrix.
+	     */
+	    for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
+		vnacal_new_system_t *vnsp = &vnp->vn_system_vector[sindex];
+
+		if (vnsp->vns_equation_count > vlp->vl_t_terms - 1) {
+		    double complex *v_matrix;
+
+		    if ((v_matrix = calloc(v_rows * v_columns,
+				    sizeof(double complex))) == NULL) {
+			_vnacal_error(vcp, VNAERR_SYSTEM,
+				"calloc: %s", strerror(errno));
+			vs_free(vnssp);
+			return -1;
+		    }
+		    vnmmp->vnsm_v_matrices[sindex] = v_matrix;
+		}
+	    }
 	}
     }
 
@@ -146,6 +198,41 @@ int _vnacal_new_solve_init(vnacal_new_solve_state_t *vnssp, vnacal_new_t *vnp)
     vnssp->vnss_iterator_state = VNACAL_NI_END_EQUATIONS;
 
     return 0;
+}
+
+/*
+ * init_v_matrices: init v matrices to identity
+ *   @vnssp:  solve state structure
+ */
+static void init_v_matrices(vnacal_new_solve_state_t *vnssp)
+{
+    vnacal_new_t *vnp = vnssp->vnss_vnp;
+    const vnacal_layout_t *vlp = &vnp->vn_layout;
+    const int v_rows    = VL_V_ROWS(vlp);
+    const int v_columns = VL_V_COLUMNS(vlp);
+
+    /*
+     * Init v matrices to identity.
+     */
+    for (int i = 0; i < vnp->vn_measurement_count; ++i) {
+	vnacal_new_msv_matrices_t *vnmmp = &vnssp->vnss_msv_matrices[i];
+
+	if (vnmmp->vnsm_v_matrices != NULL) {
+	    for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
+		double complex *matrix = vnmmp->vnsm_v_matrices[sindex];
+
+		if (matrix != NULL) {
+		    for (int vr = 0; vr < v_rows; ++vr) {
+			for (int vc = 0; vc < v_columns; ++vc) {
+			    const int v_cell = vr * v_columns + vc;
+
+			    matrix[v_cell] = vr == vc ? 1.0 : 0.0;
+			}
+		    }
+		}
+	    }
+	}
+    }
 }
 
 /*
@@ -228,13 +315,13 @@ int _vnacal_new_solve_start_frequency(vnacal_new_solve_state_t *vnssp,
      */
     for (vnacal_new_measurement_t *vnmp = vnp->vn_measurement_list;
 	    vnmp != NULL; vnmp = vnmp->vnm_next) {
-	vnacal_new_ms_matrices_t *vnmmp;
+	vnacal_new_msv_matrices_t *vnmmp;
 
 	/*
 	 * Fill vnmm_m_matrix, subtracting out off-diagonal leakage
 	 * terms if present.
 	 */
-	vnmmp = &vnssp->vnss_ms_matrices[vnmp->vnm_index];
+	vnmmp = &vnssp->vnss_msv_matrices[vnmp->vnm_index];
 	for (int m_row = 0; m_row < m_rows; ++m_row) {
 	    for (int m_column = 0; m_column < m_columns; ++m_column) {
 		const int m_cell = m_row * m_columns + m_column;
@@ -291,6 +378,12 @@ int _vnacal_new_solve_start_frequency(vnacal_new_solve_state_t *vnssp,
 	    }
 	}
     }
+
+    /*
+     * Init all v matrices to identity.
+     */
+    init_v_matrices(vnssp);
+
     vnssp->vnss_iterator_state = VNACAL_NI_INIT;
     return 0;
 }
@@ -352,6 +445,18 @@ bool _vnacal_new_solve_next_equation(vnacal_new_solve_state_t *vnssp)
     }
     vnssp->vnss_iterator_state = VNACAL_NI_EQUATION;
 
+    /*
+     * Determine if we're using V matrices in this measured standard.
+     */
+    {
+	vnacal_new_measurement_t *vnmp;
+	vnacal_new_msv_matrices_t *vnmmp;
+
+	vnmp = vnssp->vnss_vnep->vne_vnmp;
+	vnmmp = &vnssp->vnss_msv_matrices[vnmp->vnm_index];
+	vnssp->vnss_include_v = (vnmmp->vnsm_v_matrices != NULL &&
+		vnmmp->vnsm_v_matrices[vnssp->vnss_sindex] != NULL);
+    }
     return true;
 }
 
@@ -373,12 +478,20 @@ bool _vnacal_new_solve_next_term(vnacal_new_solve_state_t *vnssp)
 	break;
 
     case VNACAL_NI_EQUATION:
-	vnssp->vnss_vntp = vnssp->vnss_vnep->vne_term_list_no_v;
+	if (vnssp->vnss_include_v) {
+	    vnssp->vnss_vntp = vnssp->vnss_vnep->vne_term_list;
+	} else {
+	    vnssp->vnss_vntp = vnssp->vnss_vnep->vne_term_list_no_v;
+	}
 	vnssp->vnss_iterator_state = VNACAL_NI_TERM;
 	break;
 
     case VNACAL_NI_TERM:
-	vnssp->vnss_vntp = vnssp->vnss_vntp->vnt_next_no_v;
+	if (vnssp->vnss_include_v) {
+	    vnssp->vnss_vntp = vnssp->vnss_vntp->vnt_next;
+	} else {
+	    vnssp->vnss_vntp = vnssp->vnss_vntp->vnt_next_no_v;
+	}
 	break;
 
     case VNACAL_NI_END_TERMS:
@@ -409,8 +522,8 @@ void _vnacal_new_solve_update_s_matrices(vnacal_new_solve_state_t *vnssp)
      */
     for (vnacal_new_measurement_t *vnmp = vnp->vn_measurement_list;
 	    vnmp != NULL; vnmp = vnmp->vnm_next) {
-	vnacal_new_ms_matrices_t *vnmmp =
-	    &vnssp->vnss_ms_matrices[vnmp->vnm_index];
+	vnacal_new_msv_matrices_t *vnmmp =
+	    &vnssp->vnss_msv_matrices[vnmp->vnm_index];
 	double complex *s_matrix = vnmmp->vnmm_s_matrix;
 
 	/*
@@ -455,15 +568,21 @@ void _vnacal_new_solve_free(vnacal_new_solve_state_t *vnssp)
 	free((void *)vnssp->vnss_leakage_matrix);
 	vnssp->vnss_leakage_matrix = NULL;
     }
-    if (vnssp->vnss_ms_matrices != NULL) {
+    if (vnssp->vnss_msv_matrices != NULL) {
 	for (int i = vnp->vn_measurement_count - 1; i >= 0; --i) {
-	    vnacal_new_ms_matrices_t *vnmmp = &vnssp->vnss_ms_matrices[i];
+	    vnacal_new_msv_matrices_t *vnmmp = &vnssp->vnss_msv_matrices[i];
 
+	    if (vnmmp->vnsm_v_matrices != NULL) {
+		for (int si = vnp->vn_systems - 1; si >= 0; --si) {
+		    free((void *)vnmmp->vnsm_v_matrices[si]);
+		}
+		free((void *)vnmmp->vnsm_v_matrices);
+	    }
 	    free((void *)vnmmp->vnmm_s_matrix);
 	    free((void *)vnmmp->vnmm_m_matrix);
 	}
-	free((void *)vnssp->vnss_ms_matrices);
-	vnssp->vnss_ms_matrices = NULL;
+	free((void *)vnssp->vnss_msv_matrices);
+	vnssp->vnss_msv_matrices = NULL;
     }
 }
 

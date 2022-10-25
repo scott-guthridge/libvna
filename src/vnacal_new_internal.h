@@ -330,9 +330,9 @@ typedef enum {
 } vnacal_new_iterator_state_t;
 
 /*
- * vnacal_new_ms_matrices_t: a measured standard for solve
+ * vnacal_new_msv_matrices_t: a measured standard for solve
  */
-typedef struct vnacal_new_ms_matrices {
+typedef struct vnacal_new_msv_matrices {
     /* correponding measured standard */
     struct vnacal_new_measurement *vnmm_vnmp;
 
@@ -342,7 +342,12 @@ typedef struct vnacal_new_ms_matrices {
     /* matrix of values of the standard for the current frequency */
     double complex *vnmm_s_matrix;
 
-} vnacal_new_ms_matrices_t;
+    /* vector of matrices (one per system) that transform the residuals
+       of the equations into units of the measurement primary associated
+       with the equation. */
+    double complex **vnsm_v_matrices;
+
+} vnacal_new_msv_matrices_t;
 
 /*
  * vnacal_new_solve_state: iterate over vnacal_new_term_t's
@@ -355,7 +360,7 @@ typedef struct vnacal_new_solve_state {
     int vnss_findex;
 
     /* vector of structures correponding to each measured standard */
-    vnacal_new_ms_matrices_t *vnss_ms_matrices;
+    vnacal_new_msv_matrices_t *vnss_msv_matrices;
 
     /* serialized matrix of pointers to leakage term structures */
     vnacal_new_leakage_term_t **vnss_leakage_matrix;
@@ -365,6 +370,9 @@ typedef struct vnacal_new_solve_state {
 
     /* equation iterator state */
     vnacal_new_iterator_state_t vnss_iterator_state;
+
+    /* include coefficients using the v matrix */
+    bool vnss_include_v;
 
     /* current system in iterator */
     int vnss_sindex;
@@ -382,6 +390,8 @@ typedef struct vnacal_new_solve_state {
 #define vs_next_equation		_vnacal_new_solve_next_equation
 #define vs_next_term			_vnacal_new_solve_next_term
 #define vs_update_s_matrices		_vnacal_new_solve_update_s_matrices
+#define vs_update_v_matrices		_vnacal_new_solve_update_v_matrices
+#define vs_update_all_v_matrices	_vnacal_new_solve_update_all_v_matrices
 #define vs_free				_vnacal_new_solve_free
 
 /*
@@ -434,14 +444,14 @@ static inline double complex vs_get_m(const vnacal_new_solve_state_t *vnssp)
     vnacal_new_term_t *vntp = vnssp->vnss_vntp;
     int m_cell;
     vnacal_new_measurement_t *vnmp;
-    vnacal_new_ms_matrices_t *vnmmp;
+    vnacal_new_msv_matrices_t *vnmmp;
 
     assert(vnssp->vnss_iterator_state == VNACAL_NI_TERM);
     m_cell = vntp->vnt_m_cell;
     assert(m_cell >= 0);
     vnmp = vnssp->vnss_vnep->vne_vnmp;
     assert(vnmp->vnm_m_matrix[m_cell] != NULL);
-    vnmmp = &vnssp->vnss_ms_matrices[vnmp->vnm_index];
+    vnmmp = &vnssp->vnss_msv_matrices[vnmp->vnm_index];
 
     return vnmmp->vnmm_m_matrix[m_cell];
 }
@@ -473,14 +483,14 @@ static inline double complex vs_get_s(const vnacal_new_solve_state_t *vnssp)
     vnacal_new_term_t *vntp = vnssp->vnss_vntp;
     int s_cell;
     vnacal_new_measurement_t *vnmp;
-    vnacal_new_ms_matrices_t *vnmmp;
+    vnacal_new_msv_matrices_t *vnmmp;
 
     assert(vnssp->vnss_iterator_state == VNACAL_NI_TERM);
     s_cell = vntp->vnt_s_cell;
     assert(s_cell >= 0);
     vnmp = vnssp->vnss_vnep->vne_vnmp;
     assert(vnmp->vnm_s_matrix[s_cell] != NULL);
-    vnmmp = &vnssp->vnss_ms_matrices[vnmp->vnm_index];
+    vnmmp = &vnssp->vnss_msv_matrices[vnmp->vnm_index];
 
     return vnmmp->vnmm_s_matrix[s_cell];
 }
@@ -494,9 +504,40 @@ static inline int vs_get_s_cell(const vnacal_new_solve_state_t *vnssp)
     return vnssp->vnss_vntp->vnt_s_cell;
 }
 
-/* _vnacal_new_solve_init: initialize the solve state structure */
-extern int _vnacal_new_solve_init(vnacal_new_solve_state_t *vnssp,
-	vnacal_new_t *vnp);
+/*
+ * vs_have_v: test if the current system uses v matrices
+ *   @vnssp: solve state structure
+ */
+static inline bool vs_have_v(const vnacal_new_solve_state_t *vnssp)
+{
+    return vnssp->vnss_include_v;
+}
+
+/*
+ * vs_get_v: return the v value for the current coefficient
+ *   @vnssp: solve state structure
+ */
+static inline double complex vs_get_v(vnacal_new_solve_state_t *vnssp)
+{
+    vnacal_new_term_t *vntp = vnssp->vnss_vntp;
+    int v_cell;
+    vnacal_new_measurement_t *vnmp;
+    vnacal_new_msv_matrices_t *vnmmp;
+
+    assert(vnssp->vnss_iterator_state == VNACAL_NI_TERM);
+    v_cell = vntp->vnt_v_cell;
+    assert(v_cell >= 0);
+    if (!vnssp->vnss_include_v) {
+       return 1.0;
+    }
+    vnmp = vnssp->vnss_vnep->vne_vnmp;
+    assert(vnmp->vnm_s_matrix[v_cell] != NULL);
+    vnmmp = &vnssp->vnss_msv_matrices[vnmp->vnm_index];
+    assert(vnmmp->vnsm_v_matrices != NULL);
+    assert(vnmmp->vnsm_v_matrices[vnssp->vnss_sindex] != NULL);
+
+    return vnmmp->vnsm_v_matrices[vnssp->vnss_sindex][v_cell];
+}
 
 /* _vnacal_new_get_parameter: add/find parameter and return held */
 extern vnacal_new_parameter_t *_vnacal_new_get_parameter(
@@ -524,6 +565,10 @@ extern void _vnacal_new_err_need_full_s(const vnacal_new_t *vnp,
 extern int _vnacal_new_check_all_frequency_ranges(const char *function,
 	vnacal_new_t *vnp, double fmin, double fmax);
 
+/* _vnacal_new_solve_init: initialize the solve state structure */
+extern int _vnacal_new_solve_init(vnacal_new_solve_state_t *vnssp,
+       vnacal_new_t *vnp);
+
 /* _vnacal_new_solve_start_frequency: start a new frequency */
 extern int _vnacal_new_solve_start_frequency(vnacal_new_solve_state_t *vnssp,
 	int findex);
@@ -538,7 +583,17 @@ extern bool _vnacal_new_solve_next_term(vnacal_new_solve_state_t *vnssp);
 extern void _vnacal_new_solve_update_s_matrices(
 	vnacal_new_solve_state_t *vnssp);
 
-/* _vnacal_new_solve_simple: solve when all s-parameters are known */
+/* _vnacal_new_solve_update_v_matrices: update vnsm_v_matrices for 1 system */
+extern int _vnacal_new_solve_update_v_matrices(const char *function,
+       vnacal_new_solve_state_t *vnssp, int sindex,
+       const double complex *x_vector, int x_length);
+
+/* _vnacal_new_solve_update_all_v_matrices: update v_matrices for all systems */
+extern int _vnacal_new_solve_update_all_v_matrices(const char *function,
+       vnacal_new_solve_state_t *vnssp, const double complex *x_vector,
+       int x_length);
+
+/* _vnacal_new_solve_simple: solve error terms when all s-parameters known */
 extern int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 	double complex *x_vector, int x_length);
 
