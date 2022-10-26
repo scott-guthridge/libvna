@@ -151,7 +151,7 @@ typedef struct vnacal_new_measurement {
     vnacal_new_parameter_t **vnm_s_matrix;
 
     /* transitive closure of vnm_s_matrix */
-    bool *vnm_reachability_matrix;
+    bool *vnm_connectivity_matrix;
 
     /* associated vnacal_new_t structure */
     struct vnacal_new *vnm_vnp;

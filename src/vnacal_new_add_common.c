@@ -577,6 +577,124 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 }
 
 /*
+ * find: collapsing find operation for build_connectivity_matrix
+ *   @set: union-find set implemented as a vector of integer
+ *   @index: index of element for which we want the set leader
+ *
+ *   Initially, each element of set contains its own index, i.e.
+ *   each is a set leader.  As we union elements together, the element
+ *   with smallest index is declared the leader of the equivalence set,
+ *   and if we follow the chain from any member of that set, the chain
+ *   ends at the leader.  When finding the leader of an element, we
+ *   opportunistically collapse the chain so that all elements along
+ *   the path point directly to the current leader.
+ */
+static int find(int *set, int index)
+{
+    int leader = index;
+
+    /*
+     * Find the leader of the equivalence set containing index.
+     */
+    while (set[leader] != leader)
+	leader = set[leader];
+
+    /*
+     * Collapse the path so that all elements along it point
+     * directly to the set leader.
+     */
+    for (int i = index; set[i] != leader; i = set[i])
+	set[i] = leader;
+
+    return leader;
+}
+
+/*
+ * build_connectivity_matrix: build vnm_connectivity_matrix
+ *   @vnmp: measurement structure
+ *
+ *   Analyze the S parameters of the calibration standard to determine
+ *   which VNA ports may have a signal path between them through the
+ *   standard.  Build equivalence classes to join connected ports.
+ *   Finally, build a matrix of bool indicating which pairs of ports
+ *   are in the same equivalence class, with the special case that all
+ *   ports are considered connected with themselves.
+ *
+ *   Another way of describing the resulting matrix is that it indicates
+ *   whether a given pair of VNA ports would be in the same block if the
+ *   S parameter matrix were rearranged into block diagonal form.
+ */
+static int build_connectivity_matrix(vnacal_new_measurement_t *vnmp)
+{
+    vnacal_new_t *vnp = vnmp->vnm_vnp;
+    vnacal_t *vcp = vnp->vn_vcp;
+    const vnacal_layout_t *vlp = &vnp->vn_layout;
+    const int s_rows = VL_S_ROWS(vlp);
+    const int s_columns = VL_S_COLUMNS(vlp);
+    const int s_ports = MAX(s_rows, s_columns);
+    int set[s_ports];
+
+    /*
+     * Implement union-find set with collapsing find to create equivalence
+     * classes between the rows/columns of the S matrix that have one
+     * or more off-diagonal values that are not known to be zero.
+     * These equivalance classes are transitively closed, meaning
+     * that for example, if rows 1 and 2 have a non-zero off-diagonal
+     * element and rows 2 and 3 have a non-zero off-diagonal element,
+     * then rows 1, 2 and 3 all belong to the same equivalance class.
+     * If the S matrix can be re-arranged into block diagnonal form,
+     * then each equivalence class would form a block.  All we're doing
+     * is determining which rows (or columns) would be in each block if
+     * we were to rearrange them; we're not actually moving them into
+     * block diagonal form.
+     */
+    for (int i = 0; i < s_ports; ++i) {
+	set[i] = i;
+    }
+    for (int s_row = 0; s_row < s_rows; ++s_row) {
+	for (int s_column = 0; s_column < s_columns; ++s_column) {
+	    if (s_row != s_column) {
+		const int s_cell = s_row * s_columns + s_column;
+
+		if (vnmp->vnm_s_matrix[s_cell] != vnp->vn_zero) {
+		    int i = find(set, s_row);
+		    int j = find(set, s_column);
+
+		    if (i < j) {
+			set[j] = i;
+		    } else if (i > j) {
+			set[i] = j;
+		    }
+		}
+	    }
+	}
+    }
+
+    /*
+     * Create a matrix of bool where true in a cell indicates that the
+     * calibration standard has connectivity between the corresponding
+     * port pair.  This result is always a symmetrical matrix with true's
+     * down the major diagonal.
+     */
+    if ((vnmp->vnm_connectivity_matrix = calloc(s_ports * s_ports,
+		    sizeof(int))) == NULL) {
+	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
+	return -1;
+    }
+    for (int i = 0; i < s_ports; ++i) {
+	for (int j = 0; j < s_ports; ++j) {
+	    const int cell = i * s_ports + j;
+
+	    if (i == j || find(set, i) == find(set, j)) {
+		vnmp->vnm_connectivity_matrix[cell] = true;
+	    }
+	}
+    }
+
+    return 0;
+}
+
+/*
  * _vnacal_new_add_common: common function to add calibration equations
  *   @vnaa: common argument structure
  */
@@ -1182,56 +1300,23 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 
     /*
      * For all calibration types except T16 and U16 that handle leakage
-     * terms within the linear system, find the transitive closure
-     * of the S parameter matrix to determine which port pairs have a
-     * signal path through the calibration standard.  What we're really
-     * interested in here is which pairs of ports -don't- have a signal
-     * path between them.  If we can't prove that there isn't a signal
-     * path, we assume there is one.  For example, in a 3x3 system with
-     * a short standard on port 1, we know that S11 is -1, S12, S13,
-     * S21, and S31 are 0, but we don't know S22, S23, S32 or S33, and
-     * we assume they're non-zero.
-     *
-     * When a vector standard is given, we -could- check if the value at
-     * a given frequency is exactly zero and include that case, but doing
-     * so would require a separate reachability graph for each frequency,
-     * and when one supplies a vector standard, it's unlikely that any
-     * value is exactly zero, so we ignore that case.  For finding the
-     * transitive closure, we use the Floyd Warshall algorithm.
+     * terms within the linear system, determine which pairs of VNA ports
+     * have signal paths through the calibration standard.  For example,
+     * if we apply a single short standard on port 1 of a 3x3 calibration,
+     * we know that S12, S13, S21 and S31 are zero.  Thus when measuring
+     * M11, any signal received on ports 2 and 3 (M21, M31) must be
+     * leakage within the VNA or the test set.  The connectivity matrix
+     * is always symmetric and has true values down the major diagonal.
      */
     switch (VL_TYPE(vlp)) {
-	bool *matrix;
-
     case VNACAL_T8:
     case VNACAL_U8:
     case VNACAL_TE10:
     case VNACAL_UE10:
     case VNACAL_UE14:
     case _VNACAL_E12_UE14:
-	if ((vnmp->vnm_reachability_matrix = matrix = calloc(full_s_rows *
-			full_s_columns, sizeof(bool))) == NULL) {
-	    _vnacal_error(vcp, VNAERR_SYSTEM,
-		    "calloc: %s", strerror(errno));
+	if (build_connectivity_matrix(vnmp) == -1) {
 	    goto out;
-	}
-	for (int r = 0; r < full_s_rows; ++r) {
-	    for (int c = 0; c < full_s_columns; ++c) {
-		int cell = r * full_s_columns + c;
-
-		matrix[cell] = full_s_matrix[cell] != vnp->vn_zero;
-	    }
-	}
-	for (int i = 0; i < MIN(full_s_rows, full_s_columns); ++i) {
-	    for (int r = 0; r < full_s_rows; ++r) {
-		const int ri_cell = r * full_s_columns + i;
-
-		for (int c = 0; c < full_s_columns; ++c) {
-		    const int rc_cell = r * full_s_columns + c;
-		    const int ic_cell = i * full_s_columns + c;
-
-		    matrix[rc_cell] |= matrix[ri_cell] && matrix[ic_cell];
-		}
-	    }
 	}
 	break;
 
@@ -1258,8 +1343,8 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 
 		if (s_row_given[eq_row] && m_column_given[eq_column] &&
 			(eq_row == eq_column ||
-			 vnmp->vnm_reachability_matrix == NULL ||
-			 vnmp->vnm_reachability_matrix[s_cell])) {
+			 vnmp->vnm_connectivity_matrix == NULL ||
+			 vnmp->vnm_connectivity_matrix[s_cell])) {
 		    rc = add_equation(function, vnmp, &vnepp_anchor,
 			    eq_row, eq_column);
 		    if (rc == -1) {
@@ -1275,8 +1360,8 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 
 		if (m_row_given[eq_row] && s_column_given[eq_column] &&
 			(eq_row == eq_column ||
-			 vnmp->vnm_reachability_matrix == NULL ||
-			 vnmp->vnm_reachability_matrix[s_cell])) {
+			 vnmp->vnm_connectivity_matrix == NULL ||
+			 vnmp->vnm_connectivity_matrix[s_cell])) {
 		    rc = add_equation(function, vnmp, &vnepp_anchor,
 			    eq_row, eq_column);
 		    if (rc == -1) {
@@ -1292,8 +1377,8 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 
 		if (s_row_given[eq_row] && m_column_given[eq_column] &&
 			(eq_row == eq_column ||
-			 vnmp->vnm_reachability_matrix == NULL ||
-			 vnmp->vnm_reachability_matrix[s_cell])) {
+			 vnmp->vnm_connectivity_matrix == NULL ||
+			 vnmp->vnm_connectivity_matrix[s_cell])) {
 		    rc = add_equation(function, vnmp, &vnepp_anchor,
 			    eq_row, eq_column);
 		    if (rc == -1) {

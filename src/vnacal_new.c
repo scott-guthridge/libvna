@@ -245,7 +245,7 @@ void _vnacal_new_free_measurement(vnacal_new_measurement_t *vnmp)
 	const int m_rows    = vnp->vn_layout.vl_m_rows;
 	const int m_columns = vnp->vn_layout.vl_m_columns;
 
-	free((void *)vnmp->vnm_reachability_matrix);
+	free((void *)vnmp->vnm_connectivity_matrix);
 	if (vnmp->vnm_m_matrix != NULL) {
 	    for (int m_cell = 0; m_cell < m_rows * m_columns; ++m_cell) {
 		free((void *)vnmp->vnm_m_matrix[m_cell]);

@@ -201,7 +201,7 @@ int _vnacal_new_solve_start_frequency(vnacal_new_solve_state_t *vnssp,
 		    if (vnmp->vnm_m_matrix[m_cell] == NULL) {
 			continue;
 		    }
-		    if (vnmp->vnm_reachability_matrix[s_cell]) {
+		    if (vnmp->vnm_connectivity_matrix[s_cell]) {
 			continue;
 		    }
 		    m = vnmp->vnm_m_matrix[m_cell][findex];
