@@ -39,40 +39,6 @@ static int int_cmp(const void *vp1, const void *vp2)
 }
 
 /*
- * add_term: add a term to the current equation
- *   @function: name of user-called function
- *   @vnmp: represents a measured calibration standard
- *   @vncppp_anchor: address of pointer where next term should be linked
- *   @xindex: index of the associated unknown
- *   @negative: true if term has a minus sign
- *   @m: index of measurement in vnm_m_matrix, or -1
- *   @s: index of parameter in vnm_s_matrix, or -1
- */
-static int add_term(const char *function, vnacal_new_measurement_t *vnmp,
-	vnacal_new_term_t ***vncppp_anchor, int xindex,
-	bool negative, int m, int s)
-{
-    vnacal_new_t *vnp = vnmp->vnm_vnp;
-    vnacal_t *vcp = vnp->vn_vcp;
-    vnacal_new_term_t *vntp;
-
-    if ((vntp = malloc(sizeof(vnacal_new_term_t))) == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM,
-		"malloc: %s", strerror(errno));
-	return -1;
-    }
-    (void)memset((void *)vntp, 0, sizeof(vnacal_new_term_t));
-    vntp->vnt_xindex = xindex;
-    vntp->vnt_negative = negative;
-    vntp->vnt_m_cell = m;
-    vntp->vnt_s_cell = s;
-    **vncppp_anchor = vntp;
-    *vncppp_anchor = &vntp->vnt_next;
-
-    return 0;
-}
-
-/*
  * add_equation: add an equation to an vnacal_new_measurement_t structure
  *   @function: name of user-called function
  *   @vnmp: represents a measured calibration standard
@@ -85,18 +51,10 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 {
     vnacal_new_t *vnp = vnmp->vnm_vnp;
     vnacal_t *vcp = vnp->vn_vcp;
-    const vnacal_layout_t *vlp = &vnp->vn_layout;
-    const int m_rows = VL_M_ROWS(vlp);
-    const int m_columns = VL_M_COLUMNS(vlp);
-    const int s_rows = VL_S_ROWS(vlp);
-    const int s_columns = VL_S_COLUMNS(vlp);
     vnacal_new_equation_t *vnep = NULL;
-    vnacal_new_term_t **vncpp_anchor = NULL;
-    int base_xindex = 0;
 
     /*
-     * Construct the equation structure and link it onto the
-     * vnacal_new_measurement_t structure.
+     * Allocate and init the new vnacal_new_equation_t structure.
      */
     vnep = malloc(sizeof(vnacal_new_equation_t));
     if (vnep == NULL) {
@@ -108,471 +66,22 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
     vnep->vne_vnmp = vnmp;
     vnep->vne_row = eq_row;
     vnep->vne_column = eq_column;
-    vncpp_anchor = &vnep->vne_term_list;
+    vnep->vne_term_list_no_v = NULL;
+    vnep->vne_term_list = NULL;
+
+    /*
+     * Construct the lists of terms making up the equation.
+     */
+    if (_vnacal_new_build_equation_terms(vnep) == -1) {
+	return -1;
+    }
+
+    /*
+     * Link the new equation onto the vnacal_new_measurement_t structure.
+     */
     **vneppp_anchor = vnep;
     *vneppp_anchor = &vnep->vne_next;
 
-    /*
-     * Add terms based on error term type.
-     */
-    switch (VL_TYPE(vlp)) {
-    case VNACAL_T8:
-    case VNACAL_TE10:
-	{
-	    const int ts_diagonals = MIN(m_rows, s_rows);
-	    const int ti_diagonals = MIN(m_rows, s_columns);
-	    const int tx_diagonals = MIN(m_columns, s_rows);
-	    const int tm_diagonals = MIN(m_columns, s_columns);
-
-	    /*
-	     * Add the non-zero Ts term.
-	     */
-	    if (eq_row < ts_diagonals) {
-		const int s_cell = eq_row * s_columns + eq_column;
-		vnacal_new_parameter_t *vnprp = vnmp->vnm_s_matrix[s_cell];
-
-		assert(vnprp != NULL);
-		if (vnprp != vnp->vn_zero) {
-		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_xindex + eq_row,
-				/*negative*/false, /*m*/-1, s_cell) == -1) {
-			return -1;
-		    }
-		}
-	    }
-	    base_xindex += ts_diagonals;
-
-	    /*
-	     * Add the Ti term.
-	     */
-	    if (eq_row < ti_diagonals && eq_row == eq_column) {
-		if (add_term(function, vnmp, &vncpp_anchor,
-			    base_xindex + eq_row,
-			    /*negative*/false, /*m*/-1, /*s*/-1) == -1) {
-		    return -1;
-		}
-	    }
-	    base_xindex += ti_diagonals;
-
-	    /*
-	     * Add the non-zero Tx terms.
-	     */
-	    for (int tx_d = 0; tx_d < tx_diagonals; ++tx_d) {
-		const int m_cell = eq_row * m_columns + tx_d;
-		const int s_cell = tx_d * s_columns + eq_column;
-		vnacal_new_parameter_t *vnprp = vnmp->vnm_s_matrix[s_cell];
-
-		assert(vnprp != NULL);
-		if (vnprp != vnp->vn_zero) {
-		    assert(vnmp->vnm_m_matrix[m_cell] != NULL);
-		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_xindex + tx_d,
-				/*negative*/true,
-				/*m*/m_cell, /*s*/s_cell) == -1) {
-			return -1;
-		    }
-		}
-	    }
-	    base_xindex += tx_diagonals;
-
-	    /*
-	     * Add the Tm term.
-	     */
-	    if (eq_column < tm_diagonals) {
-		const int m_cell = eq_row * m_columns + eq_column;
-
-		assert(vnmp->vnm_m_matrix[m_cell] != NULL);
-		if (eq_column == 0) {	/* let tm11 = 1.0 */
-		    if (add_term(function, vnmp, &vncpp_anchor, -1,
-				/*negative*/false,
-				/*m*/m_cell, /*s*/-1) == -1) {
-			return -1;
-		    }
-		} else {
-		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_xindex + eq_column - 1,
-				/*negative*/true,
-				/*m*/m_cell, /*s*/-1) == -1) {
-			return -1;
-		    }
-		}
-	    }
-	    base_xindex += tm_diagonals - 1;
-	}
-	break;
-
-    case VNACAL_U8:
-    case VNACAL_UE10:
-	{
-	    const int um_diagonals = MIN(s_rows, m_rows);
-	    const int ui_diagonals = MIN(s_rows, m_columns);
-	    const int ux_diagonals = MIN(s_columns, m_rows);
-	    const int us_diagonals = MIN(s_columns, m_columns);
-
-	    /*
-	     * Add the Um term.
-	     */
-	    if (eq_row < um_diagonals) {
-		const int m_cell = eq_row * m_columns + eq_column;
-
-		assert(vnmp->vnm_m_matrix[m_cell] != NULL);
-		if (eq_row == 0) { /* let um11 = 1.0 */
-		    if (add_term(function, vnmp, &vncpp_anchor, -1,
-				/*negative*/true,
-				/*m*/m_cell, /*s*/-1) == -1) {
-			return -1;
-		    }
-		} else {
-		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_xindex + eq_row - 1,
-				/*negative*/false,
-				/*m*/m_cell, /*s*/-1) == -1) {
-			return -1;
-		    }
-		}
-	    }
-	    base_xindex += um_diagonals - 1;
-
-	    /*
-	     * Add the Ui term.
-	     */
-	    if (eq_row < ui_diagonals && eq_row == eq_column) {
-		if (add_term(function, vnmp, &vncpp_anchor,
-			    base_xindex + eq_row,
-			    /*negative*/false, /*m*/-1, /*s*/-1) == -1) {
-		    return -1;
-		}
-	    }
-	    base_xindex += ui_diagonals;
-
-	    /*
-	     * Add the non-zero Ux terms.
-	     */
-	    for (int ux_d = 0; ux_d < ux_diagonals; ++ux_d) {
-		const int m_cell = ux_d * m_columns + eq_column;
-		const int s_cell = eq_row * s_columns + ux_d;
-		vnacal_new_parameter_t *vnprp = vnmp->vnm_s_matrix[s_cell];
-
-		assert(vnprp != NULL);
-		if (vnprp != vnp->vn_zero) {
-		    assert(vnmp->vnm_m_matrix[m_cell] != NULL);
-		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_xindex + ux_d,
-				/*negative*/true,
-				/*m*/m_cell, /*s*/s_cell) == -1) {
-			return -1;
-		    }
-		}
-	    }
-	    base_xindex += ux_diagonals;
-
-	    /*
-	     * Add the non-zero Us term.
-	     */
-	    if (eq_column < us_diagonals) {
-		const int s_cell = eq_row * s_columns + eq_column;
-		vnacal_new_parameter_t *vnprp = vnmp->vnm_s_matrix[s_cell];
-
-		assert(vnprp != NULL);
-		if (vnprp != vnp->vn_zero) {
-		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_xindex + eq_column,
-				/*negative*/true, /*m*/-1, s_cell) == -1) {
-			return -1;
-		    }
-		}
-	    }
-	    base_xindex += us_diagonals;
-	}
-	break;
-
-    case VNACAL_T16:
-	{
-	    const int ts_rows	 = m_rows;
-	    const int ts_columns = s_rows;
-	    const int ti_rows	 = m_rows;
-	    const int ti_columns = s_columns;
-	    const int tx_rows	 = m_columns;
-	    const int tx_columns = s_rows;
-	    const int tm_rows	 = m_columns;
-	    const int tm_columns = s_columns;
-
-	    /*
-	     * Add the non-zero Ts terms.
-	     */
-	    for (int ts_column = 0; ts_column < ts_columns; ++ts_column) {
-		const int ts_row = eq_row;
-		const int ts_cell = ts_row * ts_columns + ts_column;
-		const int s_cell = ts_column * s_columns + eq_column;
-		vnacal_new_parameter_t *vnprp = vnmp->vnm_s_matrix[s_cell];
-
-		assert(vnprp != NULL);
-		if (vnprp == vnp->vn_zero) {
-		    continue;
-		}
-		if (add_term(function, vnmp, &vncpp_anchor,
-			    base_xindex + ts_cell,
-			    /*negative*/false, /*m*/-1, s_cell) == -1) {
-		    return -1;
-		}
-	    }
-	    base_xindex += ts_rows * ts_columns;
-
-	    /*
-	     * Add the Ti term.
-	     */
-	    if (eq_row < ti_rows && eq_column < ti_columns) {
-		const int ti_row     = eq_row;
-		const int ti_column  = eq_column;
-		const int ti_cell = ti_row * ti_columns + ti_column;
-
-		if (add_term(function, vnmp, &vncpp_anchor,
-			    base_xindex + ti_cell,
-			    /*negative*/false, /*m*/-1, /*s*/-1) == -1) {
-		    return -1;
-		}
-	    }
-	    base_xindex += ti_rows * ti_columns;
-
-	    /*
-	     * Add the non-zero Tx terms.
-	     */
-	    for (int tx_row = 0; tx_row < tx_rows; ++tx_row) {
-		for (int tx_column = 0; tx_column < tx_columns; ++tx_column) {
-		    const int tx_cell = tx_row * tx_columns + tx_column;
-		    const int m_cell = eq_row * m_columns + tx_row;
-		    const int s_cell = tx_column * s_columns + eq_column;
-		    vnacal_new_parameter_t *vnprp =
-			vnmp->vnm_s_matrix[s_cell];
-
-		    assert(vnprp != NULL);
-		    if (vnprp == vnp->vn_zero) {
-			continue;
-		    }
-		    assert(vnmp->vnm_m_matrix[m_cell] != NULL);
-		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_xindex + tx_cell,
-				/*negative*/true,
-				/*m*/m_cell, /*s*/s_cell) == -1) {
-			return -1;
-		    }
-		}
-	    }
-	    base_xindex += tx_rows * tx_columns;
-
-	    /*
-	     * Add the Tm terms.
-	     */
-	    for (int tm_row = 0; tm_row < tm_rows; ++tm_row) {
-		const int tm_column = eq_column;
-		const int tm_cell = tm_row * tm_columns + tm_column;
-		const int m_cell = eq_row * m_columns + tm_row;
-
-		assert(vnmp->vnm_m_matrix[m_cell] != NULL);
-		if (tm_cell == 0) {	/* let tm11 = 1.0 */
-		    if (add_term(function, vnmp, &vncpp_anchor, -1,
-				/*negative*/false,
-				/*m*/m_cell, /*s*/-1) == -1) {
-			return -1;
-		    }
-		} else {
-		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_xindex + tm_cell - 1,
-				/*negative*/true, /*m*/m_cell, /*s*/-1) == -1) {
-			return -1;
-		    }
-		}
-	    }
-	    base_xindex += tm_rows * tm_columns - 1;
-	}
-	break;
-
-    case VNACAL_U16:
-	{
-	    const int um_rows	 = s_rows;
-	    const int um_columns = m_rows;
-	    const int ui_rows	 = s_rows;
-	    const int ui_columns = m_columns;
-	    const int ux_rows	 = s_columns;
-	    const int ux_columns = m_rows;
-	    const int us_rows	 = s_columns;
-	    const int us_columns = m_columns;
-
-	    /*
-	     * Add the Um terms.
-	     */
-	    for (int um_column = 0; um_column < um_columns; ++um_column) {
-		const int um_row = eq_row;
-		const int um_cell = um_row * um_columns + um_column;
-		const int m_cell = um_column * m_columns + eq_column;
-
-		assert(vnmp->vnm_m_matrix[m_cell] != NULL);
-		if (um_cell == 0) {	/* let um11 = 1.0 */
-		    if (add_term(function, vnmp, &vncpp_anchor, -1,
-				/*negative*/true, m_cell, /*s*/-1) == -1) {
-			return -1;
-		    }
-		} else {
-		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_xindex + um_cell - 1,
-				/*negative*/false, m_cell, /*s*/-1) == -1) {
-			return -1;
-		    }
-		}
-	    }
-	    base_xindex += um_rows * um_columns - 1;
-
-	    /*
-	     * Add the Ui term.
-	     */
-	    if (eq_row < ui_rows && eq_column < ui_columns) {
-		const int ui_row     = eq_row;
-		const int ui_column  = eq_column;
-		const int ui_cell = ui_row * ui_columns + ui_column;
-
-		if (add_term(function, vnmp, &vncpp_anchor,
-			    base_xindex + ui_cell,
-			    /*negative*/false, /*m*/-1, /*s*/-1) == -1) {
-		    return -1;
-		}
-	    }
-	    base_xindex += ui_rows * ui_columns;
-
-	    /*
-	     * Add the non-zero Ux terms.
-	     */
-	    for (int ux_row = 0; ux_row < ux_rows; ++ux_row) {
-		for (int ux_column = 0; ux_column < ux_columns; ++ux_column) {
-		    const int ux_cell = ux_row * ux_columns + ux_column;
-		    const int m_cell = ux_column * m_columns + eq_column;
-		    const int s_cell = eq_row * s_columns + ux_row;
-		    vnacal_new_parameter_t *vnprp = vnmp->vnm_s_matrix[s_cell];
-
-		    assert(vnprp != NULL);
-		    if (vnprp == vnp->vn_zero) {
-			continue;
-		    }
-		    assert(vnmp->vnm_m_matrix[m_cell] != NULL);
-		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_xindex + ux_cell,
-				/*negative*/true,
-				/*m*/m_cell, /*s*/s_cell) == -1) {
-			return -1;
-		    }
-		}
-	    }
-	    base_xindex += ux_rows * ux_columns;
-
-	    /*
-	     * Add the non-zero Us terms.
-	     */
-	    for (int us_row = 0; us_row < us_rows; ++us_row) {
-		const int us_column = eq_column;
-		const int us_cell = us_row * us_columns + us_column;
-		const int s_cell = eq_row * s_columns + us_row;
-		vnacal_new_parameter_t *vnprp = vnmp->vnm_s_matrix[s_cell];
-
-		if (vnprp == vnp->vn_zero) {
-		    continue;
-		}
-		if (add_term(function, vnmp, &vncpp_anchor,
-			    base_xindex + us_cell,
-			    /*negative*/true, /*m*/-1, /*s*/s_cell) == -1) {
-		    return -1;
-		}
-	    }
-	    base_xindex += us_rows * us_columns;
-	}
-	break;
-
-    case VNACAL_UE14:
-    case _VNACAL_E12_UE14:
-	{
-	    const int um_diagonals = MIN(s_rows, m_rows);
-	    const int ui_diagonals = 1;
-	    const int ux_diagonals = MIN(s_columns, m_rows);
-	    const int us_diagonals = 1;
-
-	    /*
-	     * Add the Um term.
-	     */
-	    if (eq_row < um_diagonals) {
-		const int m_cell = eq_row * m_columns + eq_column;
-
-		assert(vnmp->vnm_m_matrix[m_cell] != NULL);
-		if (eq_row == eq_column) {
-		    if (add_term(function, vnmp, &vncpp_anchor, -1,
-				/*negative*/true,
-				/*m*/m_cell, /*s*/-1) == -1) {
-			return -1;
-		    }
-		} else {
-		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_xindex + eq_row -
-				(eq_row > eq_column),
-				/*negative*/false,
-				/*m*/m_cell, /*s*/-1) == -1) {
-			return -1;
-		    }
-		}
-	    }
-	    base_xindex += um_diagonals - 1;
-
-	    /*
-	     * Add the Ui term.
-	     */
-	    if (eq_row == eq_column) {
-		if (add_term(function, vnmp, &vncpp_anchor, base_xindex,
-			    /*negative*/false, /*m*/-1, /*s*/-1) == -1) {
-		    return -1;
-		}
-	    }
-	    base_xindex += ui_diagonals;
-
-	    /*
-	     * Add the non-zero Ux terms.
-	     */
-	    for (int ux_d = 0; ux_d < ux_diagonals; ++ux_d) {
-		const int m_cell = ux_d * m_columns + eq_column;
-		const int s_cell = eq_row * s_columns + ux_d;
-		vnacal_new_parameter_t *vnprp = vnmp->vnm_s_matrix[s_cell];
-
-		assert(vnprp != NULL);
-		if (vnprp != vnp->vn_zero) {
-		    assert(vnmp->vnm_m_matrix[m_cell] != NULL);
-		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_xindex + ux_d, /*negative*/true,
-				/*m*/m_cell, /*s*/s_cell) == -1) {
-			return -1;
-		    }
-		}
-	    }
-	    base_xindex += ux_diagonals;
-
-	    /*
-	     * Add the non-zero Us term.
-	     */
-	    if (eq_column < s_columns) {
-		const int s_cell = eq_row * s_columns + eq_column;
-		vnacal_new_parameter_t *vnprp = vnmp->vnm_s_matrix[s_cell];
-
-		assert(vnprp != NULL);
-		if (vnprp != vnp->vn_zero) {
-		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_xindex,
-				/*negative*/true, /*m*/-1, s_cell) == -1) {
-			return -1;
-		    }
-		}
-	    }
-	    base_xindex += us_diagonals;
-	}
-	break;
-
-    case VNACAL_E12:
-    default:
-	abort();
-    }
     return 0;
 }
 
@@ -692,6 +201,41 @@ static int build_connectivity_matrix(vnacal_new_measurement_t *vnmp)
     }
 
     return 0;
+}
+
+/*
+ * _vnacal_new_err_need_full_s: report an error for incomplete S with M errors
+ *   @vnp: pointer to vnacal_new_t structure
+ *   @function: name of called function
+ *   @measurement: measurement number (1 based)
+ *   @s_cell: first missing s cell
+ */
+void _vnacal_new_err_need_full_s(const vnacal_new_t *vnp,
+	const char *function, int measurement, int s_cell)
+{
+    const vnacal_layout_t *vlp = &vnp->vn_layout;
+    vnacal_t *vcp = vnp->vn_vcp;
+    vnacal_type_t type = VL_TYPE(vlp);
+    const int s_rows    = VL_S_ROWS(vlp);
+    const int s_columns = VL_S_COLUMNS(vlp);
+    const int ports     = MAX(s_rows, s_columns);
+    const int s_row     = s_cell / s_columns;
+    const int s_column  = s_cell % s_columns;
+    const char *suggestion;
+
+    assert(ports > 1);
+    assert(type == VNACAL_T16 || type == VNACAL_U16);
+    if (ports == 2) {
+	suggestion = "use through, line or double reflect";
+    } else {
+	suggestion = "use mapped matrix";
+    }
+    _vnacal_error(vcp, VNAERR_USAGE, "%s: standard %d S%d%s%d unknown: "
+	    "when modeling measurement errors in %s, all VNA ports must be "
+	    "connected to standards: %s",
+	    function, measurement,
+	    s_row + 1, s_row > 9 ? "," : "", s_column + 1,
+	    vnacal_type_to_name(type), suggestion);
 }
 
 /*
@@ -820,7 +364,10 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
     assert(ptype != '\000');
 
     /*
-     * Check the S matrix size.
+     * Check the S matrix size.  TODO: these error messages may be
+     * confusing if the caller is using something other than the mapped
+     * matrix interface because otherwise, they don't provide the s
+     * dimensions directly.
      */
     if (s_rows < 1 || s_rows > full_s_rows) {
 	_vnacal_error(vcp, VNAERR_USAGE, "%s: invalid s_rows value: %d",
@@ -835,11 +382,12 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 
     /*
      * When a rectangular S matrix is given, it means that we don't
-     * fully know the S parameters of the standard.  In T parameters,
-     * the entire S column must be known and in U parameters, the entire
-     * S row must be known.  Make sure the shape of the S parameter
-     * matrix is consistent with the error term type so that no required
-     * parameters are unknown.
+     * fully know the S parameters of the standard.  When working in T
+     * parameters, we have to know the full S column.  When working in
+     * U paramerers, we have to know the full S row.  Hence, we have to
+     * use U when S has more rows than columns, T when S has more columns
+     * than rows, and either if the S matrix is square.  Test that the
+     * S matrix dimensions are consistent with the error term type.
      */
     if (s_rows < s_columns && s_rows != full_s_rows && ptype == 'T') {
 	_vnacal_error(vcp, VNAERR_USAGE, "%s: s_rows cannot be less than %d",
@@ -1261,15 +809,20 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
     }
 
     /*
-     * When the calibration standard connects to only a subset of the VNA
-     * ports, we don't presume to know anything about the S parameters
-     * of the remaining ports except that they have no connection to
-     * the connected ports.  For example, suppose vnm_s_matrix is 5x5
-     * and the given s_matrix is 2x3 with a map containing { 1, 2, 3 }
-     * zero based, i.e. offset one from vnm_s_matrix.  Using the notation
-     * small s11, s12, etc.  for the elements of s_matrix, and capital
-     * S11, S12, etc., both one-based, for the elements of the full
-     * matrix, we have:
+     * When the calibration standard connects to only a subset of the
+     * VNA ports, we don't assume anything about the S parameters of the
+     * unconnected ports except that they have no signal path through
+     * the calibration standard to the connected ports.  Note that they
+     * may have have leakage paths to and from the connected, but we're
+     * not interested in that here.  For example, suppose the VNA has 5
+     * ports (full S matrix is 5x5), but the current calibration standard
+     * is only a 3-port standard connected to the three middle ports,
+     * i.e. map is { 1, 2, 3 } (zero-based).  Just for generality, further
+     * suppose that the s-parameters of the standard are only partially
+     * specified -- given as a 2x3 matrix, i.e. not specifying s13, s23
+     * and s33.  Using the notation small s11, s12, etc.  for the elements
+     * of the standard (s_matrix), and capital S11, S12, etc., for the
+     * elements of the full S matrix, both one-based, the full matrix is:
      *
      *		*   0	0   0	*
      *		0   s11 s12 ?	0
@@ -1277,12 +830,12 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
      *		0   s31 s32 ?	0
      *		*   0	0   0	*
      *
-     * Where 0's indicate cells we know to be zero.  We know nothing
-     * about S11, S15, S51 or S55.  Similarly, S24, S34 and S35 (the
-     * ones with question marks) are unknown because they weren't given
-     * in s_matrix.  But we know that there are no external connections
-     * between the 1,5 group and the 2,3,4 group.  Reflect the cells
-     * known to be zero in vnm_s_matrix.
+     * Where 0's indicate cells we know to be zero.  We know nothing about
+     * S11, S15, S51 or S55.  Similarly, S24, S34 and S35 (marked with
+     * question marks) are unknown because they weren't given in s_matrix.
+     * But we know that there are no connections through the calibration
+     * standard between the 1,5 port group and the 2,3,4 port group.
+     * Thus we can mark all cells spanning these groups as zero.
      */
     if (s_port_map != NULL) {
 	for (int r = 0; r < full_s_rows; ++r) {
@@ -1294,6 +847,21 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 		    assert(full_s_matrix[cell] == NULL);
 		    full_s_matrix[cell] = vnp->vn_zero;
 		}
+	    }
+	}
+    }
+
+    /*
+     * If measurement errors were given and the type is T16 or U16,
+     * the S matrix must be complete.
+     */
+    if (vnp->vn_m_error_vector != NULL &&
+	    (VL_TYPE(vlp) == VNACAL_T16 || VL_TYPE(vlp) == VNACAL_U16)) {
+	for (int s_cell = 0; s_cell < full_s_rows * full_s_columns; ++s_cell) {
+	    if (full_s_matrix[s_cell] == NULL) {
+		_vnacal_new_err_need_full_s(vnp, function,
+			vnp->vn_measurement_count + 1, s_cell);
+		goto out;
 	    }
 	}
     }
@@ -1331,10 +899,13 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 
     /*
      * Generate the equations and add them to a temporary list.  In T
-     * parameters, there are at most m_rows x s_columns equations, and
-     * in U parameters, there are at most s_rows x m_columns equations.
-     * We can only create equations for the rows and columns that the
-     * user actually gave us, however.
+     * parameters, there are at most m_rows x s_columns equations; in
+     * U parameters, there are at most s_rows x m_columns equations.
+     *
+     * For all calibration types except T16 and U16 that handle leakage
+     * terms within the linear system, do not generate equations for
+     * measurements for which there is no signal path through the
+     * standard.
      */
     if (VL_IS_UE14(vlp)) {
 	for (int eq_column = 0; eq_column < full_m_columns; ++eq_column) {
@@ -1342,12 +913,10 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 		const int s_cell = eq_row * full_s_columns + eq_column;
 
 		if (s_row_given[eq_row] && m_column_given[eq_column] &&
-			(eq_row == eq_column ||
-			 vnmp->vnm_connectivity_matrix == NULL ||
+			(vnmp->vnm_connectivity_matrix == NULL ||
 			 vnmp->vnm_connectivity_matrix[s_cell])) {
-		    rc = add_equation(function, vnmp, &vnepp_anchor,
-			    eq_row, eq_column);
-		    if (rc == -1) {
+		    if (add_equation(function, vnmp, &vnepp_anchor,
+				eq_row, eq_column) == -1) {
 			goto out;
 		    }
 		}
@@ -1359,29 +928,25 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 		const int s_cell = eq_row * full_s_columns + eq_column;
 
 		if (m_row_given[eq_row] && s_column_given[eq_column] &&
-			(eq_row == eq_column ||
-			 vnmp->vnm_connectivity_matrix == NULL ||
+			(vnmp->vnm_connectivity_matrix == NULL ||
 			 vnmp->vnm_connectivity_matrix[s_cell])) {
-		    rc = add_equation(function, vnmp, &vnepp_anchor,
-			    eq_row, eq_column);
-		    if (rc == -1) {
+		    if (add_equation(function, vnmp, &vnepp_anchor,
+				eq_row, eq_column) == -1) {
 			goto out;
 		    }
 		}
 	    }
 	}
-    } else {
+    } else { /* ptype == 'U' */
 	for (int eq_row = 0; eq_row < full_s_rows; ++eq_row) {
 	    for (int eq_column = 0; eq_column < full_m_columns; ++eq_column) {
 		const int s_cell = eq_row * full_s_columns + eq_column;
 
 		if (s_row_given[eq_row] && m_column_given[eq_column] &&
-			(eq_row == eq_column ||
-			 vnmp->vnm_connectivity_matrix == NULL ||
+			(vnmp->vnm_connectivity_matrix == NULL ||
 			 vnmp->vnm_connectivity_matrix[s_cell])) {
-		    rc = add_equation(function, vnmp, &vnepp_anchor,
-			    eq_row, eq_column);
-		    if (rc == -1) {
+		    if (add_equation(function, vnmp, &vnepp_anchor,
+				eq_row, eq_column) == -1) {
 			goto out;
 		    }
 		}
@@ -1390,7 +955,7 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
     }
 
     /*
-     * Link the new standard onto the vnacal_new_t.
+     * Link the new measured standard onto the vnacal_new_t.
      */
     *vnp->vn_measurement_anchor = vnmp;
     vnp->vn_measurement_anchor = &vnmp->vnm_next;

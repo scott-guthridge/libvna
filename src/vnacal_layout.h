@@ -176,6 +176,8 @@ typedef struct vnacal_layout {
  * scattering parameter matrix, S by the following matrix equation:
  *
  *	Ts S + Ti = M Tx S + M Tm
+ * or
+ *	-Ts S - Ti + M Tx S + M Tm == 0
  *
  * The dimensions follow directly from the equation:
  *	Ts: m_rows x s_rows
@@ -241,6 +243,8 @@ typedef struct vnacal_layout {
  * scattering parameter matrix, S by the following matrix equation:
  *
  *	Um M + Ui = S (Ux M + Us)
+ * or
+ *      Um M + Ui - S Ux M - S Us == 0
  *
  * The dimensions follow directly from the equation:
  *	Um: s_rows x m_rows
@@ -299,7 +303,7 @@ typedef struct vnacal_layout {
  *      Us is an s_columns x 1      diagonal matrix
  *      El is m_rows x 1            rectangular matrix, off diagonal terms only
  *
- * We can solve for M column within each column as follows:
+ * We can solve for M column by column as follows:
  *
  *  M(:,1) = El(:,1) + A^-1 B with:
  *      A = c1_um11 - c1_ux11 s11               - c1_ux22 s12
@@ -480,6 +484,36 @@ typedef struct vnacal_layout {
 #define VL_EM12_TERMS(vlp)	((vlp)->vl_e_terms - (vlp)->vl_em_offset)
 #define VL_EM12_OFFSET(vlp, m_column) \
 	((m_column) * (vlp)->vl_e_terms + (vlp)->vl_em_offset)
+
+
+/***********************************************************************
+ * VL_V_ROWS:, VL_V_COLUMNS: return the dimensions of the V matrix
+ *   @vlp: pointer to vnacal_layout_t structure
+ *
+ * The V matrix is a weighting matrix that converts the residuals of
+ * the equations of the linear system to errors in their associated
+ * measurement.
+ *
+ * For T parameters:
+ *   V = (Tx S + Tm)^(-1)		s_columns x m_columns
+ *
+ *   Residuals are multiplied by V on the right.
+ *
+ * For U parameters:
+ *   V = (Um - S Ux)^(-1)		m_rows x s_rows
+ *
+ *   Residuals are multiplied by V on the left
+ *
+ * Because we set both s_rows and s_columns to the max of m_rows and
+ * m_columns, the V matrix is always square.  For T parameters, it's
+ * m_columns x m_columns, and for U parameters, it's m_rows x m_rows.
+ * We write them as defined above, however, to make it more clear how
+ * these dimensions relate to the M and S dimensions.
+ */
+#define VL_V_ROWS(vlp) \
+    (VL_IS_T(vlp) ? VL_S_COLUMNS(vlp) : VL_M_ROWS(vlp))
+#define VL_V_COLUMNS(vlp) \
+    (VL_IS_T(vlp) ? VL_M_COLUMNS(vlp) : VL_S_ROWS(vlp))
 
 
 /*

@@ -43,6 +43,7 @@ int vnacal_new_set_m_error(vnacal_new_t *vnp,
 	const double *tracking_error_vector)
 {
     vnacal_t *vcp;
+    const vnacal_layout_t *vlp;
     vnacal_new_m_error_t *m_error_vector = NULL;
 
     /*
@@ -53,6 +54,7 @@ int vnacal_new_set_m_error(vnacal_new_t *vnp,
 	return -1;
     }
     vcp = vnp->vn_vcp;
+    vlp = &vnp->vn_layout;
     m_error_vector = vnp->vn_m_error_vector;
     if (frequencies < 1) {
 	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_new_set_m_error: "
@@ -131,6 +133,28 @@ int vnacal_new_set_m_error(vnacal_new_t *vnp,
 	    m_error_vector[findex].vnme_tracking = 0.0;
 	}
 	vnp->vn_m_error_vector = m_error_vector;
+    }
+
+    /*
+     * If type error term type is T16 or U16, validate that all standards
+     * given so far fully specify the S matrix.
+     */
+    if (VL_TYPE(vlp) == VNACAL_T16 || VL_TYPE(vlp) == VNACAL_U16) {
+       const int s_cells = VL_S_ROWS(vlp) * VL_S_COLUMNS(vlp);
+       int measurement = 0;
+       vnacal_new_measurement_t *vnmp;
+
+       for (vnmp = vnp->vn_measurement_list; vnmp != NULL;
+	       vnmp = vnmp->vnm_next) {
+	   ++measurement;
+	   for (int s_cell = 0; s_cell < s_cells; ++s_cell) {
+	       if (vnmp->vnm_s_matrix[s_cell] == NULL) {
+		   _vnacal_new_err_need_full_s(vnp, __func__,
+			   measurement, s_cell);
+		   return -1;
+	       }
+	   }
+       }
     }
 
     /*

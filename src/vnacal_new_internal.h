@@ -95,7 +95,7 @@ typedef struct vnacal_new_parameter_hash {
 } vnacal_new_parameter_hash_t;
 
 /*
- * vnacal_new_term_t: expanded term of an equation
+ * vnacal_new_term_t: an expanded term of an equation
  */
 typedef struct vnacal_new_term {
     /* index of associated unknown, or -1 for right hand side "b" vector */
@@ -109,6 +109,12 @@ typedef struct vnacal_new_term {
 
     /* index into vnm_s_matrix or -1 if no s */
     int vnt_s_cell;
+
+    /* index into vnsm_v_matrix or -1 if no v */
+    int vnt_v_cell;
+
+    /* thread through the diagonal v_matrix coefficients */
+    struct vnacal_new_term *vnt_next_no_v;
 
     /* next term in equation */
     struct vnacal_new_term *vnt_next;
@@ -128,7 +134,10 @@ typedef struct vnacal_new_equation {
     /* measurement column associated with this equation */
     int vne_column;
 
-    /* linked list of terms */
+    /* subset of terms for not using the v matrix */
+    vnacal_new_term_t *vne_term_list_no_v;
+
+    /* list of all expanded terms of the equation multiplied by the v matrix */
     vnacal_new_term_t *vne_term_list;
 
     /* next equation in system */
@@ -371,7 +380,7 @@ typedef struct vnacal_new_solve_state {
 #define vs_init				_vnacal_new_solve_init
 #define vs_start_frequency		_vnacal_new_solve_start_frequency
 #define vs_next_equation		_vnacal_new_solve_next_equation
-#define vs_next_term		_vnacal_new_solve_next_term
+#define vs_next_term			_vnacal_new_solve_next_term
 #define vs_update_s_matrices		_vnacal_new_solve_update_s_matrices
 #define vs_free				_vnacal_new_solve_free
 
@@ -501,8 +510,15 @@ extern int _vnacal_new_init_parameter_hash(const char *function,
 extern void _vnacal_new_free_parameter_hash(
 	vnacal_new_parameter_hash_t *vnphp);
 
+/* _vnacal_new_build_equation_terms: build vnacal_new_term_t lists */
+extern int _vnacal_new_build_equation_terms(vnacal_new_equation_t *vnep);
+
 /* free a vnacal_new_measurement_t structure */
 extern void _vnacal_new_free_measurement(vnacal_new_measurement_t *vnmp);
+
+/* _vnacal_new_err_need_full_s: report error for incomplete S with M errors */
+extern void _vnacal_new_err_need_full_s(const vnacal_new_t *vnp,
+	const char *function, int measurement, int s_cell);
 
 /* _vnacal_new_check_all_frequency_ranges: check f range of all parameters */
 extern int _vnacal_new_check_all_frequency_ranges(const char *function,

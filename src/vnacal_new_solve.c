@@ -373,12 +373,12 @@ bool _vnacal_new_solve_next_term(vnacal_new_solve_state_t *vnssp)
 	break;
 
     case VNACAL_NI_EQUATION:
-	vnssp->vnss_vntp = vnssp->vnss_vnep->vne_term_list;
+	vnssp->vnss_vntp = vnssp->vnss_vnep->vne_term_list_no_v;
 	vnssp->vnss_iterator_state = VNACAL_NI_TERM;
 	break;
 
     case VNACAL_NI_TERM:
-	vnssp->vnss_vntp = vnssp->vnss_vntp->vnt_next;
+	vnssp->vnss_vntp = vnssp->vnss_vntp->vnt_next_no_v;
 	break;
 
     case VNACAL_NI_END_TERMS:
