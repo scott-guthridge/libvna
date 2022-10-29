@@ -141,7 +141,7 @@ int _vnacal_new_solve_init(vnacal_new_solve_state_t *vnssp, vnacal_new_t *vnp)
     }
 
     /*
-     * Init the coefficient iterator state.
+     * Init the equation iterator state.
      */
     vnssp->vnss_iterator_state = VNACAL_NI_END_EQUATIONS;
 
@@ -325,13 +325,13 @@ bool _vnacal_new_solve_next_equation(vnacal_new_solve_state_t *vnssp)
     /*
      * If we're already started, advance to the next equation.  It's
      * permitted to advance to the next equation even if we haven't
-     * started or completed iteration through the coefficients.
+     * started or completed iteration through the terms.
      */
     case VNACAL_NI_EQUATION:
-    case VNACAL_NI_COEFFICIENT:
-    case VNACAL_NI_END_COEFFICIENTS:
+    case VNACAL_NI_TERM:
+    case VNACAL_NI_END_TERMS:
 	vnssp->vnss_vnep = vnssp->vnss_vnep->vne_next;
-	vnssp->vnss_vncp = NULL;
+	vnssp->vnss_vntp = NULL;
 	break;
 
     /*
@@ -344,7 +344,7 @@ bool _vnacal_new_solve_next_equation(vnacal_new_solve_state_t *vnssp)
     /*
      * If there are no remaining equations, set the state to end and
      * return false.  Otherwise, set the state to in equation, ready to
-     * begin iterating over the coefficients.
+     * begin iterating over the terms.
      */
     if (vnssp->vnss_vnep == NULL) {
 	vnssp->vnss_iterator_state = VNACAL_NI_END_EQUATIONS;
@@ -356,13 +356,13 @@ bool _vnacal_new_solve_next_equation(vnacal_new_solve_state_t *vnssp)
 }
 
 /*
- * _vnacal_new_solve_next_coefficient: move to the next coefficient
+ * _vnacal_new_solve_next_term: move to the next term
  *   @vnssp: solve state structure
  */
-bool _vnacal_new_solve_next_coefficient(vnacal_new_solve_state_t *vnssp)
+bool _vnacal_new_solve_next_term(vnacal_new_solve_state_t *vnssp)
 {
     /*
-     * If we're starting a new equation, set vnss_vncp to the first
+     * If we're starting a new equation, set vnss_vntp to the first
      * term.  If we're already in the term list, advance to the next
      * term.  If we're at the end of the equation, keep returning false;
      */
@@ -373,20 +373,20 @@ bool _vnacal_new_solve_next_coefficient(vnacal_new_solve_state_t *vnssp)
 	break;
 
     case VNACAL_NI_EQUATION:
-	vnssp->vnss_vncp = vnssp->vnss_vnep->vne_coefficient_list;
-	vnssp->vnss_iterator_state = VNACAL_NI_COEFFICIENT;
+	vnssp->vnss_vntp = vnssp->vnss_vnep->vne_term_list;
+	vnssp->vnss_iterator_state = VNACAL_NI_TERM;
 	break;
 
-    case VNACAL_NI_COEFFICIENT:
-	vnssp->vnss_vncp = vnssp->vnss_vncp->vnc_next;
+    case VNACAL_NI_TERM:
+	vnssp->vnss_vntp = vnssp->vnss_vntp->vnt_next;
 	break;
 
-    case VNACAL_NI_END_COEFFICIENTS:
+    case VNACAL_NI_END_TERMS:
     case VNACAL_NI_END_EQUATIONS:
 	return false;
     }
-    if (vnssp->vnss_vncp == NULL) {
-	vnssp->vnss_iterator_state = VNACAL_NI_END_COEFFICIENTS;
+    if (vnssp->vnss_vntp == NULL) {
+	vnssp->vnss_iterator_state = VNACAL_NI_END_TERMS;
 	return false;
     }
     return true;
@@ -511,14 +511,14 @@ static double calc_rms_error(vnacal_new_solve_state_t *vnssp,
 	    for (int i = 0; i < w_terms; ++i) {
 		w_term_vector[i] = 0.0;
 	    }
-	    while (vs_next_coefficient(vnssp)) {
-		int coefficient = vs_get_coefficient(vnssp);
+	    while (vs_next_term(vnssp)) {
+		int xindex = vs_get_xindex(vnssp);
 		double complex v = vs_get_negative(vnssp) ? -1.0 : 1.0;
 		int m_cell = vs_get_m_cell(vnssp);
 
-		if (coefficient >= 0) {
-		    assert(offset + coefficient < x_length);
-		    v *= x_vector[offset + coefficient];
+		if (xindex >= 0) {
+		    assert(offset + xindex < x_length);
+		    v *= x_vector[offset + xindex];
 		} else {
 		    v *= -1.0;
 		}

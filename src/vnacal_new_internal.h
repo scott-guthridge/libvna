@@ -95,25 +95,25 @@ typedef struct vnacal_new_parameter_hash {
 } vnacal_new_parameter_hash_t;
 
 /*
- * vnacal_new_coefficient_t: single coefficient of an equation
+ * vnacal_new_term_t: expanded term of an equation
  */
-typedef struct vnacal_new_coefficient {
-    /* column in expanded coefficient matrix, or -1 for "b" vector */
-    int vnc_coefficient;
+typedef struct vnacal_new_term {
+    /* index of associated unknown, or -1 for right hand side "b" vector */
+    int vnt_xindex;
 
     /* multiply by -1 */
-    bool vnc_negative;
+    bool vnt_negative;
 
     /* index into vnm_m_matrix or -1 if no m */
-    int vnc_m_cell;
+    int vnt_m_cell;
 
     /* index into vnm_s_matrix or -1 if no s */
-    int vnc_s_cell;
+    int vnt_s_cell;
 
     /* next term in equation */
-    struct vnacal_new_coefficient *vnc_next;
+    struct vnacal_new_term *vnt_next;
 
-} vnacal_new_coefficient_t;
+} vnacal_new_term_t;
 
 /*
  * vnacal_new_equation_t: equation generated from a measured standard
@@ -129,7 +129,7 @@ typedef struct vnacal_new_equation {
     int vne_column;
 
     /* linked list of terms */
-    vnacal_new_coefficient_t *vne_coefficient_list;
+    vnacal_new_term_t *vne_term_list;
 
     /* next equation in system */
     struct vnacal_new_equation *vne_next;
@@ -309,14 +309,14 @@ typedef struct vnacal_new_leakage_term {
 } vnacal_new_leakage_term_t;
 
 /*
- * vnacal_new_iterator_state_t: coefficient iterator states
+ * vnacal_new_iterator_state_t: equation iterator states
  */
 typedef enum {
     VNACAL_NI_INIT,			/* not started */
     VNACAL_NI_SYSTEM,			/* in system */
     VNACAL_NI_EQUATION,			/* in equation */
-    VNACAL_NI_COEFFICIENT,		/* in coefficient list */
-    VNACAL_NI_END_COEFFICIENTS,		/* no remaining coefficients */
+    VNACAL_NI_TERM,			/* in term list */
+    VNACAL_NI_END_TERMS,		/* no remaining terms */
     VNACAL_NI_END_EQUATIONS		/* no remaining equations */
 } vnacal_new_iterator_state_t;
 
@@ -336,7 +336,7 @@ typedef struct vnacal_new_ms_matrices {
 } vnacal_new_ms_matrices_t;
 
 /*
- * vnacal_new_solve_state: iterate over vnacal_new_coefficient_t's
+ * vnacal_new_solve_state: iterate over vnacal_new_term_t's
  */
 typedef struct vnacal_new_solve_state {
     /* new calibration structure */
@@ -363,15 +363,15 @@ typedef struct vnacal_new_solve_state {
     /* current equation in iterator */
     vnacal_new_equation_t *vnss_vnep;
 
-    /* current coefficient in iterator */
-    vnacal_new_coefficient_t *vnss_vncp;
+    /* current term in iterator */
+    vnacal_new_term_t *vnss_vntp;
 
 } vnacal_new_solve_state_t;
 
 #define vs_init				_vnacal_new_solve_init
 #define vs_start_frequency		_vnacal_new_solve_start_frequency
 #define vs_next_equation		_vnacal_new_solve_next_equation
-#define vs_next_coefficient		_vnacal_new_solve_next_coefficient
+#define vs_next_term		_vnacal_new_solve_next_term
 #define vs_update_s_matrices		_vnacal_new_solve_update_s_matrices
 #define vs_free				_vnacal_new_solve_free
 
@@ -385,50 +385,50 @@ static inline void vs_start_system(vnacal_new_solve_state_t *vnssp, int sindex)
     vnssp->vnss_iterator_state = VNACAL_NI_SYSTEM;
     vnssp->vnss_sindex = sindex;
     vnssp->vnss_vnep   = NULL;
-    vnssp->vnss_vncp   = NULL;
+    vnssp->vnss_vntp   = NULL;
 }
 
 /*
- * vs_get_coefficient: return the current coefficient index or -1 for RHS
+ * vs_get_xindex: return the index of the unknown or -1 for right hand side
  *   @vnssp: solve state structure
  */
-static inline int vs_get_coefficient(const vnacal_new_solve_state_t *vnssp)
+static inline int vs_get_xindex(const vnacal_new_solve_state_t *vnssp)
 {
-    assert(vnssp->vnss_iterator_state == VNACAL_NI_COEFFICIENT);
-    return vnssp->vnss_vncp->vnc_coefficient;
+    assert(vnssp->vnss_iterator_state == VNACAL_NI_TERM);
+    return vnssp->vnss_vntp->vnt_xindex;
 }
 
 /*
- * vs_get_negative: test if the currnet coefficient has a minus sign
+ * vs_get_negative: test if the current term has a minus sign
  *   @vnssp: solve state structure
  */
 static inline bool vs_get_negative(const vnacal_new_solve_state_t *vnssp)
 {
-    return vnssp->vnss_vncp->vnc_negative;
+    return vnssp->vnss_vntp->vnt_negative;
 }
 
 /*
- * vs_have_m: test if the current coefficient has an m factor
+ * vs_have_m: test if the current term has an m factor
  *   @vnssp: solve state structure
  */
 static inline bool vs_have_m(const vnacal_new_solve_state_t *vnssp)
 {
-    return vnssp->vnss_vncp->vnc_m_cell >= 0;
+    return vnssp->vnss_vntp->vnt_m_cell >= 0;
 }
 
 /*
- * vs_get_m: return the m value for the current coefficient
+ * vs_get_m: return the m value for the current term
  *   @vnssp: solve state structure
  */
 static inline double complex vs_get_m(const vnacal_new_solve_state_t *vnssp)
 {
-    vnacal_new_coefficient_t *vncp = vnssp->vnss_vncp;
+    vnacal_new_term_t *vntp = vnssp->vnss_vntp;
     int m_cell;
     vnacal_new_measurement_t *vnmp;
     vnacal_new_ms_matrices_t *vnmmp;
 
-    assert(vnssp->vnss_iterator_state == VNACAL_NI_COEFFICIENT);
-    m_cell = vncp->vnc_m_cell;
+    assert(vnssp->vnss_iterator_state == VNACAL_NI_TERM);
+    m_cell = vntp->vnt_m_cell;
     assert(m_cell >= 0);
     vnmp = vnssp->vnss_vnep->vne_vnmp;
     assert(vnmp->vnm_m_matrix[m_cell] != NULL);
@@ -438,36 +438,36 @@ static inline double complex vs_get_m(const vnacal_new_solve_state_t *vnssp)
 }
 
 /*
- * vs_get_m_cell: get the index in the m matrix for the current coefficient
+ * vs_get_m_cell: get the index in the m matrix for the current term
  *   @vnssp: solve state structure
  */
 static inline int vs_get_m_cell(const vnacal_new_solve_state_t *vnssp)
 {
-    return vnssp->vnss_vncp->vnc_m_cell;
+    return vnssp->vnss_vntp->vnt_m_cell;
 }
 
 /*
- * vs_have_s: test if the current coefficient has an s factor
+ * vs_have_s: test if the current term has an s factor
  *   @vnssp: solve state structure
  */
 static inline bool vs_have_s(const vnacal_new_solve_state_t *vnssp)
 {
-    return vnssp->vnss_vncp->vnc_s_cell >= 0;
+    return vnssp->vnss_vntp->vnt_s_cell >= 0;
 }
 
 /*
- * vs_get_s: return the s value for the current coefficient
+ * vs_get_s: return the s value for the current term
  *   @vnssp: solve state structure
  */
 static inline double complex vs_get_s(const vnacal_new_solve_state_t *vnssp)
 {
-    vnacal_new_coefficient_t *vncp = vnssp->vnss_vncp;
+    vnacal_new_term_t *vntp = vnssp->vnss_vntp;
     int s_cell;
     vnacal_new_measurement_t *vnmp;
     vnacal_new_ms_matrices_t *vnmmp;
 
-    assert(vnssp->vnss_iterator_state == VNACAL_NI_COEFFICIENT);
-    s_cell = vncp->vnc_s_cell;
+    assert(vnssp->vnss_iterator_state == VNACAL_NI_TERM);
+    s_cell = vntp->vnt_s_cell;
     assert(s_cell >= 0);
     vnmp = vnssp->vnss_vnep->vne_vnmp;
     assert(vnmp->vnm_s_matrix[s_cell] != NULL);
@@ -477,12 +477,12 @@ static inline double complex vs_get_s(const vnacal_new_solve_state_t *vnssp)
 }
 
 /*
- * vs_get_s_cell: get the index in the s matrix for the current coefficient
+ * vs_get_s_cell: get the index in the s matrix for the current term
  *   @vnssp: solve state structure
  */
 static inline int vs_get_s_cell(const vnacal_new_solve_state_t *vnssp)
 {
-    return vnssp->vnss_vncp->vnc_s_cell;
+    return vnssp->vnss_vntp->vnt_s_cell;
 }
 
 /* _vnacal_new_solve_init: initialize the solve state structure */
@@ -515,8 +515,8 @@ extern int _vnacal_new_solve_start_frequency(vnacal_new_solve_state_t *vnssp,
 /* _vnacal_new_solve_next_equation: move to the next equation in the system */
 extern bool _vnacal_new_solve_next_equation(vnacal_new_solve_state_t *vnssp);
 
-/* _vnacal_new_solve_next_coefficient: move to the next coefficient */
-extern bool _vnacal_new_solve_next_coefficient(vnacal_new_solve_state_t *vnssp);
+/* _vnacal_new_solve_next_term: move to the next term */
+extern bool _vnacal_new_solve_next_term(vnacal_new_solve_state_t *vnssp);
 
 /* _vnacal_new_solve_update_s_matrices: update s matrix unknown parameters */
 extern void _vnacal_new_solve_update_s_matrices(

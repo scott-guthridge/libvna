@@ -43,31 +43,31 @@ static int int_cmp(const void *vp1, const void *vp2)
  *   @function: name of user-called function
  *   @vnmp: represents a measured calibration standard
  *   @vncppp_anchor: address of pointer where next term should be linked
- *   @coefficient: column of this term in the coefficient matrix
- *   @negative: true if coefficient has a minus sign
+ *   @xindex: index of the associated unknown
+ *   @negative: true if term has a minus sign
  *   @m: index of measurement in vnm_m_matrix, or -1
  *   @s: index of parameter in vnm_s_matrix, or -1
  */
 static int add_term(const char *function, vnacal_new_measurement_t *vnmp,
-	vnacal_new_coefficient_t ***vncppp_anchor, int coefficient,
+	vnacal_new_term_t ***vncppp_anchor, int xindex,
 	bool negative, int m, int s)
 {
     vnacal_new_t *vnp = vnmp->vnm_vnp;
     vnacal_t *vcp = vnp->vn_vcp;
-    vnacal_new_coefficient_t *vncp;
+    vnacal_new_term_t *vntp;
 
-    if ((vncp = malloc(sizeof(vnacal_new_coefficient_t))) == NULL) {
+    if ((vntp = malloc(sizeof(vnacal_new_term_t))) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYSTEM,
 		"malloc: %s", strerror(errno));
 	return -1;
     }
-    (void)memset((void *)vncp, 0, sizeof(vnacal_new_coefficient_t));
-    vncp->vnc_coefficient = coefficient;
-    vncp->vnc_negative = negative;
-    vncp->vnc_m_cell = m;
-    vncp->vnc_s_cell = s;
-    **vncppp_anchor = vncp;
-    *vncppp_anchor = &vncp->vnc_next;
+    (void)memset((void *)vntp, 0, sizeof(vnacal_new_term_t));
+    vntp->vnt_xindex = xindex;
+    vntp->vnt_negative = negative;
+    vntp->vnt_m_cell = m;
+    vntp->vnt_s_cell = s;
+    **vncppp_anchor = vntp;
+    *vncppp_anchor = &vntp->vnt_next;
 
     return 0;
 }
@@ -91,8 +91,8 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
     const int s_rows = VL_S_ROWS(vlp);
     const int s_columns = VL_S_COLUMNS(vlp);
     vnacal_new_equation_t *vnep = NULL;
-    vnacal_new_coefficient_t **vncpp_anchor = NULL;
-    int base_coefficient = 0;
+    vnacal_new_term_t **vncpp_anchor = NULL;
+    int base_xindex = 0;
 
     /*
      * Construct the equation structure and link it onto the
@@ -108,7 +108,7 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
     vnep->vne_vnmp = vnmp;
     vnep->vne_row = eq_row;
     vnep->vne_column = eq_column;
-    vncpp_anchor = &vnep->vne_coefficient_list;
+    vncpp_anchor = &vnep->vne_term_list;
     **vneppp_anchor = vnep;
     *vneppp_anchor = &vnep->vne_next;
 
@@ -134,25 +134,25 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		assert(vnprp != NULL);
 		if (vnprp != vnp->vn_zero) {
 		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_coefficient + eq_row,
+				base_xindex + eq_row,
 				/*negative*/false, /*m*/-1, s_cell) == -1) {
 			return -1;
 		    }
 		}
 	    }
-	    base_coefficient += ts_diagonals;
+	    base_xindex += ts_diagonals;
 
 	    /*
 	     * Add the Ti term.
 	     */
 	    if (eq_row < ti_diagonals && eq_row == eq_column) {
 		if (add_term(function, vnmp, &vncpp_anchor,
-			    base_coefficient + eq_row,
+			    base_xindex + eq_row,
 			    /*negative*/false, /*m*/-1, /*s*/-1) == -1) {
 		    return -1;
 		}
 	    }
-	    base_coefficient += ti_diagonals;
+	    base_xindex += ti_diagonals;
 
 	    /*
 	     * Add the non-zero Tx terms.
@@ -166,14 +166,14 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		if (vnprp != vnp->vn_zero) {
 		    assert(vnmp->vnm_m_matrix[m_cell] != NULL);
 		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_coefficient + tx_d,
+				base_xindex + tx_d,
 				/*negative*/true,
 				/*m*/m_cell, /*s*/s_cell) == -1) {
 			return -1;
 		    }
 		}
 	    }
-	    base_coefficient += tx_diagonals;
+	    base_xindex += tx_diagonals;
 
 	    /*
 	     * Add the Tm term.
@@ -190,14 +190,14 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		    }
 		} else {
 		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_coefficient + eq_column - 1,
+				base_xindex + eq_column - 1,
 				/*negative*/true,
 				/*m*/m_cell, /*s*/-1) == -1) {
 			return -1;
 		    }
 		}
 	    }
-	    base_coefficient += tm_diagonals - 1;
+	    base_xindex += tm_diagonals - 1;
 	}
 	break;
 
@@ -224,26 +224,26 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		    }
 		} else {
 		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_coefficient + eq_row - 1,
+				base_xindex + eq_row - 1,
 				/*negative*/false,
 				/*m*/m_cell, /*s*/-1) == -1) {
 			return -1;
 		    }
 		}
 	    }
-	    base_coefficient += um_diagonals - 1;
+	    base_xindex += um_diagonals - 1;
 
 	    /*
 	     * Add the Ui term.
 	     */
 	    if (eq_row < ui_diagonals && eq_row == eq_column) {
 		if (add_term(function, vnmp, &vncpp_anchor,
-			    base_coefficient + eq_row,
+			    base_xindex + eq_row,
 			    /*negative*/false, /*m*/-1, /*s*/-1) == -1) {
 		    return -1;
 		}
 	    }
-	    base_coefficient += ui_diagonals;
+	    base_xindex += ui_diagonals;
 
 	    /*
 	     * Add the non-zero Ux terms.
@@ -257,14 +257,14 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		if (vnprp != vnp->vn_zero) {
 		    assert(vnmp->vnm_m_matrix[m_cell] != NULL);
 		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_coefficient + ux_d,
+				base_xindex + ux_d,
 				/*negative*/true,
 				/*m*/m_cell, /*s*/s_cell) == -1) {
 			return -1;
 		    }
 		}
 	    }
-	    base_coefficient += ux_diagonals;
+	    base_xindex += ux_diagonals;
 
 	    /*
 	     * Add the non-zero Us term.
@@ -276,13 +276,13 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		assert(vnprp != NULL);
 		if (vnprp != vnp->vn_zero) {
 		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_coefficient + eq_column,
+				base_xindex + eq_column,
 				/*negative*/true, /*m*/-1, s_cell) == -1) {
 			return -1;
 		    }
 		}
 	    }
-	    base_coefficient += us_diagonals;
+	    base_xindex += us_diagonals;
 	}
 	break;
 
@@ -311,12 +311,12 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		    continue;
 		}
 		if (add_term(function, vnmp, &vncpp_anchor,
-			    base_coefficient + ts_cell,
+			    base_xindex + ts_cell,
 			    /*negative*/false, /*m*/-1, s_cell) == -1) {
 		    return -1;
 		}
 	    }
-	    base_coefficient += ts_rows * ts_columns;
+	    base_xindex += ts_rows * ts_columns;
 
 	    /*
 	     * Add the Ti term.
@@ -327,12 +327,12 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		const int ti_cell = ti_row * ti_columns + ti_column;
 
 		if (add_term(function, vnmp, &vncpp_anchor,
-			    base_coefficient + ti_cell,
+			    base_xindex + ti_cell,
 			    /*negative*/false, /*m*/-1, /*s*/-1) == -1) {
 		    return -1;
 		}
 	    }
-	    base_coefficient += ti_rows * ti_columns;
+	    base_xindex += ti_rows * ti_columns;
 
 	    /*
 	     * Add the non-zero Tx terms.
@@ -351,14 +351,14 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		    }
 		    assert(vnmp->vnm_m_matrix[m_cell] != NULL);
 		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_coefficient + tx_cell,
+				base_xindex + tx_cell,
 				/*negative*/true,
 				/*m*/m_cell, /*s*/s_cell) == -1) {
 			return -1;
 		    }
 		}
 	    }
-	    base_coefficient += tx_rows * tx_columns;
+	    base_xindex += tx_rows * tx_columns;
 
 	    /*
 	     * Add the Tm terms.
@@ -377,13 +377,13 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		    }
 		} else {
 		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_coefficient + tm_cell - 1,
+				base_xindex + tm_cell - 1,
 				/*negative*/true, /*m*/m_cell, /*s*/-1) == -1) {
 			return -1;
 		    }
 		}
 	    }
-	    base_coefficient += tm_rows * tm_columns - 1;
+	    base_xindex += tm_rows * tm_columns - 1;
 	}
 	break;
 
@@ -414,13 +414,13 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		    }
 		} else {
 		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_coefficient + um_cell - 1,
+				base_xindex + um_cell - 1,
 				/*negative*/false, m_cell, /*s*/-1) == -1) {
 			return -1;
 		    }
 		}
 	    }
-	    base_coefficient += um_rows * um_columns - 1;
+	    base_xindex += um_rows * um_columns - 1;
 
 	    /*
 	     * Add the Ui term.
@@ -431,12 +431,12 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		const int ui_cell = ui_row * ui_columns + ui_column;
 
 		if (add_term(function, vnmp, &vncpp_anchor,
-			    base_coefficient + ui_cell,
+			    base_xindex + ui_cell,
 			    /*negative*/false, /*m*/-1, /*s*/-1) == -1) {
 		    return -1;
 		}
 	    }
-	    base_coefficient += ui_rows * ui_columns;
+	    base_xindex += ui_rows * ui_columns;
 
 	    /*
 	     * Add the non-zero Ux terms.
@@ -454,14 +454,14 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		    }
 		    assert(vnmp->vnm_m_matrix[m_cell] != NULL);
 		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_coefficient + ux_cell,
+				base_xindex + ux_cell,
 				/*negative*/true,
 				/*m*/m_cell, /*s*/s_cell) == -1) {
 			return -1;
 		    }
 		}
 	    }
-	    base_coefficient += ux_rows * ux_columns;
+	    base_xindex += ux_rows * ux_columns;
 
 	    /*
 	     * Add the non-zero Us terms.
@@ -476,12 +476,12 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		    continue;
 		}
 		if (add_term(function, vnmp, &vncpp_anchor,
-			    base_coefficient + us_cell,
+			    base_xindex + us_cell,
 			    /*negative*/true, /*m*/-1, /*s*/s_cell) == -1) {
 		    return -1;
 		}
 	    }
-	    base_coefficient += us_rows * us_columns;
+	    base_xindex += us_rows * us_columns;
 	}
 	break;
 
@@ -508,7 +508,7 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		    }
 		} else {
 		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_coefficient + eq_row -
+				base_xindex + eq_row -
 				(eq_row > eq_column),
 				/*negative*/false,
 				/*m*/m_cell, /*s*/-1) == -1) {
@@ -516,18 +516,18 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		    }
 		}
 	    }
-	    base_coefficient += um_diagonals - 1;
+	    base_xindex += um_diagonals - 1;
 
 	    /*
 	     * Add the Ui term.
 	     */
 	    if (eq_row == eq_column) {
-		if (add_term(function, vnmp, &vncpp_anchor, base_coefficient,
+		if (add_term(function, vnmp, &vncpp_anchor, base_xindex,
 			    /*negative*/false, /*m*/-1, /*s*/-1) == -1) {
 		    return -1;
 		}
 	    }
-	    base_coefficient += ui_diagonals;
+	    base_xindex += ui_diagonals;
 
 	    /*
 	     * Add the non-zero Ux terms.
@@ -541,13 +541,13 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		if (vnprp != vnp->vn_zero) {
 		    assert(vnmp->vnm_m_matrix[m_cell] != NULL);
 		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_coefficient + ux_d, /*negative*/true,
+				base_xindex + ux_d, /*negative*/true,
 				/*m*/m_cell, /*s*/s_cell) == -1) {
 			return -1;
 		    }
 		}
 	    }
-	    base_coefficient += ux_diagonals;
+	    base_xindex += ux_diagonals;
 
 	    /*
 	     * Add the non-zero Us term.
@@ -559,13 +559,13 @@ static int add_equation(const char *function, vnacal_new_measurement_t *vnmp,
 		assert(vnprp != NULL);
 		if (vnprp != vnp->vn_zero) {
 		    if (add_term(function, vnmp, &vncpp_anchor,
-				base_coefficient,
+				base_xindex,
 				/*negative*/true, /*m*/-1, s_cell) == -1) {
 			return -1;
 		    }
 		}
 	    }
-	    base_coefficient += us_diagonals;
+	    base_xindex += us_diagonals;
 	}
 	break;
 
@@ -1424,11 +1424,11 @@ out:
 	vnacal_new_equation_t *vnep = ncep_head;
 
 	ncep_head = vnep->vne_next;
-	while (vnep->vne_coefficient_list != NULL) {
-	    vnacal_new_coefficient_t *vncp = vnep->vne_coefficient_list;
+	while (vnep->vne_term_list != NULL) {
+	    vnacal_new_term_t *vntp = vnep->vne_term_list;
 
-	    vnep->vne_coefficient_list = vncp->vnc_next;
-	    free((void *)vncp);
+	    vnep->vne_term_list = vntp->vnt_next;
+	    free((void *)vntp);
 	}
 	free((void *)vnep);
     }

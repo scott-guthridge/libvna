@@ -116,8 +116,8 @@ static void calc_weights(vnacal_new_solve_state_t *vnssp,
 	    for (int m_cell = 0; m_cell < m_cells; ++m_cell) {
 		m_weight_vector[m_cell] = 0.0;
 	    }
-	    while (vs_next_coefficient(vnssp)) {
-		int coefficient = vs_get_coefficient(vnssp);
+	    while (vs_next_term(vnssp)) {
+		int xindex = vs_get_xindex(vnssp);
 		int m_cell = vs_get_m_cell(vnssp);
 
 		if (m_cell >= 0) {
@@ -129,8 +129,8 @@ static void calc_weights(vnacal_new_solve_state_t *vnssp,
 		    if (vs_have_s(vnssp)) {
 			v *= vs_get_s(vnssp);
 		    }
-		    if (coefficient >= 0) {
-			v *= x_vector[offset + coefficient];
+		    if (xindex >= 0) {
+			v *= x_vector[offset + xindex];
 		    } else {
 			v *= -1.0;
 		    }
@@ -338,7 +338,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    int offset = sindex * (vlp->vl_t_terms - 1);
 
 	    /*
-	     * The vs_start_system, vs_next_equation and vs_next_coefficient
+	     * The vs_start_system, vs_next_equation and vs_next_term
 	     * functions form an abstract iterator that systematically
 	     * walks through the equations added via vnacal_new_add_*.
 	     *
@@ -352,8 +352,8 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	     */
 	    vs_start_system(vnssp, sindex);
 	    while (vs_next_equation(vnssp)) {
-		while (vs_next_coefficient(vnssp)) {
-		    int coefficient = vs_get_coefficient(vnssp);
+		while (vs_next_term(vnssp)) {
+		    int xindex = vs_get_xindex(vnssp);
 		    double complex v = vs_get_negative(vnssp) ? -1.0 : 1.0;
 
 		    if (vs_have_m(vnssp)) {
@@ -365,10 +365,10 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		    if (w_vector != NULL) {
 			v *= w_vector[equation];
 		    }
-		    if (coefficient == -1) {
+		    if (xindex == -1) {
 			b_vector[equation] = v;
 		    } else {
-			a_matrix[equation][offset + coefficient] = v;
+			a_matrix[equation][offset + xindex] = v;
 		    }
 		}
 		++equation;
@@ -622,18 +622,17 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		vnacal_new_equation_t *vnep = vnssp->vnss_vnep;
 		vnacal_new_measurement_t *vnmp = vnep->vne_vnmp;
 
-		while (vs_next_coefficient(vnssp)) {
-		    int coefficient = vs_get_coefficient(vnssp);
+		while (vs_next_term(vnssp)) {
+		    int xindex = vs_get_xindex(vnssp);
 		    int s_cell = vs_get_s_cell(vnssp);
 		    vnacal_new_parameter_t *vnprp = NULL;
 
 		    /*
-		     * Apply this coefficient's contribution to the
-		     * current row of the Jacobian matrix.  We're
-		     * computing -Q2(p)^H A'(p) x, but doing the the
-		     * first matrix multiplication with loop nesting
-		     * inverted from the usual order so that we can go
-		     * row by row through A.
+		     * Apply this term's contribution to the current
+		     * row of the Jacobian matrix.  We're computing
+		     * -Q2(p)^H A'(p) x, but doing the the first matrix
+		     * multiplication with loop nesting inverted from the
+		     * usual order so that we can go row by row through A.
 		     */
 		    if (s_cell >= 0 && (vnprp =
 				vnmp->vnm_s_matrix[s_cell])->vnpr_unknown) {
@@ -646,8 +645,8 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 			if (w_vector != NULL) {
 			    v *= w_vector[equation];
 			}
-			assert(coefficient >= 0);
-			v *= x_vector[offset + coefficient];
+			assert(xindex >= 0);
+			v *= x_vector[offset + xindex];
 #if DEBUG >= 2
 			aprimex_matrix[equation][unknown] += v;
 #endif /* DEBUG >= 2 */
@@ -659,7 +658,8 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		}
 
 		/*
-		 * Build the right-hand-side vector of residuals, k_vector.
+		 * Build the right-hand-side vector of residuals, k_vector:
+		 *     k(p) = Q2(p)^H b
 		 */
 		for (int k = 0; k < p_equations; ++k) {
 		    k_vector[k] += conj(q_matrix[equation][x_length + k]) *

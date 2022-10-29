@@ -87,8 +87,8 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 	}
 	vs_start_system(vnssp, sindex);
 	while (vs_next_equation(vnssp)) {
-	    while (vs_next_coefficient(vnssp)) {
-		int coefficient = vs_get_coefficient(vnssp);
+	    while (vs_next_term(vnssp)) {
+		int xindex = vs_get_xindex(vnssp);
 		double complex value = vs_get_negative(vnssp) ? -1.0 : 1.0;
 
 		if (vs_have_m(vnssp)) {
@@ -97,10 +97,10 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 		if (vs_have_s(vnssp)) {
 		    value *= vs_get_s(vnssp);
 		}
-		if (coefficient == -1) {
+		if (xindex == -1) {
 		    b_vector[eq_count] = value;
 		} else {
-		    a_matrix[eq_count][coefficient] = value;
+		    a_matrix[eq_count][xindex] = value;
 		}
 	    }
 	    ++eq_count;

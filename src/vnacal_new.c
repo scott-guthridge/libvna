@@ -276,11 +276,11 @@ void vnacal_new_free(vnacal_new_t *vnp)
 		vnacal_new_equation_t *vnep = vnsp->vns_equation_list;
 
 		vnsp->vns_equation_list = vnep->vne_next;
-		while (vnep->vne_coefficient_list != NULL) {
-		    vnacal_new_coefficient_t *vncp = vnep->vne_coefficient_list;
+		while (vnep->vne_term_list != NULL) {
+		    vnacal_new_term_t *vntp = vnep->vne_term_list;
 
-		    vnep->vne_coefficient_list = vncp->vnc_next;
-		    free((void *)vncp);
+		    vnep->vne_term_list = vntp->vnt_next;
+		    free((void *)vntp);
 		}
 		free((void *)vnep);
 	    }
