@@ -540,6 +540,58 @@ void _vnacal_new_solve_update_s_matrices(vnacal_new_solve_state_t *vnssp)
 }
 
 /*
+ * _vnacal_new_solve_calc_weights: calculate weights from measurement errors
+ *   @vnssp: solve state structure
+ *
+ * Create a vector of weights, one per equation, that gives the expected
+ * measurement errors for the current frequency based on vectors given
+ * to vnacal_new_set_m_error and the current measured values.  Caller is
+ * responsible for freeing the memory for the returned vector by a call
+ * to free().
+ */
+double *_vnacal_new_solve_calc_weights(vnacal_new_solve_state_t *vnssp)
+{
+    vnacal_new_t *vnp = vnssp->vnss_vnp;
+    vnacal_t *vcp = vnp->vn_vcp;
+    const vnacal_layout_t *vlp = &vnp->vn_layout;
+    const int m_columns = VL_M_COLUMNS(vlp);
+    const int findex = vnssp->vnss_findex;
+    double noise = vnp->vn_m_error_vector[findex].vnme_noise;
+    double tracking = vnp->vn_m_error_vector[findex].vnme_tracking;
+    double *w_vector = NULL;
+
+    assert(vnp->vn_m_error_vector != NULL);
+    if ((w_vector = calloc(vnp->vn_equations, sizeof(double))) == NULL) {
+	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
+	return NULL;
+    }
+    for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
+	int k = 0;
+
+	vs_start_system(vnssp, sindex);
+	while (vs_next_equation(vnssp)) {
+	    vnacal_new_equation_t *vnep = vnssp->vnss_vnep;
+	    vnacal_new_measurement_t *vnmp = vnep->vne_vnmp;
+	    vnacal_new_msv_matrices_t *vnmmp;
+	    int eq_cell = vnep->vne_row * m_columns + vnep->vne_column;
+	    double complex m_value;
+	    double weight2;
+
+	    vnmmp = &vnssp->vnss_msv_matrices[vnmp->vnm_index];
+	    m_value = vnmmp->vnmm_m_matrix[eq_cell];
+	    weight2 = creal(m_value * conj(m_value));
+	    weight2 *= tracking * tracking;
+	    weight2 += noise * noise;
+	    w_vector[k++] = 1.0 / sqrt(weight2);
+	}
+#ifdef DEBUG
+	print_rmatrix("w", w_vector, k, 1);
+#endif /* DEBUG */
+    }
+    return w_vector;
+}
+
+/*
  * _vnacal_new_solve_free: free resources held by the solve state structure
  *   @vnssp: solve state structure
  */

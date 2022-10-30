@@ -603,8 +603,8 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
 		    sqrt(x_sqerror / MAX(x_count, 1)),
 		    sqrt(p_sqerror / MAX(p_count, 1)),
 		    sqrt((x_sqerror + p_sqerror) / MAX(x_count + p_count, 1)));
-	    (void)printf("\n");
 	}
+	(void)printf("\n");
     }
     result = T_PASS;
 

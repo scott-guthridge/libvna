@@ -392,6 +392,7 @@ typedef struct vnacal_new_solve_state {
 #define vs_update_s_matrices		_vnacal_new_solve_update_s_matrices
 #define vs_update_v_matrices		_vnacal_new_solve_update_v_matrices
 #define vs_update_all_v_matrices	_vnacal_new_solve_update_all_v_matrices
+#define vs_calc_weights			_vnacal_new_solve_calc_weights
 #define vs_free				_vnacal_new_solve_free
 
 /*
@@ -592,6 +593,9 @@ extern int _vnacal_new_solve_update_v_matrices(const char *function,
 extern int _vnacal_new_solve_update_all_v_matrices(const char *function,
        vnacal_new_solve_state_t *vnssp, const double complex *x_vector,
        int x_length);
+
+/* _vnacal_new_solve_calc_weights: calculate weights from measurement errors */
+extern double *_vnacal_new_solve_calc_weights(vnacal_new_solve_state_t *vnssp);
 
 /* _vnacal_new_solve_simple: solve error terms when all s-parameters known */
 extern int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
