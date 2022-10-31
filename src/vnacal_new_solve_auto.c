@@ -27,7 +27,7 @@
 #include <string.h>
 #include "vnacal_new_internal.h"
 
-/* #define DEBUG */
+/* #define DEBUG 1 */
 
 /*
  * PHI_INV: inverse of the golden ratio
@@ -305,6 +305,14 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	/* sum of squared magnitudes of the elements of d_vector */
 	double sum_d_squared;
 
+#if DEBUG >= 2
+	/* Jacobian of a_matrix with respect to vnss_p_vector */
+	double complex aprimex_matrix[equations][p_length];
+#endif
+
+#if DEBUG >= 2
+	(void)printf("# iteration %d\n", iteration);
+#endif
 	/*
 	 * Build a_matrix and right-hand-side b_vector.  This linear
 	 * system is used to solve for the error parameters (x_vector).
@@ -367,6 +375,10 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    }
 	}
 	assert(equation == equations);
+#ifdef DEBUG
+	print_cmatrix("a", &a_matrix[0][0], equations, x_length);
+	print_cmatrix("b", b_vector, equations, 1);
+#endif /* DEBUG */
 
 	/*
 	 * Find the QR decomposition of a_matrix, creating q_matrix and
@@ -389,6 +401,10 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		    "singular linear system");
 	    goto out;
 	}
+#if DEBUG >= 2
+	print_cmatrix("q", &q_matrix[0][0], equations, equations);
+	print_cmatrix("r", &r_matrix[0][0], equations, x_length);
+#endif /* DEBUG >= 2 */
 
 	/*
 	 * Solve for x_vector.
@@ -396,6 +412,9 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 */
 	_vnacommon_qrsolve2(x_vector, *q_matrix, *r_matrix, b_vector,
 		equations, x_length, 1);
+#ifdef DEBUG
+	print_cmatrix("x", x_vector, x_length, 1);
+#endif /* DEBUG */
 
 	/*
 	 * If measurement error was given (via vnacal_new_set_m_error),
@@ -587,6 +606,13 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    }
 	    k_vector[i] = 0.0;
 	}
+#if DEBUG >= 2
+	for (int i = 0; i < equations; ++i) {
+	    for (int j = 0; j < p_length; ++j) {
+		aprimex_matrix[i][j] = 0.0;
+	    }
+	}
+#endif /* DEBUG >= 2 */
 	equation = 0;
 	for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
 	    int offset = sindex * (vlp->vl_t_terms - 1);
@@ -622,6 +648,9 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 			}
 			assert(coefficient >= 0);
 			v *= x_vector[offset + coefficient];
+#if DEBUG >= 2
+			aprimex_matrix[equation][unknown] += v;
+#endif /* DEBUG >= 2 */
 			for (int k = 0; k < p_equations; ++k) {
 			    j_matrix[k][unknown] -=
 				conj(q_matrix[equation][x_length + k]) * v;
@@ -640,10 +669,9 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    }
 	}
 	assert(equation == equations);
-#ifdef DEBUG
-	print_cmatrix("a", &a_matrix[0][0], equations, x_length);
-	print_cmatrix("b", b_vector, equations, 1);
-#endif /* DEBUG */
+#if DEBUG >= 2
+	print_cmatrix("aprimex", &aprimex_matrix[0][0], equations, p_length);
+#endif /* DEBUG >= 2 */
 
 	/*
 	 * Add an additional row to j_matrix and k_vector for each
@@ -855,11 +883,13 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		vnssp->vnss_p_vector[i][findex] -= d_vector[i];
 	    }
 #ifdef DEBUG
+	    (void)printf("p = [\n");
 	    for (int i = 0; i < p_length; ++i) {
-		(void)printf("# p[%2d] = %13.6e %+13.6ej\n", i,
+		(void)printf("  %f%+fj\n",
 			creal(vnssp->vnss_p_vector[i][findex]),
 			cimag(vnssp->vnss_p_vector[i][findex]));
 	    }
+	    (void)printf("]\n\n");
 #endif /* DEBUG */
 	    backtrack_count = 0;
 
