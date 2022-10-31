@@ -170,8 +170,8 @@ static void calc_weights(vnacal_new_solve_state_t *vnssp,
 }
 
 /*
- * _vnacal_new_solve_auto: solve for error terms and unknown s-parameters
- *   @vnssp: solve state structure
+ * _vnacal_new_solve_auto: solve for both error terms and unknown s-parameters
+ *   @vnssp: pointer to state structure
  *   @x_vector: vector of unknowns filled in by this function
  *   @x_length: length of x_vector
  *
@@ -212,7 +212,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
     /* map indicating which of the unknown parameters are correlated type */
     bool is_correlated_vector[p_length];
 
-    /* weight vector */
+    /* vector of weights for each measurement */
     double *w_vector = NULL;
 
     /* weight vector that was used to create best solution */
@@ -307,17 +307,17 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 
 	/*
 	 * Build a_matrix and right-hand-side b_vector.  This linear
-	 * system is built from the measurements of the calibration
-	 * standards added to the vnacal_new_t structure via the
-	 * vnacal_new_add_* functions.	It's used to solve for the error
-	 * parameters, x_vector, given estimates of any unknown standards.
+	 * system is used to solve for the error parameters (x_vector).
+	 * It's built from the measurements of the calibration standards
+	 * added to the vnacal_new_t structure via the vnacal_new_add_*
+	 * functions.
 	 *
 	 * Note that in calibration types other than T16 and U16, the
-	 * leakage equations are excluded from the system.  For example,
-	 * a double reflect standard in 2x2 T8 contributes only two
-	 * equations intead of four.  In TE10 and UE10, the other two
-	 * are used to compute leakage terms -- that's done outside of
-	 * this function.
+	 * leakage equations are handled outside of the system and will
+	 * have already been subtracted out.  For example, a double
+	 * reflect standard in 2x2 T8 contributes only two equations
+	 * intead of four.  In TE10 and UE10, the other two are used to
+	 * compute leakage terms -- that's done outside of this function.
 	 */
 	for (int i = 0; i < equations; ++i) {
 	    for (int j = 0; j < x_length; ++j) {
@@ -331,16 +331,16 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 
 	    /*
 	     * The vs_start_system, vs_next_equation and vs_next_coefficient
-	     * functions are abstract iterators that systematically
-	     * go through the equations added via vnacal_new_add_*.
+	     * functions form an abstract iterator that systematically
+	     * walks through the equations added via vnacal_new_add_*.
 	     *
-	     * In the case of UE14 (used to solve classic E12 SOLT),
-	     * each column of the measurement matrix forms an independent
-	     * linear system with its own separate error terms.  These
-	     * independent systems, however, share the same unknown
-	     * calibration parameters (p_vector), and for simplicity
-	     * of solving them, we create one big (possibly sparse)
-	     * matrix equation representing them all.
+	     * In the case of UE14 (used to solve classic E12 SOLT), each
+	     * column of the measurement matrix forms an independent
+	     * linear system with its own separate error terms.
+	     * These independent systems, however, share the same unknown
+	     * calibration parameters (vnss_p_vector), and for simplicity
+	     * of solving them, we create one big block-diagonal matrix
+	     * equation to solve all systems at once.
 	     */
 	    vs_start_system(vnssp, sindex);
 	    while (vs_next_equation(vnssp)) {
@@ -374,13 +374,13 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 *
 	 * Conceptually, Q and R are partitioned as follows:
 	 *
-	 *   [ Q1 Q2 ] [ R
+	 *   [ Q1 Q2 ] [ R1
 	 *               0 ]
 	 *
 	 * with dimensions:
 	 *   Q1: equations x x_length
 	 *   Q2: equations x (equations - x_length)
-	 *   R:  x_length  x x_length
+	 *   R1: x_length  x x_length
 	 */
 	rank = _vnacommon_qr(*a_matrix, *q_matrix, *r_matrix,
 		equations, x_length);
@@ -449,11 +449,11 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 
 	/*
 	 * At this point, we know that the system is nonlinear.
-	 * We have two sets of variables to solve, the error terms,
+	 * We have two sets of variables to solve: the error terms,
 	 * x_vector, and the unknown calibration parameters, p_vector.
 	 * The a_matrix depends on p_vector; consequently, the
-	 * system A x = b contains products of p and x variables
-	 * and is nonlinear.  It is, however, a separable nonlinear
+	 * system A x = b contains products of p and x variables,
+	 * thus is quadratic.  It is, however, a separable nonlinear
 	 * least squares problem that can be solved using the variable
 	 * projection method as described by Golub and LeVeque, 1979
 	 * http://faculty.washington.edu/rjl/pubs/GolubLeVeque1979/
@@ -470,7 +470,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 * Our goal is to minimize the system A(p) x = b in a least-squares
 	 * sense, where A(p) is matrix valued function of vector p, b is a
 	 * known vector, and x and p are the unknown vectors we need to find
-	 * to minimize:
+	 * in order to to minimize:
 	 *
 	 *     || b - A(p) x ||^2
 	 *
@@ -485,86 +485,89 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 *                          [   0   ]
 	 *        = Q1(p) R1(p)
 	 *
-	 * It also follows that:
+	 * It follows also that:
 	 *
 	 *   Q2(p)^H A(p) = 0
 	 *
 	 * where ^H is the conjugate transpose.
 	 *
-	 * Solve A(p) x = b for x in a least-squares sense:
+	 * Solve A(p) x = b for x:
 	 *
 	 *   A(p)        x = b
 	 *   Q1(p) R1(p) x = b
 	 *   R1(p)       x = Q1(p)^H b
 	 *               x = R1(p)^-1 Q1(p)^H b
 	 *
-	 * From the invariance of the 2-norm under orthagonal
-	 * transformations, we can multiply the inside by Q^H
-	 * without changing the norm:
+	 * which minimizes:
 	 *
 	 *     || b - A(p) x ||^2
+	 *
+	 * with our current guess for p.
+	 *
+	 * From the invariance of the 2-norm under orthogonal
+	 * transformations, we can multiply the inside of the
+	 * above by Q^H * without changing the norm:
 	 *
 	 *   = || Q(p)^H (b - A(p) x) ||^2
 	 *
 	 *   = || Q1(p)^H b - Q1(p)^H A(p) x ||^2
 	 *     || Q2(p)^H b - Q2(p)^H A(p) x ||^2
 	 *
-	 * But Q1(p)^H A(p) = R(p), and Q2(p)^H A(p) = 0, so
+	 * But Q1(p)^H A(p) = R1(p), and Q2(p)^H A(p) = 0, so
 	 *
-	 *   = || Q1(p)^H b - R(p) x ||^2
-	 *     || Q2(p)^H b - 0      ||
+	 *   = || Q1(p)^H b - R1(p) x ||^2
+	 *     || Q2(p)^H b - 0       ||^2
 	 *
-	 * and because R(p) x = Q1(p)^H b from above, Q1(p)^H b - R(p) x = 0
+	 * and because R1(p) x = Q1(p)^H b from above, Q1(p)^H b - R1(p) x = 0
 	 *
-	 *   = || 0         ||
-	 *     || Q2(p)^H b ||
+	 *   = || 0         ||^2
+	 *     || Q2(p)^H b ||^2
 	 *
-	 * so the residual we need to minimize is simply:
+	 * so we simply need to minimize:
 	 *
-	 *   Q2(p)^H b
+	 *     || Q2(p)^H b ||^2
 	 *
-	 * For Gauss-Newton, we need the Jacobian of the residual above
-	 * with respect to p.  Note that our choice of using tm11 or
-	 * um11 for the unity term in the T or U error parameters,
-	 * respectively, ensures that b never depends on p.
+	 * We will improve p using Gauss-Newton.  We need the Jacobian
+	 * matrix of the residuals above with respect to each p_k.
 	 *
 	 * Recall from above that Q2(p)^H A(p) = 0.  If we take the
-	 * derivative, then from the product rule, we get:
+	 * partial derivative of each side with respect respect to each
+	 * p_k, then from the product rule, we get:
 	 *
-	 *   Q2(p)^H' A(p) +  Q2(p)^H A(p)' = 0
+	 *   Q2'(p)^H A(p) +  Q2(p)^H A'(p) = 0
 	 *
 	 * Re-arranging:
 	 *
-	 *   Q2(p)^H' A(p) = -Q2(p)^H A(p)'
+	 *   Q2'(p)^H A(p) = -Q2(p)^H A'(p)
 	 *
-	 * Using A(p) = Q1(p) R(p):
+	 * Using A(p) = Q1(p) R1(p):
 	 *
-	 *   Q2(p)^H' Q1(p) R(p) = -Q2(p)^H A(p)'
+	 *   Q2'(p)^H Q1(p) R1(p) = -Q2(p)^H A'(p)
 	 *
-	 * Multiply on the right by R(p)^-1 Q1(p)^H b:
+	 * Multiply on the right by R1(p)^-1 Q1(p)^H b:
 	 *
-	 *   Q2(p)^H' Q1(p) Q1(p)^H b = -Q2(p)^H d A(p)' R(p)^-1 Q1(p)^H b
+	 *   Q2'(p)^H Q1(p) Q1(p)^H b = -Q2(p)^H A'(p) R1(p)^-1 Q1(p)^H b
 	 *
 	 * We'd really like Q1(p) Q1(p)^H to cancel, but they don't in
 	 * this direction.  But Kaufman 1975 suggests the approximation:
 	 *
-	 *   Q2(p)^H' ≈ -Q2(p)^H A(p)' A(p)^+
-	 *   where A(p)^+ is the pseudoinverse of A(p), or R(p)^-1 Q(p)^H
+	 *   Q2'(p)^H ≈ -Q2(p)^H A'(p) A(p)^+
+	 *   where A(p)^+ is the pseudoinverse of A(p), or R1(p)^-1 Q(p)^H
 	 *
 	 * Using the approximation, we can treat Q1(p) Q1(p)^H as if they
 	 * do cancel:
 	 *
-	 *   Q2(p)^H' b ≈ -Q2(p)^H A(p)' R(p)^-1 Q1(p)^H b
+	 *   Q2'(p)^H b ≈ -Q2(p)^H A'(p) R1(p)^-1 Q1(p)^H b
 	 *
-	 * From above, R(p)^-1 Q1(p)^H b = x:
+	 * From above, R1(p)^-1 Q1(p)^H b = x:
 	 *
-	 *   Q2(p)^H' b ≈ -Q2(p)^H A(p)' x
+	 *   Q2'(p)^H b ≈ -Q2(p)^H A'(p) x
 	 *
-	 * We can easily find A(p)' since it's just the coefficients
-	 * of A that contain the given p.  The result is our Jacobian
-	 * (j_matrix):
+	 * We can easily find A'(p) since it's just the coefficients
+	 * of A that contain the given p.  Thus our Jacobian matrix
+	 * (j_matrix) is:
 	 *
-	 *   J(p) ≈ -Q2(p)^H A(p)' x
+	 *   J(p) ≈ -Q2(p)^H A'(p) x
 	 *
 	 * And the right hand side residual for Gauss-Newton is:
 	 *
@@ -600,11 +603,11 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 
 		    /*
 		     * Apply this coefficient's contribution to the
-		     * current row of the Jacobian matrix.  What we're
-		     * doing here is computing -Q2(p)^H A'(p) x, but
-		     * doing the the first matrix multiplication with
-		     * loop nesting inverted from the usual order so
-		     * that we can go row by row through A.
+		     * current row of the Jacobian matrix.  We're
+		     * computing -Q2(p)^H A'(p) x, but doing the the
+		     * first matrix multiplication with loop nesting
+		     * inverted from the usual order so that we can go
+		     * row by row through A.
 		     */
 		    if (s_cell >= 0 && (vnprp =
 				vnmp->vnm_s_matrix[s_cell])->vnpr_unknown) {
@@ -645,22 +648,6 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	/*
 	 * Add an additional row to j_matrix and k_vector for each
 	 * correlated parameter.
-	 *
-	 * When the parameter is correlated with a constant parameter,
-	 * we have an equation of the form:
-	 *
-	 *   1/sigma p_i = 1/sigma constant
-	 *
-	 * when a correlated parameter is correlated with another unknown
-	 * parameter, we have an equation of the form:
-	 *
-	 *   1/sigma p_i - 1/sigma p_j = 0
-	 *
-	 * We store the Jacobian of the coefficient matrix (just the
-	 * 1/sigma terms) into j_matrix and the residuals into k_matrix.
-	 * In the terminology of the Van Hamme paper, the elements in
-	 * j_matrix are E matrix, and the elements of
-	 * k_vector are the residuals E*p - f.
 	 */
 	if (correlated != 0) {
 	    int j_row = p_equations;
@@ -680,13 +667,42 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		    continue;
 
 		/*
-		 * Place the partial derivative of the correlated
-		 * parameter into j_matrix and it's contribution to the
-		 * residual into k_vector, both weighted by sigma^-1.
-		 * If the correlate is an unknown parameter, also place
-		 * its partial derivative into j_matrix with opposite
-		 * sign, effectively setting them equal.  Known or not,
-		 * subract the contribution to the residual from k_vector.
+		 * When the correlated parameter is correlated with
+		 * another unknown parameter, we can describe it with
+		 * an equation of the form:
+		 *
+		 *   weight p[i] - weight p[j] = 0
+		 *
+		 * where weight is one over the sigmal value (standard
+		 * deviation) associated with the correlated parameter.
+		 * When the correlated parameter is correlated with
+		 * a constant parameter, we can describe it with an
+		 * equation of the form:
+		 *
+		 *   weight p[i] = weight K
+		 *
+		 * We represent these equations using a matrix, E, and
+		 * column vector, f, such that:
+		 *
+		 *   E p = f
+		 *
+		 * In the first case, we store weight and -weight into the
+		 * columns of E corresponding to p[i] and p[j], with zero
+		 * in the corresponding row of f, thus setting the two
+		 * parameters equal under the weight.  In the second case,
+		 * we store weight into the column of E corresponding
+		 * to p[i], and the constant parameter info f.
+		 *
+		 * In the J k system, however, we're not computing p,
+		 * but rather the error in p0 that leads us to a better
+		 * prediction, p1:
+		 *
+		 *   E d = E p0 - f
+		 *   p1 = p0 - d
+		 *
+		 * Thus we store E into the lower rows of j_matrix and
+		 * (E p0 - f) into the lower rows of k_vector.	We do
+		 * the mulplication E*p0 by row.
 		 */
 		coefficient = 1.0 / _vnacal_get_correlated_sigma(vpmrp1,
 			frequency);
@@ -768,8 +784,8 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	}
 
 	/*
-	 * If we have the best solution so far (or the first solution),
-	 * add the new correction to vnss_p_vector and remember the solution.
+	 * If we have the best solution so far (or the first), remember
+	 * this solution and apply the new correction to vnss_p_vector.
 	 */
 	if (sum_d_squared < best_sum_d_squared) {
 	    double sum_p_squared = 0.0;
@@ -848,9 +864,9 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    backtrack_count = 0;
 
 	/*
-	 * The new solution is worse: we must have over-corrected.  Use a
-	 * backtracking line search that keeps dividing d_vector in half
-	 * and retrying from the best solution.
+	 * If the new solution is worse: we must have over-corrected.
+	 * Use a backtracking line search that keeps dividing d_vector
+	 * in half and retrying from the best solution.
 	 */
 	} else {
 	    if (++backtrack_count > 6) {
