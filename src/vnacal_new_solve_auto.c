@@ -633,7 +633,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		 * Build the right-hand-side vector of residuals, k_vector.
 		 */
 		for (int k = 0; k < p_equations; ++k) {
-		    k_vector[k] -= conj(q_matrix[equation][x_length + k]) *
+		    k_vector[k] += conj(q_matrix[equation][x_length + k]) *
 			b_vector[equation];
 		}
 		++equation;
@@ -852,7 +852,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	     * Apply d_vector to vnss_p_vector.
 	     */
 	    for (int i = 0; i < p_length; ++i) {
-		vnssp->vnss_p_vector[i][findex] += d_vector[i];
+		vnssp->vnss_p_vector[i][findex] -= d_vector[i];
 	    }
 #ifdef DEBUG
 	    for (int i = 0; i < p_length; ++i) {
