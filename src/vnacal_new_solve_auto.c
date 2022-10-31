@@ -658,7 +658,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		vnacal_parameter_t *vpmrp1 = vnprp1->vnpr_parameter;
 		vnacal_new_parameter_t *vnprp2;
 		int pindex1;
-		double coefficient;
+		double weight;
 
 		/*
 		 * Skip if not a correlated parameter.
@@ -704,20 +704,20 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		 * (E p0 - f) into the lower rows of k_vector.	We do
 		 * the mulplication E*p0 by row.
 		 */
-		coefficient = 1.0 / _vnacal_get_correlated_sigma(vpmrp1,
+		weight = 1.0 / _vnacal_get_correlated_sigma(vpmrp1,
 			frequency);
 		vnprp2 = vnprp1->vnpr_correlate;
 		pindex1 = vnprp1->vnpr_unknown_index;
-		j_matrix[j_row][pindex1] = coefficient;	/* partial derivative */
-		k_vector[j_row] += coefficient *
+		j_matrix[j_row][pindex1] = weight;	/* partial derivative */
+		k_vector[j_row] += weight *
 		    vnssp->vnss_p_vector[pindex1][findex];/*contr. to residual*/
 		if (vnprp2->vnpr_unknown) {
 		    int pindex2 = vnprp2->vnpr_unknown_index;
-		    j_matrix[j_row][pindex2] = -coefficient; /* partial drvtv */
-		    k_vector[j_row] -= coefficient *
+		    j_matrix[j_row][pindex2] = -weight; /* partial drvtv */
+		    k_vector[j_row] -= weight *
 			vnssp->vnss_p_vector[pindex2][findex];   /* resid */
 		} else { /* known parameter value */
-		    k_vector[j_row] -= coefficient *	/* contr. to resid */
+		    k_vector[j_row] -= weight *	/* contr. to resid */
 			_vnacal_get_parameter_value_i(vnprp2->vnpr_parameter,
 				frequency);
 		}
