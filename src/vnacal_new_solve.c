@@ -90,19 +90,15 @@ int _vnacal_new_solve_init(vnacal_new_solve_state_t *vnssp, vnacal_new_t *vnp)
 	    return -1;
 	}
 
-#if 1 /* temporary */
-	/*
-	 * If enabled, allocate V matrices.
-	 */
-	if (_vnacal_new_solve_enable_v) {	/*}*/
-#else /* future */
 	/*
 	 * If any system is over-determined and we known the measurement
-	 * errors, allocate V matrices.
+	 * errors and we're using an auto-calibration method, or the
+	 * test has set _vnacal_new_solve_enable_v, allocate V matrices.
 	 */
-	if (vnp->vn_max_equations > vlp->vl_t_terms - 1 &&
-		vnp->vn_m_error_vector != NULL) {
-#endif
+	if ((vnp->vn_max_equations > vlp->vl_t_terms - 1 &&
+		    vnp->vn_m_error_vector != NULL &&
+		    vnp->vn_unknown_parameters > 0) ||
+		_vnacal_new_solve_enable_v) {
 	    /*
 	     * Allocate a vector of pointers to v matrices, one for
 	     * each system.

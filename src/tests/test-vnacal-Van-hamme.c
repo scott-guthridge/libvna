@@ -638,7 +638,9 @@ static libt_result_t test_vnacal_van_hamme()
 	for (int t_index = 0; t_index < 2; ++t_index) {
 	    result = run_vnacal_van_hamme_trial(trial, type_array[t_index]);
 	    if (result != T_PASS) {
-		if (++fail_count > MAX_FAILURES) {
+		++fail_count;
+		(void)printf("fail count %d\n", fail_count);
+		if (fail_count > MAX_FAILURES) {
 		    goto out;
 		}
 	    }
@@ -699,6 +701,6 @@ main(int argc, char **argv)
 	}
 	break;
     }
-    libt_isequal_eps = 0.1;
+    libt_isequal_eps = 0.02;
     exit(test_vnacal_van_hamme());
 }

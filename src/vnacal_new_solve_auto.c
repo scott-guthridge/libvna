@@ -79,94 +79,52 @@ static void print_cmatrix(const char *name, double complex *a, int m, int n)
 #endif
 
 /*
- * calc_weights: compute w_vector from x_vector, p_vector
+ * calc_weights: calculate weights from measurement errors
  *   @vnssp: solve state structure
- *   @x_vector: current error parameter solution
- *   @w_vector: new weight vector
  *
- * TODO: we're not calculating weights according to the more elegant
- * solution given in the Van hamme paper.  We need to do some rework of
- * the way we represent equations in order to do it right. This is kind
- * of close, though.
+ * Create a vector of weights, one per equation, that gives the expected
+ * measurement errors for the current frequency based on vectors given
+ * to vnacal_new_set_m_error and the current measured values.  Caller is
+ * responsible for freeing the memory for the returned vector by a call
+ * to free().
  */
-static void calc_weights(vnacal_new_solve_state_t *vnssp,
-	const double complex *x_vector, double *w_vector)
+static double *calc_weights(vnacal_new_solve_state_t *vnssp)
 {
     vnacal_new_t *vnp = vnssp->vnss_vnp;
-    const int findex = vnssp->vnss_findex;
+    vnacal_t *vcp = vnp->vn_vcp;
     const vnacal_layout_t *vlp = &vnp->vn_layout;
-    const int m_cells = VL_M_COLUMNS(vlp) * VL_M_ROWS(vlp);
-    vnacal_new_m_error_t *m_error_vector = vnp->vn_m_error_vector;
-    const double noise = m_error_vector[findex].vnme_noise;
-    const double tracking = m_error_vector[findex].vnme_tracking;
-    double complex m_weight_vector[m_cells];
-    int equation = 0;
+    const int m_columns = VL_M_COLUMNS(vlp);
+    const int findex = vnssp->vnss_findex;
+    double noise = vnp->vn_m_error_vector[findex].vnme_noise;
+    double tracking = vnp->vn_m_error_vector[findex].vnme_tracking;
+    double *w_vector = NULL;
 
+    assert(vnp->vn_m_error_vector != NULL);
+    if ((w_vector = calloc(vnp->vn_equations, sizeof(double))) == NULL) {
+	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
+	return NULL;
+    }
     for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
-	int offset = sindex * (vlp->vl_t_terms - 1);
+	int k = 0;
 
 	vs_start_system(vnssp, sindex);
 	while (vs_next_equation(vnssp)) {
-	    vnacal_new_measurement_t *vnmp;
+	    vnacal_new_equation_t *vnep = vnssp->vnss_vnep;
+	    vnacal_new_measurement_t *vnmp = vnep->vne_vnmp;
 	    vnacal_new_msv_matrices_t *vnmmp;
-	    double u = 0.0;
+	    int eq_cell = vnep->vne_row * m_columns + vnep->vne_column;
+	    double complex m_value;
+	    double weight2;
 
-	    vnmp = vnssp->vnss_vnep->vne_vnmp;
 	    vnmmp = &vnssp->vnss_msv_matrices[vnmp->vnm_index];
-	    for (int m_cell = 0; m_cell < m_cells; ++m_cell) {
-		m_weight_vector[m_cell] = 0.0;
-	    }
-	    while (vs_next_term(vnssp)) {
-		int xindex = vs_get_xindex(vnssp);
-		int m_cell = vs_get_m_cell(vnssp);
-
-		if (m_cell >= 0) {
-		    double complex v = 1.0;
-
-		    if (vs_get_negative(vnssp)) {
-			v *= -1.0;
-		    }
-		    if (vs_have_s(vnssp)) {
-			v *= vs_get_s(vnssp);
-		    }
-		    if (xindex >= 0) {
-			v *= x_vector[offset + xindex];
-		    } else {
-			v *= -1.0;
-		    }
-		    assert(m_cell < m_cells);
-		    m_weight_vector[m_cell] += v;
-		}
-	    }
-
-	    /*
-	     * Calculate the new weight.
-	     */
-	    for (int m_cell = 0; m_cell < m_cells; ++m_cell) {
-		double complex v = m_weight_vector[m_cell];
-
-		if (v != 0.0) {
-		    double complex m;
-		    double temp;
-
-		    /*
-		     * Add the squared error contributed by m_cell.
-		     */
-		    assert(vnmp->vnm_m_matrix[m_cell] != NULL);
-		    m = vnmmp->vnmm_m_matrix[m_cell];
-		    temp = noise * noise +
-			tracking * tracking * creal(m * conj(m));
-		    u += creal(v * conj(v)) * temp;
-		}
-	    }
-	    u = sqrt(u);
-	    if (u < noise) {	/* avoid divide by zero */
-		u = noise;
-	    }
-	    w_vector[equation] = 1.0 / u;
-	    ++equation;
+	    m_value = vnmmp->vnmm_m_matrix[eq_cell];
+	    weight2 = creal(m_value * conj(m_value));
+	    weight2 *= tracking * tracking;
+	    weight2 += noise * noise;
+	    w_vector[k++] = 1.0 / sqrt(weight2);
 	}
     }
+    return w_vector;
 }
 
 /*
@@ -182,8 +140,7 @@ static void calc_weights(vnacal_new_solve_state_t *vnssp,
  * vol. 42, no. 6, pp. 976-987, June 1994, doi: 10.1109/22.293566.  There
  * are a few differences, however.  For example, instead of calculating
  * the error bounds on the error parameters, we simply test if the data
- * are consistent with the given linear model and error model.  Also,
- * we do the equation weighting wrong instead of using the "V" matrices.
+ * are consistent with the given linear model and error model.
  */
 int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	double complex *x_vector, int x_length)
@@ -214,9 +171,6 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 
     /* vector of weights for each measurement */
     double *w_vector = NULL;
-
-    /* weight vector that was used to create best solution */
-    double *best_w_vector = NULL;
 
     /* best error parameters */
     double complex best_x_vector[x_length];
@@ -270,6 +224,29 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    is_correlated_vector[vnprp->vnpr_unknown_index] = true;
 	}
     }
+
+    /*
+     * If a measurement error vector was given, calculate weights
+     * for each measurement.
+     */
+    if (vnp->vn_m_error_vector != NULL) {
+	if ((w_vector = calc_weights(vnssp)) == NULL) {
+	    goto out;
+	}
+#ifdef DEBUG
+	print_rmatrix("w", w_vector, k, 1);
+#endif /* DEBUG */
+    }
+
+#ifdef DEBUG
+    (void)printf("p = [\n");
+    for (int i = 0; i < p_length; ++i) {
+	(void)printf("  %f%+fj\n",
+		creal(vnssp->vnss_p_vector[i][findex]),
+		cimag(vnssp->vnss_p_vector[i][findex]));
+    }
+    (void)printf("]\n\n");
+#endif /* DEBUG */
 
     /*
      * Iterate using Gauss-Newton to find the unknown parameters, vnss_p_vector.
@@ -362,13 +339,16 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		    if (vs_have_s(vnssp)) {
 			v *= vs_get_s(vnssp);
 		    }
+		    if (vs_have_v(vnssp)) {
+			v *= vs_get_v(vnssp);
+		    }
 		    if (w_vector != NULL) {
 			v *= w_vector[equation];
 		    }
 		    if (xindex == -1) {
-			b_vector[equation] = v;
+			b_vector[equation] += v;
 		    } else {
-			a_matrix[equation][offset + xindex] = v;
+			a_matrix[equation][offset + xindex] += v;
 		    }
 		}
 		++equation;
@@ -417,47 +397,40 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 #endif /* DEBUG */
 
 	/*
-	 * If measurement error was given (via vnacal_new_set_m_error),
-	 * then we weight the equations in the system to compensate for
-	 * uncertainty in the measurements.
-	 *
-	 * If we haven't already done so, allocate w_vector and
-	 * best_w_vector, compute weights based on the initial guesses
-	 * of vnss_p_vector, and restart the loop from the top.
+	 * Update the V matrices from the new x_vector.
 	 */
-	if (vnp->vn_m_error_vector != NULL && w_vector == NULL) {
-	    if ((w_vector = malloc(equations * sizeof(double))) == NULL) {
-		_vnacal_error(vcp, VNAERR_SYSTEM,
-			"malloc: %s", strerror(errno));
-		goto out;
-	    }
-	    if (p_length != 0) {
-		if ((best_w_vector = calloc(equations,
-				sizeof(double))) == NULL) {
-		    _vnacal_error(vcp, VNAERR_SYSTEM,
-			    "calloc: %s", strerror(errno));
-		    goto out;
-		}
-	    }
-	    for (int i = 0; i < equations; ++i) {
-		w_vector[i] = 1.0;
-	    }
-	    calc_weights(vnssp, x_vector, w_vector);
-#ifdef DEBUG
-	    print_rmatrix("w", w_vector, equations, 1);
-#endif /* DEBUG */
-	    --iteration;
-	    continue;
+	if (vs_update_all_v_matrices("vnacal_new_solve",
+		    vnssp, x_vector, x_length) == -1) {
+	    goto out;
 	}
-
 #ifdef DEBUG
-    (void)printf("p = [\n");
-    for (int i = 0; i < p_length; ++i) {
-	(void)printf("  %f%+fj\n",
-		creal(vnssp->vnss_p_vector[i][findex]),
-		cimag(vnssp->vnss_p_vector[i][findex]));
-    }
-    (void)printf("]\n\n");
+	if (vs_have_v(vnssp)) {
+	    int standard = 0;
+	    int v_rows, v_columns;
+	    vnacal_new_measurement_t *vnmp;
+
+	    if (VL_IS_T(vlp)) {
+		v_rows    = VL_S_COLUMNS(vlp);
+		v_columns = VL_M_COLUMNS(vlp);
+	    } else {
+		v_rows    = VL_M_ROWS(vlp);
+		v_columns = VL_S_ROWS(vlp);
+	    }
+	    for (vnmp = vnp->vn_measurement_list; vnmp != NULL;
+		    vnmp = vnmp->vnm_next) {
+		vnacal_new_msv_matrices_t *vnmmp;
+
+		vnmmp = &vnssp->vnss_msv_matrices[vnmp->vnm_index];
+		for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
+		    char name[10];
+
+		    (void)sprintf(name, "v%d_%d", standard + 1, sindex + 1);
+		    print_cmatrix(name, vnmmp->vnsm_v_matrices[sindex],
+			    v_rows, v_columns);
+		}
+		++standard;
+	    }
+	}
 #endif /* DEBUG */
 
 	/*
@@ -623,8 +596,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		vnacal_new_measurement_t *vnmp = vnep->vne_vnmp;
 
 		while (vs_next_term(vnssp)) {
-		    int xindex = vs_get_xindex(vnssp);
-		    int s_cell = vs_get_s_cell(vnssp);
+		    const int s_cell = vs_get_s_cell(vnssp);
 		    vnacal_new_parameter_t *vnprp = NULL;
 
 		    /*
@@ -636,16 +608,20 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		     */
 		    if (s_cell >= 0 && (vnprp =
 				vnmp->vnm_s_matrix[s_cell])->vnpr_unknown) {
-			double complex v = vs_get_negative(vnssp) ? -1.0 : 1.0;
 			int unknown = vnprp->vnpr_unknown_index;
+			const int xindex = vs_get_xindex(vnssp);
+			double complex v = vs_get_negative(vnssp) ? -1.0 : 1.0;
 
 			if (vs_have_m(vnssp)) {
 			    v *= vs_get_m(vnssp);
 			}
+			if (vs_have_v(vnssp)) {
+			    v *= vs_get_v(vnssp);
+			}
+			assert(xindex >= 0);
 			if (w_vector != NULL) {
 			    v *= w_vector[equation];
 			}
-			assert(xindex >= 0);
 			v *= x_vector[offset + xindex];
 #if DEBUG >= 2
 			aprimex_matrix[equation][unknown] += v;
@@ -732,20 +708,19 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		 * (E p0 - f) into the lower rows of k_vector.	We do
 		 * the mulplication E*p0 by row.
 		 */
-		weight = 1.0 / _vnacal_get_correlated_sigma(vpmrp1,
-			frequency);
-		vnprp2 = vnprp1->vnpr_correlate;
+		weight = 1.0 / _vnacal_get_correlated_sigma(vpmrp1, frequency);
 		pindex1 = vnprp1->vnpr_unknown_index;
-		j_matrix[j_row][pindex1] = weight;	/* partial derivative */
-		k_vector[j_row] += weight *
-		    vnssp->vnss_p_vector[pindex1][findex];/*contr. to residual*/
+		vnprp2 = vnprp1->vnpr_correlate;
+		j_matrix[j_row][pindex1] = weight;
+		k_vector[j_row] = weight *
+		    vnssp->vnss_p_vector[pindex1][findex];
 		if (vnprp2->vnpr_unknown) {
 		    int pindex2 = vnprp2->vnpr_unknown_index;
-		    j_matrix[j_row][pindex2] = -weight; /* partial drvtv */
-		    k_vector[j_row] -= weight *
-			vnssp->vnss_p_vector[pindex2][findex];   /* resid */
+		    j_matrix[j_row][pindex2] = -weight;
+		    k_vector[j_row] -=
+			weight * vnssp->vnss_p_vector[pindex2][findex];
 		} else { /* known parameter value */
-		    k_vector[j_row] -= weight *	/* contr. to resid */
+		    k_vector[j_row] -= weight *
 			_vnacal_get_parameter_value_i(vnprp2->vnpr_parameter,
 				frequency);
 		}
@@ -784,7 +759,6 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    }
 	}
 #ifdef DEBUG
-	(void)printf("# findex %d iteration %d\n", findex, iteration);
 	print_cmatrix("d", d_vector, p_length, 1);
 #endif /* DEBUG */
 
@@ -858,23 +832,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		best_p_vector[i] = vnssp->vnss_p_vector[i][findex];
 		best_d_vector[i] = d_vector[i];
 	    }
-	    if (w_vector != NULL) {
-		(void)memcpy((void *)best_w_vector, (void *)w_vector,
-			equations * sizeof(double));
-	    }
 	    best_sum_d_squared = sum_d_squared;
-
-	    /*
-	     * Update the weight vector.
-	     */
-	    if (w_vector != NULL) {
-		calc_weights(vnssp, x_vector, w_vector);
-#ifdef DEBUG
-		for (int i = 0; i < equations; ++i) {
-		    (void)printf("# w[%2d] = %f\n", i, w_vector[i]);
-		}
-#endif /* DEBUG */
-	    }
 
 	    /*
 	     * Apply d_vector to vnss_p_vector.
@@ -891,6 +849,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    }
 	    (void)printf("]\n\n");
 #endif /* DEBUG */
+	    vs_update_s_matrices(vnssp);
 	    backtrack_count = 0;
 
 	/*
@@ -925,22 +884,10 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 			cimag(vnssp->vnss_p_vector[i][findex]));
 	    }
 #endif /* DEBUG */
-	    if (w_vector != NULL) {
-		(void)memcpy((void *)w_vector, (void *)best_w_vector,
-			equations * sizeof(double));
-		calc_weights(vnssp, x_vector, w_vector);
-#ifdef DEBUG
-		print_rmatrix("w", w_vector, equations, 1);
-#endif /* DEBUG */
-	    }
 	}
-	vs_update_s_matrices(vnssp);
 
 	/*
 	 * Limit the number of iterations.
-	 *
-	 * TODO: instead of failing here, just return what we have so
-	 * far and let calc_rms_error check if it's close enough.
 	 */
 	if (iteration >= 50) {
 	    _vnacal_error(vcp, VNAERR_MATH, "vnacal_new_solve: "
@@ -965,6 +912,5 @@ success:
 
 out:
     free((void *)w_vector);
-    free((void *)best_w_vector);
     return rv;
 }
