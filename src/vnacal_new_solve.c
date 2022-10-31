@@ -589,18 +589,10 @@ static int iterative_solve(solve_state_t *ssp, double complex *x_vector,
     int rv = -1;
 
     /*
-     * Count the equations not skipped due to unreachability and check
-     * if enough were given to solve all the unknowns.
+     * Test that we have at least as many equations as unknowns.
      */
+    equations = vnp->vn_equations;
     assert(x_length == vnp->vn_systems * (vlp->vl_t_terms - 1));
-    for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
-	vnacal_new_system_t *vnsp = &vnp->vn_system_vector[sindex];
-
-	start_new_system(ssp, vnsp);
-	while (get_equation(ssp)) {
-	    ++equations;
-	}
-    }
     if (equations + correlated < x_length + p_length) {
 	_vnacal_error(vcp, VNAERR_MATH, "vnacal_new_solve: not enough "
 		"standards given to solve the system");
