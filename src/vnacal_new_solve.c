@@ -627,160 +627,6 @@ void _vnacal_new_solve_free(vnacal_new_solve_state_t *vnssp)
 }
 
 /*
- * calc_rms_error: calculate the RMS error of the solution, normalized to 1
- *   @vnssp: solve state structure
- *   @x_vector: vector of unknowns filled in by this function
- *   @x_length: length of x_vector
- */
-static double calc_rms_error(vnacal_new_solve_state_t *vnssp,
-	double complex *x_vector, int x_length)
-{
-    vnacal_new_t *vnp = vnssp->vnss_vnp;
-    const int findex = vnssp->vnss_findex;
-    const double frequency = vnp->vn_frequency_vector[findex];
-    vnacal_new_leakage_term_t **leakage_matrix = vnssp->vnss_leakage_matrix;
-    const int correlated = vnp->vn_correlated_parameters;
-    const vnacal_new_m_error_t *m_error_vector = vnp->vn_m_error_vector;
-    const vnacal_layout_t *vlp = &vnp->vn_layout;
-    const bool is_t = VL_IS_T(vlp);
-    const int m_rows    = VL_M_ROWS(vlp);
-    const int m_columns = VL_M_COLUMNS(vlp);
-    int w_terms = is_t ? VL_M_COLUMNS(vlp) : VL_M_ROWS(vlp);
-    double noise = m_error_vector[findex].vnme_noise;
-    double tracking = m_error_vector[findex].vnme_tracking;
-    double complex w_term_vector[w_terms];
-    double squared_error = 0.0;
-    int count = 0;
-
-    /*
-     * Accumulate squared weighted residuals from the linear system.
-     * TODO: need to re-work the way we're weighting the equations
-     * Consider basing the weights on the initial guesses only to avoid
-     * the situation where the choice of weights effectively eliminates
-     * equations and makes the system underdetermined.
-     */
-    for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
-	int offset = sindex * (vlp->vl_t_terms - 1);
-
-	vs_start_system(vnssp, sindex);
-	while (vs_next_equation(vnssp)) {
-	    double complex residual = 0.0;
-	    double u = 0.0;
-
-	    for (int i = 0; i < w_terms; ++i) {
-		w_term_vector[i] = 0.0;
-	    }
-	    while (vs_next_term(vnssp)) {
-		int xindex = vs_get_xindex(vnssp);
-		double complex v = vs_get_negative(vnssp) ? -1.0 : 1.0;
-		int m_cell = vs_get_m_cell(vnssp);
-
-		if (xindex >= 0) {
-		    assert(offset + xindex < x_length);
-		    v *= x_vector[offset + xindex];
-		} else {
-		    v *= -1.0;
-		}
-		if (vs_have_s(vnssp)) {
-		    v *= vs_get_s(vnssp);
-		}
-		if (vs_have_m(vnssp)) {
-		    double complex m = vs_get_m(vnssp);
-		    double t;
-
-		    int i = is_t ? m_cell % VL_M_COLUMNS(vlp) :
-				   m_cell / VL_M_COLUMNS(vlp);
-
-		    t = tracking * cabs(m);
-		    assert(i < w_terms);
-		    w_term_vector[i] += v * sqrt(noise * noise + t * t);
-		    v *= m;
-		}
-		residual += v;
-	    }
-	    for (int i = 0; i < w_terms; ++i) {
-		double complex v = w_term_vector[i];
-
-		u += creal(v * conj(v));
-	    }
-	    u /= w_terms;
-	    if (u < noise * noise) {	/* avoid divide by zero */
-		u = noise * noise;
-	    }
-	    squared_error += creal(residual * conj(residual)) / u;
-	    ++count;
-	}
-    }
-
-    /*
-     * Accumulate the error from correlated parameters.
-     */
-    if (correlated != 0) {
-	vnacal_new_parameter_t *vnprp1;
-
-	for (vnprp1 = vnp->vn_unknown_parameter_list; vnprp1 != NULL;
-		vnprp1 = vnprp1->vnpr_next_unknown) {
-	    vnacal_parameter_t *vpmrp1 = vnprp1->vnpr_parameter;
-
-	    if (vpmrp1->vpmr_type == VNACAL_CORRELATED) {
-		vnacal_new_parameter_t *vnprp2 = vnprp1->vnpr_correlate;
-		double complex v;
-		double sigma;
-
-		v = vnssp->vnss_p_vector[vnprp1->vnpr_unknown_index][findex];
-		if (vnprp2->vnpr_unknown) {
-		    v -= vnssp->vnss_p_vector[vnprp2->vnpr_unknown_index][findex];
-		} else {
-		    v -= _vnacal_get_parameter_value_i(vnprp2->vnpr_parameter,
-				frequency);
-		}
-		sigma = _vnacal_get_correlated_sigma(vpmrp1, frequency);
-		squared_error += creal(v * conj(v)) / (sigma * sigma);
-		++count;
-	    }
-	}
-    }
-
-    /*
-     * Accumulate variance from leakage parameter measurements.
-     */
-    if (leakage_matrix != NULL) {
-	for (int row = 0; row < m_rows; ++row) {
-	    for (int column = 0; column < m_columns; ++column) {
-		if (row != column) {
-		    const int m_cell = row * m_columns + column;
-		    const vnacal_new_leakage_term_t *vnltp;
-		    double value;
-
-		    vnltp = leakage_matrix[m_cell];
-		    if (vnltp->vnlt_count > 1) {
-			double complex sum_x = vnltp->vnlt_sum;
-			const int n = vnltp->vnlt_count;
-			double n_mean_squared;
-
-			n_mean_squared = creal(sum_x * conj(sum_x)) / n;
-			value = (vnltp->vnlt_sumsq - n_mean_squared);
-			if (m_error_vector != NULL) {
-			    double weight = 1.0 / (noise * noise +
-				    n_mean_squared / n * tracking * tracking);
-
-			    value *= weight;
-			}
-			if (value > 0.0) {
-			    squared_error += value;
-			}
-			count += n - 1;
-		    }
-		}
-	    }
-	}
-    }
-    assert(!isnan(squared_error));
-    assert(squared_error >= 0.0);
-    return sqrt(squared_error / count);
-}
-
-/*
  * convert_ue14_to_e12: convert UE14 error terms to E12 error terms
  *   @e: input and output vector
  *   @vlp_in: input layout
@@ -974,19 +820,23 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 	}
 
 	/*
-	 * If the mesurement error was given, calculate the RMS
-	 * error of the solution and fail if it's too high.
+	 * If measurement errors were given, calculate the p-value
+	 * that the system is consistent with both the linear system
+	 * and the error model.  Reject the null hypothesis that is
+	 * is consistent if the p-value is sufficiently small.
 	 */
-	if (vnp->vn_m_error_vector != NULL) {
-	    double error;
+	if (vnp->vn_m_error_vector != NULL && vnp->vn_pvalue_limit != 0.0) {
+	    double pvalue;
 
-	    error = calc_rms_error(&vnss, x_vector, x_length);
-#ifdef DEBUG
-	    (void)printf("# findex %d error %13.6e\n", findex, error);
-#endif /* DEBUG */
-	    if (error > 6.0) {
+	    pvalue = vs_calc_pvalue(&vnss, x_vector, x_length);
+	    if (vnp->vn_pvalue_vector != NULL) {
+		vnp->vn_pvalue_vector[findex] = pvalue;
+	    }
+	    if (pvalue < vnp->vn_pvalue_limit) {
 		_vnacal_error(vcp, VNAERR_MATH, "vnacal_new_solve: "
-			"too much error");
+			"measurements are inconsistent with the error "
+			"model with a pvalue of %g at %e Hz",
+			pvalue, vnp->vn_frequency_vector[findex]);
 		goto out;
 	    }
 	}

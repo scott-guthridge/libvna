@@ -31,6 +31,7 @@ extern "C" {
 
 #define VNACAL_NEW_DEFAULT_P_TOLERANCE		1.0e-6
 #define VNACAL_NEW_DEFAULT_V_TOLERANCE		1.0e-6
+#define VNACAL_NEW_DEFAULT_PVALUE_LIMIT		0.001
 
 /*
  * vnacal_new_m_error_t: measurement error
@@ -238,6 +239,12 @@ struct vnacal_new {
     /* consider v-matrix converged when RMS v change less than this */
     double vn_v_tolerance;
 
+    /* vnacal_new_solve pvalue lower than this threshold considered failing */
+    double vn_pvalue_limit;
+
+    /* hidden API for test: optional caller supplied vector for pvalue per f. */
+    double *vn_pvalue_vector;
+
     /* number of linear systems */
     int vn_systems;
 
@@ -397,6 +404,7 @@ typedef struct vnacal_new_solve_state {
 #define vs_update_v_matrices		_vnacal_new_solve_update_v_matrices
 #define vs_update_all_v_matrices	_vnacal_new_solve_update_all_v_matrices
 #define vs_calc_weights			_vnacal_new_solve_calc_weights
+#define vs_calc_pvalue                  _vnacal_new_solve_calc_pvalue
 #define vs_free				_vnacal_new_solve_free
 
 /*
@@ -608,6 +616,10 @@ extern int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 /* _vnacal_new_solve_auto: solve error terms and unknown s-parameters */
 extern int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	double complex *x_vector, int x_length);
+
+/* _vnacal_new_solve_calc_pvalue: calc p-value that system is consistent */
+extern double _vnacal_new_solve_calc_pvalue(vnacal_new_solve_state_t *vnssp,
+       const double complex *x_vector, int x_length);
 
 /* _vnacal_new_solve_free: free resources held by the solve state structure */
 extern void _vnacal_new_solve_free(vnacal_new_solve_state_t *vnssp);

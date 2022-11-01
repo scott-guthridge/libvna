@@ -145,6 +145,13 @@ extern int vnacal_new_set_p_tolerance(vnacal_new_t *vnp,
 extern int vnacal_new_set_v_tolerance(vnacal_new_t *vnp, double tolerance);
 
 /*
+ * vnacal_new_set_pvalue_limit: set the pvalue under which we reject the soln.
+ *   @vnp: pointer to vnacal_new_t structure
+ *   @limit: probability limit
+ */
+extern int vnacal_new_set_pvalue_limit(vnacal_new_t *vnp, double limit);
+
+/*
  * vnacal_new_add_single_reflect: add a single reflect on the given port
  *   @vnp: pointer to vnacal_new_t structure
  *   @a: matrix of measured voltages leaving the VNA
