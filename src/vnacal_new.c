@@ -140,6 +140,7 @@ vnacal_new_t *vnacal_new_alloc(vnacal_t *vcp, vnacal_type_t type,
     vnp->vn_z0 = VNADATA_DEFAULT_Z0;
     vnp->vn_m_error_vector = NULL;
     vnp->vn_p_tolerance = VNACAL_NEW_DEFAULT_P_TOLERANCE;
+    vnp->vn_v_tolerance = VNACAL_NEW_DEFAULT_V_TOLERANCE;
     vnp->vn_systems = systems;
     if ((vnp->vn_system_vector = calloc(systems,
 		    sizeof(vnacal_new_system_t))) == NULL) {

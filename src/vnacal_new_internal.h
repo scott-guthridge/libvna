@@ -30,6 +30,7 @@ extern "C" {
 #endif
 
 #define VNACAL_NEW_DEFAULT_P_TOLERANCE		1.0e-6
+#define VNACAL_NEW_DEFAULT_V_TOLERANCE		1.0e-6
 
 /*
  * vnacal_new_m_error_t: measurement error
@@ -233,6 +234,9 @@ struct vnacal_new {
 
     /* consider iterative solve converged when RMS p change less than this */
     double vn_p_tolerance;
+
+    /* consider v-matrix converged when RMS v change less than this */
+    double vn_v_tolerance;
 
     /* number of linear systems */
     int vn_systems;

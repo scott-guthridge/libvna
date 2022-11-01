@@ -28,11 +28,6 @@
 #include "vnacal_new_internal.h"
 
 /*
- * _vnacal_new_solve_enable_v: hidden global for test
- */
-bool _vnacal_new_solve_enable_v = false;
-
-/*
  * _vnacal_new_solve_init: initialize the solve state structure
  *   @vnssp: solve state structure
  *   @vnp:   associated vnacal_new_t structure
@@ -92,13 +87,10 @@ int _vnacal_new_solve_init(vnacal_new_solve_state_t *vnssp, vnacal_new_t *vnp)
 
 	/*
 	 * If any system is over-determined and we known the measurement
-	 * errors and we're using an auto-calibration method, or the
-	 * test has set _vnacal_new_solve_enable_v, allocate V matrices.
+	 * errors allocate V matrices.
 	 */
-	if ((vnp->vn_max_equations > vlp->vl_t_terms - 1 &&
-		    vnp->vn_m_error_vector != NULL &&
-		    vnp->vn_unknown_parameters > 0) ||
-		_vnacal_new_solve_enable_v) {
+	if (vnp->vn_max_equations > vlp->vl_t_terms - 1 &&
+		vnp->vn_m_error_vector != NULL) {
 	    /*
 	     * Allocate a vector of pointers to v matrices, one for
 	     * each system.

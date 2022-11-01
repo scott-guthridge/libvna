@@ -456,9 +456,7 @@ static libt_result_t test_vnacal_v_matrices()
 	VNACAL_T8, VNACAL_U8, VNACAL_T16, VNACAL_U16, VNACAL_UE14
     };
     libt_result_t result = T_FAIL;
-    extern bool _vnacal_new_solve_enable_v;
 
-    _vnacal_new_solve_enable_v = true;
     for (int trial = 1; trial <= NTRIALS; ++trial) {
 	for (int si = 0; si < sizeof(sizes) / sizeof(int); ++si) {
 	    for (int sj = 0; sj < sizeof(sizes) / sizeof(int); ++sj) {

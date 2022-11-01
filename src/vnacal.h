@@ -138,6 +138,13 @@ extern int vnacal_new_set_p_tolerance(vnacal_new_t *vnp,
 	double tolerance);
 
 /*
+ * vnacal_new_set_v_tolerance: set vnacal_new_solve V iteration tolerance
+ *   @vnp: pointer to vnacal_new_t structure
+ *   @tolerance: new tolerance
+ */
+extern int vnacal_new_set_v_tolerance(vnacal_new_t *vnp, double tolerance);
+
+/*
  * vnacal_new_add_single_reflect: add a single reflect on the given port
  *   @vnp: pointer to vnacal_new_t structure
  *   @a: matrix of measured voltages leaving the VNA
