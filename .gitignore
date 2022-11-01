@@ -45,6 +45,7 @@ Makefile.in
 /src/tests/test-vnacal-SOLT
 /src/tests/test-vnacal-TRL
 /src/tests/test-vnacal-Van-hamme
+/src/tests/test-vnacal-v-matrices
 /src/tests/test-vnacal.vnacal
 /src/tests/test-vnacommon-lu
 /src/tests/test-vnacommon-minverse
