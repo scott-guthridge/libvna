@@ -39,6 +39,7 @@ Makefile.in
 /src/tests/test-suite.log
 /src/tests/test-vnacal-apply
 /src/tests/test-vnacal-compat-V2
+/src/tests/test-vnacal-pvalue
 /src/tests/test-vnacal-random
 /src/tests/test-vnacal-save-load
 /src/tests/test-vnacal-Silvonen16
