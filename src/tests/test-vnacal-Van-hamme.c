@@ -137,6 +137,7 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
     libt_result_t result = T_SKIPPED;
     vnacal_t *vcp = NULL;
     libt_vnacal_terms_t *ttp = NULL;
+    const vnacal_layout_t *vlp = NULL;
     vnacal_new_t *vnp = NULL;
     libt_vnacal_measurements_t *tmp = NULL;
     double sigma_r[FREQUENCIES];
@@ -189,6 +190,7 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
 	goto out;
     }
     vnp = ttp->tt_vnp;
+    vlp = &ttp->tt_layout;
 
     /*
      * Generate the sigma values and actual standard parameters.
@@ -510,7 +512,6 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
 	result = T_FAIL;
 	goto out;
     }
-#if 1
     for (int findex = 0; findex < FREQUENCIES; ++findex) {
 	double frequency = ttp->tt_frequency_vector[findex];
 
@@ -549,7 +550,62 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
 	    }
 	}
     }
-#endif
+
+    /*
+     * If verbose, report the RMS error in the error terms, the unknown
+     * parameters and total for both.
+     */
+    if (opt_v >= 1) {
+	for (int findex = 0; findex < FREQUENCIES; ++findex) {
+	    double frequency = ttp->tt_frequency_vector[findex];
+	    double x_sqerror = 0.0;
+	    double p_sqerror = 0.0;
+	    int x_count = 0;
+	    int p_count = 0;
+
+	    /*
+	     * Find the squared error in the error terms.
+	     */
+	    for (int term = 0; term < VL_ERROR_TERMS(vlp); ++term) {
+		const vnacal_calibration_t *calp = vnp->vn_calibration;
+		double complex difference;
+
+		difference = calp->cal_error_term_vector[term][findex] -
+			     ttp->tt_error_term_vector[findex][term];
+		x_sqerror += creal(difference * conj(difference));
+		++x_count;
+	    }
+
+	    /*
+	     * Find the squared error in the unknown parameters.
+	     */
+	    for (int i = 0; i < N; ++i) {
+		double complex actual_value;
+		double complex solved_value;
+		double complex difference;
+
+		actual_value = actual_values[i][findex];
+		if ((solved_value = vnacal_get_parameter_value(vcp, unknown[i],
+				frequency)) == HUGE_VAL) {
+		    result = T_FAIL;
+		    goto out;
+		}
+		difference = solved_value - actual_value;
+		p_sqerror += creal(difference * conj(difference));
+		++p_count;
+	    }
+
+	    /*
+	     * Report
+	     */
+	    (void)printf("    findex %d: x-error %g p-error %g all-error %g\n",
+		    findex,
+		    sqrt(x_sqerror / MAX(x_count, 1)),
+		    sqrt(p_sqerror / MAX(p_count, 1)),
+		    sqrt((x_sqerror + p_sqerror) / MAX(x_count + p_count, 1)));
+	    (void)printf("\n");
+	}
+    }
     result = T_PASS;
 
 out:
