@@ -60,6 +60,111 @@ static void print_cmatrix(const char *name, double complex *a, int m, int n)
 #endif
 
 /*
+ * alloc_v_matrices: allocate memory to hold a copy of V matrices and init
+ *   @vnssp: pointer to state structure
+ */
+static double complex *alloc_v_matrices(const vnacal_new_solve_state_t *vnssp)
+{
+    vnacal_new_t *vnp = vnssp->vnss_vnp;
+    vnacal_t *vcp = vnp->vn_vcp;
+    const vnacal_layout_t *vlp = &vnp->vn_layout;
+    const int v_rows    = VL_V_ROWS(vlp);
+    const int v_columns = VL_V_COLUMNS(vlp);
+    int offset = 0;
+    double complex *v_matrices;
+
+    if ((v_matrices = malloc(vnp->vn_measurement_count * vnp->vn_systems *
+		    v_rows * v_columns * sizeof(double complex))) == NULL) {
+	_vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+	return NULL;
+    }
+    for (int idx = 0; idx < vnp->vn_measurement_count; ++idx) {
+	for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
+	    for (int v_row = 0; v_row < v_rows; ++v_row) {
+		for (int v_column = 0; v_column < v_columns; ++v_column) {
+		    const int v_cell = v_row * v_columns + v_column;
+
+		    v_matrices[offset + v_cell] = (v_row == v_column) ?
+			1.0 : 0.0;
+		}
+	    }
+	    offset += v_rows * v_columns;
+	}
+    }
+    return v_matrices;
+}
+
+/*
+ * save_v_matrices: save the current V matrices to the given vector
+ *   @vnssp: pointer to state structure
+ *   @v_matrices: vector to receive data
+ *
+ * Note:
+ *   v_matrices must have allocation sufficient for vn_measurement_count *
+ *   vn_systems * v_rows * v_columns elements
+ */
+static void save_v_matrices(const vnacal_new_solve_state_t *vnssp,
+	double complex *v_matrices)
+{
+    vnacal_new_t *vnp = vnssp->vnss_vnp;
+    const vnacal_layout_t *vlp = &vnp->vn_layout;
+    const int v_cells = VL_V_ROWS(vlp) * VL_V_COLUMNS(vlp);
+    int offset = 0;
+
+    for (int idx = 0; idx < vnp->vn_measurement_count; ++idx) {
+	const vnacal_new_msv_matrices_t *vnsmp = &vnssp->vnss_msv_matrices[idx];
+
+	if (vnsmp == NULL) {
+	    continue;
+	}
+	for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
+	    if (vnsmp->vnsm_v_matrices[sindex] != NULL) {
+		(void *)memcpy((void *)&v_matrices[offset],
+			(void *)vnsmp->vnsm_v_matrices[sindex],
+			v_cells * sizeof(double complex));
+		offset += v_cells;
+	    }
+	}
+    }
+}
+
+/*
+ * diff_v_matrices: find the mean squared error between current and given V's
+ *   @vnssp: pointer to state structure
+ *   @v_matrices: compare current against this vector
+ */
+static double diff_v_matrices(const vnacal_new_solve_state_t *vnssp,
+	const double complex *v_matrices)
+{
+    vnacal_new_t *vnp = vnssp->vnss_vnp;
+    const vnacal_layout_t *vlp = &vnp->vn_layout;
+    const int v_cells = VL_V_ROWS(vlp) * VL_V_COLUMNS(vlp);
+    int offset = 0;
+    double sqerror = 0.0;
+
+    for (int idx = 0; idx < vnp->vn_measurement_count; ++idx) {
+	const vnacal_new_msv_matrices_t *vnsmp = &vnssp->vnss_msv_matrices[idx];
+
+	if (vnsmp == NULL) {
+	    continue;
+	}
+	for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
+	    if (vnsmp->vnsm_v_matrices[sindex] != NULL) {
+		for (int v_cell = 0; v_cell < v_cells; ++v_cell) {
+		    double complex d;
+
+		    d = v_matrices[offset + v_cell] -
+			vnsmp->vnsm_v_matrices[sindex][v_cell];
+		    sqerror += creal(d * conj(d));
+		}
+		offset += v_cells;
+	    }
+	}
+    }
+    return sqerror / (double)offset;
+}
+
+/*
  * _vnacal_new_solve_auto: solve for both error terms and unknown s-parameters
  *   @vnssp: pointer to state structure
  *   @x_vector: vector of unknowns filled in by this function
@@ -113,6 +218,9 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
     /* Gauss-Newton correction vector generated from the best solution */
     double complex best_d_vector[p_length];
 
+    /* best V matrices */
+    double complex *best_v_matrices = NULL;
+
     /* sum of squares of best_d_vector, initially infinite */
     double best_sum_d_squared = INFINITY;
 
@@ -159,10 +267,13 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 
     /*
      * If a measurement error vector was given, calculate weights
-     * for each measurement.
+     * for each measurement and allocate and init best_v_matrices.
      */
     if (vnp->vn_m_error_vector != NULL) {
 	if ((w_vector = vs_calc_weights(vnssp)) == NULL) {
+	    goto out;
+	}
+	if ((best_v_matrices = alloc_v_matrices(vnssp)) == NULL) {
 	    goto out;
 	}
     }
@@ -209,7 +320,10 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	int rank;
 
 	/* sum of squared magnitudes of the elements of d_vector */
-	double sum_d_squared;
+	double sum_d_squared = 0.0;
+
+	/* mean of squared magnitudes of differences in v_matrices from best */
+	double mean_dv_squared = 0.0;
 
 #if DEBUG >= 2
 	/* Jacobian of a_matrix with respect to vnss_p_vector */
@@ -699,17 +813,29 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    sum_d_squared += creal(d_vector[i] * conj(d_vector[i]));
 	}
 #ifdef DEBUG
-	(void)printf("# sum_d_squared      %13.6e\n", sum_d_squared);
 	(void)printf("# best_sum_d_squared %13.6e\n", best_sum_d_squared);
+	(void)printf("# sum_d_squared      %13.6e\n", sum_d_squared);
 #endif /* DEBUG */
+
+	/*
+	 * If using V matrices, calculate the average squared error
+	 * in the difference from the best v.
+	 */
+	if (best_v_matrices != NULL) {
+	    mean_dv_squared = diff_v_matrices(vnssp, best_v_matrices);
+#ifdef DEBUG
+	(void)printf("# best_mean_dv_squared %13.6e\n", mean_dv_squared);
+#endif /* DEBUG */
+	}
 
 	/*
 	 * If the error is within the target tolerance, stop.
 	 */
 	if (sum_d_squared / (double)p_length <= vnp->vn_p_tolerance *
-						vnp->vn_p_tolerance) {
+						vnp->vn_p_tolerance &&
+	    mean_dv_squared <= vnp->vn_v_tolerance * vnp->vn_v_tolerance) {
 #ifdef DEBUG
-	    (void)printf("# stop: converged\n");
+	    (void)printf("# stop: converged (iteration %d)\n", iteration);
 #endif /* DEBUG */
 	    break;
 	}
@@ -762,6 +888,9 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		best_d_vector[i] = d_vector[i];
 	    }
 	    best_sum_d_squared = sum_d_squared;
+	    if (best_v_matrices != NULL) {
+		save_v_matrices(vnssp, best_v_matrices);
+	    }
 
 	    /*
 	     * Apply d_vector to vnss_p_vector.
@@ -840,6 +969,7 @@ success:
     /*FALLTHROUGH*/
 
 out:
+    free((void *)best_v_matrices);
     free((void *)w_vector);
     return rv;
 }
