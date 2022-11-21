@@ -361,6 +361,29 @@ typedef struct vnacal_new_msv_matrices {
 } vnacal_new_msv_matrices_t;
 
 /*
+ * vnacal_new_trl_indices_t: indices of simple TRL standards and unknowns
+ *   This structure is used only when it's possible to solve TRL using
+ *   the simple, analytical method.
+ */
+typedef struct vnacal_new_trl_indices {
+    /* index of the measured T standard */
+    int vnti_t_standard;
+
+    /* index of the measured R standard */
+    int vnti_r_standard;
+
+    /* index of the measured L standard */
+    int vnti_l_standard;
+
+    /* index of the R unknown */
+    int vnti_r_unknown;
+
+    /* index of the L unknown */
+    int vnti_l_unknown;
+
+} vnacal_new_trl_indices_t;
+
+/*
  * vnacal_new_solve_state: iterate over vnacal_new_term_t's
  */
 typedef struct vnacal_new_solve_state {
@@ -623,6 +646,15 @@ extern double _vnacal_new_solve_calc_pvalue(vnacal_new_solve_state_t *vnssp,
 
 /* _vnacal_new_solve_free: free resources held by the solve state structure */
 extern void _vnacal_new_solve_free(vnacal_new_solve_state_t *vnssp);
+
+/* _vnacal_new_solve_is_trl: test if we can solve using simple TRL */
+extern bool _vnacal_new_solve_is_trl(const vnacal_new_t *vnp,
+	vnacal_new_trl_indices_t *vntip);
+
+/* _vnacal_new_solve_trl: solve when all s-parameters are known */
+extern int _vnacal_new_solve_trl(vnacal_new_solve_state_t *vnssp,
+	const vnacal_new_trl_indices_t *vntip,
+	double complex *x_vector, int x_length);
 
 
 #ifdef __cplusplus

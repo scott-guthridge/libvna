@@ -34,7 +34,7 @@
 #include "libt_vnacal.h"
 
 
-#define NTRIALS		1000
+#define NTRIALS		4000
 
 /*
  * Command Line Options
@@ -109,15 +109,15 @@ static void make_random_parameters(double complex *r_actual,
      * There are four solutions to TRL:
      *     R,   L
      *    -R,   L
-     *    1/R, 1/L
-     *   -1/R, 1/L
+     *     R,  1/L
+     *    -R,  1/L
      *
-     * We need initial guesses that's always closer to the actual solution
-     * than to the others.  Stategy: working separately for R and L,
-     * choose a random new point starting at the actual solution. Check
-     * the distance to each other point, removing 10% margin from the
-     * others.  If not closest to the original, loop back and choose a
-     * new point.
+     * We need initial guesses that are always closer to the actual
+     * solution than to the others.  Stategy: working separately
+     * for R and L, choose a random new point starting at the actual
+     * solution. Check the distance to each other point, removing 10%
+     * margin from the others.  If not closest to the original, loop
+     * back and choose a new point.
      */
     for (;;) {
 	double complex guess = *r_actual + 0.05 * libt_crandn();
@@ -125,14 +125,6 @@ static void make_random_parameters(double complex *r_actual,
 
 	d1 = cabs(guess - *r_actual);
 	d2 = cabs(guess + *r_actual) * 0.90;
-	if (d2 < d1) {
-	    continue;
-	}
-	d2 = cabs(guess - 1.0 / *r_actual) * 0.90;
-	if (d2 < d1) {
-	    continue;
-	}
-	d2 = cabs(guess + 1.0 / *r_actual) * 0.90;
 	if (d2 < d1) {
 	    continue;
 	}
@@ -199,14 +191,6 @@ static libt_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
 	goto out;
     }
     vnp = ttp->tt_vnp;
-
-    /*
-     * Tighten the unknown parameter tolerance.
-     */
-    if (vnacal_new_set_p_tolerance(vnp, 1.0e-8) == -1) {
-	result = T_FAIL;
-	goto out;
-    }
 
     /*
      * Generate random reflect and line parameters.
@@ -489,6 +473,6 @@ main(int argc, char **argv)
 	}
 	break;
     }
-    libt_isequal_eps = 1.0e-3;
+    libt_isequal_init();
     exit(test_vnacal_trl());
 }

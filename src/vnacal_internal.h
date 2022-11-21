@@ -285,7 +285,8 @@ extern int _vnacal_add_calibration_common(const char *function, vnacal_t *vcp,
 	vnacal_calibration_t *calp, const char *name);
 
 /* _vnacal_get_parameter: return a pointer to the parameter */
-extern vnacal_parameter_t *_vnacal_get_parameter(vnacal_t *vcp, int parameter);
+extern vnacal_parameter_t *_vnacal_get_parameter(const vnacal_t *vcp,
+	int parameter);
 
 /* _vnacal_alloc_parameter: allocate a vnacal_parameter and return index */
 extern vnacal_parameter_t *_vnacal_alloc_parameter(const char *function,

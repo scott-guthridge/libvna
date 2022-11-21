@@ -112,15 +112,15 @@ static void save_v_matrices(const vnacal_new_solve_state_t *vnssp,
     int offset = 0;
 
     for (int idx = 0; idx < vnp->vn_measurement_count; ++idx) {
-	const vnacal_new_msv_matrices_t *vnsmp = &vnssp->vnss_msv_matrices[idx];
+	const vnacal_new_msv_matrices_t *vnmmp = &vnssp->vnss_msv_matrices[idx];
 
-	if (vnsmp == NULL) {
+	if (vnmmp == NULL) {
 	    continue;
 	}
 	for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
-	    if (vnsmp->vnsm_v_matrices[sindex] != NULL) {
+	    if (vnmmp->vnsm_v_matrices[sindex] != NULL) {
 		(void *)memcpy((void *)&v_matrices[offset],
-			(void *)vnsmp->vnsm_v_matrices[sindex],
+			(void *)vnmmp->vnsm_v_matrices[sindex],
 			v_cells * sizeof(double complex));
 		offset += v_cells;
 	    }
@@ -143,18 +143,18 @@ static double diff_v_matrices(const vnacal_new_solve_state_t *vnssp,
     double sqerror = 0.0;
 
     for (int idx = 0; idx < vnp->vn_measurement_count; ++idx) {
-	const vnacal_new_msv_matrices_t *vnsmp = &vnssp->vnss_msv_matrices[idx];
+	const vnacal_new_msv_matrices_t *vnmmp = &vnssp->vnss_msv_matrices[idx];
 
-	if (vnsmp == NULL) {
+	if (vnmmp == NULL) {
 	    continue;
 	}
 	for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
-	    if (vnsmp->vnsm_v_matrices[sindex] != NULL) {
+	    if (vnmmp->vnsm_v_matrices[sindex] != NULL) {
 		for (int v_cell = 0; v_cell < v_cells; ++v_cell) {
 		    double complex d;
 
 		    d = v_matrices[offset + v_cell] -
-			vnsmp->vnsm_v_matrices[sindex][v_cell];
+			vnmmp->vnsm_v_matrices[sindex][v_cell];
 		    sqerror += creal(d * conj(d));
 		}
 		offset += v_cells;

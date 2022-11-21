@@ -77,8 +77,8 @@ static double update_prev_v_vector(vnacal_new_solve_state_t *vnssp,
     double sum = 0.0;
 
     for (int m_index = 0; m_index < vnp->vn_measurement_count; ++m_index) {
-	vnacal_new_msv_matrices_t *vnsmp = &vnssp->vnss_msv_matrices[m_index];
-	double complex *v_matrix = vnsmp->vnsm_v_matrices[sindex];
+	vnacal_new_msv_matrices_t *vnmmp = &vnssp->vnss_msv_matrices[m_index];
+	double complex *v_matrix = vnmmp->vnsm_v_matrices[sindex];
 
 	for (int v_cell = 0; v_cell < v_rows * v_columns; ++v_cell) {
 	    double complex d = v_matrix[v_cell] - prev_v_vector[v_index];

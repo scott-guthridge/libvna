@@ -748,6 +748,7 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
     int error_terms_out = error_terms_in;
     vnacal_new_solve_state_t vnss;
     vnacal_calibration_t *calp = NULL;
+    vnacal_new_trl_indices_t *vntip = NULL;
     int rc = -1;
 
     /*
@@ -790,6 +791,25 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
     calp->cal_z0 = vnp->vn_z0;
 
     /*
+     * Test if the we're solving a simple TRL calibration without
+     * measurement error modeling.  If we are, then, we'll use a
+     * lightweight analytical method instead of the general auto
+     * calibration method.
+     */
+    {
+	vnacal_new_trl_indices_t vnti;
+
+	if (_vnacal_new_solve_is_trl(vnp, &vnti)) {
+	    if ((vntip = malloc(sizeof(vnacal_new_trl_indices_t))) == NULL) {
+		_vnacal_error(vcp, VNAERR_SYSTEM,
+			"malloc: %s", strerror(errno));
+		goto out;
+	    }
+	    (void)memcpy((void *)vntip, (void *)&vnti, sizeof(*vntip));
+	}
+    }
+
+    /*
      * For each frequency, solve for the error parameters.
      */
     for (int findex = 0; findex < frequencies; ++findex) {
@@ -809,7 +829,11 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 	 * method to solve it.  Otherwise, the system is non-linear
 	 * and we use an iterative gauss-newton.
 	 */
-	if (unknown_parameters == 0) {
+	if (vntip != NULL) {
+	    if (_vnacal_new_solve_trl(&vnss, vntip, x_vector, x_length) == -1) {
+		goto out;
+	    }
+	} else if (unknown_parameters == 0) {
 	    if (_vnacal_new_solve_simple(&vnss, x_vector, x_length) == -1) {
 		goto out;
 	    }
@@ -942,6 +966,7 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
     rc = 0;
 
 out:
+    free((void *)vntip);
     _vnacal_calibration_free(calp);
     vs_free(&vnss);
     return rc;

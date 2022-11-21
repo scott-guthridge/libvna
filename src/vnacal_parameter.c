@@ -36,9 +36,9 @@
  *
  * Returns NULL if not found.  Caller must report the error.
  */
-vnacal_parameter_t *_vnacal_get_parameter(vnacal_t *vcp, int parameter)
+vnacal_parameter_t *_vnacal_get_parameter(const vnacal_t *vcp, int parameter)
 {
-    vnacal_parameter_collection_t *vprmcp = &vcp->vc_parameter_collection;
+    const vnacal_parameter_collection_t *vprmcp = &vcp->vc_parameter_collection;
     vnacal_parameter_t *vpmrp;
 
     if (parameter < 0 || parameter >= vprmcp->vprmc_allocation ||

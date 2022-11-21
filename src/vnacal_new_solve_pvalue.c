@@ -159,7 +159,7 @@ double _vnacal_new_solve_calc_pvalue(vnacal_new_solve_state_t *vnssp,
 	while (vs_next_equation(vnssp)) {
 	    vnacal_new_equation_t *vnep = vnssp->vnss_vnep;
 	    vnacal_new_measurement_t *vnmp = vnep->vne_vnmp;
-	    vnacal_new_msv_matrices_t *vnsmp =
+	    vnacal_new_msv_matrices_t *vnmmp =
 		&vnssp->vnss_msv_matrices[vnmp->vnm_index];
 	    const int eq_row     = vnep->vne_row;
 	    const int eq_column  = vnep->vne_column;
@@ -195,7 +195,7 @@ double _vnacal_new_solve_calc_pvalue(vnacal_new_solve_state_t *vnssp,
 	    /*
 	     * Normlize the residual to 1 standard deviation.
 	     */
-	    m_value = vnsmp->vnsm_m_matrix[eq_cell];
+	    m_value = vnmmp->vnmm_m_matrix[eq_cell];
 	    divisor = creal(m_value * conj(m_value));
 	    divisor *= tracking * tracking;
 	    divisor += noise * noise;
