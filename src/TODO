@@ -8,29 +8,13 @@
 
 == Measurement Tolerance & Error ==
 
-    - Add a special-case solver in vnacal_new_solve for TRL analytically
-      when no redundant measurements and no measurement error is given.
-      This should greatly improve the accuracy over the numeric solution.
-
-    - Rework the matrix representation in vnacal_new to implement
-      equation weighting as described in "Flexible Vector Network
-      Analyzer Calibration With Accuracy Bounds Using an 8-Term or a
-      16-Term Error Correction Model", Van hamme, Bossche.  Current
-      method doesn't implement it correctly.  Hopefully, this change
-      will improve the numeric solution.
-
-    - Evaluate how well weighting is working.  If it's effective, document
-      vnacal_new_set_m_error; otherwise, either fix it or remove it.
-
-    - Add functions to set the error threshold and to retrieve errors,
-      if we get a good result from vnacal_new_set_m_error.
-	int vnacal_new_get_error_vector(vnp, double *)
-	int vnacal_new_set_error_limit(vnp, double limit) - scalar
-
-      Decide if we should normalize errors to 1 standard deviation.
-
+    - Document vnacal_new_set_m_error, vnacal_new_set_p_tolerance,
+      vnacal_new_set_v_tolerance, vnacal_new_set_pvalue_limit, and
+      measurement error and connection repeatablity modeling in general.
 
 == Improvements to the Examples ==
+
+    - Add example for unknown through
 
     - Add vnacal-T16-example.c using T-MM-SS-SM-MS standards.
       Approach: generally follow the example of vnacal-TSD-example, but
@@ -46,26 +30,32 @@
 	known line, 2 unknown equal reflects, match
 
     - Add example for UXYZ
-	unknown line with S12=S21
+	unknown symmetrical line (S12=S21)
 	3 known reflects
 
 
 == Improvements to the Tests ==
 
-- Make tests that invoke each of the examples.  Create expected output
-  files and compare that values are approximately equal.  Be careful
-  with build and source directories set to different places.
+    - Make tests that invoke each of the examples.  Create expected output
+      files and compare that values are approximately equal.  Be careful
+      with build and source directories set to different places.
 
 
 == Potential New Functionality ==
 
-    - Remove the underscore prefix from the _vnacommon* functions, move
-      vnacommon_internal.h to vnacommon.h, add man page and make them part
-      of the public API.  Remove the const int [ijk]'s from the interface
-      as they will likely confuse people.
+    - Add a function to calculate and return the error bounds covariance
+      matrix as described by the Van-hamme paper.  This gives an error
+      model of the error terms.  Something that may make this more
+      useful would be to then use the result to estimate the error in
+      a corrected S parameter matrix.
+
+    - Make the vnacommon functions public: remove the underscore prefix,
+      vnacommon_internal.h to vnacommon.h, add man page.  If publicized,
+      remove the const int [ijk]'s from the interface since these have
+      no effect on the API and will create confusion.
 
     - Add frequency-dependent Z0 support to vnacal_new, vnacal.
-      Complex reference impedances make sense really only if they're
+      Complex reference impedances really make sense only if they're
       frequency dependent.
 
     - Bring back vnacal_apply_t from the git history (consider renaming
@@ -95,3 +85,4 @@
 
    - Figure out what it will take to support differential input ports.
 
+   - Add noise figure support to touchstone import/export.
