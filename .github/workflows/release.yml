@@ -1,0 +1,38 @@
+name: Make Release
+on:
+  push:
+    branches: [ master ]
+    tags: [ "v[0-9]*" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install autoconf automake build-essential devscripts \
+             libtool libyaml-dev make
+    - name: Checkout Code
+      uses: actions/checkout@v2
+    - name: Build Debian Package
+      run: |
+        ./bootstrap
+        ./configure
+        make -j8 deb
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+    - name: Upload Release Assets
+      uses: alexellis/upload-assets@0.4.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          asset_paths: '["deb/*.deb", "deb/*.dsc", "deb/*.buildinfo"]'

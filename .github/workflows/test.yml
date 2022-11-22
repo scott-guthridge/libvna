@@ -1,0 +1,27 @@
+name: Test
+
+on:
+  push:
+    branches: [ master, development ]
+  pull_request:
+    branches: [ master, development ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Source
+      uses: actions/checkout@v2
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install libyaml-dev
+    - name: Build
+      run: |
+        ./bootstrap
+        ./configure
+        make -j8
+    - name: Test
+      run: make -j8 check
+    - name: Run Distcheck
+      run: make -j8 distcheck
