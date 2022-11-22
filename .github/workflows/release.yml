@@ -1,11 +1,11 @@
 name: Make Release
 on:
   push:
-    branches: [ master ]
     tags: [ "v[0-9]*" ]
 
 jobs:
   build:
+    if: endsWith(github.ref, 'master')
     runs-on: ubuntu-latest
     steps:
     - name: Install Dependencies
