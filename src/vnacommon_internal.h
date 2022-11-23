@@ -25,6 +25,18 @@
 extern "C" {
 #endif
 
+/*
+ * _vnacommon_cabs2: return the squared magnitude of a complex value
+ *   @x: complex number
+ */
+static inline double _vnacommon_cabs2(double complex x)
+{
+    double re = creal(x);
+    double im = cimag(x);
+
+    return re*re + im*im;
+}
+
 /* _vnacommon_lu: find replace A11 with its LU decomposition */
 extern double complex _vnacommon_lu(complex double *a, int *row_index, int n);
 

@@ -572,7 +572,7 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
 
 		difference = calp->cal_error_term_vector[term][findex] -
 			     ttp->tt_error_term_vector[findex][term];
-		x_sqerror += creal(difference * conj(difference));
+		x_sqerror += _vnacommon_cabs2(difference);
 		++x_count;
 	    }
 
@@ -591,7 +591,7 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
 		    goto out;
 		}
 		difference = solved_value - actual_value;
-		p_sqerror += creal(difference * conj(difference));
+		p_sqerror += _vnacommon_cabs2(difference);
 		++p_count;
 	    }
 

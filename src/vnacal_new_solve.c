@@ -282,7 +282,7 @@ int _vnacal_new_solve_start_frequency(vnacal_new_solve_state_t *vnssp,
 		    m = vnmp->vnm_m_matrix[m_cell][findex];
 		    vnltp = vnssp->vnss_leakage_matrix[m_cell];
 		    vnltp->vnlt_sum   += m;
-		    vnltp->vnlt_sumsq += creal(m * conj(m));
+		    vnltp->vnlt_sumsq += _vnacommon_cabs2(m);
 		    ++vnltp->vnlt_count;
 		}
 	    }
@@ -566,12 +566,10 @@ double *_vnacal_new_solve_calc_weights(vnacal_new_solve_state_t *vnssp)
 	    vnacal_new_measurement_t *vnmp = vnep->vne_vnmp;
 	    vnacal_new_msv_matrices_t *vnmmp;
 	    int eq_cell = vnep->vne_row * m_columns + vnep->vne_column;
-	    double complex m_value;
 	    double weight2;
 
 	    vnmmp = &vnssp->vnss_msv_matrices[vnmp->vnm_index];
-	    m_value = vnmmp->vnmm_m_matrix[eq_cell];
-	    weight2 = creal(m_value * conj(m_value));
+	    weight2 = _vnacommon_cabs2(vnmmp->vnmm_m_matrix[eq_cell]);
 	    weight2 *= tracking * tracking;
 	    weight2 += noise * noise;
 	    w_vector[k++] = 1.0 / sqrt(weight2);

@@ -68,7 +68,7 @@ void _vnacommon_qrd(complex double *a, complex double *d, int rows, int columns)
 	 * below.
 	 */
 	for (int row = diagonal + 1; row < rows; ++row) {
-	    subdot += creal(conj(A(row, diagonal)) * A(row, diagonal));
+	    subdot += _vnacommon_cabs2(A(row, diagonal));
 	}
 
 	/*
@@ -76,8 +76,7 @@ void _vnacommon_qrd(complex double *a, complex double *d, int rows, int columns)
 	 * as v(1).  This will be the next diagonal term of R.
 	 */
 	alpha = -cexp(I * carg(A(diagonal, diagonal))) *
-	    sqrt(creal(conj(A(diagonal, diagonal)) * A(diagonal, diagonal)) +
-		    subdot);
+	    sqrt(_vnacommon_cabs2(A(diagonal, diagonal)) + subdot);
 	d[diagonal] = alpha;
 
 	/*
@@ -88,8 +87,7 @@ void _vnacommon_qrd(complex double *a, complex double *d, int rows, int columns)
 	/*
 	 * v = v / norm(v).
 	 */
-	norm = sqrt(creal(conj(A(diagonal, diagonal)) * A(diagonal, diagonal)) +
-		subdot);
+	norm = sqrt(_vnacommon_cabs2(A(diagonal, diagonal)) + subdot);
 	for (int row = diagonal; row < rows; ++row) {
 	    A(row, diagonal) /= norm;
 	}

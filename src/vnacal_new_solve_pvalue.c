@@ -165,7 +165,6 @@ double _vnacal_new_solve_calc_pvalue(vnacal_new_solve_state_t *vnssp,
 	    const int eq_column  = vnep->vne_column;
 	    const int eq_cell    = eq_row * m_columns + eq_column;
 	    double complex residual = 0.0;
-	    double complex m_value;
 	    double squared_residual;
 	    double divisor;
 
@@ -190,13 +189,12 @@ double _vnacal_new_solve_calc_pvalue(vnacal_new_solve_state_t *vnssp,
 		}
 		residual += value;
 	    }
-	    squared_residual = creal(residual * conj(residual));
+	    squared_residual = _vnacommon_cabs2(residual);
 
 	    /*
 	     * Normlize the residual to 1 standard deviation.
 	     */
-	    m_value = vnmmp->vnmm_m_matrix[eq_cell];
-	    divisor = creal(m_value * conj(m_value));
+	    divisor = _vnacommon_cabs2(vnmmp->vnmm_m_matrix[eq_cell]);
 	    divisor *= tracking * tracking;
 	    divisor += noise * noise;
 	    squared_residual /= divisor;

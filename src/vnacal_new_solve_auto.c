@@ -155,7 +155,7 @@ static double diff_v_matrices(const vnacal_new_solve_state_t *vnssp,
 
 		    d = v_matrices[offset + v_cell] -
 			vnmmp->vnsm_v_matrices[sindex][v_cell];
-		    sqerror += creal(d * conj(d));
+		    sqerror += _vnacommon_cabs2(d);
 		}
 		offset += v_cells;
 	    }
@@ -810,7 +810,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 */
 	sum_d_squared = 0.0;
 	for (int i = 0; i < p_length; ++i) {
-	    sum_d_squared += creal(d_vector[i] * conj(d_vector[i]));
+	    sum_d_squared += _vnacommon_cabs2(d_vector[i]);
 	}
 #ifdef DEBUG
 	(void)printf("# best_sum_d_squared %13.6e\n", best_sum_d_squared);
@@ -862,7 +862,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    for (int i = 0; i < p_length; ++i) {
 		double complex p = vnssp->vnss_p_vector[i][findex];
 
-		sum_p_squared += creal(p * conj(p));
+		sum_p_squared += _vnacommon_cabs2(p);
 	    }
 	    if (sum_p_squared < 1.0) {	/* if less than 1, make it 1 */
 		sum_p_squared = 1.0;

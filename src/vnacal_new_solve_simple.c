@@ -83,7 +83,7 @@ static double update_prev_v_vector(vnacal_new_solve_state_t *vnssp,
 	for (int v_cell = 0; v_cell < v_rows * v_columns; ++v_cell) {
 	    double complex d = v_matrix[v_cell] - prev_v_vector[v_index];
 
-	    sum += creal(d * conj(d));
+	    sum += _vnacommon_cabs2(d);
 	    prev_v_vector[v_index++] = v_matrix[v_cell];
 	}
     }
