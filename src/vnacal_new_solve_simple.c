@@ -30,70 +30,6 @@
 /* #define DEBUG */
 
 /*
- * init_prev_v_vector: initialize prev_v_vector to identity matrices
- *   @vnssp: pointer to state structure
- *   @prev_v_vector: vector filled in by this function
- */
-static double complex *alloc_prev_v_vector(vnacal_new_solve_state_t *vnssp)
-{
-    vnacal_new_t *vnp = vnssp->vnss_vnp;
-    vnacal_t *vcp = vnp->vn_vcp;
-    const vnacal_layout_t *vlp = &vnp->vn_layout;
-    const int v_rows    = VL_V_ROWS(vlp);
-    const int v_columns = VL_V_COLUMNS(vlp);
-    const int v_length = vnp->vn_measurement_count * v_rows * v_columns;
-    double complex *prev_v_vector = NULL;
-    int v_index = 0;
-
-    if ((prev_v_vector = calloc(v_length, sizeof(double complex))) == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
-	return NULL;
-    }
-    for (int m_index = 0; m_index < vnp->vn_measurement_count; ++m_index) {
-	for (int v_row = 0; v_row < v_rows; ++v_row) {
-	    for (int v_column = 0; v_column < v_columns; ++v_column) {
-		prev_v_vector[v_index++] = v_row == v_column ? 1.0 : 0.0;
-	    }
-	}
-    }
-    assert(v_index == v_length);
-    return prev_v_vector;
-}
-
-/*
- * update_prev_v_vector: update prev_v_vector and return mean of squared diff.
- *   @vnssp: pointer to state structure
- *   @prev_v_vector: vector filled in by this function
- *   @system: index of current linear system
- */
-static double update_prev_v_vector(vnacal_new_solve_state_t *vnssp,
-	double complex *prev_v_vector, int sindex)
-{
-    vnacal_new_t *vnp = vnssp->vnss_vnp;
-    const vnacal_layout_t *vlp = &vnp->vn_layout;
-    const int v_rows    = VL_V_ROWS(vlp);
-    const int v_columns = VL_V_COLUMNS(vlp);
-    int v_index = 0;
-    double sum = 0.0;
-
-    for (int m_index = 0; m_index < vnp->vn_measurement_count; ++m_index) {
-	vnacal_new_msv_matrices_t *vnmmp = &vnssp->vnss_msv_matrices[m_index];
-	double complex *v_matrix = vnmmp->vnsm_v_matrices[sindex];
-
-	for (int v_cell = 0; v_cell < v_rows * v_columns; ++v_cell) {
-	    double complex d = v_matrix[v_cell] - prev_v_vector[v_index];
-
-	    sum += _vnacommon_cabs2(d);
-	    prev_v_vector[v_index++] = v_matrix[v_cell];
-	}
-    }
-    if (v_index != 0) {
-	sum /= (double)v_index;
-    }
-    return sum;
-}
-
-/*
  * _vnacal_new_solve_simple: solve when all s-parameters are known
  *   @vnssp: solve state structure
  *   @x_vector: vector of unknowns filled in by this function
@@ -109,7 +45,7 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
     const int unknowns = vlp->vl_t_terms - 1;
     double frequency = vnp->vn_frequency_vector[findex];
     double *w_vector = NULL;
-    double complex *prev_v_vector = NULL;
+    double complex *prev_x_vector = NULL;
     int rv = -1;
 
     /*
@@ -120,9 +56,12 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 	if ((w_vector = vs_calc_weights(vnssp)) == NULL) {
 	    goto out;
 	}
-	if ((prev_v_vector = alloc_prev_v_vector(vnssp)) == NULL) {
+	prev_x_vector = malloc(x_length * sizeof(double complex));
+	if (prev_x_vector == NULL) {
+	    _vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
 	    goto out;
 	}
+	_vnacal_new_solve_init_x_vector(vnssp, prev_x_vector, x_length);
     }
 
     /*
@@ -141,7 +80,7 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 	for (;;) {
 	    double complex a_matrix[equations][unknowns];
 	    double complex b_vector[equations];
-	    double v_mean_squares;
+	    double sum_dx_squared;
 	    int eq_count = 0;
 
 	    /*
@@ -212,17 +151,30 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 		    return -1;
 		}
 	    }
-	    if (vnp->vn_m_error_vector != NULL) {
-		if (vs_update_v_matrices("vnacal_new_solve", vnssp, sindex,
-			    &x_vector[offset], unknowns) == -1) {
-		    return -1;
-		}
-	    }
+	    /*
+	     * If measurement errors were not given or if this particular
+	     * system is not over-determined, then we don't need to iterate.
+	     */
 	    if (!vs_have_v(vnssp)) {
 		break;
 	    }
-	    v_mean_squares = update_prev_v_vector(vnssp, prev_v_vector, sindex);
-	    if (v_mean_squares <= vnp->vn_v_tolerance * vnp->vn_v_tolerance) {
+
+	    /*
+	     * Here, x_vector depends on the V matrices and the V matrices
+	     * depend on x_vector.  Iterate until they converge.
+	     */
+	    if (vs_update_v_matrices("vnacal_new_solve", vnssp, sindex,
+			&x_vector[offset], unknowns) == -1) {
+		return -1;
+	    }
+	    sum_dx_squared = 0.0;
+	    for (int i = 0; i < x_length; ++i) {
+		double complex d = x_vector[i] - prev_x_vector[i];
+
+		sum_dx_squared += _vnacommon_cabs2(d);
+	    }
+	    if (sum_dx_squared / (double)x_length <= vnp->vn_et_tolerance *
+						     vnp->vn_et_tolerance) {
 		break;
 	    }
 	    if (++iteration >= 50) {
@@ -231,12 +183,14 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 			frequency);
 		goto out;
 	    }
+	    (void)memcpy((void *)prev_x_vector, (void *)x_vector,
+		    x_length * sizeof(double complex));
 	}
     }
     rv = 0;
 
 out:
-    free((void *)prev_v_vector);
+    free((void *)prev_x_vector);
     free((void *)w_vector);
     return rv;
 }

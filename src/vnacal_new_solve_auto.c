@@ -129,18 +129,17 @@ static void save_v_matrices(const vnacal_new_solve_state_t *vnssp,
 }
 
 /*
- * diff_v_matrices: find the mean squared error between current and given V's
+ * restore_v_matrices: restore the current V matrices from the given vector
  *   @vnssp: pointer to state structure
- *   @v_matrices: compare current against this vector
+ *   @v_matrices: vector supplying the data
  */
-static double diff_v_matrices(const vnacal_new_solve_state_t *vnssp,
+static void restore_v_matrices(vnacal_new_solve_state_t *vnssp,
 	const double complex *v_matrices)
 {
     vnacal_new_t *vnp = vnssp->vnss_vnp;
     const vnacal_layout_t *vlp = &vnp->vn_layout;
     const int v_cells = VL_V_ROWS(vlp) * VL_V_COLUMNS(vlp);
     int offset = 0;
-    double sqerror = 0.0;
 
     for (int idx = 0; idx < vnp->vn_measurement_count; ++idx) {
 	const vnacal_new_msv_matrices_t *vnmmp = &vnssp->vnss_msv_matrices[idx];
@@ -150,18 +149,13 @@ static double diff_v_matrices(const vnacal_new_solve_state_t *vnssp,
 	}
 	for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
 	    if (vnmmp->vnsm_v_matrices[sindex] != NULL) {
-		for (int v_cell = 0; v_cell < v_cells; ++v_cell) {
-		    double complex d;
-
-		    d = v_matrices[offset + v_cell] -
-			vnmmp->vnsm_v_matrices[sindex][v_cell];
-		    sqerror += _vnacommon_cabs2(d);
-		}
+		(void *)memcpy((void *)vnmmp->vnsm_v_matrices[sindex],
+		        (void *)&v_matrices[offset],
+			v_cells * sizeof(double complex));
 		offset += v_cells;
 	    }
 	}
     }
-    return sqerror / (double)offset;
 }
 
 /*
@@ -278,6 +272,11 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	}
     }
 
+    /*
+     * Init best_x_vector.
+     */
+    _vnacal_new_solve_init_x_vector(vnssp, best_x_vector, x_length);
+
 #ifdef DEBUG
     (void)printf("p = [\n");
     for (int i = 0; i < p_length; ++i) {
@@ -323,7 +322,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	double sum_d_squared = 0.0;
 
 	/* mean of squared magnitudes of differences in v_matrices from best */
-	double mean_dv_squared = 0.0;
+	double sum_dx_squared = 0.0;
 
 #if DEBUG >= 2
 	/* Jacobian of a_matrix with respect to vnss_p_vector */
@@ -818,22 +817,24 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 #endif /* DEBUG */
 
 	/*
-	 * If using V matrices, calculate the average squared error
-	 * in the difference from the best v.
+	 * Calculate the squared magnitude of the differences in x_vector.
 	 */
-	if (best_v_matrices != NULL) {
-	    mean_dv_squared = diff_v_matrices(vnssp, best_v_matrices);
-#ifdef DEBUG
-	(void)printf("# best_mean_dv_squared %13.6e\n", mean_dv_squared);
-#endif /* DEBUG */
+	for (int i = 0; i < x_length; ++i) {
+	    sum_dx_squared += _vnacommon_cabs2(x_vector[i] - best_x_vector[i]);
 	}
+#ifdef DEBUG
+	(void)printf("# sum_dx_squared %13.6e\n", sum_dx_squared);
+	(void)printf("# vn_p_tolerance %13.6e\n", vnp->vn_p_tolerance);
+	(void)printf("# vn_et_tolerance %13.6e\n", vnp->vn_et_tolerance);
+#endif /* DEBUG */
 
 	/*
 	 * If the error is within the target tolerance, stop.
 	 */
 	if (sum_d_squared / (double)p_length <= vnp->vn_p_tolerance *
 						vnp->vn_p_tolerance &&
-	    mean_dv_squared <= vnp->vn_v_tolerance * vnp->vn_v_tolerance) {
+	    sum_dx_squared / (double)x_length <= vnp->vn_et_tolerance *
+						 vnp->vn_et_tolerance) {
 #ifdef DEBUG
 	    (void)printf("# stop: converged (iteration %d)\n", iteration);
 #endif /* DEBUG */
@@ -934,6 +935,9 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 #endif /* DEBUG */
 		vnssp->vnss_p_vector[i][findex] =
 		    best_p_vector[i] + best_d_vector[i];
+	    }
+	    if (best_v_matrices != NULL) {
+		restore_v_matrices(vnssp, best_v_matrices);
 	    }
 #ifdef DEBUG
 	    for (int i = 0; i < p_length; ++i) {

@@ -30,7 +30,7 @@ extern "C" {
 #endif
 
 #define VNACAL_NEW_DEFAULT_P_TOLERANCE		1.0e-6
-#define VNACAL_NEW_DEFAULT_V_TOLERANCE		1.0e-6
+#define VNACAL_NEW_DEFAULT_ET_TOLERANCE		1.0e-6
 #define VNACAL_NEW_DEFAULT_PVALUE_LIMIT		0.001
 
 /*
@@ -233,11 +233,11 @@ struct vnacal_new {
     /* vector of measurement error values */
     vnacal_new_m_error_t *vn_m_error_vector;
 
-    /* consider iterative solve converged when RMS p change less than this */
+    /* iterative solve not satified until RMS change in p <= than this */
     double vn_p_tolerance;
 
-    /* consider v-matrix converged when RMS v change less than this */
-    double vn_v_tolerance;
+    /* iterative solve not satified until RMS chagne in et <= than this */
+    double vn_et_tolerance;
 
     /* vnacal_new_solve pvalue lower than this threshold considered failing */
     double vn_pvalue_limit;
@@ -614,6 +614,10 @@ extern bool _vnacal_new_solve_next_equation(vnacal_new_solve_state_t *vnssp);
 
 /* _vnacal_new_solve_next_term: move to the next term */
 extern bool _vnacal_new_solve_next_term(vnacal_new_solve_state_t *vnssp);
+
+/* _vnacal_new_init_x_vector: initialize the error terms to perfect values */
+extern void _vnacal_new_solve_init_x_vector(vnacal_new_solve_state_t *vnssp,
+	double complex *x_vector, int x_length);
 
 /* _vnacal_new_solve_update_s_matrices: update s matrix unknown parameters */
 extern void _vnacal_new_solve_update_s_matrices(

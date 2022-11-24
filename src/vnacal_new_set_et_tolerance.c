@@ -30,11 +30,11 @@
 
 
 /*
- * vnacal_new_set_v_tolerance: set vnacal_new_solve V iteration tolerance
+ * vnacal_new_set_et_tolerance: set vnacal_new_solve error term tolerance
  *   @vnp: pointer to vnacal_new_t structure
  *   @tolerance: new tolerance
  */
-int vnacal_new_set_v_tolerance(vnacal_new_t *vnp, double tolerance)
+int vnacal_new_set_et_tolerance(vnacal_new_t *vnp, double tolerance)
 {
     vnacal_t *vcp;
 
@@ -47,11 +47,11 @@ int vnacal_new_set_v_tolerance(vnacal_new_t *vnp, double tolerance)
     }
     vcp = vnp->vn_vcp;
     if (tolerance < 0.0) {
-	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_new_set_v_tolerance: "
+	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_new_set_et_tolerance: "
 		"tolerance cannot be negative");
 	return -1;
     }
 
-    vnp->vn_v_tolerance = tolerance;
+    vnp->vn_et_tolerance = tolerance;
     return 0;
 }

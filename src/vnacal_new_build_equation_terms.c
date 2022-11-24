@@ -104,6 +104,8 @@ static void print_term(const vnacal_new_term_t *vntp,
     if (!first_factor) {
 	(void)printf("*");
     }
+    // TODO: BUG: this doesn't print the correct indices for diagonal
+    //       matrices (anything other than T16 and U16)
     if (VL_IS_T(vlp)) {	/* T terms */
 	if (term < VL_TI_OFFSET(vlp)) {		/* ts */
 	    const int ts_cell    = term;

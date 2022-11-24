@@ -8,8 +8,12 @@
 
 == Measurement Tolerance & Error ==
 
+    - Change v tolerance to e(or t) tolerance, putting it in units
+      of the error terms.  This is easier to explain and easier to
+      decide on a reasonable threshold.
+
     - Document vnacal_new_set_m_error, vnacal_new_set_p_tolerance,
-      vnacal_new_set_v_tolerance, vnacal_new_set_pvalue_limit, and
+      vnacal_new_set_e_tolerance, vnacal_new_set_pvalue_limit, and
       measurement error and connection repeatablity modeling in general.
 
 == Improvements to the Examples ==
