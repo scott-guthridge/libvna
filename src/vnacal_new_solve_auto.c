@@ -230,6 +230,9 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
     /* current number of iterations in the backtracking line search */
     int backtrack_count = 0;
 
+    /* solution is up-to-date; don't copy from best */
+    bool up_to_date = false;
+
     /* return status of this function */
     int rv = -1;
 
@@ -838,6 +841,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 #ifdef DEBUG
 	    (void)printf("# stop: converged (iteration %d)\n", iteration);
 #endif /* DEBUG */
+	    up_to_date = true;
 	    break;
 	}
 
@@ -851,6 +855,8 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 #ifdef DEBUG
 	    (void)printf("# best\n");
 #endif /* DEBUG */
+	    best_sum_d_squared = sum_d_squared;
+
 	    /*
 	     * Limit the magnitude of d_vector to keep it smaller than
 	     * the magnitude of vnss_p_vector (or smaller than one if
@@ -882,16 +888,16 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    /*
 	     * Remember this solution.
 	     */
-	    (void)memcpy((void *)best_x_vector, (void *)x_vector,
-		    x_length * sizeof(double complex));
 	    for (int i = 0; i < p_length; ++i) {
 		best_p_vector[i] = vnssp->vnss_p_vector[i][findex];
-		best_d_vector[i] = d_vector[i];
 	    }
-	    best_sum_d_squared = sum_d_squared;
+	    (void)memcpy((void *)best_x_vector, (void *)x_vector,
+		    x_length * sizeof(double complex));
 	    if (best_v_matrices != NULL) {
 		save_v_matrices(vnssp, best_v_matrices);
 	    }
+	    (void)memcpy((void *)best_d_vector, (void *)d_vector,
+		    p_length * sizeof(double complex));
 
 	    /*
 	     * Apply d_vector to vnss_p_vector.
@@ -936,6 +942,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		vnssp->vnss_p_vector[i][findex] =
 		    best_p_vector[i] + best_d_vector[i];
 	    }
+	    vs_update_s_matrices(vnssp);
 	    if (best_v_matrices != NULL) {
 		restore_v_matrices(vnssp, best_v_matrices);
 	    }
@@ -961,12 +968,14 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
     /*
      * Load the best solution.
      */
-    (void)memcpy((void *)x_vector, (void *)best_x_vector,
-	    x_length * sizeof(double complex));
-    for (int i = 0; i < p_length; ++i) {
-	vnssp->vnss_p_vector[i][findex] = best_p_vector[i];
+    if (!up_to_date) {
+	(void)memcpy((void *)x_vector, (void *)best_x_vector,
+		x_length * sizeof(double complex));
+	for (int i = 0; i < p_length; ++i) {
+	    vnssp->vnss_p_vector[i][findex] = best_p_vector[i];
+	}
+	//vs_update_s_matrices(vnssp);	not needed at this point
     }
-    vs_update_s_matrices(vnssp);
 
 success:
     rv = 0;
