@@ -178,8 +178,8 @@ tab(;);
 ll.
 VNACAL_T8; 8-term T terms
 VNACAL_U8; 8-term U (inverse T) terms
-VNACAL_TE10; 8-term T plus off-diagonal E11 leakage terms
-VNACAL_UE10; 8-term U plus off-diagonal E11 leakage terms
+VNACAL_TE10; 8-term T plus off-diagonal leakage terms
+VNACAL_UE10; 8-term U plus off-diagonal leakage terms
 VNACAL_T16;16-term T terms
 VNACAL_U16;16-term U (inverse T) terms
 VNACAL_UE14;14-term columns x (rows x 1) U7 systems
@@ -187,7 +187,7 @@ VNACAL_E12;12-term generalized classic SOLT
 .TE
 .in -4n
 .sp
-Calibration types are covered in more detail below.
+Error term types are covered in more detail below.
 .PP
 The \fIrows\fP and \fIcolumns\fP parameters give the dimensions of the
 calibration, where \fIrows\fP is the number of VNA ports that detect
@@ -208,8 +208,8 @@ given the highest port numbers, and the VNA cannot have both.
 .\"
 .SS "Error Term Types"
 .PP
-The following table illustrates some of the properties of the various
-error term types.
+The following table illustrates some properties of the various error
+term types.
 First, there are constraints on the type imposed by the calibration
 dimensions.
 If the calibration has more columns than rows, T parameters must be used;
@@ -249,21 +249,20 @@ and port match errors on each VNA port.
 Notice from the table that these are the only types for which the number
 of error terms increases linearly with the number of VNA ports, i.e. this
 correction has no inter-port terms.
-At least three two-port standards are needed to solve the 2x2 T8 or U8
-calibration.
+At least three standards are needed to solve the 2x2 T8 or U8 calibration.
 .\"
 .IP "TE10 & UE10"
 These types correct the same errors as T8 & U8 but also add the
-off-diagonal E11 leakage terms, i.e. leakage within the VNA from the
+off-diagonal leakage terms, i.e. leakage within the VNA from the
 driving port to the detectors of the other ports.
-At least four two-port standards are needed to solve the 2x2 TE10 or
-UE10 calibration.
+At least three standards are needed to solve the 2x2 TE10 or UE10
+calibration.
 .\"
 .IP "T16 & U16"
 These types are a superset of TE10 & UE10, adding the remaining leakage
 terms, including leakage between the ports of the device under test.
-At least five two-port standards are needed to solve the 2x2 T16 or
-U16 calibration.
+At least five standards are needed to solve the 2x2 T16 or U16
+calibration.
 .\"
 .IP "E12"
 E12 is a generalization of classic SOLT.  It corrects the same
@@ -275,8 +274,7 @@ lies between the detectors and device under test.
 It's the only type with this property.
 Internally, E12 is computed using U terms; therefore, any of the
 calibration techniques that work for T and U also work for E12.
-At least four two-port standards are needed to solve the 2x2 E12
-calibration.
+At least four standards are needed to solve the 2x2 E12 calibration.
 .\"
 .SS "S-Parametes of the Standards"
 .PP
@@ -289,7 +287,7 @@ constants: \fB\s-2VNACAL_MATCH\s+2\fP, \fB\s-2VNACAL_OPEN\s+2\fP,
 \fB\s-2VNACAL_ONE\s+2\fP; or an integer handle returned from one of the
 \fBvnacal_make_\fP*\fP_parameter\fP() functions.
 See \fBvnacal_parameter\fP(3).
-There are two main reasons for this model.
+There are two main reasons for this approach.
 First, it provides a single interface for parameters that are constant
 across all frequencies (e.g. -1.0 for short), and parameters that are
 given at a list of frequency points.
@@ -353,7 +351,7 @@ If the standard has fewer ports than the VNA, the S-parameters measured
 by the unused VNA ports don't matter as long as they remain constant
 over the measurement, and as long as, except for leakage, they have no
 through signal to or from the ports under test.
-When possible, though, unused VNA ports should be terminated with loads
+When possible, however, unused VNA ports should be terminated with loads
 close to the system impedance to avoid adding unnecessary noise into
 the leakage measurements.
 .\"
@@ -413,7 +411,7 @@ number of ports of the standard and the ports are connected in order.
 the error terms.  It returns 0 on success.
 After calling \fBvnacal_new_solve\fP(), it is permitted to add additional
 measurements and repeat the call, for example if \fBvnacal_new_solve\fP()
-fails due to an insufficient number of measurements.
+fails due to an insufficient number of standards.
 .PP
 \fBvnacal_new_free\fP() frees the \fBvnacal_t\fP structure, the contained
 frequency vector, added measurements and error terms.

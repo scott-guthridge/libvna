@@ -157,14 +157,14 @@ On error, these functions invoke the \fIerror_fn\fP,
 given to
 \fBvnacal_create\fP() or \fBvnacal_load\fP() if provided, set \fBerrno\fP
 to one of the following values and return failure.
-.IP \fB\s-2ENOENT\s+2\fP
-The \fBvnacal_delete_parameter\fP() function was called with a parameter
-handle that doesn't refer to an extant parameter.
+.IP \fB\s-2EINVAL\s+2\fP
+\fBvnacal_make_vector_parameter\fP() was given an invalid frequency
+vector.
+\fBvnacal_make_unknown_parameter\fP(),
+\fBvnacal_make_correlated_parameter\fP() or
+\fBvnacal_delete_parameter\fP() was called with an invalid parameter handle.
 .IP \fB\s-2ENOMEM\s+2\fP
 The library was unable to allocate memory.
-.IP \fB\s-2EINVAL\s+2\fP
-\fBvnacal_delete_parameter\fP() was called with an invalid handle or
-with one of the predefined values.
 .\"
 .SH "SEE ALSO"
 .BR vnacal "(3), " vnacal_new "(3), " vnaconv "(3), " vnadata "(3),"

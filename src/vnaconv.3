@@ -29,513 +29,516 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .SS "Two-Port Matrix Conversions"
 .PP
 .BI "void vnaconv_stot(const double complex (*" s ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" t ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_stou(const double complex (*" s ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" u ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_stoz(const double complex (*" s ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" z ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_stoy(const double complex (*" s ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" y ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_stoh(const double complex (*" s ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" h ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_stog(const double complex (*" s ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" g ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_stoa(const double complex (*" s ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" a ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_stob(const double complex (*" s ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" b ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ttos(const double complex (*" t ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" s ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_ttou(const double complex (*" t ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" u ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_ttoz(const double complex (*" t ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" z ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ttoy(const double complex (*" t ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" y ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ttoh(const double complex (*" t ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" h ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ttog(const double complex (*" t ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" g ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ttoa(const double complex (*" t ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" a ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ttob(const double complex (*" t ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" b ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_utos(const double complex (*" u ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" s ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_utot(const double complex (*" u ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" t ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_utoz(const double complex (*" u ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" z ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_utoy(const double complex (*" u ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" y ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_utoh(const double complex (*" u ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" h ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_utog(const double complex (*" u ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" g ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_utoa(const double complex (*" u ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" a ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_utob(const double complex (*" u ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" b ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ztos(const double complex (*" z ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" s ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ztot(const double complex (*" z ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" t ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ztou(const double complex (*" z ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" u ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ztoh(const double complex (*" z ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" h ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_ztog(const double complex (*" z ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" g ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_ztoa(const double complex (*" z ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" a ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_ztob(const double complex (*" z ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" b ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_ytos(const double complex (*" y ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" s ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ytot(const double complex (*" y ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" t ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ytou(const double complex (*" y ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" u ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ytoh(const double complex (*" y ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" h ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_ytog(const double complex (*" y ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" g ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_ytoa(const double complex (*" y ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" a ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_ytob(const double complex (*" y ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" b ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_htos(const double complex (*" h ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" s ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_htot(const double complex (*" h ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" t ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_htou(const double complex (*" h ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" u ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_htoz(const double complex (*" h ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" z ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_htoy(const double complex (*" h ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" y ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_htog(const double complex (*" h ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" g ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_htoa(const double complex (*" h ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" a ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_htob(const double complex (*" h ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" b ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_gtos(const double complex (*" g ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" s ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_gtot(const double complex (*" g ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" t ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_gtou(const double complex (*" g ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" u ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_gtoz(const double complex (*" g ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" z ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_gtoy(const double complex (*" g ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" y ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_gtoh(const double complex (*" g ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" h ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_gtoa(const double complex (*" g ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" a ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_gtob(const double complex (*" g ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" b ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_atos(const double complex (*" a ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" s ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_atot(const double complex (*" a ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" t ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_atou(const double complex (*" a ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" u ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_atoz(const double complex (*" a ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" z ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_atoy(const double complex (*" a ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" y ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_atoh(const double complex (*" a ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" h ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_atog(const double complex (*" a ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" g ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_atob(const double complex (*" a ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" b ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_btos(const double complex (*" b ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" s ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
+.RE
 .PP
 .BI "void vnaconv_btot(const double complex (*" b ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" t ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
+.RE
 .PP
 .BI "void vnaconv_btou(const double complex (*" b ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" u ")[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
+.RE
 .PP
 .BI "void vnaconv_btoz(const double complex (*" b ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" z ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_btoy(const double complex (*" b ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" y ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_btoh(const double complex (*" b ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" h ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_btog(const double complex (*" b ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" g ")[2]);"
-.if n .in -4n
+.if n .RE
 .PP
 .BI "void vnaconv_btoa(const double complex (*" b ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex (*" a ")[2]);"
-.if n .in -4n
+.if n .RE
 .\"
 .SS "2-Port Matrix to Input Impedance"
 .PP
 .BI "void vnaconv_stozi(const double complex (*" s ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex " zi "[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ttozi(const double complex (*" t ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex " zi "[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_utozi(const double complex (*" u ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex " zi "[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ztozi(const double complex (*" z ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex " zi "[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ytozi(const double complex (*" y ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex " zi "[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_htozi(const double complex (*" h ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex " zi "[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_gtozi(const double complex (*" g ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex " zi "[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_atozi(const double complex (*" a ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex " zi "[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_btozi(const double complex (*" b ")[2],"
-.if n .in +4n
+.if n .RS +4n
 .BI "double complex " zi "[2],"
-.if !n .in +4n
+.if !n .RS +4n
 .BI "const double complex *" z0 ");"
-.in -4n
+.RE
 .\"
 .SS "N-Port Matrix Conversions"
 .PP
 .BI "void vnaconv_stozn(const double complex *" s ", double complex *" z ,
-.in +4n
+.RS +4n
 .BI "const double complex *" z0 ", int " n ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_stoyn(const double complex *" s ", double complex *" y ,
-.in +4n
+.RS +4n
 .BI "const double complex *" z0 ", int " n ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ztosn(const double complex *" z ", double complex *" s ,
-.in +4n
+.RS +4n
 .BI "const double complex *" z0 ", int " n ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ztoyn(const double complex *" z ", double complex *" y ,
 .BI "int " n ");"
 .PP
 .BI "void vnaconv_ytosn(const double complex *" y ", double complex *" s ,
-.in +4n
+.RS +4n
 .BI "const double complex *" z0 ", int " n ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ytozn(const double complex *" y ", double complex *" z ,
 .BI "int " n ");"
@@ -543,19 +546,19 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .SS "N-Port Matrix To Input Impedance"
 .PP
 .BI "void vnaconv_stozin(const double complex *" s ", double complex *" zi ,
-.in +4n
+.RS +4n
 .BI "const double complex *" z0 ", int " n ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ztozin(const double complex *" z ", double complex *" zi ,
-.in +4n
+.RS +4n
 .BI "const double complex *" z0 ", int " n ");"
-.in -4n
+.RE
 .PP
 .BI "void vnaconv_ytozin(const double complex *" y ", double complex *" zi ,
-.in +4n
+.RS +4n
 .BI "const double complex *" z0 ", int " n ");"
-.in -4n
+.RE
 .\"
 .SH DESCRIPTION
 These functions convert between various mathematical representations
@@ -587,7 +590,7 @@ of system impedances, i.e. the impedance seen by the network looking out
 of each of its ports.
 .PP
 Two-port example:
-.in +4n
+.RS +4n
 .nf
 double complex s[2][2];
 double complex z[2][2];
@@ -595,10 +598,10 @@ static double complex z0[2] = { 50.0, 50.0 };
 
 vnaconv_stoz(s, z, z0);
 .fi
-.in -4n
+.RE
 .PP
 N-port example:
-.in +4n
+.RS +4n
 .nf
 double complex s[3][3];
 double complex z[3][3];
@@ -606,13 +609,13 @@ static double complex z0[3] = { 50.0, 75.0, 110.0 };
 
 vnaconv_stozn(&s[0][0], &z[0][0], z0, 3);
 .fi
-.in -4n
+.RE
 .\"
 .PP
 In order to give a more detailed description of the various parameter
 matrices, we must first give a few definitions:
 .sp
-.in +4n
+.RS +4n
 a1 and a2 are the incident voltages into ports 1 and 2,
 .br
 b1 and b2 are the reflected voltages out of ports 1 and 2,
@@ -623,7 +626,14 @@ i1 and i2 are the currents into ports 1 and 2, and
 .br
 Z1 and Z2 are the system impedances the device sees looking out of
 its ports.
-.in -4n
+.PP
+Note that for a1, a2, b1 and b2, we're using \(lqvoltage\(rq above
+loosely.
+More precisely, these values are defined as root power in units of
+Watt^(1/2).
+In most cases, this distinction isn't important because the scale
+factor divides out.
+.RE
 .sp
 The relationships between
 .ie t \{\
@@ -636,7 +646,7 @@ a1, a2, b1, b2, v1, v2, i1 and i2
 .\}
 are:
 .sp
-.in +4n
+.RS +4n
 .ie t \{\
 .EQ
 matrix{
@@ -675,12 +685,12 @@ where: K1 = 1 / sqrt(abs(real(Z1)))
        and * is the conjugate operator
 .fi
 .\}
-.in -4n
+.RE
 .sp
 We can now show the relationships for each representation of network
 parameters.  The \fBs\fP (scattering) parameters satisfy:
 .sp
-.in +4n
+.RS +4n
 .ie t \{\
 .EQ
 left [ matrix{ ccol{ { b sub 1 } above { b sub 2 } } } right ] ~=~
@@ -696,12 +706,11 @@ left [ matrix{ ccol{ { a sub 1 } above { a sub 2 } } } right ]
 [ b2 ]   [ s21 s22 ] [ a2 ]
 .fi
 .\}
-.in -4n
-.sp
+.RE
 .PP
 The \fBt\fP (scattering-transfer) parameters satisfy:
 .sp
-.in +4n
+.RS +4n
 .ie t \{\
 .EQ
 left [ matrix{ ccol{ { b sub 1 } above { a sub 1 } } } right ] ~=~
@@ -721,12 +730,12 @@ left [ matrix{ ccol{ { a sub 2 } above { b sub 2 } } } right ]
 The \fBt\fP parameters for a cascade of two-port networks is the
 left-to-right matrix product of the \fBt\fP parameters of each successive
 stage.
-.in -4n
+.RE
 .sp
 .PP
 The \fBu\fP (inverse scattering-transfer) parameters satisfy:
 .sp
-.in +4n
+.RS +4n
 .ie t \{\
 .EQ
 left [ matrix{ ccol{ { a sub 2 } above { b sub 2 } } } right ] ~=~
@@ -746,12 +755,12 @@ left [ matrix{ ccol{ { b sub 1 } above { a sub 1 } } } right ]
 The \fBu\fP parameters for a cascade of two-port networks is the
 right-to-left matrix product of the \fBu\fP parameters of each successive
 stage.
-.in -4n
+.RE
 .sp
 .PP
 The \fBz\fP (impedance) parameters satisfy:
 .sp
-.in +4n
+.RS +4n
 .ie t \{\
 .EQ
 left [ matrix{ ccol{ { V sub 1 } above { V sub 2 } } } right ] ~=~
@@ -767,12 +776,12 @@ left [ matrix{ ccol{ { I sub 1 } above { I sub 2 } } } right ]
 [ v2 ]   [ z21 z22 ] [ i2 ]
 .fi
 .\}
-.in -4n
+.RE
 .sp
 .PP
 The \fBy\fP (admittance) parameters satisfy:
 .sp
-.in +4n
+.RS +4n
 .ie t \{\
 .EQ
 left [ matrix{ ccol{ { I sub 1 } above { I sub 2 } } } right ] ~=~
@@ -788,12 +797,12 @@ left [ matrix{ ccol{ { V sub 1 } above { V sub 2 } } } right ]
 [ i2 ]   [ y21 y22 ] [ v2 ]
 .fi
 .\}
-.in -4n
+.RE
 .sp
 .PP
 The \fBh\fP (hybrid) parameters satisfy:
 .sp
-.in +4n
+.RS +4n
 .ie t \{\
 .EQ
 left [ matrix{ ccol{ { V sub 1 } above { I sub 2 } } } right ] ~=~
@@ -809,12 +818,12 @@ left [ matrix{ ccol{ { I sub 1 } above { V sub 2 } } } right ]
 [ i2 ]   [ h21 h22 ] [ v2 ]
 .fi
 .\}
-.in -4n
+.RE
 .sp
 .PP
 The \fBg\fP (inverse hybrid) parameters satisfy:
 .sp
-.in +4n
+.RS +4n
 .ie t \{\
 .EQ
 left [ matrix{ ccol{ { I sub 1 } above { V sub 2 } } } right ] ~=~
@@ -830,12 +839,12 @@ left [ matrix{ ccol{ { V sub 1 } above { I sub 2 } } } right ]
 [ v2 ]   [ g21 g22 ] [ i2 ]
 .fi
 .\}
-.in -4n
+.RE
 .sp
 .PP
 The \fBa\fP (ABCD) parameters satisfy:
 .sp
-.in +4n
+.RS +4n
 .ie t \{\
 .EQ
 left [ matrix{ ccol{ { V sub 1 } above { I sub 1 } } } right ] ~=~
@@ -856,12 +865,12 @@ The \fBa\fP parameters for a cascade of two-port networks is the
 left-to-right matrix product of the \fBa\fP parameters of each successive
 stage.  Don't confuse the \fBa\fP matrix with the a1 and a2 voltages
 above.
-.in -4n
+.RE
 .sp
 .PP
 The \fBb\fP (inverse ABCD) parameters satisfy:
 .sp
-.in +4n
+.RS +4n
 .ie t \{\
 .EQ
 left [ matrix{ ccol{ { V sub 2 } above -{ I sub 2 } } } right ] ~=~
@@ -882,7 +891,7 @@ The \fBb\fP parameters for a cascade of two-port networks is the
 right-to-left matrix product of the \fBb\fP parameters of each successive
 stage.  Don't confuse the \fBb\fP matrix with the b1 and b2 voltages
 above.
-.in -4n
+.RE
 .\"
 .PP
 In addition to the functions that convert between parameter forms,

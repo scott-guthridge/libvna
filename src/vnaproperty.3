@@ -327,11 +327,11 @@ descendents and replaces it with the desired element.
 The \fBvnaproperty_delete\fP() function removes objects from the tree.
 With a descriptor of \(lq.\(rq, it removes all elements of the tree and
 sets the root pointer to \s-2NULL\s+2.
-If the top-level of the tree is a map and the descriptor is, for example,
-\(lqfoo\(rq, \fBvnaproperty_delete\fP() removes foo from the map.
-If the top-level of three is a list and the descriptor is, for example,
-\(lq[5]\(rq, \fBvnaproperty_delete\fP() removes the element at index 5,
-moving any elements with higher indices down by one.
+If the top-level of the tree is a map and the descriptor is \(lqfoo\(rq,
+\fBvnaproperty_delete\fP() removes foo from the map.
+If the top-level of the tree is a list and the descriptor is \(lq[5]\(rq,
+\fBvnaproperty_delete\fP() removes the element at index 5, moving any
+elements with higher indices down by one.
 The behavior changes if the descriptor ends in dot. e.g. in the map
 example, if the descriptor is \(lqfoo.\(rq, foo is left in the map
 but its value is set to null.
@@ -341,7 +341,7 @@ its position.
 These differ from the #-form of
 \fBvnaproperty_set\fP() in that \fBvnaproperty_delete\fP() does not
 create or replace elements along the path that are inconsistent with
-the descriptor but fails instead.
+the descriptor, but fails instead.
 For example, if the top level of the tree is a list but you call
 \fBvnaproperty_delete\fP() with a descriptor of \(lqfoo\(rq, it fails
 with a return of -1, whereas \fBvnaproperty_set\fP() would replace the

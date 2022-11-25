@@ -281,8 +281,9 @@ returns the calibration index, \fIci\fP, or -1 if not found.
 \fIci\fP from the \fBvnacal_t\fP structure.
 .PP
 \fBvnacal_get_calibration_end\fP() returns one past the highest
-calibration index, zero if the \fBvnacal_t\fP structure has none.
-It can be used to loop through all calibrations, e.g.:
+calibration index which is zero if the \fBvnacal_t\fP structure
+has none.
+This function can be used as follows to loop through all calibrations:
 .sp
 .in +2n
 .ft CW
@@ -319,16 +320,18 @@ of calibration frequencies.
 \fBvnacal_get_z0\fP() returns the reference impedance for the given
 calibration.
 .PP
-\fBvnacal_get_filename\fP() returns the file name of the calibration
-file last loaded from or saved to, or \s-2NULL\s+2 if the \fBvnacal_t\fP
-structure came from \fBvnacal_create\fP, and \fBvnacal_save\fP() hasn't
-been called.
+\fBvnacal_get_filename\fP() returns a pointer to the file name of
+the calibration file last loaded from or saved to, or \s-2NULL\s+2
+if the \fBvnacal_t\fP structure came from \fBvnacal_create\fP, and
+\fBvnacal_save\fP() hasn't been called.
 .PP
 \fBvnacal_set_fprecision\fP() and \fBvnacal_set_dprecision\fP() set
 the number of significant figures of precision \fBvnacal_save\fP()
 uses to print frequency and error parameter values, respectively, in
 the save file.
-If not set, the default frequency precision is 7 and default data
+If set to \s-2VNACAL_MAX_PRECISION\s+2, the library uses hexadecimal
+floating point notation with no loss of precision.
+By default, the default frequency precision is 7 and default data
 precision is 6.
 .PP
 \fBvnacal_free\fP() frees the memory used by the \fBvnacal_t\fP
@@ -351,14 +354,14 @@ The \fIfrequency_vector\fP argument is a vector of length
 \fIfrequencies\fP of frequency points at which the measurements were
 taken.
 The range of frequencies must lie within the frequency range of the
-calibration; however, the frequency points don't have to be the same
-as those used during calibration: the library uses rational function
-interpolation when necessary to interpolate between frequency points.
+calibration; however, the frequency points don't have to align with those
+used during calibration: the library uses rational function interpolation
+when necessary to interpolate between frequency points.
 .PP
 If the vector network analyzer measures both signal leaving each port
 (\fIa\fP matrix) and signal entering each port (\fIb\fP matrix), use
 \fBvnacal_apply\fP().
-If it only measures the amount of detected signal, use
+If it measures only the amount of detected signal, use
 \fBvnacal_apply_m\fP().
 In either case, the measurement matrix (\fIb\fP or \fIm\fP) must be
 square since each s-parameter, in general, depends on all cells of the
@@ -528,8 +531,8 @@ If a component along the path doesn't exist or isn't the specified type,
 \fBvnacal_property_type\fP() fails with a return of -1.
 .\"
 .PP
-The \fBvnacal_property_count\fP() returns the number of elements in a
-specified map or list.
+The \fBvnacal_property_count\fP() function returns the number of elements
+in a specified map or list.
 If applied to a scalar, it fails with a return of -1.
 .\"
 .PP
