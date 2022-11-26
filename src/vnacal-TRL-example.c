@@ -36,11 +36,17 @@
 char *progname;
 
 /*
- * I, C, Z0, ER_EFF: misc constants
- *   I: used below to convert from Hz to angular frequency
+ * Most of the complexity in this example is in simulating the flawed
+ * VNA and standards.  It's not until we get to the make_calibration()
+ * function that we start to see what a user of the library needs to do.
+ */
+
+/*
+ * PI, C, Z0, ER_EFF: misc constants
+ *   PI: used below to convert from Hz to angular frequency
  *   C:  speed of light in vacuum
  *   Z0: system impedance
- *   ER_EFF: effective permittivity
+ *   ER_EFF: effective permittivity of line dielectric
  */
 #define PI		3.14159265358979
 #define C		2.9979246e+08		/* m/s */
@@ -67,9 +73,10 @@ char *progname;
 #define ACTUAL_FILE	"BFCV-4085+_Plus25DegC.s2p"
 
 /*
- * VNA Port 1 parastic elements
- *   From the directional coupler, L1 and R1 are in series
- *   and C1 is shunted across the port.
+ * VNA Port 1 parasitic elements
+ *   To insert flaws in VNA port 1, from the directional coupler facing
+ *   toward the DUT, we add L1 and R1 are in series and C1 shunted across
+ *   the port.
  */
 #define R1		10.0			/* ohms */
 #define L1		3.979e-9		/* henries */
@@ -77,8 +84,9 @@ char *progname;
 
 /*
  * VNA Port 2 parasitic elements
- *   From the directional coupler, L2 and C2 are in series
- *   and R2 is shunted across the port.
+ *   To insert flaws in VNA port 2, from the directional coupler facing
+ *   toward the DUT, we add L2 and C2 in series with R2 shunted across
+ *   the port.
  */
 #define R2		100.0			/* ohms */
 #define L2		1.326e-9		/* henries */
@@ -86,29 +94,43 @@ char *progname;
 
 /*
  * Errors in the Reflect Standard
- *    Resistor RR in series with inductor, RL
+ *    The standard should be a short, but our imperfect standard
+ *    has resistor RR in series with inductor, RL.
  */
 #define RR		5.0			/* ohms */
 #define RL		707.4e-12		/* henries */
 
 /*
  * Errors in the Line Standard
+ *    The line standard should be a perfect transmission line, but
+ *    ours has both loss and a phase error.
  */
 #define LINE_LOSS	0.5			/* dB/mm */
 #define PHASE_ERROR	10.			/* degrees */
 
 /*
  * Calculate length of the line standard in meters.
+ *   FC: center frequency
+ *   VF: velocity factor
+ *   LINE_LENGTH: length of our line standard in meters
  */
 #define FC		((C_FMIN + C_FMAX) / 2.0)
-#define KAPPA		(1.0 / sqrt(ER_EFF))
-#define LINE_LENGTH	(0.25 * C / FC * KAPPA)
+#define VF		(1.0 / sqrt(ER_EFF))
+#define LINE_LENGTH	(0.25 * C / FC * VF)
 
 /*
- * Calculate ideal and actual line gamma in meters^-1.
+ * Calculate ideal and actual propagation constant.
+ *   IDEAL_GAMMA(f): return propagation constant for lossline line
+ *   ACTUAL_GAMMA(f): return propagation constant for imperfect line
+ *
+ *   Note: we use a lossy line standard to show that VNA calibration can
+ *   solve for the complex S12=S21 line parameter.  But at the same time,
+ *   we're making the conflicting assumption that the impedance looking
+ *   into the line standard is Z0.  As long as we're careful about this,
+ *   it won't invalidate the result.
  */
 #define IDEAL_GAMMA(f) \
-	(I * 2.0 * PI * (f) / (C * KAPPA))
+	(I * 2.0 * PI * (f) / (C * VF))
 #define ACTUAL_GAMMA(f) \
 	(IDEAL_GAMMA(f) * cexp(I * PI * PHASE_ERROR / 180.0) + \
 	 NP_PER_DB * MM_PER_M * LINE_LOSS)
@@ -156,7 +178,7 @@ static void error_fn(const char *message, void *error_arg,
 }
 
 /*
- * measurement_type: selcts which measurement vna_measure returns
+ * measurement_type: selects which measurement vna_measure returns
  */
 typedef enum measurement {
     MEASURE_THROUGH,
@@ -243,9 +265,17 @@ static void dut_setup(dut_info_type *dutp)
 #define W12	w[0][1]
 #define W21	w[1][0]
 #define W22	w[1][1]
+#define P1_A11	port1_abcd[0][0]
+#define P1_A12	port1_abcd[0][1]
+#define P1_A21	port1_abcd[1][0]
+#define P1_A22	port1_abcd[1][1]
+#define P2_A11	port2_abcd[0][0]
+#define P2_A12	port2_abcd[0][1]
+#define P2_A21	port2_abcd[1][0]
+#define P2_A22	port2_abcd[1][1]
 
 /*
- * vna_measure: simulate the VNA making the requested measurement
+ * vna_measure: simulate the imperfect VNA making the requested measurement
  *   @dutp: info on the actual DUT (for MEASURE_DUT only)
  *   @measurement: which measurement to simulate
  *   @frequency_vector: optional vector to receive frequencies
@@ -302,8 +332,9 @@ static int vna_measure(dut_info_type *dutp,
 	A22 = 2.0 / 3.0;
 
 	/*
-	 * Find ABCD parameters for the errors at VNA port 1.
-	 *   Detector is on the left; DUT is on the right.
+	 * Find ABCD parameters for the errors at VNA port 1, using
+	 * temporary matrices u, v & w, and storing the result into
+	 * port1_abcd.  Detector is on the left; DUT is on the right.
 	 */
 	/* series inductor L1 */
 	U11 = 1.0;
@@ -326,8 +357,9 @@ static int vna_measure(dut_info_type *dutp,
 	multiply(w, u, port1_abcd);
 
 	/*
-	 * Find ABCD parameters for the errors at VNA port 2.
-	 *   DUT is on the left; detector is on the right.
+	 * Find ABCD parameters for the errors at VNA port 2, storing
+	 * the result into port2_abcd.  DUT is on the left; detector
+	 * is on the right.
 	 */
 	/* shunt resistor R2 */
 	U11 = 1.0;
@@ -369,16 +401,54 @@ static int vna_measure(dut_info_type *dutp,
 	     */
 	    {
 		double complex zr = RR + RL * s;
-		double complex gamma;
 
-		vnaconv_ztosn(&zr, &gamma, z0, 1);
-		vnaconv_atos(port1_abcd, u, z0);
-		V11 = U11 + U12 * U21 * gamma / (1.0 - U22 * gamma);
-		V12 = 0.0;
-		V21 = 0.0;
-		vnaconv_atos(port2_abcd, u, z0);
-		V22 = U22 + U12 * U21 * gamma / (1.0 - U11 * gamma);
-		multiply(v, a, b);
+		/*
+		 * Here, we have VNA port 1 on the left side of the
+		 * port1_abcd error box with reflect standard on the
+		 * right.  And we have VNA port 2 on the right side of
+		 * the port2_abcd error box with the reflect standard
+		 * on the left.
+		 *
+		 * For port 1, we start with the defintion of ABCD
+		 * parameters:
+		 *
+		 *     [ v1 ]   [ A11 A12 ] [  v2 ]
+		 *     [    ] = [         ] [     ]
+		 *     [ i1 ]   [ A21 A22 ] [ -i2 ]
+		 *
+		 * With zr on the right, we set v2 = -i2 zr.  The minus
+		 * sign is needed because i2 is defined as current
+		 * going from the reflect standard into the error box.
+		 * The impedance the VNA sees looking into the left side
+		 * of the error box is: v1 / i1.  This simplifies to:
+		 *
+		 *                 P1_A12 + P1_A11 zr
+		 *    Zin_left =  --------------------
+		 *                 P1_A22 + P1_A21 zr
+		 *
+		 * For port 2, we can multiply each side of the ABCD
+		 * equation above on the left with A^-1, set v1 = -i1 zr,
+		 * and find v2 / i2.  This simplifies to:
+		 *
+		 *                 P2_A12 + P2_A22 zr
+		 *    Zin_right = --------------------
+		 *                 P2_A11 + P2_A21 zr
+		 *
+		 * From these, we can construct the Z parameters of the
+		 * two error boxes with double reflect in the middle.
+		 * No signal passes through the standard, so the
+		 * off-diagonal entries are zero.
+		 *
+		 *        [ Zin_left  0         ]
+		 *    Z = [                     ]
+		 *        [ 0         Zin_right ]
+		 */
+		U11 = (P1_A12 + P1_A11 * zr) / (P1_A22 + P1_A21 * zr);
+		U12 = 0.0;
+		U21 = 0.0;
+		U22 = (P2_A12 + P2_A22 * zr) / (P2_A11 + P2_A21 * zr);
+		vnaconv_ztos(u, u, z0);
+		multiply(u, a, b);
 	    }
 	    break;
 
@@ -391,7 +461,7 @@ static int vna_measure(dut_info_type *dutp,
 	    {
 		double complex gl;
 
-		gl = LINE_LENGTH * ACTUAL_GAMMA(f);
+		gl = ACTUAL_GAMMA(f) * LINE_LENGTH;
 		U11 = ccosh(gl);
 		U12 = csinh(gl) * Z0;
 		U21 = csinh(gl) / Z0;
@@ -527,12 +597,12 @@ static void make_calibration()
     /*
      * Find the ideal S12 == S21 parameters of the line.  From them,
      * form a vector parameter we'll use as the initial guess of the
-     * actual line parameter, make the unknown line parameter from the
-     * initial guess, and delete the guess.
+     * actual line parameter and make the unknown line parameter from
+     * the * initial guess.
      */
     for (int findex = 0; findex < C_FREQUENCIES; ++findex) {
 	double f = frequency_vector[findex];
-	double complex gl = LINE_LENGTH * IDEAL_GAMMA(f);
+	double complex gl = IDEAL_GAMMA(f) * LINE_LENGTH;
 	double complex abcd[2][2];
 	double complex s[2][2];
 
