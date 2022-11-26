@@ -549,7 +549,7 @@ double *_vnacal_new_solve_calc_weights(vnacal_new_solve_state_t *vnssp)
     const int m_columns = VL_M_COLUMNS(vlp);
     const int findex = vnssp->vnss_findex;
     double noise = vnp->vn_m_error_vector[findex].vnme_noise;
-    double tracking = vnp->vn_m_error_vector[findex].vnme_tracking;
+    double tracking = vnp->vn_m_error_vector[findex].vnme_gain;
     double *w_vector = NULL;
 
     assert(vnp->vn_m_error_vector != NULL);

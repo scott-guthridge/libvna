@@ -127,7 +127,7 @@ extern int vnacal_new_set_z0(vnacal_new_t *vnp, double complex z0);
 extern int vnacal_new_set_m_error(vnacal_new_t *vnp,
 	const double *frequency_vector, int frequencies,
 	const double *noise_error_vector,
-	const double *tracking_error_vector);
+	const double *gain_error_vector);
 
 /*
  * vnacal_new_set_p_tolerance: set vnacal_new_solve iteration tolerance

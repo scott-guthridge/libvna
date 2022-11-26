@@ -41,8 +41,8 @@ typedef struct vnacal_new_m_error {
     /* standard deviation of measurement noise */
     double vnme_noise;
 
-    /* standard deviation of measurement tracking error */
-    double vnme_tracking;
+    /* standard deviation of measurement gain error */
+    double vnme_gain;
 
 } vnacal_new_m_error_t;
 

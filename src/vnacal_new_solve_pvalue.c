@@ -146,7 +146,7 @@ double _vnacal_new_solve_calc_pvalue(vnacal_new_solve_state_t *vnssp,
      */
     assert(m_error_vector != NULL);
     noise = m_error_vector[findex].vnme_noise;
-    tracking = m_error_vector[findex].vnme_tracking;
+    tracking = m_error_vector[findex].vnme_gain;
 
     /*
      * Accumulate the squared magnitudes of the residuals of the
