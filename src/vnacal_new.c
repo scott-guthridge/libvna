@@ -141,6 +141,7 @@ vnacal_new_t *vnacal_new_alloc(vnacal_t *vcp, vnacal_type_t type,
     vnp->vn_m_error_vector = NULL;
     vnp->vn_p_tolerance = VNACAL_NEW_DEFAULT_P_TOLERANCE;
     vnp->vn_et_tolerance = VNACAL_NEW_DEFAULT_ET_TOLERANCE;
+    vnp->vn_iteration_limit = VNACAL_NEW_DEFAULT_ITERATION_LIMIT;
     vnp->vn_pvalue_limit = VNACAL_NEW_DEFAULT_PVALUE_LIMIT;
     vnp->vn_systems = systems;
     if ((vnp->vn_system_vector = calloc(systems,

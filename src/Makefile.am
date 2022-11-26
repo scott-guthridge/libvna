@@ -26,7 +26,7 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnacal_name_to_type.c vnacal_new_add_common.c vnacal_new.c \
 	vnacal_new_parameter.c vnacal_new_set_m_error.c \
 	vnacal_new_set_p_tolerance.c vnacal_new_set_et_tolerance.c \
-	vnacal_new_solve_init_x_vector.c \
+	vnacal_new_set_iteration_limit.c vnacal_new_solve_init_x_vector.c \
 	vnacal_new_solve.c vnacal_new_solve_auto.c vnacal_new_solve_simple.c \
 	vnacal_new_solve_trl.c \
 	vnacal_new_set_pvalue_limit.c vnacal_new_build_equation_terms.c \

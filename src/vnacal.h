@@ -138,18 +138,18 @@ extern int vnacal_new_set_p_tolerance(vnacal_new_t *vnp,
 	double tolerance);
 
 /*
- * vnacal_new_set_v_tolerance: set vnacal_new_solve V iteration tolerance
- *   @vnp: pointer to vnacal_new_t structure
- *   @tolerance: new tolerance
- */
-extern int vnacal_new_set_v_tolerance(vnacal_new_t *vnp, double tolerance);
-
-/*
  * vnacal_new_set_et_tolerance: set the error term iteration tolerance
  *   @vnp: pointer to vnacal_new_t structure
  *   @tolerance: new tolerance
  */
 extern int vnacal_new_set_et_tolerance(vnacal_new_t *vnp, double tolerance);
+
+/*
+ * vnacal_new_set_iteration_limit: set iteration limit for iterative solutions
+ *   @vnp: pointer to vnacal_new_t structure
+ *   @limit: maximum number of iterations before failing
+ */
+extern int vnacal_new_set_iteration_limit(vnacal_new_t *vnp, int limit);
 
 /*
  * vnacal_new_set_pvalue_limit: set the pvalue under which we reject the soln.

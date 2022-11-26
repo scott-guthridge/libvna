@@ -177,7 +177,7 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 						     vnp->vn_et_tolerance) {
 		break;
 	    }
-	    if (++iteration >= 50) {
+	    if (++iteration >= vnp->vn_iteration_limit) {
 		_vnacal_error(vcp, VNAERR_MATH, "vnacal_new_solve: "
 			"measurement error model failed to converge at %e Hz",
 			frequency);

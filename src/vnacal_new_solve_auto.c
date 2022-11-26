@@ -958,7 +958,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	/*
 	 * Limit the number of iterations.
 	 */
-	if (iteration >= 50) {
+	if (iteration >= vnp->vn_iteration_limit) {
 	    _vnacal_error(vcp, VNAERR_MATH, "vnacal_new_solve: "
 		    "system failed to converge at %e Hz", frequency);
 	    goto out;

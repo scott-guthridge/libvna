@@ -31,6 +31,7 @@ extern "C" {
 
 #define VNACAL_NEW_DEFAULT_P_TOLERANCE		1.0e-6
 #define VNACAL_NEW_DEFAULT_ET_TOLERANCE		1.0e-6
+#define VNACAL_NEW_DEFAULT_ITERATION_LIMIT	30
 #define VNACAL_NEW_DEFAULT_PVALUE_LIMIT		0.001
 
 /*
@@ -238,6 +239,9 @@ struct vnacal_new {
 
     /* iterative solve not satified until RMS chagne in et <= than this */
     double vn_et_tolerance;
+
+    /* maximum number of iterations allowed in iterative solutions */
+    int vn_iteration_limit;
 
     /* vnacal_new_solve pvalue lower than this threshold considered failing */
     double vn_pvalue_limit;
