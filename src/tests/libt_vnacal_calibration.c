@@ -399,7 +399,16 @@ int libt_vnacal_validate_calibration(const libt_vnacal_terms_t *ttp,
 	return -1;
     }
     for (int findex = 0; findex < ttp->tt_frequencies; ++findex) {
+	double sum = 0.0;
+	int count = 0;
+
 	for (int term = 0; term < VL_ERROR_TERMS(vlp); ++term) {
+	    if (opt_v >= 2) {
+		double complex v1 = calp->cal_error_term_vector[term][findex];
+		double complex v2 = ttp->tt_error_term_vector[findex][term];
+		sum += _vnacommon_cabs2(v1 - v2);
+		++count;
+	    }
 	    if (!libt_isequal(calp->cal_error_term_vector[term][findex],
 			ttp->tt_error_term_vector[findex][term])) {
 		if (opt_a) {
@@ -408,6 +417,13 @@ int libt_vnacal_validate_calibration(const libt_vnacal_terms_t *ttp,
 		return -1;
 	    }
 	}
+	if (opt_v >= 2) {
+	    (void)printf("error term RMS error (findex %d): %e\n",
+		    findex, sqrt(sum / (double)count));
+	}
+    }
+    if (opt_v >= 2) {
+	(void)printf("\n");
     }
     return 0;
 }
