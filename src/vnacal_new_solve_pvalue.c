@@ -145,8 +145,8 @@ double _vnacal_new_solve_calc_pvalue(vnacal_new_solve_state_t *vnssp,
      * Get the expected measurement error.
      */
     assert(m_error_vector != NULL);
-    noise = m_error_vector[findex].vnme_noise;
-    tracking = m_error_vector[findex].vnme_gain;
+    noise = m_error_vector[findex].vnme_sigma_nf;
+    tracking = m_error_vector[findex].vnme_sigma_tr;
 
     /*
      * Accumulate the squared magnitudes of the residuals of the

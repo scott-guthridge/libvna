@@ -121,13 +121,12 @@ extern int vnacal_new_set_z0(vnacal_new_t *vnp, double complex z0);
  *   @vnp: pointer to vnacal_new_t structure
  *   @frequency_vector: vector of frequency points
  *   @frequencies: number of frequencies
- *   @noise_error_vector: vector of standard deviation of noise floor
- *   @tracking_error_vector: vector of standard deviation of tracking error
+ *   @sigma_nf_vector: standard deviations of the noise floor for measurements
+ *   @sigma_tr_vector: standard deviation of noise proportional to signal level
  */
 extern int vnacal_new_set_m_error(vnacal_new_t *vnp,
 	const double *frequency_vector, int frequencies,
-	const double *noise_error_vector,
-	const double *gain_error_vector);
+	const double *sigma_nf_vector, const double *sigma_tr_vector);
 
 /*
  * vnacal_new_set_p_tolerance: set vnacal_new_solve iteration tolerance
@@ -147,16 +146,16 @@ extern int vnacal_new_set_et_tolerance(vnacal_new_t *vnp, double tolerance);
 /*
  * vnacal_new_set_iteration_limit: set iteration limit for iterative solutions
  *   @vnp: pointer to vnacal_new_t structure
- *   @limit: maximum number of iterations before failing
+ *   @iterations: maximum number of iterations before failing
  */
-extern int vnacal_new_set_iteration_limit(vnacal_new_t *vnp, int limit);
+extern int vnacal_new_set_iteration_limit(vnacal_new_t *vnp, int iterations);
 
 /*
  * vnacal_new_set_pvalue_limit: set the pvalue under which we reject the soln.
  *   @vnp: pointer to vnacal_new_t structure
- *   @limit: probability limit
+ *   @significance: reject if pvalue less than this value
  */
-extern int vnacal_new_set_pvalue_limit(vnacal_new_t *vnp, double limit);
+extern int vnacal_new_set_pvalue_limit(vnacal_new_t *vnp, double significance);
 
 /*
  * vnacal_new_add_single_reflect: add a single reflect on the given port

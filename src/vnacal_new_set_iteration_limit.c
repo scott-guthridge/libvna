@@ -33,9 +33,9 @@
 /*
  * vnacal_new_set_iteration_limit: set iteration limit for iterative solutions
  *   @vnp: pointer to vnacal_new_t structure
- *   @limit: maximum number of iterations before failing
+ *   @iterations: maximum number of iterations before failing
  */
-int vnacal_new_set_iteration_limit(vnacal_new_t *vnp, int limit)
+int vnacal_new_set_iteration_limit(vnacal_new_t *vnp, int iterations)
 {
     vnacal_t *vcp;
 
@@ -47,11 +47,11 @@ int vnacal_new_set_iteration_limit(vnacal_new_t *vnp, int limit)
 	return -1;
     }
     vcp = vnp->vn_vcp;
-    if (limit < 1) {
+    if (iterations < 1) {
 	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_new_set_iteration_limit: "
-		"limit must be at least 1");
+		"iterations must be at least 1");
 	return -1;
     }
-    vnp->vn_iteration_limit = limit;
+    vnp->vn_iteration_limit = iterations;
     return 0;
 }

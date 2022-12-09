@@ -34,13 +34,12 @@
  *   @vnp: pointer to vnacal_new_t structure
  *   @frequency_vector: vector of frequency points
  *   @frequencies: number of frequencies
- *   @noise_error_vector: vector of standard deviation of noise floor
- *   @gain_error_vector: vector of standard deviation of gain error
+ *   @sigma_nf_vector: standard deviations of the noise floor for measurements
+ *   @sigma_tr_vector: standard deviation of noise proportional to signal level
  */
 int vnacal_new_set_m_error(vnacal_new_t *vnp,
 	const double *frequency_vector, int frequencies,
-	const double *noise_error_vector,
-	const double *gain_error_vector)
+	const double *sigma_nf_vector, const double *sigma_tr_vector)
 {
     vnacal_t *vcp;
     const vnacal_layout_t *vlp;
@@ -66,7 +65,7 @@ int vnacal_new_set_m_error(vnacal_new_t *vnp,
      * If both vectors are NULL, clear any previous measurement
      * error setting and return.
      */
-    if (noise_error_vector == NULL && gain_error_vector == NULL) {
+    if (sigma_nf_vector == NULL && sigma_tr_vector == NULL) {
 	free((void *)vnp->vn_m_error_vector);
 	vnp->vn_m_error_vector = NULL;
 	return 0;
@@ -75,22 +74,22 @@ int vnacal_new_set_m_error(vnacal_new_t *vnp,
     /*
      * Continue validating...
      */
-    if (noise_error_vector == NULL) {
+    if (sigma_nf_vector == NULL) {
 	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_new_set_m_error: "
 		"noise error required if gain error given");
 	return -1;
     }
     for (int i = 0; i < frequencies; ++i) {
-	if (noise_error_vector[i] <= 0) {
+	if (sigma_nf_vector[i] <= 0) {
 	    _vnacal_error(vcp, VNAERR_USAGE,
 		    "vnacal_new_set_m_error: noise error "
 		    "values must be positive");
 	    return -1;
 	}
     }
-    if (gain_error_vector != NULL) {
+    if (sigma_tr_vector != NULL) {
 	for (int i = 0; i < frequencies; ++i) {
-	    if (gain_error_vector[i] < 0) {
+	    if (sigma_tr_vector[i] < 0) {
 		_vnacal_error(vcp, VNAERR_USAGE,
 			"vnacal_new_set_m_error: gain error "
 			"values must be non-negative");
@@ -136,9 +135,9 @@ int vnacal_new_set_m_error(vnacal_new_t *vnp,
     }
 
     /*
-     * If type error term type is T16 or U16, validate that all standards
-     * given so far fully specify the S matrix.  Full S is needed to generate
-     * the V matrices.
+     * If the error term type is T16 or U16, validate that all standards
+     * given so far fully specify the S matrix.  Full S is needed to
+     * generate the V matrices in this case.
      */
     if (VL_TYPE(vlp) == VNACAL_T16 || VL_TYPE(vlp) == VNACAL_U16) {
        const int s_cells = VL_S_ROWS(vlp) * VL_S_COLUMNS(vlp);
@@ -174,24 +173,24 @@ int vnacal_new_set_m_error(vnacal_new_t *vnp,
      * Always init the vector.
      */
     for (int findex = 0; findex < vnp->vn_frequencies; ++findex) {
-	m_error_vector[findex].vnme_noise    = 0.0;
-	m_error_vector[findex].vnme_gain = 0.0;
+	m_error_vector[findex].vnme_sigma_nf = 0.0;
+	m_error_vector[findex].vnme_sigma_tr = 0.0;
     }
 
     /*
      * If frequencies is 1, ignore frequency vector and use
-     * noise_error_vector[0] and gain_error_vector[0] for all
+     * sigma_nf_vector[0] and sigma_tr_vector[0] for all
      * calibration frequencies.
      */
     if (frequencies == 1) {
 	for (int findex = 0; findex < vnp->vn_frequencies; ++findex) {
-	    vnp->vn_m_error_vector[findex].vnme_noise =
-		noise_error_vector[0];
+	    vnp->vn_m_error_vector[findex].vnme_sigma_nf =
+		sigma_nf_vector[0];
 	}
-	if (gain_error_vector != NULL) {
+	if (sigma_tr_vector != NULL) {
 	    for (int findex = 0; findex < vnp->vn_frequencies; ++findex) {
-		vnp->vn_m_error_vector[findex].vnme_gain =
-		    gain_error_vector[0];
+		vnp->vn_m_error_vector[findex].vnme_sigma_tr =
+		    sigma_tr_vector[0];
 	    }
 	}
 
@@ -202,13 +201,13 @@ int vnacal_new_set_m_error(vnacal_new_t *vnp,
     } else if (frequency_vector == NULL) {
 	assert(frequencies == vnp->vn_frequencies);
 	for (int findex = 0; findex < vnp->vn_frequencies; ++findex) {
-	    vnp->vn_m_error_vector[findex].vnme_noise =
-		noise_error_vector[findex];
+	    vnp->vn_m_error_vector[findex].vnme_sigma_nf =
+		sigma_nf_vector[findex];
 	}
-	if (gain_error_vector != NULL) {
+	if (sigma_tr_vector != NULL) {
 	    for (int findex = 0; findex < vnp->vn_frequencies; ++findex) {
-		vnp->vn_m_error_vector[findex].vnme_gain =
-		    gain_error_vector[findex];
+		vnp->vn_m_error_vector[findex].vnme_sigma_tr =
+		    sigma_tr_vector[findex];
 	    }
 	}
 
@@ -220,28 +219,28 @@ int vnacal_new_set_m_error(vnacal_new_t *vnp,
 	double c_vector[frequencies - 1][3];
 
 	if (_vnacommon_spline_calc(frequencies - 1, frequency_vector,
-		    noise_error_vector, c_vector) == -1) {
+		    sigma_nf_vector, c_vector) == -1) {
 	    _vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s",
 		    strerror(errno));
 	    return -1;
 	}
 	for (int findex = 0; findex < vnp->vn_frequencies; ++findex) {
-	    vnp->vn_m_error_vector[findex].vnme_noise =
+	    vnp->vn_m_error_vector[findex].vnme_sigma_nf =
 		_vnacommon_spline_eval(frequencies - 1, frequency_vector,
-			noise_error_vector, c_vector,
+			sigma_nf_vector, c_vector,
 			vnp->vn_frequency_vector[findex]);
 	}
-	if (gain_error_vector != NULL) {
+	if (sigma_tr_vector != NULL) {
 	    if (_vnacommon_spline_calc(frequencies - 1, frequency_vector,
-			gain_error_vector, c_vector) == -1) {
+			sigma_tr_vector, c_vector) == -1) {
 		_vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s",
 			strerror(errno));
 		return -1;
 	    }
 	    for (int findex = 0; findex < vnp->vn_frequencies; ++findex) {
-		vnp->vn_m_error_vector[findex].vnme_gain =
+		vnp->vn_m_error_vector[findex].vnme_sigma_tr =
 		    _vnacommon_spline_eval(frequencies - 1, frequency_vector,
-			    gain_error_vector, c_vector,
+			    sigma_tr_vector, c_vector,
 			    vnp->vn_frequency_vector[findex]);
 	    }
 	}

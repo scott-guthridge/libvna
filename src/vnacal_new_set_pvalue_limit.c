@@ -32,9 +32,9 @@
 /*
  * vnacal_new_set_pvalue_limit: set the pvalue under which we reject the soln.
  *   @vnp: pointer to vnacal_new_t structure
- *   @limit: probability limit
+ *   @significance: reject if pvalue less than this value
  */
-int vnacal_new_set_pvalue_limit(vnacal_new_t *vnp, double limit)
+int vnacal_new_set_pvalue_limit(vnacal_new_t *vnp, double significance)
 {
     vnacal_t *vcp;
 
@@ -46,12 +46,12 @@ int vnacal_new_set_pvalue_limit(vnacal_new_t *vnp, double limit)
 	return -1;
     }
     vcp = vnp->vn_vcp;
-    if (limit < 0.0 || limit > 1.0) {
+    if (significance <= 0.0 || significance > 1.0) {
 	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_new_set_p_tolerance: "
-		"pvalue limit must be between 0 and 1");
+		"significance must be between 0 and 1");
 	return -1;
     }
 
-    vnp->vn_pvalue_limit = limit;
+    vnp->vn_pvalue_limit = significance;
     return 0;
 }

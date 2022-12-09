@@ -18,11 +18,12 @@
 .TH VNACAL_NEW 3 "FEB 2021" GNU
 .nh
 .SH NAME
-vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new_add_single_reflect, vnacal_new_add_single_reflect_m, vnacal_new_add_double_reflect, vnacal_new_add_double_reflect_m, vnacal_new_add_through, vnacal_new_add_through_m, vnacal_new_add_line, vnacal_new_add_line_m, vnacal_new_add_mapped_matrix, vnacal_new_add_mapped_matrix_m, vnacal_new_solve, vnacal_new_free \- find error terms from measured standards
+vnacal_new_alloc, vnacal_new_free, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new_add_single_reflect, vnacal_new_add_single_reflect_m, vnacal_new_add_double_reflect, vnacal_new_add_double_reflect_m, vnacal_new_add_through, vnacal_new_add_through_m, vnacal_new_add_line, vnacal_new_add_line_m, vnacal_new_add_mapped_matrix, vnacal_new_add_mapped_matrix_m, vnacal_new_solve, vnacal_new_set_m_error, vnacal_new_set_et_tolerance, vnacal_new_set_p_tolerance, vnacal_new_set_iteration_limit, vnacal_new_set_pvalue_limit \- find error terms from measured standards
 .\"
 .SH SYNOPSIS
 .B #include <vnacal.h>
 .\"
+.SS "Starting a New Calibration"
 .PP
 .BI "vnacal_new_t *vnacal_new_alloc(vnacal_t *" vcp ", vnacal_type_t " type ,
 .in +4n
@@ -31,17 +32,14 @@ vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new
 .\"
 .PP
 .BI "int vnacal_new_set_frequency_vector(vnacal_new_t *" vnp ,
-.if n \{\
-.in +4n
-.\}
+.if n .in +4n
 .BI "const double *" frequency_vector );
-.if n \{\
-.in -4n
-.\}
+.if n .in -4n
 .\"
 .PP
 .BI "int vnacal_new_set_z0(vnacal_new_t *" vnp ", double complex " z0 );
 .\"
+.SS "Adding Measured Standards"
 .PP
 .BI "int vnacal_new_add_single_reflect(vnacal_new_t *" vnp ,
 .in +4n
@@ -136,11 +134,39 @@ vnacal_new_alloc, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new
 .BI "const int *" port_map );
 .in -4n
 .\"
+.SS "Solving for the Error Terms"
 .PP
 .BI "int vnacal_new_solve(vnacal_new_t *" vnp );
 .\"
+.SS "Cleanup"
 .PP
 .BI "void vnacal_new_free(vnacal_new_t *" vnp );
+.\"
+.SS "Managing Measurement Error and Tolerance"
+.PP
+.BI "int vnacal_new_set_m_error(vnacal_new_t *" vnp ,
+.in +4n
+.BI "const double *" frequency_vector ", int " frequencies ,
+.br
+.BI "const double *" sigma_nf_vector ", const double *" sigma_tr_vector );
+.in -4n
+.\"
+.PP
+.BI "int vnacal_new_set_pvalue_limit(vnacal_new_t *" vnp ,
+.if n .in +4n
+.BI "double " significance );
+.if n .in -4n
+.\"
+.PP
+.BI "int vnacal_new_set_et_tolerance(vnacal_new_t *" vnp ,
+.BI "double " tolerance );
+.\"
+.PP
+.BI "int vnacal_new_set_p_tolerance(vnacal_new_t *" vnp ,
+.BI "double " tolerance );
+.\"
+.PP
+.BI "int vnacal_new_set_iteration_limit(vnacal_new_t *" vnp ", int " iterations );
 .\"
 .PP
 Link with \fI-lvna\fP \fI-lyaml\fP \fI-lm\fP.
@@ -178,8 +204,8 @@ tab(;);
 ll.
 VNACAL_T8; 8-term T terms
 VNACAL_U8; 8-term U (inverse T) terms
-VNACAL_TE10; 8-term T plus off-diagonal leakage terms
-VNACAL_UE10; 8-term U plus off-diagonal leakage terms
+VNACAL_TE10; 8-term T and off-diagonal leakage terms
+VNACAL_UE10; 8-term U and off-diagonal leakage terms
 VNACAL_T16;16-term T terms
 VNACAL_U16;16-term U (inverse T) terms
 VNACAL_UE14;14-term columns x (rows x 1) U7 systems
@@ -197,7 +223,7 @@ Usually, all VNA ports can both transmit and detect signal, and both
 But some vector network analyzers, such as certain models of the N2PK
 open source hardware VNA, transmit and detect signal on port 1 as usual,
 but only detect signal on port 2.
-For this VNA, \fIrows\fP would be 2 and \fIcolumns\fP would be 1.
+For this VNA, \fIrows\fP is 2 and \fIcolumns\fP is 1.
 If instead of having detect-only ports, a given VNA has some number of
 transmit-only ports, it can be modeled by making \fIcolumns\fP greater
 than \fIrows\fP.
@@ -219,7 +245,7 @@ dimensions, shown for both the square case (\fIrows\fP = \fIcolumns\fP =
 ports) and in the general rectangular case.
 When the dimensions are 2x2, the number of error terms matches the number
 in the calibration type name.
-Finally, all of the T and U types contain an arbitrary term.
+Finally, all T and U types contain an arbitrary term.
 For example, in 2x2 T8, one of the eight terms is a free variable,
 so we have to solve for only seven unknowns.
 Similarly, in 2x2 T16, one variable is free and we have to solve for
@@ -238,7 +264,7 @@ TE10;r <= c;p^2 + 3p;rc + r + 2c;1
 UE10;r >= c;p^2 + 3p;rc + 2r + c;1
 T16;r <= c;4p^2;2rc + 2c^2;1
 U16;r >= c;4p^2;2rc + 2r^2;1
-.\" UE14;r >= c;3p^2 + p;3rc + c;c
+UE14;r >= c;3p^2 + p;3rc + c;c
 E12;r >= c;3p^2;3rc;0
 .TE
 .sp
@@ -247,8 +273,8 @@ E12;r >= c;3p^2;3rc;0
 These types correct for directivity, reflection / transmission tracking,
 and port match errors on each VNA port.
 Notice from the table that these are the only types for which the number
-of error terms increases linearly with the number of VNA ports, i.e. this
-correction has no inter-port terms.
+of error terms increases proportionally to the number of VNA ports,
+i.e. this correction has no inter-port terms.
 At least three standards are needed to solve the 2x2 T8 or U8 calibration.
 .\"
 .IP "TE10 & UE10"
@@ -264,22 +290,29 @@ terms, including leakage between the ports of the device under test.
 At least five standards are needed to solve the 2x2 T16 or U16
 calibration.
 .\"
+.IP "UE14"
+This type corrects the same errors as TE10 and UE10, but is stronger in
+that it treats each column (driving port) as an independent calibration,
+i.e. it's a columns long series of rows x 1 independent systems.
+Because of this, this type is able to correct for errors in switches,
+even in a switch that lies between the detectors and the device under test.
+At least four standards are needed to solve the 2x2 UE14 calibration.
+.\"
 .IP "E12"
-E12 is a generalization of classic SOLT.  It corrects the same
-errors as TE10 or UE10, but is stronger in that it treats each column
-(driving port) as an independent calibration, i.e. it's a columns long
-series of rows x 1 independent systems.
-Because of this, this type is able to correct errors in a switch that
-lies between the detectors and device under test.
-It's the only type with this property.
-Internally, E12 is computed using U terms; therefore, any of the
-calibration techniques that work for T and U also work for E12.
+E12 is a generalization of classic SOLT.
+Internally, library solves the system using UE14 terms and thus corrects
+for exactly the same errors as EU14, creating separate calibrations for
+each column.
+The difference is only in the format of the saved error terms.
+In E12, the library converts the U error terms it used to solve the
+systems to the more conventional E (scattering parameter) form before
+saving them.
 At least four standards are needed to solve the 2x2 E12 calibration.
 .\"
-.SS "S-Parametes of the Standards"
+.SS "S-Parameters of the Standards"
 .PP
 All \fBvnacal_new_add_\fP*() functions except for \fBvnacal_new_add_through\fP()
-take one or more S-parameters describing the standard.
+take one or more S-parameters describing the calibration standard.
 Instead of taking complex values for the S-parameters directly, these
 functions take integer values that can be either one of the predefined
 constants: \fB\s-2VNACAL_MATCH\s+2\fP, \fB\s-2VNACAL_OPEN\s+2\fP,
@@ -300,14 +333,21 @@ The \fBvnacal_new_add_\fP*() functions come in pairs with one taking
 separate \fIa\fP and \fIb\fP matrices, and the other, a single \fIm\fP
 matrix.
 If the VNA measures both the voltage leaving each port (a), and the
-voltage entering each port (b), use the first form.
-For T8, U8, TE10, UE10, T16 and U16 error terms, the \fIa\fP matrix has
-dimensions \fIb_columns\fP x \fIb_columns\fP.
+voltage entering each port (b), use the \fIa\fP,\fIb\fP form.
+This form gives more accurate results because it corrects for variations
+in signal generator output level and for errors in a switch that lies
+between the signal generator and directional couplers.
+If the VNA doesn't measure separate a and b parameters, then
+the \fIm\fP form can be used.
+Always use the same form for error correction as was used for calibration.
+.PP
+For T8, U8, TE10, UE10, T16 and U16 error term types, the \fIa\fP matrix
+has dimensions \fIb_columns\fP x \fIb_columns\fP.
 The rows of \fIa\fP represent the amount of signal leaving the respective
-VNA port; the columns of \fIa\fP represent the VNA port that is currently
-driving signal.
-When \fIa\fP and \fIb\fP matrices are given, the library calculates the
-measurement matrix using
+VNA port; the columns of \fIa\fP represent the VNA port that was nominally
+driving signal when the values in the column were measured.
+When \fIa\fP and \fIb\fP matrices are given with these error term types,
+the library calculates the measurement matrix using
 .ie t \{\
 .EQ
 \fIa\fP { \fIb\fP sup -1 }.
@@ -316,24 +356,24 @@ measurement matrix using
 .el \{\
 \fIb a\fP^-1.
 .\}
-For E12 and UE14 error terms, the calibration is a \fIcolumns\fP long
-sequence of independent \fIrows\fP x 1 systems; therefore, \fIa\fP is
+For E12 and UE14 error terms, the calibration is a \fIcolumns\fP
+long sequence of independent \fIrows\fP x 1 systems; therefore, \fIa\fP is
 a row of 1x1 matrices, or equivalently a row vector of reference values.
-If the VNA doesn't measure separate a and b parameters, use the \fIm\fP
-form.
-Use the same form consistently between calibration and application.
+Because each column is a separate system, these calibration types correct
+for errors in a switch, even a switch that lies between the directional
+couplers and DUT.
 .PP
 It's always permitted to specify the full \fIrows\fP x \fIcolumns\fP
-measurement matrix representing all VNA ports, even though the calibration
-standard may have fewer ports.
-For calibration types with inter-port leakage terms, specifying the full
-matrix is helpful for determining leakage terms.
-However, it's usually also possible to give an abbreviated measurement
-matrix in which either the number of rows or the number of columns is equal
-to the number of ports of the standard being measured.
-For example, in type T8, if we're adding a reflect standard, the
-measurement matrix can be \fIrows\fP x \fIcolumns\fP, 1 x \fIcolumns\fP,
-\fIrows\fP x 1, or 1x1.
+measurement matrix representing all VNA ports, even if the associated
+calibration standard has fewer ports.
+This is useful for determining leakage terms in calibration types that
+correct for them.
+In most cases, it's also possible to give an abbreviated measurement
+matrix in which the number of rows or the number of columns is equal to
+the number of ports of the standard being measured.
+For example, in type T8, if we're adding a reflect standard on a single
+VNA port, the measurement matrix can be \fIrows\fP x \fIcolumns\fP,
+1 x \fIcolumns\fP, \fIrows\fP x 1, or 1x1.
 In T16, however, \fIb_columns\fP or \fIm_columns\fP must be the full
 set of calibration columns, and in U16, \fIb_rows\fP or \fIm_rows\fP
 must be the full set of calibration rows.
@@ -351,13 +391,12 @@ If the standard has fewer ports than the VNA, the S-parameters measured
 by the unused VNA ports don't matter as long as they remain constant
 over the measurement, and as long as, except for leakage, they have no
 through signal to or from the ports under test.
-When possible, however, unused VNA ports should be terminated with loads
-close to the system impedance to avoid adding unnecessary noise into
-the leakage measurements.
+When possible, terminate unused VNA ports with loads close to the system
+impedance to avoid adding unnecessary noise into the leakage measurements.
 .\"
-.SS "Functions"
+.SS "Starting a New Calibration"
 \fBvnacal_new_alloc\fP() creates a structure of type \fBvnacal_new_t\fP
-used by the other functions.
+used by all of the other functions.
 The \fIvcp\fP parameter is a pointer to a \fBvnacal_t\fP structure obtained
 from \fBvnacal_create\fP() or \fBvnacal_load\fP().
 The \fItype\fP, \fIrows\fP and \fIcolumns\fP parameters determine the
@@ -374,25 +413,28 @@ given to \fBvnacal_new_alloc\fP().
 \fBvnacal_new_set_z0\fP() sets the system impedance for the vector
 network analyzer.
 If not called, the value defaults to 50 ohms.
-The library assumes all VNA ports have the same system impedance.
+The library assumes all VNA ports have the same reference impedance.
+.\"
+.SS "Adding Measured Standards"
 .PP
 \fBvnacal_new_add_single_reflect\fP() and
 \fBvnacal_new_add_single_reflect_m\fP() add the measurement of a single
-port standard with parameter handle \fIs11\fP applied to VNA port \fIport\fP.
+port standard with parameter handle \fIs11\fP on VNA port \fIport\fP.
 See \fBvnacal_parameter\fP(3).
 .PP
 \fBvnacal_new_add_double_reflect\fP() and
-\fBvnacal_new_add_double_reflect_m\fP() add the measurement of a two
+\fBvnacal_new_add_double_reflect_m\fP() add the measurement of two
 reflect standards with parameter handles \fIs11\fP and \fIs22\fP, on
-VNA \fIport1\fP and \fIport2\fP, respectively.
+VNA ports \fIport1\fP and \fIport2\fP, respectively.
 The s12 and s21 parameters of the standard must be zero.
 .PP
 \fBvnacal_new_add_through\fP() and \fBvnacal_new_add_through_m\fP()
 add the measurement of a perfect through standard (s11 = 0, s12 = 1,
-s21 = 1, s22 = 0) between \fIport1\fP and \fIport2\fP.
+s21 = 1, s22 = 0) between VNA ports \fIport1\fP and \fIport2\fP.
 .PP
 \fBvnacal_new_add_line\fP() and \fBvnacal_new_add_line_m\fP() add the
-measurement of an arbitrary 2x2 standard on VNA \fIport1\fP and \fIport2\fP.
+measurement of an arbitrary 2x2 standard on VNA ports \fIport1\fP and
+\fIport2\fP.
 The \fIs_2x2\fP argument is a pointer to the first element of a 2x2
 matrix of parameter handles.
 .PP
@@ -402,24 +444,119 @@ multi-port standard.
 The \fIs\fP parameter is a pointer to the first element of an \fIs_rows\fP
 x \fIs_columns\fP matrix of s-parameter handles.
 The \fIport_map\fP parameter is a vector of length max(\fIs_rows\fP,
-\fIs_columns\fP) of VNA port numbers, describing which VNA ports are
-connected to the respective ports of the standard.
+\fIs_columns\fP), one entry for each DUT port, containing VNA port
+numbers, describing which VNA ports are connected to the respective
+ports of the standard.
 It may be \s-2NULL\s+2 if the number of VNA ports is equal to the
 number of ports of the standard and the ports are connected in order.
+.\"
+.SS "Solving for the Error Terms"
 .PP
 \fBvnacal_new_solve\fP() uses the added measurements to solve for
-the error terms.  It returns 0 on success.
+the error terms.  It returns 0 on success and -1 on error.
 After calling \fBvnacal_new_solve\fP(), it is permitted to add additional
 measurements and repeat the call, for example if \fBvnacal_new_solve\fP()
 fails due to an insufficient number of standards.
+.\"
+.SS "Cleanup"
 .PP
 \fBvnacal_new_free\fP() frees the \fBvnacal_t\fP structure, the contained
 frequency vector, added measurements and error terms.
 Note that a call to \fBvnacal_free\fP() implicitly frees all associated
-\fBvnacal_t\fP structures; don't call this function after a call to
-\fBvnacal_free\fP().
+\fBvnacal_t\fP structures; don't call \fBvnacal_new_free\fP() after
+calling \fBvnacal_free\fP().
+.\"
+.SS "Managing Measurement Error and Tolerance"
+.PP
+\fBvnacal_new_set_m_error\fP() enables measurement error modeling in
+\fBvnacal_new_solve\fP().
+Specifying the measurement errors with this function can significantly
+reduce error in the solved error terms, especially when the system of
+measured standards is significantly overdetermined, as is usually the
+case when using the 16 error term models.
+The \fIsigma_nf_vector\fP parameter is a \fIfrequencies\fP long vector
+of standard deviations of noise floor measurements at the VNA detectors
+when no signal is applied.
+Similarly, \fIsigma_tr_vector\fP is \fIfrequencies\fP long vector of
+standard deviations describing an additional noise source, e.g. random
+amplitude modulation in the signal generator, that is proportional to
+the RMS amplitude of the received signal.
+The later is optional and may be given as \s-2NULL\s+2.
+Both noise sources are assumed to be Gaussian and i.i.d.
+If both vectors are given as \s-2NULL\s+2, then measurement error
+modeling is reset to disabled.
+.PP
+Note that when separate \fIa\fP and \fIb\fP measurements are given,
+the amplitude used for scaling \fIsigma_tr_vector\fP is that after
+dividing the \fIb\fP matrix by the \fIa\fP matrix.
+If the \fIa\fP matrix and \fIb\fP matrix are measured simultaneously,
+then amplitude modulation error in the signal source will have already
+been divided out, and \fIsigma_tr_vector\fP is likely not useful.
+.PP
+The \fIfrequency_vector\fP parameter is a vector of ascending frequency
+values where the noise measurements were made.
+These frequencies don't have to align with the frequencies given in
+\fBvnacal_new_set_frequency_vector\fP() \- the library uses cubic
+spline interpolation as necessary \- but the frequency range must span
+the entire range of calibration frequencies.
+The \fBvnacal_new_set_frequency_vector\fP() function must be called
+before \fBvnacal_new_set_m_error\fP().
+If \fIfrequencies\fP is 1, then \fIfrequency_vector\fP is not used
+and can be specified as \s-2NULL\s+2.  In this case, the single noise
+values given apply to all frequencies.
+If \fIfrequencies\fP is equal to the number of frequencies given in
+\fBvnacal_new_set_frequency_vector\fP() and \fIfrequency_vector\fP
+is \s-2NULL\s+2, then the frequency vector defaults to that given
+in \fBvnacal_new_set_frequency_vector\fP().
+.PP
+When using \s-2VNACAL_T16\s+2 or \s-2VNACAL_U16\s+2 error term types
+with measurement error modeling, the complete s-parameter matrix for
+each calibration standard must be given; when not using measurement
+error modeling, not all cells of these matrices are required to be
+known.
+.PP
+When measurement error modeling is enabled, \fBvnacal_new_solve\fP()
+computes a p-value giving the probability that the magnitudes of the
+residuals observed are less than or equal to those expected due to random
+errors, assuming that the measurements are consistent with the specifed
+error model.
+The \fBvnacal_new_set_pvalue_limit\fP() function sets the
+\fIsignificance\fP below which the library should reject the null
+hypothesis that the measurements are consistent.
+In this case, \fBvnacal_new_solve\fP() returns failure.
+\fIsignificance\fP must be greater than zero and no more than one.
+The default is 0.001.
+.PP
+Some of the solve methods used in \fBvnacal_new_solve\fP() are iterative
+and some are analytical.
+If we're modeling measurement errors (see \fBvnacal_new_set_m_error\fP()),
+the solution is always iterative.
+Here, the library weights the equations such that the residuals reflect
+the expected measurement errors.
+The solved error terms depend on the weights, but the weights depend on
+the solved error terms, thus the library iterates until these converge.
+When there are unknown parameters in the calibration standards, the
+solution method is usually iterative, except in the special case of
+two-port TRL, which has an analytical solution.
+The following functions control the iterative methods.
+.PP
+\fBvnacal_new_set_et_tolerance\fP() sets the degree of RMS change in
+the error terms sufficiently small to stop iteration.
+Similarly
+\fBvnacal_new_set_p_tolerance\fP() sets the degree of RMS change in the
+unknown parameters sufficiently small to stop iteration.
+Both tolerances must be met before the system is considered to be converged.
+The default value for both functions is 1.0e-6.
+.PP
+\fBvnacal_new_set_iteration_limit\fP() sets the maximum number of
+iterations allowed for convergence.
+If the system has still not converged by this limit, then
+\fBvnacal_new_solve\fP() fails.
+The default is 30.
 .\"
 .SH "RETURN VALUE"
+The \fBvnacal_new_alloc\fP() function returns a pointer to an opaque
+\fBvnacal_new_t\fP structure needed by the other functions.
 All integer-valued functions return 0 on success or -1 on error.
 .\"
 .SH ERRORS

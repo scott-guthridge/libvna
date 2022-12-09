@@ -39,10 +39,10 @@ extern "C" {
  */
 typedef struct vnacal_new_m_error {
     /* standard deviation of measurement noise */
-    double vnme_noise;
+    double vnme_sigma_nf;
 
     /* standard deviation of measurement gain error */
-    double vnme_gain;
+    double vnme_sigma_tr;
 
 } vnacal_new_m_error_t;
 
