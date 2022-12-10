@@ -10,8 +10,8 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install autoconf automake build-essential devscripts \
-             libtool libyaml-dev make
+        sudo apt-get install autoconf automake build-essential \
+             debhelper-compat devscripts libtool libyaml-dev make
     - name: Checkout Code
       uses: actions/checkout@v2
     - name: Build Debian Package
