@@ -11,14 +11,18 @@
     - Change v tolerance to e(or t) tolerance, putting it in units
       of the error terms.  This is easier to explain and easier to
       decide on a reasonable threshold.
+      DONE
 
     - Document vnacal_new_set_m_error, vnacal_new_set_p_tolerance,
       vnacal_new_set_e_tolerance, vnacal_new_set_pvalue_limit, and
       measurement error and connection repeatablity modeling in general.
+      DONE
 
 == Improvements to the Examples ==
 
-    - Add example for unknown through
+    - Add example for UXYZ, a.k.a "unknown through"
+	unknown symmetrical line (S12=S21)
+	3 known reflects
 
     - Add vnacal-T16-example.c using T-MM-SS-SM-MS standards.
       Approach: generally follow the example of vnacal-TSD-example, but
@@ -29,14 +33,10 @@
 
     - Add example for TXYZ / LXYZ
 	through, 3 known reflects
+	Note: this is just a generalition on SOLT.
 
     - Add example for LRRM
 	known line, 2 unknown equal reflects, match
-
-    - Add example for UXYZ
-	unknown symmetrical line (S12=S21)
-	3 known reflects
-
 
 == Improvements to the Tests ==
 
@@ -90,3 +90,4 @@
    - Figure out what it will take to support differential input ports.
 
    - Add noise figure support to touchstone import/export.
+
