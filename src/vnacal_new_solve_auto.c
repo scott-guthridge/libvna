@@ -119,7 +119,7 @@ static void save_v_matrices(const vnacal_new_solve_state_t *vnssp,
 	}
 	for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
 	    if (vnmmp->vnsm_v_matrices[sindex] != NULL) {
-		(void *)memcpy((void *)&v_matrices[offset],
+		(void)memcpy((void *)&v_matrices[offset],
 			(void *)vnmmp->vnsm_v_matrices[sindex],
 			v_cells * sizeof(double complex));
 		offset += v_cells;
@@ -149,7 +149,7 @@ static void restore_v_matrices(vnacal_new_solve_state_t *vnssp,
 	}
 	for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
 	    if (vnmmp->vnsm_v_matrices[sindex] != NULL) {
-		(void *)memcpy((void *)vnmmp->vnsm_v_matrices[sindex],
+		(void)memcpy((void *)vnmmp->vnsm_v_matrices[sindex],
 		        (void *)&v_matrices[offset],
 			v_cells * sizeof(double complex));
 		offset += v_cells;
