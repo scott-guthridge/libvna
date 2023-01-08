@@ -2,6 +2,7 @@
 
     - Split the build instructions out of README.  In README, include only
       generic information that makes sense when intalled in /usr/share/doc/*/.
+      DONE
 
     - Rename El (leakage) to Ed (directivity), and Ef (forward) to Et
       (transmission tracking).  Maintain compatiblity with .vnacal files.
