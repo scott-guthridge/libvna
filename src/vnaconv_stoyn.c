@@ -60,7 +60,7 @@ void vnaconv_stoyn(const double complex *s, double complex *y,
     }
 
     /*
-     * Find z = a^-1 b
+     * Find y = a^-1 b
      */
     _vnacommon_mldivide(y, a, b, n, n);
 
