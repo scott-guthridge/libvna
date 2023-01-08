@@ -120,10 +120,20 @@ make distclean
 
 ## MacOS Brew
 
+If you haven't already installed "brew", use the following steps to
+install it (see https://phoenixnap.com/kb/install-homebrew-on-mac):
+
+- `xcode-select --install`
+- Select Install and accept the license
+- `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"`
+- Enter admin password when prompted
+- Press return to install Homebrew
+
+
 ### Preparing the Source From a .tar.gz file (tarball)
 
 ```
-brew install autoconf automake libtool libyaml
+brew install libyaml
 tar xzf libvna-X.Y.Z.tar.gz
 cd libvna-X.Y.Z
 ./configure
@@ -151,7 +161,44 @@ make distclean
 
 ### Alternative Method: Brew Install
 
-TODO: fill in details
+To install using brew, first update your brew environment:
+
+```
+brew update
+```
+
+Next, create/update the Formula for libvna.  This will put you into
+your editor (default is vi).
+
+```
+brew create https://github.org/scott-guthridge/libvna/archive/refs/tags/libvna-X.Y.Z.tar.gz
+```
+
+Make the file contents look like the following (with version numbers
+and SHA256 sum updated apporopriately):
+
+```
+class Libvna < Formula
+  desc "Vector Network Analyzer Library"
+  homepage "https://github.com/scott-guthridge/libvna"
+  url "https://github.com/scott-guthridge/libvna/archive/refs/tags/libvna-0.3.6.tar.gz"
+  sha256 "d88c9fc74612f460755fc62eafd0165a1016b5dda5518f3b3fc9a31dcf4bbbee"
+  license "GPL-3"
+  depends_on "libyaml"
+
+  def install
+    system "./configure", *std_configure_args
+    system "make", "-j12", "check"
+    system "make", "install"
+  end
+end
+```
+
+Install:
+
+```
+brew install libvna
+```
 
 ---
 
