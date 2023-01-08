@@ -10,6 +10,8 @@ dist_examples_DATA = README-EXAMPLES
 dist_noinst_SCRIPTS = bootstrap
 
 dist_noinst_DATA = \
+	README-BUILD.md \
+	README-DEVELOPMENT.md \
 	debian/changelog \
 	debian/control \
 	debian/copyright \
