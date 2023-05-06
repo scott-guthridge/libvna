@@ -72,6 +72,11 @@
 #define W2	(2 * M_PI * 1e+6)
 
 /*
+ * EL21: phase-shifted leakage from port 1 signal source into detector 2
+ */
+#define EL21	(0.1 * I)
+
+/*
  * measurement_t: which simulated measurement should vna_measure return
  */
 typedef enum measurement {
@@ -122,32 +127,32 @@ static int vna_measure(measurement_t measurement,
 	    /*
 	     * The shorted calibration standard on port 1 shunts
 	     * out the stray capacitance, giving a perfect gamma
-	     * value of -1.  Port 1 is connected to a terminator
-	     * and receives no signal, but the detector picks up
-	     * a bit of internal noise.
+	     * value of -1.  Port 2 is connected to a terminator
+	     * and receives no signal, but the detector receives
+	     * some internal leakage.
 	     */
 	    detector1 = -1.0;
-	    detector2 =  0.1;
+	    detector2 =  EL21;
 	    break;
 
 	case OPEN_CALIBRATION:
 	    /*
 	     * The open calibration standard exposes the stray
-	     * capacitance on port 1.  Port 1 continues to pick up
-	     * internal noise.
+	     * capacitance on port 1.  Port 2 continues to pick up
+	     * internal leakage.
 	     */
 	    detector1 = (1.0 - s/W1) / (1.0 + s/W1);
-	    detector2 = -0.3;
+	    detector2 = EL21;
 	    break;
 
 	case LOAD_CALIBRATION:
 	    /*
 	     * The load calibration is in parallel with the stray
-	     * capacitance on port 1.  Port 1 picks up yet more
-	     * internal noise.
+	     * capacitance on port 1.  Port 2 picks up yet more
+	     * internal leakage.
 	     */
 	    detector1 = -s / (s + 2*W1);
-	    detector2 = 0.2;
+	    detector2 = EL21;
 	    break;
 
 	case THROUGH_CALIBRATION:
@@ -159,7 +164,7 @@ static int vna_measure(measurement_t measurement,
 	     */
 	    d = s*s + 2*W1*s + 2*W1*W1;
 	    detector1 = -s*s / d;
-	    detector2 = 2*W1*W1 / d;
+	    detector2 = 2*W1*W1 / d + EL21;
 	    break;
 
 	case FORWARD_MEASUREMENT:
@@ -171,7 +176,7 @@ static int vna_measure(measurement_t measurement,
 	    d = s*s*s*s + 2*W1*s*s*s + (W1+W2)*(W1+W2)*s*s
 		+ 2*W1*W2*(W1+W2)*s + 2*W1*W1*W2*W2;
 	    detector1 = -(s*s*s*s - (W1*W1 - 2*W1*W2 - W2*W2)*s*s) / d;
-	    detector2 = 2*W1*W1*W2*W2 / d;
+	    detector2 = 2*W1*W1*W2*W2 / d + EL21;
 	    break;
 
 	case REVERSE_MEASUREMENT:
@@ -183,7 +188,7 @@ static int vna_measure(measurement_t measurement,
 	     */
 	    d = s*s + 2*W1*W2/(W1+W2)*s + 2*W1*W1*W2*W2/((W1+W2)*(W1+W2));
 	    detector1 = -s*s / d;
-	    detector2 = 2*W1*W1*W2*W2/((W1+W2)*(W1+W2)) / d;
+	    detector2 = 2*W1*W1*W2*W2/((W1+W2)*(W1+W2)) / d + EL21;
 	    break;
 
 	default:
