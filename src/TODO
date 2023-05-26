@@ -1,23 +1,37 @@
 == Misc ==
 
-    - Split the build instructions out of README.  In README, include only
-      generic information that makes sense when intalled in /usr/share/doc/*/.
-      DONE
+    - In vnadata_load, make the filename extension case-insensitive
+      for determining the file type, e.g. .S4P === .s4p.
 
-    - Rename El (leakage) to Ed (directivity), and Ef (forward) to Et
-      (transmission tracking).  Maintain compatiblity with .vnacal files.
+    - Consider renaming El (leakage) to Ed (directivity), and Ef (forward)
+      to Et (transmission tracking).  Maintain backward compatiblity in
+      .vnacal files.
 
-== Measurement Tolerance & Error ==
+== New Functions ==
 
-    - Change v tolerance to e(or t) tolerance, putting it in units
-      of the error terms.  This is easier to explain and easier to
-      decide on a reasonable threshold.
-      DONE
+    - Add a new vnacal_*_parameter function that takes a vnadata_t
+      and returns a matrix of parameter handles.
 
-    - Document vnacal_new_set_m_error, vnacal_new_set_p_tolerance,
-      vnacal_new_set_e_tolerance, vnacal_new_set_pvalue_limit, and
-      measurement error and connection repeatablity modeling in general.
-      DONE
+    - Add a new vnacal_*_parameter function that takes a matrix
+      representing a multi-port standard, a vector of gamma-el values, one
+      for each port, and returns a new matrix of parameter handles with
+      lengths of transmission line (possibly negative) added to each port.
+
+    - Add a new vnacal_*_parameter function that takes the parameter
+      handle for a single reflect standard and a gamma-el and returns
+      a new parameter handle reflecting the addition of a length of
+      transmission line in front of the standard. [Only if this makes
+      the API simpler - implement as front-end to the more general
+      function.]
+
+== Improvements to Documentation ==
+
+    - Create wiki, HTML, or LaTeX documentation with more in-depth
+      documentation on the theory and best practices for the library.
+      For example, in calibration, explain T and U parameters with
+      matrix elements and the Ts, Ti, Tx, Tm / Um, Ui, Ux, Us notation.
+      Explain that the reason we do everyting in T and U parameters is
+      that the system of equations becomes linear.
 
 == Improvements to the Examples ==
 
@@ -41,12 +55,16 @@
 
 == Improvements to the Tests ==
 
+    - For the major diagonal of the error term matrix, instead of using
+      1.0 plus a complex normal, use a more general non-central random
+      number generator.
+
     - Make tests that invoke each of the examples.  Create expected output
       files and compare that values are approximately equal.  Be careful
       with build and source directories set to different places.
 
 
-== Potential New Functionality ==
+== Potential Additional New Functionality ==
 
     - Add a function to calculate and return the error bounds covariance
       matrix as described by the Van-hamme paper.  This gives an error
@@ -56,12 +74,16 @@
 
     - Make the vnacommon functions public: remove the underscore prefix,
       vnacommon_internal.h to vnacommon.h, add man page.  If publicized,
-      remove the const int [ijk]'s from the interface since these have
-      no effect on the API and will create confusion.
+      remove the const int i, j, k's from the interface since these have
+      no effect on the API and will likely mislead the caller.
+
+      Argument against: we could alternatively drop our matrix functions
+      and use the lapacke functions instead.  Publicizing ours would force
+      us to continue maintaining APIs for functions we no longer used.
 
     - Add frequency-dependent Z0 support to vnacal_new, vnacal.
-      Complex reference impedances really make sense only if they're
-      frequency dependent.
+      Complex reference impedances make sense only if you can specify
+      frequency dependent values.
 
     - Bring back vnacal_apply_t from the git history (consider renaming
       to vnacal_map_t to better match what it does and avoid confusion
@@ -88,7 +110,8 @@
       never negative.  When a DUT port is connected to the VNA, we can
       use the negative of the VNA port number.
 
-   - Figure out what it will take to support differential input ports.
+   - Determine what's needed to support network parameters in common
+     and differential form.
 
    - Add noise figure support to touchstone import/export.
 
