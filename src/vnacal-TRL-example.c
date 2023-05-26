@@ -120,14 +120,8 @@ char *progname;
 
 /*
  * Calculate ideal and actual propagation constant.
- *   IDEAL_GAMMA(f): return propagation constant for lossline line
+ *   IDEAL_GAMMA(f): return propagation constant for lossless line
  *   ACTUAL_GAMMA(f): return propagation constant for imperfect line
- *
- *   Note: we use a lossy line standard to show that VNA calibration can
- *   solve for the complex S12=S21 line parameter.  But at the same time,
- *   we're making the conflicting assumption that the impedance looking
- *   into the line standard is Z0.  As long as we're careful about this,
- *   it won't invalidate the result.
  */
 #define IDEAL_GAMMA(f) \
 	(I * 2.0 * PI * (f) / (C * VF))
