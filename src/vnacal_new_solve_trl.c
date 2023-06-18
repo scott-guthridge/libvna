@@ -205,16 +205,25 @@ int _vnacal_new_solve_trl(vnacal_new_solve_state_t *vnssp,
 
     /*
      * Solve for the unknown line parameter, l.  There are two
-     * solutions: choose the one closest to the initial guess.
+     * solutions, which because a == c are reciprocals of each
+     * other: choose the one closest to the initial guess.
+     *
+     * In theory, ml12 * mt21 should be equal to ml21 * mt12.
+     * Take the average to reduce measurement noise.
      */
     {
 	double complex a, b, c, u, v;
 	double complex guess;
 	double d1, d2;
 
-	a = ml12 * mt21;
+	a = (ml12 * mt21 + ml21 * mt12) / 2.0;
+	if (cabs(a) < 1.0e-8) {
+	    _vnacal_error(vcp, VNAERR_MATH, "vnacal_new_solve: "
+		    "solution of unknown line parameter is singular");
+	    return -1;
+	}
 	b = (ml11 - mt11) * (ml22 - mt22) - ml12 * ml21 - mt12 * mt21;
-	c = mt12 * ml21;
+	c = a;
 	u = -b / (2.0 * a);
 	v = csqrt(b*b - 4.0 * a * c) / (2.0 * a);
 	guess = vnssp->vnss_p_vector[vntip->vnti_l_unknown][findex];
@@ -229,17 +238,21 @@ int _vnacal_new_solve_trl(vnacal_new_solve_state_t *vnssp,
 
     /*
      * Calculate the unknown reflect parameter, r.  There are two
-     * solutions: choose the one closest to the intial guess.
+     * solutions: choose the one closest to the initial guess.
+     *
+     * Note that this solution yields zero over zero if the VNA is
+     * perfect, e.g. ts11=1, ts22=1, ti11=0, ti22=0, tx11=0, tx22=0,
+     * tm22=1 and similar cases. TODO: handle these.
      */
     {
 	double complex n, d;
 	double complex guess;
 	double d1, d2;
 
-	n = (-ml12 * mt21 + (mt12 * mt21 - (ml11 - mt11) * (mr22 - mt22)) * l) *
-		((mr11 - mt11) * (ml22 - mt22) * l + mt12 * (ml21 - mt21 * l));
-	d = (ml21 * (mt22 - mr22) + mt21 * (mr22 - ml22) * l) *
-		(-mt11 * ml12 + ml11 * mt12 * l + mr11 * (ml12 - mt12 * l));
+	n = (ml21 * mt12 - l * ((mr11 - mt11) * (mt22 - ml22) + mt12 * mt21)) *
+	    (ml12 * mt21 - l * ((mr22 - mt22) * (mt11 - ml11) + mt12 * mt21));
+	d = (ml12 * (mr11 - mt11) - l * mt12 * (mr11 - ml11)) *
+	    (ml21 * (mr22 - mt22) - l * mt21 * (mr22 - ml22));
 	if (d == 0.0) {
 	    _vnacal_error(vcp, VNAERR_MATH, "vnacal_new_solve: "
 		    "solution of unknown reflect parameter is singular");
