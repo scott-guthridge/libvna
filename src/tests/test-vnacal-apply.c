@@ -31,6 +31,7 @@
 #endif
 #include "vnacal_internal.h"
 #include "libt.h"
+#include "libt_crand.h"
 #include "libt_vnacal.h"
 
 

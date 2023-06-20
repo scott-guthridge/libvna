@@ -31,6 +31,7 @@
 #endif
 #include "vnaconv_internal.h"
 #include "libt.h"
+#include "libt_crand.h"
 
 
 #define Z1	z0[0]

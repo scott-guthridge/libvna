@@ -13,7 +13,8 @@ AM_CFLAGS= -I$(top_srcdir)/src
 # vnacaltest library
 #
 noinst_LIBRARIES = libt.a
-libt_a_SOURCES = libt.h libt.c libt_vnacal.h libt_vnacal_calibration.c \
+libt_a_SOURCES = libt.h libt.c libt_crand.h libt_crand.c \
+	libt_vnacal.h libt_vnacal_calibration.c \
 	libt_vnacal_measurements.c libt_vnacal_properties.c \
 	libt_vnacal_standards.c libt_vnacal_terms.c \
 	libt_vnadata_convert.c libt_vnadata_create.c libt_vnadata.h

@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include "libt.h"
+#include "libt_crand.h"
 #include "libt_vnadata.h"
 
 

@@ -199,57 +199,6 @@ double libt_randn()
 }
 
 /*
- * libt_crandn: generate a complex normal random number
- */
-double complex libt_crandn()
-{
-    double u1 = (random() + 1.0) / RAND_MAX;	/* Box Muller method */
-    double u2 = (double)random() / RAND_MAX;
-    double r = sqrt(-2.0 * log(u1));
-    double a = 2 * M_PI * u2;
-
-    return SQRT2_2 * r * (cos(a) + I * sin(a));
-}
-
-/*
- * libt_crandn_nz: like libt_crandn, except with magitude >= 0.1
- */
-double complex libt_crandn_nz()
-{
-    double u1 = (random() + 1.0) / RAND_MAX;
-    double u2 = (double)random() / RAND_MAX;
-    double r = 0.1 + 0.9 * sqrt(-2.0 * log(u1));
-    double a = 2 * M_PI * u2;
-
-    return SQRT2_2 * r * (cos(a) + I * sin(a));
-}
-
-/*
- * libt_crandn_nrz: like libt_crandn_nz, angle in 20-160, 200-340 degrees
- */
-double complex libt_crandn_nrz()
-{
-    double u1 = (random() + 1.0) / RAND_MAX;
-    double u2 = (double)random() / RAND_MAX;
-    double r = 0.1 + 0.9 * sqrt(-2.0 * log(u1));
-    double d = (2.0 * u2 - 1.0) * 140.0;
-    double a;
-
-    /*
-     * Coming into this expression, d is +/- 140.  If non-negative,
-     * shift it to 20 ... 160.  If negative, shift it to -160 ... -20
-     */
-    if (d >= 0.0) {
-	d += 20.0;
-    } else {
-	d -= 20.0;
-    }
-    a = M_PI / 180.0 * d;
-
-    return SQRT2_2 * r * (cos(a) + I * sin(a));
-}
-
-/*
  * libt_print_cmatrix: print an m by n serialized complex matrix
  */
 void libt_print_cmatrix(const char *tag, double complex *a, int m, int n)

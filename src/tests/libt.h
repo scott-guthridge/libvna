@@ -79,15 +79,6 @@ extern double libt_randn();
 /* libt_randn: return a pair of normally distributed random numbers */
 extern double libt_randn2(double *);
 
-/* libt_crandn: generate a complex normal random number */
-extern double complex libt_crandn();
-
-/* libt_crandn_nz: like libt_crandn, except with magitude >= 0.1 */
-double complex libt_crandn_nz();
-
-/* libt_crandn_nrz: like libt_crandn_nz, but angle in 20-160, 200-340 degrees */
-extern double complex libt_crandn_nrz();
-
 /* libt_fail: report a test failure and abort if opt_a */
 extern void libt_fail(const char *format, ...)
 #ifdef __GNUC__

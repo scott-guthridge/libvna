@@ -26,8 +26,39 @@
 #include <errno.h>
 #include <stdio.h>
 #include "libt.h"
+#include "libt_crand.h"
 #include "libt_vnacal.h"
 
+
+/*
+ * term_info_t: parameters and other state used internally
+ */
+typedef struct term_info {
+    /* complex random number generator of off-diagonal error terms */
+    libt_crand_generator_t *ti_cg0;
+
+    /* complex random number generator of diagonal error terms */
+    libt_crand_generator_t *ti_cg1;
+
+} term_info_t;
+
+/*
+ * crand0: generate complex random numbers for off-diagonal entries
+ *         which can be zero
+ */
+static inline double complex crand0(const term_info_t *tip)
+{
+    return tip->ti_cg0->cg_crand(tip->ti_cg0);
+}
+
+/*
+ * crand1: generate complex random numbers for diagaonal entries which
+ *         must not be zero
+ */
+static inline double complex crand1(const term_info_t *tip)
+{
+    return tip->ti_cg1->cg_crand(tip->ti_cg1);
+}
 
 /*
  * gen_e_terms: generate random error terms

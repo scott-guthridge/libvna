@@ -31,6 +31,7 @@
 #endif
 #include "vnacommon_internal.h"
 #include "libt.h"
+#include "libt_crand.h"
 
 
 #define N_MATRIX_TRIALS	100
