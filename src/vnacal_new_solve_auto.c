@@ -51,7 +51,7 @@ static void print_cmatrix(const char *name, double complex *a, int m, int n)
 	for (int j = 0; j < n; ++j) {
 	    double complex v = a[i * n + j];
 
-	    (void)printf(" %9.5f%+9.5fj", creal(v), cimag(v));
+	    (void)printf(" %+.5f%+.5fj", creal(v), cimag(v));
 	}
 	(void)printf("\n");
     }
@@ -327,12 +327,12 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	/* mean of squared magnitudes of differences in v_matrices from best */
 	double sum_dx_squared = 0.0;
 
-#if DEBUG >= 2
+#if DEBUG >= 3
 	/* Jacobian of a_matrix with respect to vnss_p_vector */
 	double complex aprimex_matrix[equations][p_length];
 #endif
 
-#if DEBUG >= 2
+#if DEBUG >= 3
 	(void)printf("# iteration %d\n", iteration);
 #endif
 	/*
@@ -400,7 +400,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    }
 	}
 	assert(equation == equations);
-#ifdef DEBUG
+#if DEBUG >= 2
 	print_cmatrix("a", &a_matrix[0][0], equations, x_length);
 	print_cmatrix("b", b_vector, equations, 1);
 #endif /* DEBUG */
@@ -426,10 +426,10 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		    "singular linear system");
 	    goto out;
 	}
-#if DEBUG >= 2
+#if DEBUG >= 3
 	print_cmatrix("q", &q_matrix[0][0], equations, equations);
 	print_cmatrix("r", &r_matrix[0][0], equations, x_length);
-#endif /* DEBUG >= 2 */
+#endif /* DEBUG >= 3 */
 
 	/*
 	 * Solve for x_vector.
@@ -627,13 +627,13 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    }
 	    k_vector[i] = 0.0;
 	}
-#if DEBUG >= 2
+#if DEBUG >= 3
 	for (int i = 0; i < equations; ++i) {
 	    for (int j = 0; j < p_length; ++j) {
 		aprimex_matrix[i][j] = 0.0;
 	    }
 	}
-#endif /* DEBUG >= 2 */
+#endif /* DEBUG >= 3 */
 	equation = 0;
 	for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
 	    int offset = sindex * (vlp->vl_t_terms - 1);
@@ -671,9 +671,9 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 			    v *= w_vector[equation];
 			}
 			v *= x_vector[offset + xindex];
-#if DEBUG >= 2
+#if DEBUG >= 3
 			aprimex_matrix[equation][unknown] += v;
-#endif /* DEBUG >= 2 */
+#endif /* DEBUG >= 3 */
 			for (int k = 0; k < p_equations; ++k) {
 			    j_matrix[k][unknown] -=
 				conj(q_matrix[equation][x_length + k]) * v;
@@ -693,9 +693,9 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    }
 	}
 	assert(equation == equations);
-#if DEBUG >= 2
+#if DEBUG >= 3
 	print_cmatrix("aprimex", &aprimex_matrix[0][0], equations, p_length);
-#endif /* DEBUG >= 2 */
+#endif /* DEBUG >= 3 */
 
 	/*
 	 * Add an additional row to j_matrix and k_vector for each
@@ -776,7 +776,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    }
 	    assert(j_row == j_rows);
 	}
-#ifdef DEBUG
+#if DEBUG >= 2
 	print_cmatrix("j", &j_matrix[0][0], j_rows, p_length);
 	print_cmatrix("k", k_vector, j_rows, 1);
 #endif /* DEBUG */
@@ -829,9 +829,9 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    sum_dx_squared += _vnacommon_cabs2(x_vector[i] - best_x_vector[i]);
 	}
 #ifdef DEBUG
-	(void)printf("# sum_dx_squared %13.6e\n", sum_dx_squared);
-	(void)printf("# vn_p_tolerance %13.6e\n", vnp->vn_p_tolerance);
-	(void)printf("# vn_et_tolerance %13.6e\n", vnp->vn_et_tolerance);
+	(void)printf("# sum_dx_squared     %13.6e\n", sum_dx_squared);
+	(void)printf("# vn_p_tolerance     %13.6e\n", vnp->vn_p_tolerance);
+	(void)printf("# vn_et_tolerance    %13.6e\n", vnp->vn_et_tolerance);
 #endif /* DEBUG */
 
 	/*
@@ -898,6 +898,11 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		    x_length * sizeof(double complex));
 	    (void)memcpy((void *)best_d_vector, (void *)d_vector,
 		    p_length * sizeof(double complex));
+#ifdef DEBUG
+	    print_cmatrix("best_p_vector", best_p_vector, p_length, 1);
+	    print_cmatrix("best_x_vector", best_x_vector, x_length, 1);
+	    print_cmatrix("best_d_vector", best_d_vector, p_length, 1);
+#endif /* DEBUG */
 
 	    /*
 	     * Apply d_vector to vnss_p_vector.
