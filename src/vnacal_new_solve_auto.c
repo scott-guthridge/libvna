@@ -213,7 +213,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
     double complex best_d_vector[p_length];
 
     /* best V matrices */
-    double complex *best_v_matrices = NULL;
+    double complex *prev_v_matrices = NULL;
 
     /* sum of squares of best_d_vector, initially infinite */
     double best_sum_d_squared = INFINITY;
@@ -264,13 +264,13 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 
     /*
      * If a measurement error vector was given, calculate weights
-     * for each measurement and allocate and init best_v_matrices.
+     * for each measurement and allocate and init prev_v_matrices.
      */
     if (vnp->vn_m_error_vector != NULL) {
 	if ((w_vector = vs_calc_weights(vnssp)) == NULL) {
 	    goto out;
 	}
-	if ((best_v_matrices = alloc_v_matrices(vnssp)) == NULL) {
+	if ((prev_v_matrices = alloc_v_matrices(vnssp)) == NULL) {
 	    goto out;
 	}
     }
@@ -442,8 +442,11 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 #endif /* DEBUG */
 
 	/*
-	 * Update the V matrices from the new x_vector.
+	 * Save then update the V matrices from the new x_vector.
 	 */
+	if (prev_v_matrices != NULL) {
+	    save_v_matrices(vnssp, prev_v_matrices);
+	}
 	if (vs_update_all_v_matrices("vnacal_new_solve",
 		    vnssp, x_vector, x_length) == -1) {
 	    goto out;
@@ -893,9 +896,6 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    }
 	    (void)memcpy((void *)best_x_vector, (void *)x_vector,
 		    x_length * sizeof(double complex));
-	    if (best_v_matrices != NULL) {
-		save_v_matrices(vnssp, best_v_matrices);
-	    }
 	    (void)memcpy((void *)best_d_vector, (void *)d_vector,
 		    p_length * sizeof(double complex));
 
@@ -940,11 +940,11 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		    cimag(best_d_vector[i]));
 #endif /* DEBUG */
 		vnssp->vnss_p_vector[i][findex] =
-		    best_p_vector[i] + best_d_vector[i];
+		    best_p_vector[i] - best_d_vector[i];
 	    }
 	    vs_update_s_matrices(vnssp);
-	    if (best_v_matrices != NULL) {
-		restore_v_matrices(vnssp, best_v_matrices);
+	    if (prev_v_matrices != NULL) {
+		restore_v_matrices(vnssp, prev_v_matrices);
 	    }
 #ifdef DEBUG
 	    for (int i = 0; i < p_length; ++i) {
@@ -982,7 +982,7 @@ success:
     /*FALLTHROUGH*/
 
 out:
-    free((void *)best_v_matrices);
+    free((void *)prev_v_matrices);
     free((void *)w_vector);
     return rv;
 }
