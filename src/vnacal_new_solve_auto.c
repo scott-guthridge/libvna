@@ -328,7 +328,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	double sum_dx_squared = 0.0;
 
 #if DEBUG >= 3
-	/* Jacobian of a_matrix with respect to vnss_p_vector */
+	/* Jacobian matrix with respect to vnss_p_vector */
 	double complex aprimex_matrix[equations][p_length];
 #endif
 
@@ -501,18 +501,18 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 *
 	 * Using this method, we make an initial guess for p, solve x as
 	 * a linear system, project the remaining equations into a new
-	 * space that lets us construct the Jacobian in terms of p only,
-	 * use Gauss-Newton to improve our estimate of p and repeat from
-	 * the solve for x step until we have suitable convergence.
+	 * space that lets us construct the Jacobian matrix in terms of p
+	 * only, use Gauss-Newton to improve our estimate of p and repeat
+	 * from the solve for x step until we have suitable convergence.
 	 *
-	 * Following is a brief derivation of the variable projection method.
+	 * The following comments describe the variable projection method.
 	 *
 	 * Our goal is to minimize the system A(p) x = b in a least-squares
 	 * sense, where A(p) is matrix valued function of vector p, b is a
 	 * known vector, and x and p are the unknown vectors we need to find
 	 * in order to to minimize:
 	 *
-	 *     || b - A(p) x ||^2
+	 *     || A(p) x - b ||^2
 	 *
 	 * There must be an orthogonal matrix Q that diagonalizes A to R.
 	 * Both of the new resulting matrices still depend on p.
@@ -533,14 +533,14 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 *
 	 * Solve A(p) x = b for x:
 	 *
-	 *   A(p)        x = b
+	 *          A(p) x = b
 	 *   Q1(p) R1(p) x = b
-	 *   R1(p)       x = Q1(p)^H b
+	 *         R1(p) x = Q1(p)^H b
 	 *               x = R1(p)^-1 Q1(p)^H b
 	 *
 	 * which minimizes:
 	 *
-	 *     || b - A(p) x ||^2
+	 *     || A(p) x - b ||^2
 	 *
 	 * with our current guess for p.
 	 *
@@ -551,63 +551,77 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 *   = || Q(p)^H (b - A(p) x) ||^2
 	 *
 	 *   = || Q1(p)^H b - Q1(p)^H A(p) x ||^2
-	 *     || Q2(p)^H b - Q2(p)^H A(p) x ||^2
+	 *     || Q2(p)^H b - Q2(p)^H A(p) x ||
 	 *
 	 * But Q1(p)^H A(p) = R1(p), and Q2(p)^H A(p) = 0, so
 	 *
 	 *   = || Q1(p)^H b - R1(p) x ||^2
-	 *     || Q2(p)^H b - 0       ||^2
+	 *     || Q2(p)^H b - 0       ||
 	 *
 	 * and because R1(p) x = Q1(p)^H b from above, Q1(p)^H b - R1(p) x = 0
 	 *
 	 *   = || 0         ||^2
-	 *     || Q2(p)^H b ||^2
+	 *     || Q2(p)^H b ||
 	 *
 	 * so we simply need to minimize:
 	 *
 	 *     || Q2(p)^H b ||^2
 	 *
 	 * We will improve p using Gauss-Newton.  We need the Jacobian
-	 * matrix of the residuals above with respect to each p_k.
+	 * matrix for the residuals in the new system with respect to
+	 * each p_k, which we'll now work toward.
+	 *
+	 * In the equations below, a prime (') symbol on a matrix
+	 * represents the element by element partial derivative with
+	 * respect to p[k].  We'll use the notication, A'(p)_k to
+	 * represent the parital derivative of A with respect to p[k].
+	 * We'll consider each k separately, one at a time.
 	 *
 	 * Recall from above that Q2(p)^H A(p) = 0.  If we take the
 	 * partial derivative of each side with respect respect to each
 	 * p_k, then from the product rule, we get:
 	 *
-	 *   Q2'(p)^H A(p) +  Q2(p)^H A'(p) = 0
+	 *   Q2'(p)^H_k A(p) +  Q2(p)^H A'(p)_k = 0
 	 *
 	 * Re-arranging:
 	 *
-	 *   Q2'(p)^H A(p) = -Q2(p)^H A'(p)
+	 *   Q2'(p)^H_k A(p) = -Q2(p)^H A'(p)_k
 	 *
 	 * Using A(p) = Q1(p) R1(p):
 	 *
-	 *   Q2'(p)^H Q1(p) R1(p) = -Q2(p)^H A'(p)
+	 *   Q2'(p)^H_k Q1(p) R1(p) = -Q2(p)^H A'(p)_k
 	 *
 	 * Multiply on the right by R1(p)^-1 Q1(p)^H b:
 	 *
-	 *   Q2'(p)^H Q1(p) Q1(p)^H b = -Q2(p)^H A'(p) R1(p)^-1 Q1(p)^H b
-	 *
-	 * We'd really like Q1(p) Q1(p)^H to cancel, but they don't in
-	 * this direction.  But Kaufman 1975 suggests the approximation:
-	 *
-	 *   Q2'(p)^H ≈ -Q2(p)^H A'(p) A(p)^+
-	 *   where A(p)^+ is the pseudoinverse of A(p), or R1(p)^-1 Q(p)^H
-	 *
-	 * Using the approximation, we can treat Q1(p) Q1(p)^H as if they
-	 * do cancel:
-	 *
-	 *   Q2'(p)^H b ≈ -Q2(p)^H A'(p) R1(p)^-1 Q1(p)^H b
+	 *   Q2'(p)^H_k Q1(p) Q1(p)^H b = -Q2(p)^H A'(p)_k R1(p)^-1 Q1(p)^H b
 	 *
 	 * From above, R1(p)^-1 Q1(p)^H b = x:
 	 *
-	 *   Q2'(p)^H b ≈ -Q2(p)^H A'(p) x
+	 *   Q2'(p)^H_k Q1(p) Q1(p)^H b = -Q2(p)^H A'(p)_k x
 	 *
-	 * We can easily find A'(p) since it's just the coefficients
-	 * of A that contain the given p.  Thus our Jacobian matrix
-	 * (j_matrix) is:
+	 * Note that Q1(p) Q1(p)^H don't cancel in this direction.
 	 *
-	 *   J(p) ≈ -Q2(p)^H A'(p) x
+	 * We can easily find A'(p) because it's simply the coefficients
+	 * of the elements of A that contain the given p, but we have no
+	 * obvious way of finding Q'(p).  However, Kaufman "A variable
+	 * projection method for solving separable nonlinear least squares
+	 * problems", BIT 15(1975), pp 49-57, suggests the approximation:
+	 *
+	 *   Q2'(p)^H_k ≈ -Q2(p)^H A'(p)_k A(p)^+
+	 *   where A(p)^+ is the pseudoinverse of A(p), or R1(p)^-1 Q(p)^H
+	 *
+	 * so:
+	 *
+	 *   Q2'(p)^H_k b ≈ -Q2(p)^H A'(p)_k R1(p)^-1 Q1(p)^H b
+	 *
+	 * Again, substituting: R1(p)^-1 Q1(p)^H b = x:
+	 *
+	 *   Q2'(p)^H_k b ≈ -Q2(p)^H A'(p)_k x
+	 *
+	 * Thus, we form each column, k (and dummy i), of our Jacobian
+	 * matrix (j_matrix) from:
+	 *
+	 *   J(p)_ik ≈ -Q2(p)^H A'(p)_k x
 	 *
 	 * And the right hand side residual for Gauss-Newton is:
 	 *
@@ -620,6 +634,8 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 * and apply the correction:
 	 *
 	 *   p -= d
+	 *
+	 * until the magnitude of d is sufficiently small.
 	 */
 	for (int i = 0; i < j_rows; ++i) {
 	    for (int j = 0; j < p_length; ++j) {
