@@ -35,6 +35,9 @@ TODO: add in library versioning rules
 
 ## Creating a new release
 
+- Run make -j12 check
+- Run make distcheck
+- Run make rpm
 - On the development branch, update the version in the AC_INIT macro
   of configure.ac.  
 - Commit with a message in this format "version 0.0.3"
@@ -44,9 +47,10 @@ TODO: add in library versioning rules
 git tag -a v0.0.3 -m "v0.0.3"
 ```
 
-Push to github
+- Checkout the master branch, add the release and push to github
 
 ```
+git rebase development
 git push
 git push --tags
 ```
