@@ -77,7 +77,7 @@ int  opt_v = 0;
  */
 static void error_fn(const char *message, void *arg, vnaerr_category_t category)
 {
-    (void)fprintf(stderr, "%s: %s\n", progname, message);
+    (void)printf("%s: %s\n", progname, message);
 }
 
 /*
