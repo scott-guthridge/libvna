@@ -183,7 +183,7 @@ static libt_result_t run_one_experiment(int experiment,
      * Generate random error parameters.
      */
     if ((ttp = libt_vnacal_generate_error_terms(vcp, type, m_rows, m_columns,
-		    /*frequencies*/1, NULL, 1.0, 0)) == NULL) {
+		    /*frequencies*/1, NULL, 0)) == NULL) {
 	(void)fprintf(stderr, "%s: libt_vnacal_generate_error_terms: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;

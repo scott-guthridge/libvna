@@ -148,7 +148,7 @@ static libt_result_t run_vnacal_v_matrices_trial(int trial,
      * Generate random error parameters.
      */
     if ((ttp = libt_vnacal_generate_error_terms(vcp, type, m_rows, m_columns,
-		    frequencies, NULL, 1.0, 0)) == NULL) {
+		    frequencies, NULL, 0)) == NULL) {
 	(void)fprintf(stderr, "%s: libt_vnacal_generate_error_terms: %s\n",
 		progname, strerror(errno));
 	goto out;

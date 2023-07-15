@@ -184,7 +184,7 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
      */
     if ((ttp = libt_vnacal_generate_error_terms(vcp, type, 2, 2,
 		    FREQUENCIES, /*frequency_vector*/NULL,
-		    0.1, LIBT_GET_2_10_GHZ)) == NULL) {
+		    LIBT_GET_2_10_GHZ | LIBT_CLOSE_ETERMS)) == NULL) {
 	(void)fprintf(stderr, "%s: libt_vnacal_generate_error_terms: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;

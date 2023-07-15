@@ -65,8 +65,8 @@ static inline double complex crand1(const term_info_t *tip)
  *   @vlp: pointer to vnacal_layout_t structure
  *   @e: error term vector
  */
-static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
-	double sigma)
+static void gen_e_terms(const vnacal_layout_t *vlp, const term_info_t *tip,
+	double complex *e)
 {
     const int m_columns = VL_M_COLUMNS(vlp);
 
@@ -88,31 +88,19 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 
 	    assert(unity_offset == VL_TM_OFFSET(vlp));
 	    for (int ts_term = 0; ts_term < ts_terms; ++ts_term) {
-		ts[ts_term] = 1.0;
-		if (sigma != 0.0) {
-		    ts[ts_term] += sigma * libt_crandn();
-		}
+		ts[ts_term] = crand1(tip);
 	    }
 	    for (int ti_term = 0; ti_term < ti_terms; ++ti_term) {
-		ti[ti_term] = 0.0;
-		if (sigma != 0.0) {
-		    ti[ti_term] += sigma * libt_crandn();
-		}
+		ti[ti_term] = crand0(tip);
 	    }
 	    for (int tx_term = 0; tx_term < tx_terms; ++tx_term) {
-		tx[tx_term] = 0.0;
-		if (sigma != 0.0) {
-		    tx[tx_term] += sigma * libt_crandn();
-		}
+		tx[tx_term] = crand0(tip);
 	    }
 	    for (int tm_term = 0; tm_term < tm_terms; ++tm_term) {
-		tm[tm_term] = 1.0;
-		if (sigma != 0.0 && tm_term != 0) {
-		    tm[tm_term] += sigma * libt_crandn();
-		}
+		tm[tm_term] = tm_term == 0 ? 1.0 : crand1(tip);
 	    }
 	    for (int term = 0; term < el_terms; ++term) {
-		el[term] = libt_crandn();
+		el[term] = crand0(tip);
 	    }
 	}
 	break;
@@ -132,32 +120,21 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 	    double complex *el = &e[VL_EL_OFFSET(vlp)];
 	    const int unity_offset = _vl_unity_offset(vlp, 0);
 
+	    assert(unity_offset == VL_UM_OFFSET(vlp));
 	    for (int um_term = 0; um_term < um_terms; ++um_term) {
-		um[um_term] = 1.0;
-		if (sigma != 0.0 && um_term != unity_offset) {
-		    um[um_term] += sigma * libt_crandn();
-		}
+		um[um_term] = um_term == 0 ? 1.0 : crand1(tip);
 	    }
 	    for (int ui_term = 0; ui_term < ui_terms; ++ui_term) {
-		ui[ui_term] = 0.0;
-		if (sigma != 0.0) {
-		    ui[ui_term] += sigma * libt_crandn();
-		}
+		ui[ui_term] = crand0(tip);
 	    }
 	    for (int ux_term = 0; ux_term < ux_terms; ++ux_term) {
-		ux[ux_term] = 0.0;
-		if (sigma != 0.0) {
-		    ux[ux_term] += sigma * libt_crandn();
-		}
+		ux[ux_term] = crand0(tip);
 	    }
 	    for (int us_term = 0; us_term < us_terms; ++us_term) {
-		us[us_term] = 1.0;
-		if (sigma != 0.0) {
-		    us[us_term] += sigma * libt_crandn();
-		}
+		us[us_term] = crand1(tip);
 	    }
 	    for (int term = 0; term < el_terms; ++term) {
-		el[term] = libt_crandn();
+		el[term] = crand0(tip);
 	    }
 	}
 	break;
@@ -183,9 +160,10 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 		for (int ts_column = 0; ts_column < ts_columns; ++ts_column) {
 		    const int ts_cell = ts_row * ts_columns + ts_column;
 
-		    ts[ts_cell] = (ts_row == ts_column) ? 1.0 : 0.0;
-		    if (sigma != 0.0) {
-			ts[ts_cell] += sigma * libt_crandn();
+		    if (ts_row == ts_column) {
+			ts[ts_cell] = crand1(tip);
+		    } else {
+			ts[ts_cell] = crand0(tip);
 		    }
 		}
 	    }
@@ -193,20 +171,14 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 		for (int ti_column = 0; ti_column < ti_columns; ++ti_column) {
 		    const int ti_cell = ti_row * ti_columns + ti_column;
 
-		    ti[ti_cell] = 0.0;
-		    if (sigma != 0.0) {
-			ti[ti_cell] += sigma * libt_crandn();
-		    }
+		    ti[ti_cell] = crand0(tip);
 		}
 	    }
 	    for (int tx_row = 0; tx_row < tx_rows; ++tx_row) {
 		for (int tx_column = 0; tx_column < tx_columns; ++tx_column) {
 		    const int tx_cell = tx_row * tx_columns + tx_column;
 
-		    tx[tx_cell] = 0.0;
-		    if (sigma != 0.0) {
-			tx[tx_cell] += sigma * libt_crandn();
-		    }
+		    tx[tx_cell] = crand0(tip);
 		}
 	    }
 	    for (int tm_row = 0; tm_row < tm_rows; ++tm_row) {
@@ -214,9 +186,12 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 			++tm_column) {
 		    const int tm_cell = tm_row * tm_columns + tm_column;
 
-		    tm[tm_cell] = (tm_row == tm_column) ? 1.0 : 0.0;
-		    if (sigma != 0.0 && tm_cell != 0) {
-			tm[tm_cell] += sigma * libt_crandn();
+		    if (tm_cell == 0) {
+			tm[tm_cell] = 1.0;
+		    } else if (tm_row == tm_column) {
+			tm[tm_cell] = crand1(tip);
+		    } else {
+			tm[tm_cell] = crand0(tip);
 		    }
 		}
 	    }
@@ -244,9 +219,12 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 		for (int um_column = 0; um_column < um_columns; ++um_column) {
 		    const int um_cell = um_row * um_columns + um_column;
 
-		    um[um_cell] = (um_row == um_column) ? 1.0 : 0.0;
-		    if (sigma != 0.0 && um_cell != 0) {
-			um[um_cell] += sigma * libt_crandn();
+		    if (um_cell == 0) {
+			um[um_cell] = 1.0;
+		    } else if (um_row == um_column) {
+			um[um_cell] = crand1(tip);
+		    } else {
+			um[um_cell] = crand0(tip);
 		    }
 		}
 	    }
@@ -254,29 +232,24 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 		for (int ui_column = 0; ui_column < ui_columns; ++ui_column) {
 		    const int ui_cell = ui_row * ui_columns + ui_column;
 
-		    ui[ui_cell] = 0.0;
-		    if (sigma != 0.0) {
-			ui[ui_cell] += sigma * libt_crandn();
-		    }
+		    ui[ui_cell] = crand0(tip);
 		}
 	    }
 	    for (int ux_row = 0; ux_row < ux_rows; ++ux_row) {
 		for (int ux_column = 0; ux_column < ux_columns; ++ux_column) {
 		    const int ux_cell = ux_row * ux_columns + ux_column;
 
-		    ux[ux_cell] = 0.0;
-		    if (sigma != 0.0) {
-			ux[ux_cell] += sigma * libt_crandn();
-		    }
+		    ux[ux_cell] = crand0(tip);
 		}
 	    }
 	    for (int us_row = 0; us_row < us_rows; ++us_row) {
 		for (int us_column = 0; us_column < us_columns; ++us_column) {
 		    const int us_cell = us_row * us_columns + us_column;
 
-		    us[us_cell] = (us_row == us_column) ? 1.0 : 0.0;
-		    if (sigma != 0.0) {
-			us[us_cell] += sigma * libt_crandn();
+		    if (us_row == us_column) {
+			us[us_cell] = crand1(tip);
+		    } else {
+			us[us_cell] = crand0(tip);
 		    }
 		}
 	    }
@@ -300,28 +273,20 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 		const int unity_offset = _vl_unity_offset(vlp, m_column);
 
 		for (int um_term = 0; um_term < um_terms; ++um_term) {
-		    um[um_term] = 1.0;
-		    if (sigma != 0.0 && um_term != unity_offset) {
-			um[um_term] += sigma * libt_crandn();
+		    if (um_term == unity_offset) {
+			um[um_term] = 1.0;
+		    } else {
+			um[um_term] = crand1(tip);
 		    }
 		}
 		for (int ui_term = 0; ui_term < ui_terms; ++ui_term) {
-		    ui[ui_term] = 0.0;
-		    if (sigma != 0.0) {
-			ui[ui_term] += sigma * libt_crandn();
-		    }
+		    ui[ui_term] = crand0(tip);
 		}
 		for (int ux_term = 0; ux_term < ux_terms; ++ux_term) {
-		    ux[ux_term] = 0.0;
-		    if (sigma != 0.0) {
-			ux[ux_term] += sigma * libt_crandn();
-		    }
+		    ux[ux_term] = crand0(tip);
 		}
 		for (int us_term = 0; us_term < us_terms; ++us_term) {
-		    us[us_term] = 1.0;
-		    if (sigma != 0.0) {
-			us[us_term] += sigma * libt_crandn();
-		    }
+		    us[us_term] = crand1(tip);
 		}
 	    }
 	    for (int term = 0; term < el_terms; ++term) {
@@ -342,22 +307,13 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
 		double complex *em = &e[VL_EM12_OFFSET(vlp, m_column)];
 
 		for (int el_term = 0; el_term < el_terms; ++el_term) {
-		    el[el_term] = 0.0;
-		    if (sigma != 0.0) {
-			el[el_term] += sigma * libt_crandn();
-		    }
+		    el[el_term] = crand0(tip);
 		}
 		for (int er_term = 0; er_term < er_terms; ++er_term) {
-		    er[er_term] = 1.0;
-		    if (sigma != 0.0) {
-			er[er_term] += sigma * libt_crandn();
-		    }
+		    er[er_term] = crand1(tip);
 		}
 		for (int em_term = 0; em_term < em_terms; ++em_term) {
-		    em[em_term] = 0.0;
-		    if (sigma != 0.0) {
-			em[em_term] += sigma * libt_crandn();
-		    }
+		    em[em_term] = crand0(tip);
 		}
 	    }
 	}
@@ -376,15 +332,59 @@ static void gen_e_terms(const vnacal_layout_t *vlp, double complex *e,
  *   @m_columns: number of VNA ports that generate signal
  *   @frequencies: number of calibration frequencies
  *   @frequency_vector: optional vector of specific frequencies
- *   @sigma: standard deviation from perfect
  *   @flags: misc flags (see libt_vnacal.h)
  */
 libt_vnacal_terms_t *libt_vnacal_generate_error_terms(vnacal_t *vcp,
 	vnacal_type_t type, int m_rows, int m_columns, int frequencies,
-	const double *frequency_vector, double sigma, uint32_t flags)
+	const double *frequency_vector, uint32_t flags)
 {
+    term_info_t ti;
     libt_vnacal_terms_t *ttp = NULL;
     vnacal_layout_t *vlp;
+
+    /*
+     * Init the term_info structure.
+     */
+    (void)memset((void *)&ti, 0, sizeof(ti));
+
+    if (!(flags & LIBT_CLOSE_ETERMS)) {
+	/*
+	 * Create the complex random number generator for off-diagonal terms
+	 * with magnitude distributed to the Rayleigh distribution such that
+	 * median value is 1.0.
+	 */
+	ti.ti_cg0 = libt_crand_generator(0.0, LIBT_IRLOG4, 0.0, 1000.0,
+	                                 0.0, 360.0);
+
+	/*
+	 * Create the complex random number generator for diagonal terms with
+	 * magnitude distributed according to the truncated Rice distribution
+	 * with minimum value 0.1 and median value of 1.0.
+	 */
+	ti.ti_cg1 = libt_crand_generator(0.857148, 0.5, 0.1, 1000.0,
+	                                 0.0, 360.0);
+
+    } else { /* temp hack for poor convergence in vnacal_new_solve_auto */
+	/*
+	 * Create the complex random number generator for off-diagonal terms
+	 * with magnitude distributed to the Rayleigh distribution with sigma
+	 * 0.1, max 0.2.
+	 */
+	ti.ti_cg0 = libt_crand_generator(0.0, 0.1, 0.0, 0.2,
+	                                 0.0, 360.0);
+
+	/*
+	 * Create the complex random number generator for diagonal terms with
+	 * magnitude distributed according to the truncated Rice distribution
+	 * with magnitude in [0.8 .. 2.0] and angle with 30 degrees of real.
+	 */
+	ti.ti_cg1 = libt_crand_generator(0.857148, 0.5, 0.8, 2.0,
+	                                 0.0, 30.0);
+    }
+     libt_crand_generator_t *libt_crand_generator(double nu, double sigma,
+        double min, double max, double rotation, double angle);
+
+
 
     /*
      * Create the error terms structure.
@@ -400,7 +400,8 @@ libt_vnacal_terms_t *libt_vnacal_generate_error_terms(vnacal_t *vcp,
     if ((ttp->tt_frequency_vector = calloc(frequencies,
 		    sizeof(double))) == NULL) {
 	libt_vnacal_free_error_terms(ttp);
-	return NULL;
+	ttp = NULL;
+	goto out;
     }
     if (frequency_vector != NULL) {
 	(void)memcpy((void *)ttp->tt_frequency_vector,
@@ -425,7 +426,8 @@ libt_vnacal_terms_t *libt_vnacal_generate_error_terms(vnacal_t *vcp,
     if ((ttp->tt_error_term_vector = calloc(frequencies,
 		    sizeof(double complex *))) == NULL) {
 	libt_vnacal_free_error_terms(ttp);
-	return NULL;
+	ttp = NULL;
+	goto out;
     }
     for (int findex = 0; findex < frequencies; ++findex) {
 	double complex *clfp;
@@ -433,10 +435,11 @@ libt_vnacal_terms_t *libt_vnacal_generate_error_terms(vnacal_t *vcp,
 	if ((clfp = calloc(VL_ERROR_TERMS(vlp),
 			sizeof(double complex))) == NULL) {
 	    libt_vnacal_free_error_terms(ttp);
-	    return NULL;
+	    ttp = NULL;
+	    goto out;
 	}
 	ttp->tt_error_term_vector[findex] = clfp;
-	gen_e_terms(vlp, clfp, sigma);
+	gen_e_terms(vlp, &ti, clfp);
     }
 
     /*
@@ -447,14 +450,16 @@ libt_vnacal_terms_t *libt_vnacal_generate_error_terms(vnacal_t *vcp,
 	(void)fprintf(stderr, "%s: vnacal_new_alloc: %s\n",
 		progname, strerror(errno));
 	libt_vnacal_free_error_terms(ttp);
-	return NULL;
+	ttp = NULL;
+	goto out;
     }
     if (vnacal_new_set_frequency_vector(ttp->tt_vnp,
 		ttp->tt_frequency_vector) == -1) {
 	(void)fprintf(stderr, "%s: vnacal_new_set_frequency_vector: %s\n",
 		progname, strerror(errno));
 	libt_vnacal_free_error_terms(ttp);
-	return NULL;
+	ttp = NULL;
+	goto out;
     }
 
     /*
@@ -463,6 +468,11 @@ libt_vnacal_terms_t *libt_vnacal_generate_error_terms(vnacal_t *vcp,
     if (opt_v >= 2) {
 	libt_vnacal_print_error_terms(ttp);
     }
+    /*FALLTHROUGH*/
+
+out:
+    free((void *)ti.ti_cg1);
+    free((void *)ti.ti_cg0);
     return ttp;
 }
 

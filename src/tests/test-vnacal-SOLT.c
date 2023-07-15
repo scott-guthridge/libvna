@@ -127,7 +127,7 @@ static libt_result_t run_vnacal_new_solt_trial(int trial, vnacal_type_t type,
      * Generate random error parameters.
      */
     if ((ttp = libt_vnacal_generate_error_terms(vcp, type, rows, columns,
-		    frequencies, NULL, 1.0, 0)) == NULL) {
+		    frequencies, NULL, 0)) == NULL) {
 	(void)fprintf(stderr, "%s: libt_vnacal_generate_error_terms: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
