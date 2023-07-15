@@ -85,26 +85,21 @@ static void make_random_parameters(double complex *r_actual,
     double actual_angle;
 
     /*
-     * Find actual reflect.  Magnitude is constrained to 0.25 .. 1.0;
-     * angle is not constrained.
+     * Find actual reflect.  Magnitude must be at least 0.1.  The
+     * combination nu=0.857148, sigma=0.5 has a median of 1, thus we test
+     * the general case of possible negative resistance in the reflect.
+     * Angle is not constrained.
      */
-    actual_magnitude = 0.25 + 0.75 * random() / RAND_MAX;
-    actual_angle = 360.0 * random() / RAND_MAX - 180.0;
-    *r_actual = actual_magnitude * cexp(I * M_PI / 180.0 * actual_angle);
+    *r_actual = libt_crand_nsmm(0.857148, 0.5, 0.1, 1000.0);
 
     /*
-     * Find the actual line.  Magnitude is constrained from 0.25 .. 1.0;
-     * angle is constrained to 20..160 or 200..350 degrees to prevent
+     * Find the actual line.  Magnitude must be at least 0.1.
+     * The combination nu=0.857148, sigma=0.5 has a median of 1, thus
+     * we test the general case of possible gain in the line standard.
+     * Angle is constrained to 20..160 or 200..350 degrees to prevent
      * it from being too close to through.
      */
-    actual_magnitude = 0.25 + 0.75 * random() / RAND_MAX;
-    actual_angle = 140.0 * (2.0 * random() / RAND_MAX - 1.0);
-    if (actual_angle >= 0.0) {
-	actual_angle += 20.0;
-    } else {
-	actual_angle -= 20.0;
-    }
-    *l_actual = actual_magnitude * cexp(I * M_PI / 180.0 * actual_angle);
+    *l_actual = libt_crand_nsmmra(0.857148, 0.5, 0.1, 1000.0, 90.0, -140.0);
 
     /*
      * There are four solutions to TRL:
@@ -114,35 +109,19 @@ static void make_random_parameters(double complex *r_actual,
      *    -R,  1/L
      *
      * We need initial guesses that are always closer to the actual
-     * solution than to the others.  Stategy: working separately
-     * for R and L, choose a random new point starting at the actual
-     * solution. Check the distance to each other point, removing 10%
-     * margin from the others.  If not closest to the original, loop
-     * back and choose a new point.
+     * solution than to the others.
+     *
+     * For R, the midpoint between the two solutions is always zero,
+     * so as long as the distance between the actual R and guess is less
+     * than |R|, we know the guess is closest to the actual R.  For L,
+     * find half the distance between the two solutions and do likewise.
      */
-    for (;;) {
-	double complex guess = *r_actual + 0.05 * libt_crandn();
-	double d1, d2;
+    {
+	double rm = 0.95       * cabs(*r_actual);
+	double lm = 0.95 * 0.5 * cabs(*l_actual - 1.0 / *l_actual);
 
-	d1 = cabs(guess - *r_actual);
-	d2 = cabs(guess + *r_actual) * 0.90;
-	if (d2 < d1) {
-	    continue;
-	}
-	*r_guess = guess;
-	break;
-    }
-    for (;;) {
-	double complex guess = *l_actual + 0.05 * libt_crandn();
-	double d1, d2;
-
-	d1 = cabs(guess - *l_actual);
-	d2 = cabs(guess - 1.0 / *l_actual) * 0.90;
-	if (d2 < d1) {
-	    continue;
-	}
-	*l_guess = guess;
-	break;
+	*r_guess = *r_actual + libt_crand_nsmm(0.0, M_SQRT1_2 * rm, 0.0, rm);
+	*l_guess = *l_actual + libt_crand_nsmm(0.0, M_SQRT1_2 * lm, 0.0, lm);
     }
 }
 
@@ -337,10 +316,6 @@ static libt_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
 	result = T_FAIL;
 	goto out;
     }
-    if (libt_vnacal_validate_calibration(ttp, NULL) == -1) {
-	result = T_FAIL;
-	goto out;
-    }
     for (int findex = 0; findex < TRL_FREQUENCIES; ++findex) {
 	double frequency = ttp->tt_frequency_vector[findex];
 	double complex r_solved, l_solved;
@@ -385,6 +360,10 @@ static libt_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
 	    result = T_FAIL;
 	    goto out;
 	}
+    }
+    if (libt_vnacal_validate_calibration(ttp, NULL) == -1) {
+	result = T_FAIL;
+	goto out;
     }
     result = T_PASS;
 
