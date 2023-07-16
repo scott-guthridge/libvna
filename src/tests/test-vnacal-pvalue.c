@@ -37,18 +37,24 @@
 /*
  * Number of test trials to run
  */
-#define NTRIALS		1
+#define NTRIALS		5
 
 /*
  * N is the number of calibrations we solve on each trial and the
  * number of points in the empiricle CDF.  KS_THRESHOLD is the test
  * threshold for N=1000, p=0.001.  These constants must go together.
+ *
+ * To find the constants, first numerically invert kolmogorov_smirnov_cdf
+ * in octave to find P(x < 1.9495) = 0.999.  The threshold is then:
+ *
+ *     1.9495 / sqrt(N)
  */
 #define N		1000
-#define KS_THRESHOLD	0.0614622262198858
+#define KS_THRESHOLD	0.0616486
 
 /*
- * Vector of pvalues, one per experiment.
+ * Vector of pvalues, one per experiment.  Number of frequencies
+ * is fixed at 1.
  */
 static double pvalues[N];
 
@@ -68,6 +74,12 @@ static const char *const help[] = {
 };
 bool opt_a = false;
 int  opt_v = 0;
+
+/*
+ * Allow a small number of vnacal_new_solve calls to fail in each trial
+ * due to random error.
+ */
+#define ALLOWED_SOLVE_FAILURES	3
 
 /*
  * error_fn: error reporting function
@@ -165,7 +177,7 @@ static libt_result_t run_one_experiment(int experiment,
      */
     if (opt_v >= 2) {
 	(void)printf("experiment %3d size %d x %d "
-		"type %-4s SOLT\n",
+		"type %-4s\n",
 		experiment, m_rows, m_columns, vnacal_type_to_name(type));
     }
 
@@ -207,7 +219,7 @@ static libt_result_t run_one_experiment(int experiment,
      * Set the threshold very low to avoid false positives: we're testing
      * the distribution; not than that all trials succeed.
      */
-    if (vnacal_new_set_pvalue_limit(vnp, 1.0e-6) == -1) {
+    if (vnacal_new_set_pvalue_limit(vnp, 1.0e-8) == -1) {
 	result = T_FAIL;
 	goto out;
     }
@@ -284,6 +296,7 @@ static libt_result_t run_one_experiment(int experiment,
     /*
      * Use hidden API to receive pvalue back from vnacal_new_solve.
      */
+    assert(experiment < N);
     vnp->vn_pvalue_vector = &pvalues[experiment];
 
     /*
@@ -291,7 +304,7 @@ static libt_result_t run_one_experiment(int experiment,
      */
     if (vnacal_new_solve(ttp->tt_vnp) == -1) {
 	(void)printf("%s: vnacal_solve: %s\n", progname, strerror(errno));
-	result = T_FAIL;
+	result = T_SKIPPED;
 	goto out;
     }
     /*
@@ -323,6 +336,7 @@ static libt_result_t run_trial(int trial,
 	vnacal_type_t type, int m_rows, int m_columns)
 {
     double max_deviation = 0.0;
+    int n_solve_failures = 0;
     libt_result_t result = T_FAIL;
 
     /*
@@ -338,9 +352,17 @@ static libt_result_t run_trial(int trial,
      * Run N experiments.  Sort the resulting pvalues to create the
      * empiricle CDF.
      */
-    for (int experiment = 0; experiment <= N; ++experiment) {
+    for (int experiment = 0; experiment < N; ++experiment) {
 	result = run_one_experiment(experiment,
 		type, m_rows, m_columns);
+	if (result == T_SKIPPED) {
+	    if (++n_solve_failures > ALLOWED_SOLVE_FAILURES) {
+		result = T_FAIL;
+		goto out;
+	    }
+	    --experiment;
+	    continue;
+	}
 	if (result != T_PASS)
 	    goto out;
     }

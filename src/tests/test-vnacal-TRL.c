@@ -81,9 +81,6 @@ static void make_random_parameters(double complex *r_actual,
 	double complex *l_actual, double complex *r_guess,
 	double complex *l_guess)
 {
-    double actual_magnitude;
-    double actual_angle;
-
     /*
      * Find actual reflect.  Magnitude must be at least 0.1.  The
      * combination nu=0.857148, sigma=0.5 has a median of 1, thus we test

@@ -50,7 +50,7 @@
 #include "libt_vnacal.h"
 
 
-#define NTRIALS		35
+#define NTRIALS		40
 #define FREQUENCIES	2
 
 /*
@@ -167,7 +167,7 @@ static libt_result_t run_vnacal_v_matrices_trial(int trial,
     }
 
     /*
-     * Create random perturbations for each measurement.
+     * Create random errors for each measurement.
      */
     standards = random_standards;
     equations = random_standards * m_rows * m_columns;
