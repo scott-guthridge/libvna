@@ -178,10 +178,10 @@ static libt_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
     if (opt_v > 1) {
 	(void)printf("actual:\n");
 	for (int findex = 0; findex < TRL_FREQUENCIES; ++findex) {
-	    (void)printf("R %8.5f%+8.5f  L %8.5f%+8.5fj\n",
+	    (void)printf("R %9.6f %+9.6f  L %9.6f %+9.6fj\n",
 		    creal(r_actual[findex]), cimag(r_actual[findex]),
 		    creal(l_actual[findex]), cimag(l_actual[findex]));
-	    (void)printf("    %8.5f <%8.3f  %8.5f <%8.3f\n",
+	    (void)printf("    %9.6f <%8.3f  %9.6f <%8.3f\n",
 		    cabs(r_actual[findex]),
 		    carg(r_actual[findex]) * 180.0 / M_PI,
 		    cabs(l_actual[findex]),
@@ -190,10 +190,10 @@ static libt_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
 	(void)printf("\n");
 	(void)printf("guess:\n");
 	for (int findex = 0; findex < TRL_FREQUENCIES; ++findex) {
-	    (void)printf("R %8.5f%+8.5f  L %8.5f%+8.5fj\n",
+	    (void)printf("R %9.6f %+8.5f  L %9.6f %+8.5fj\n",
 		    creal(r_guess[findex]), cimag(r_guess[findex]),
 		    creal(l_guess[findex]), cimag(l_guess[findex]));
-	    (void)printf("    %8.5f <%8.3f %8.5f <%8.3f\n",
+	    (void)printf("    %9.6f <%8.3f %9.6f <%8.3f\n",
 		    cabs(r_guess[findex]),
 		    carg(r_guess[findex]) * 180.0 / M_PI,
 		    cabs(l_guess[findex]),
@@ -329,15 +329,15 @@ static libt_result_t run_vnacal_trl_trial(int trial, vnacal_type_t type)
 	}
 	if (opt_v > 1) {
 	    (void)printf("findex %d:\n", findex);
-	    (void)printf("  r_actual %e%+ej\n",
+	    (void)printf("  r_actual %9.6f %+9.6fj\n",
 		    creal(r_actual[findex]), cimag(r_actual[findex]));
-	    (void)printf("  r_solved %e%+ej\n",
+	    (void)printf("  r_solved %9.6f %+9.6fj\n",
 		    creal(r_solved), cimag(r_solved));
 	    (void)printf("  delta %e\n",
 		    cabs(r_solved - r_actual[findex]));
-	    (void)printf("  l_actual %e%+ej\n",
+	    (void)printf("  l_actual %9.6f %+9.6fj\n",
 		    creal(l_actual[findex]), cimag(l_actual[findex]));
-	    (void)printf("  l_solved %e%+ej\n",
+	    (void)printf("  l_solved %9.6f %+9.6fj\n",
 		    creal(l_solved), cimag(l_solved));
 	    (void)printf("  delta %e\n",
 		    cabs(l_solved - l_actual[findex]));

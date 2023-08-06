@@ -203,9 +203,9 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
 
 	if (opt_v > 1) {
 	    (void)printf("%7.1e Hz\n", ttp->tt_frequency_vector[findex]);
-	    (void)printf("  actual_short: %12.5e %+12.5ej\n",
+	    (void)printf("  actual_short: %9.6f %+9.6fj\n",
 		    creal(actual_short), cimag(actual_short));
-	    (void)printf("  actual_open:  %12.5e %+12.5ej\n",
+	    (void)printf("  actual_open:  %9.6f %+9.6fj\n",
 		    creal(actual_open), cimag(actual_open));
 	}
 	sigma_r[findex]  = SIGMA(sigma_r_coef, g);
@@ -246,13 +246,18 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
 	    (void)printf("  sigma_a  %e\n", sigma_a[findex]);
 	    (void)printf("  sigma_fl %e\n", sigma_fl[findex]);
 	    (void)printf("  sigma_tr %e\n", sigma_tr[findex]);
-	    for (int p = 0; p < N; ++p) {
+	    for (int i = 0; i < N; ++i) {
+		static const int map[] = {
+		    P1, P3, P2, GAMMA, P4, P5, P6, P7, P8, P9, P10
+		};
+		int p = map[i];	/* print in same order as p_vector */
+
 		if (p == 0) {
 		    (void)printf("  G  ");
 		} else {
 		    (void)printf("  P%d%s", p, p < 10 ? " " : "");
 		}
-		(void)printf(" %12.5e %+12.5ej    %3.5f <%8.3f\n",
+		(void)printf(" %9.6f %+9.6fj    %3.5f <%8.3f\n",
 			creal(actual_values[p][findex]),
 			cimag(actual_values[p][findex]),
 			cabs(actual_values[p][findex]),
@@ -515,6 +520,19 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
     }
     for (int findex = 0; findex < FREQUENCIES; ++findex) {
 	double frequency = ttp->tt_frequency_vector[findex];
+	static const double initial_value[] = {
+	   0.0, /* GAMMA */
+	   0.0, /* P1 */
+	   0.0, /* P2 */
+	   1.0, /* P3 */
+	   0.0, /* P4 */
+	  -1.0, /* P5 */
+	   1.0, /* P6 */
+	   0.0, /* P7 */
+	  -1.0, /* P8 */
+	   1.0, /* P9 */
+	   0.0, /* P10 */
+	};
 
 	if (opt_v > 1) {
 	    (void)printf("findex %d frequency %e:\n", findex, frequency);
@@ -535,11 +553,13 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
 		} else {
 		    (void)printf("  P%d%s", i, i < 10 ? " " : "");
 		}
-		(void)printf(" actual % e%+ej\n",
+		(void)printf("\n");
+		(void)printf("    actual %9.6f %+9.6fj\n",
 			creal(actual_value), cimag(actual_value));
-		(void)printf("      solved % e%+ej\n",
+		(void)printf("    solved %9.6f %+9.6fj\n",
 			creal(solved_value), cimag(solved_value));
-		(void)printf("      delta  % e\n",
+		(void)printf("    delta  %e => %e\n",
+			cabs(initial_value[i] - actual_value),
 			cabs(solved_value - actual_value));
 	    }
 	    if (!libt_isequal(solved_value, actual_value)) {
@@ -549,6 +569,9 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
 		result = T_FAIL;
 		goto out;
 	    }
+	}
+	if (opt_v > 1) {
+	    (void)printf("\n");
 	}
     }
 
@@ -599,7 +622,8 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
 	    /*
 	     * Report
 	     */
-	    (void)printf("    findex %d: x-error %g p-error %g all-error %g\n",
+	    (void)printf("    findex %d: "
+		    "x-error %10.7f p-error %10.7f all-error %10.7f\n",
 		    findex,
 		    sqrt(x_sqerror / MAX(x_count, 1)),
 		    sqrt(p_sqerror / MAX(p_count, 1)),
