@@ -29,13 +29,6 @@
 
 /* #define DEBUG 1 */
 
-/*
- * PHI_INV: inverse of the golden ratio
- * PHI_INV2: inverse of the golden ratio squared
- */
-#define PHI_INV		0.61803398874989484820
-#define PHI_INV2	0.38196601125010515180
-
 #ifdef DEBUG
 /*
  * print_cmatrix: print an m by n serialized complex matrix in octave form
@@ -51,7 +44,7 @@ static void print_cmatrix(const char *name, double complex *a, int m, int n)
 	for (int j = 0; j < n; ++j) {
 	    double complex v = a[i * n + j];
 
-	    (void)printf(" %+.5f%+.5fj", creal(v), cimag(v));
+	    (void)printf(" %+.6f%+.6fj", creal(v), cimag(v));
 	}
 	(void)printf("\n");
     }
@@ -209,14 +202,20 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
     /* best unknown parameters */
     double complex best_p_vector[p_length];
 
-    /* Gauss-Newton correction vector generated from the best solution */
-    double complex best_d_vector[p_length];
-
     /* best V matrices */
     double complex *prev_v_matrices = NULL;
 
-    /* sum of squares of best_d_vector, initially infinite */
-    double best_sum_d_squared = INFINITY;
+    /* best Jacobian matrix */
+    double complex *best_j_matrix = NULL;
+
+    /* best p-system residual vector */
+    double complex *best_k_vector = NULL;
+
+    /* lowest seen sum of squares in k_vector */
+    double best_sum_k_squared = INFINITY;
+
+    /* scales the Marquardt parameter */
+    double marquardt_multiplier = 1.0;
 
     /* count of equations in the linear error term system */
     int equations = 0;
@@ -226,9 +225,6 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 
     /* count of rows in the Jacobian matrix */
     int j_rows;
-
-    /* current number of iterations in the backtracking line search */
-    int backtrack_count = 0;
 
     /* solution is up-to-date; don't copy from best */
     bool up_to_date = false;
@@ -248,6 +244,19 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
     }
     p_equations = equations - x_length;
     j_rows = p_equations + correlated;
+
+    /*
+     * Allocate best_j_matrix and best_k_vector.
+     */
+    if ((best_j_matrix = calloc(j_rows * p_length,
+		    sizeof(double complex))) == NULL) {
+	_vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+	goto out;
+    }
+    if ((best_k_vector = calloc(j_rows, sizeof(double complex))) == NULL) {
+	_vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+	goto out;
+    }
 
     /*
      * Determine which unknown parameters are of correlated type.
@@ -283,7 +292,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 #ifdef DEBUG
     (void)printf("p = [\n");
     for (int i = 0; i < p_length; ++i) {
-	(void)printf("  %f%+fj\n",
+	(void)printf("  %9.6f%+9.6fj\n",
 		creal(vnssp->vnss_p_vector[i][findex]),
 		cimag(vnssp->vnss_p_vector[i][findex]));
     }
@@ -291,7 +300,8 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 #endif /* DEBUG */
 
     /*
-     * Iterate using Gauss-Newton to find the unknown parameters, vnss_p_vector.
+     * Iterate using Levenberg-Marquardt to find the unknown parameters,
+     * vnss_p_vector.
      */
     for (int iteration = 0; /*EMPTY*/; ++iteration) {
 	/* coefficient matrix of the linear error term system */
@@ -306,13 +316,13 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	/* upper-triangular matrix from QR decompositin of a_matrix */
 	double complex r_matrix[equations][x_length];
 
-	/* Jacobian matrix for Gauss-Newton */
+	/* Jacobian matrix */
 	double complex j_matrix[j_rows][p_length];
 
-	/* right-hand side residual vector for Gauss-Newton */
+	/* right-hand side residual vector */
 	double complex k_vector[j_rows];
 
-	/* difference vector from Gauss-Newton */
+	/* difference vector */
 	double complex d_vector[p_length];
 
 	/* current equation index */
@@ -321,8 +331,17 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	/* rank of a_matrix */
 	int rank;
 
+	/* true if current solution is best so far */
+	bool best;
+
+	/* Marquardt parameter */
+	double lambda = 0.0;
+
 	/* sum of squared magnitudes of the elements of d_vector */
 	double sum_d_squared = 0.0;
+
+	/* sum of squared mangnitudes of the elements of k_vector */
+	double sum_k_squared = 0.0;
 
 	/* mean of squared magnitudes of differences in v_matrices from best */
 	double sum_dx_squared = 0.0;
@@ -499,10 +518,10 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 * http://faculty.washington.edu/rjl/pubs/GolubLeVeque1979/
 	 * GolubLeVeque1979.pdf
 	 *
-	 * Using this method, we make an initial guess for p, solve x as
-	 * a linear system, project the remaining equations into a new
-	 * space that lets us construct the Jacobian matrix in terms of p
-	 * only, use Gauss-Newton to improve our estimate of p and repeat
+	 * Using this method, we make an initial guess for p, solve x as a
+	 * linear system, project the remaining equations into a new space
+	 * that lets us construct the Jacobian matrix in terms of p only,
+	 * use Levenberg-Marquardt to improve our estimate of p and repeat
 	 * from the solve for x step until we have suitable convergence.
 	 *
 	 * The following comments describe the variable projection method.
@@ -567,9 +586,9 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 *
 	 *     || Q2(p)^H b ||^2
 	 *
-	 * We will improve p using Gauss-Newton.  We need the Jacobian
-	 * matrix for the residuals in the new system with respect to
-	 * each p_k, which we'll now work toward.
+	 * We will improve p using Levenberg-Marquardt	We need the
+	 * Jacobian matrix for the residuals in the new system with
+	 * respect to each p_k, which we'll now work toward.
 	 *
 	 * In the equations below, a prime (') symbol on a matrix
 	 * represents the element by element partial derivative with
@@ -623,19 +642,46 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 *
 	 *   J(p)_ik ≈ -Q2(p)^H A'(p)_k x
 	 *
-	 * And the right hand side residual for Gauss-Newton is:
+	 * And the right hand side residual is:
 	 *
 	 *   k(p) =  Q2(p)^H b
 	 *
-	 * To find the correction in p, we use QR decomposition to solve:
+	 * To find the correction in p, can solve:
 	 *
 	 *   J(p) d = k(p)
+	 *
+	 * Which would be the Gauss-Newton solution.  But Gauss-Newton
+	 * may not converge if the initial guesses aren't very close.
+	 * Instead, we create a modified system, J1 d = k1, that
+	 * introduces the Marquardt parameter.	From here on, we'll drop
+	 * the (p) argument from the equations.
+	 *
+	 *   J1 = J^H J + lambda I
+	 *   k1 = J^H k
+	 *
+	 * There are many suggestions in the literature for how to choose
+	 * lambda, some more practical than others.   N. Yamashita
+	 * and M. Fukushima, “On the rate of convergence of the
+	 * levenberg-marquardt method,” in Topics in Numerical Analysis,
+	 * pp. 239–249, Springer, Vienna, AS, USA, 2001, shows that the
+	 * choice lamba = ||j||^2 provides quadratic convergence.  We use
+	 * a variation on this: lambda = marquardt_multiplier * ||j||^2.
+	 * Where marquardt_multiplier is initially 1.  If the system
+	 * diverges, then we doulbe marquart_multiplier and try again
+	 * until we get a better solution.  When we get a better solution,
+	 * we shrink marquardt_multiplier such that it's the greater of
+	 * 1 and the previous value scaled by the improvement in ||j||^2.
+	 *
+	 * Finally, we use LU decomposition to solve:
+	 *
+	 *   J1 d = k1
 	 *
 	 * and apply the correction:
 	 *
 	 *   p -= d
 	 *
-	 * until the magnitude of d is sufficiently small.
+	 * until the magnitude of d scaled by marquardt_multiplier is
+	 * sufficiently small.
 	 */
 	for (int i = 0; i < j_rows; ++i) {
 	    for (int j = 0; j < p_length; ++j) {
@@ -798,25 +844,124 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 #endif /* DEBUG */
 
 	/*
-	 * Solve the j_matrix, k_vector system to create d_vector, the
-	 * Gauss-Newton correction to vnss_p_vector.
+	 * Calculate the squared magnitude of k_vector.
 	 */
-	if (j_rows == p_length) {
+	sum_k_squared = 0.0;
+	for (int i = 0; i < j_rows; ++i) {
+	    sum_k_squared += _vnacommon_cabs2(k_vector[i]);
+	}
+
+	/*
+	 * If we have the best solution so far (or the first), remember
+	 * this solution.
+	 */
+#ifdef DEBUG
+	(void)printf("# sum_k_squared      %13.6e\n", sum_k_squared);
+	(void)printf("# best_sum_k_squared %13.6e\n", best_sum_k_squared);
+#endif /* DEBUG */
+	best = sum_k_squared < best_sum_k_squared;
+	if (best) {
+#ifdef DEBUG
+	    (void)printf("# best\n");
+#endif /* DEBUG */
+	    for (int i = 0; i < p_length; ++i) {
+		best_p_vector[i] = vnssp->vnss_p_vector[i][findex];
+	    }
+	    (void)memcpy((void *)best_x_vector, (void *)x_vector,
+		    x_length * sizeof(double complex));
+	    (void)memcpy((void *)best_j_matrix, (void *)&j_matrix[0][0],
+		    j_rows * p_length * sizeof(double complex));
+	    (void)memcpy((void *)best_k_vector, (void *)k_vector,
+		    j_rows * sizeof(double complex));
+#if DEBUG >= 2
+	    print_cmatrix("best_p_vector", best_p_vector, p_length, 1);
+	    print_cmatrix("best_x_vector", best_x_vector, x_length, 1);
+	    print_cmatrix("best_j_matrix", best_j_matrix, j_rows, p_length);
+	    print_cmatrix("best_k_vector", best_k_vector, j_rows, 1);
+#endif /* DEBUG 2 */
+	    marquardt_multiplier *= sum_k_squared / best_sum_k_squared;
+	    if (marquardt_multiplier < 1.0) {
+		marquardt_multiplier = 1.0;
+	    }
+	    best_sum_k_squared = sum_k_squared;
+
+	/*
+	 * If the new solution is worse: we must have over-corrected.
+	 * Restore state to the best solution, increase the Marquardt
+	 * multiplier, and try again.
+	 */
+	} else {
+#if DEBUG >= 2
+	    (void)printf("# increasing marquardt parameter\n");
+#endif
+	    for (int i = 0; i < p_length; ++i) {
+		vnssp->vnss_p_vector[i][findex] = best_p_vector[i];
+	    }
+	    vs_update_s_matrices(vnssp);
+	    if (prev_v_matrices != NULL) {
+		restore_v_matrices(vnssp, prev_v_matrices);
+	    }
+	    (void)memcpy((void *)&j_matrix[0][0], (void *)best_j_matrix,
+		    j_rows * p_length * sizeof(double complex));
+	    (void)memcpy((void *)k_vector, (void *)best_k_vector,
+		    j_rows * sizeof(double complex));
+	    marquardt_multiplier *= 2.0;
+	}
+	lambda = marquardt_multiplier * best_sum_k_squared;
+#if DEBUG >= 2
+	(void)printf("# marquardt_multiplier %13.6e\n", marquardt_multiplier);
+	(void)printf("# lambda               %13.6e\n", lambda);
+#endif /* DEBUG */
+
+	/*
+	 * Solve the j_matrix, k_vector system with Marquardt parameter
+	 * to create d_vector, the Levenburg-Marquardt correction to
+	 * vnss_p_vector.
+	 */
+	{
+	    double complex j1_matrix[p_length][p_length];
+	    double complex k1_vector[p_length];
 	    double complex determinant;
 
-	    determinant = _vnacommon_mldivide(d_vector,
-		    &j_matrix[0][0], k_vector, p_length, 1);
-	    if (determinant == 0.0 || !isnormal(cabs(determinant))) {
-		_vnacal_error(vcp, VNAERR_MATH, "vnacal_new_solve: "
-			"singular linear system");
-		return -1;
-	    }
-	} else {
-	    int rank;
+	    /*
+	     * Find J1 = (J^H J + lambda I)
+	     */
+	    for (int i = 0; i < p_length; ++i) {
+		for (int j = 0; j < p_length; ++j) {
+		    double complex s = 0.0;
 
-	    rank = _vnacommon_qrsolve(d_vector, &j_matrix[0][0],
-		    k_vector, j_rows, p_length, 1);
-	    if (rank < p_length) {
+		    for (int k = 0; k < j_rows; ++k) {
+			s += conj(j_matrix[k][i]) * j_matrix[k][j];
+		    }
+		    if (i == j) {
+			s += lambda;
+		    }
+		    j1_matrix[i][j] = s;
+		}
+	    }
+
+	    /*
+	     * Find k1 = J^H k
+	     */
+	    for (int i = 0; i < p_length; ++i) {
+		double complex s = 0.0;
+
+		for (int k = 0; k < j_rows; ++k) {
+		    s += conj(j_matrix[k][i]) * k_vector[k];
+		}
+		k1_vector[i] = s;
+	    }
+#if DEBUG >= 2
+	    print_cmatrix("j1", *j1_matrix, p_length, p_length);
+	    print_cmatrix("k1", k1_vector, p_length, 1);
+#endif /* DEBUG */
+
+	    /*
+	     * Find d = J1 \ k1
+	     */
+	    determinant = _vnacommon_mldivide(d_vector,
+		    &j1_matrix[0][0], k1_vector, p_length, 1);
+	    if (determinant == 0.0 || !isnormal(cabs(determinant))) {
 		_vnacal_error(vcp, VNAERR_MATH, "vnacal_new_solve: "
 			"singular linear system");
 		return -1;
@@ -827,153 +972,65 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 #endif /* DEBUG */
 
 	/*
-	 * Calculate the squared magnitude of d_vector.
+	 * Apply d_vector to vnss_p_vector.
 	 */
-	sum_d_squared = 0.0;
 	for (int i = 0; i < p_length; ++i) {
-	    sum_d_squared += _vnacommon_cabs2(d_vector[i]);
+	    vnssp->vnss_p_vector[i][findex] -= d_vector[i];
 	}
 #ifdef DEBUG
-	(void)printf("# best_sum_d_squared %13.6e\n", best_sum_d_squared);
-	(void)printf("# sum_d_squared      %13.6e\n", sum_d_squared);
-#endif /* DEBUG */
-
-	/*
-	 * Calculate the squared magnitude of the differences in x_vector.
-	 */
-	for (int i = 0; i < x_length; ++i) {
-	    sum_dx_squared += _vnacommon_cabs2(x_vector[i] - best_x_vector[i]);
+	(void)printf("p = [\n");
+	for (int i = 0; i < p_length; ++i) {
+	    (void)printf("  %9.6f%+9.6fj\n",
+		    creal(vnssp->vnss_p_vector[i][findex]),
+		    cimag(vnssp->vnss_p_vector[i][findex]));
 	}
-#ifdef DEBUG
-	(void)printf("# sum_dx_squared     %13.6e\n", sum_dx_squared);
-	(void)printf("# vn_p_tolerance     %13.6e\n", vnp->vn_p_tolerance);
-	(void)printf("# vn_et_tolerance    %13.6e\n", vnp->vn_et_tolerance);
+	(void)printf("]\n\n");
 #endif /* DEBUG */
+	vs_update_s_matrices(vnssp);
 
 	/*
-	 * If the error is within the target tolerance, stop.
+	 * Test for convergence.
 	 */
-	if (sum_d_squared / (double)p_length <= vnp->vn_p_tolerance *
-						vnp->vn_p_tolerance &&
-	    sum_dx_squared / (double)x_length <= vnp->vn_et_tolerance *
-						 vnp->vn_et_tolerance) {
-#ifdef DEBUG
-	    (void)printf("# stop: converged (iteration %d)\n", iteration);
-#endif /* DEBUG */
-	    up_to_date = true;
-	    break;
-	}
-
-	/*
-	 * If we have the best solution so far (or the first), remember
-	 * this solution and apply the new correction to vnss_p_vector.
-	 */
-	if (sum_d_squared < best_sum_d_squared) {
-	    double sum_p_squared = 0.0;
-
-#ifdef DEBUG
-	    (void)printf("# best\n");
-#endif /* DEBUG */
-	    best_sum_d_squared = sum_d_squared;
+	if (best) {
+	    const double scale = marquardt_multiplier * marquardt_multiplier;
 
 	    /*
-	     * Limit the magnitude of d_vector to keep it smaller than
-	     * the magnitude of vnss_p_vector (or smaller than one if
-	     * vnss_p_vector is less than one).  This improves stability
-	     * at the cost of slowing convergence.  It makes it less
-	     * likely that we jump into an adjacent basin of attraction.
-	     * We use one over the golden ratio as the maximum norm of
-	     * d_vector relative to vnss_p_vector (or one).
+	     * Calculate the squared magnitude of d_vector.
 	     */
+	    sum_d_squared = 0.0;
 	    for (int i = 0; i < p_length; ++i) {
-		double complex p = vnssp->vnss_p_vector[i][findex];
-
-		sum_p_squared += _vnacommon_cabs2(p);
+		sum_d_squared += _vnacommon_cabs2(d_vector[i]);
 	    }
-	    if (sum_p_squared < 1.0) {	/* if less than 1, make it 1 */
-		sum_p_squared = 1.0;
-	    }
-	    if (sum_d_squared > sum_p_squared * PHI_INV2) {
-		double scale = sqrt(sum_p_squared / sum_d_squared) * PHI_INV;
-
 #ifdef DEBUG
-		(void)printf("# scaling d_vector by: %f\n", scale);
-#endif /* DEBUG */
-		for (int i = 0; i < p_length; ++i) {
-		    d_vector[i] *= scale;
-		}
-	    }
-
-	    /*
-	     * Remember this solution.
-	     */
-	    for (int i = 0; i < p_length; ++i) {
-		best_p_vector[i] = vnssp->vnss_p_vector[i][findex];
-	    }
-	    (void)memcpy((void *)best_x_vector, (void *)x_vector,
-		    x_length * sizeof(double complex));
-	    (void)memcpy((void *)best_d_vector, (void *)d_vector,
-		    p_length * sizeof(double complex));
-#ifdef DEBUG
-	    print_cmatrix("best_p_vector", best_p_vector, p_length, 1);
-	    print_cmatrix("best_x_vector", best_x_vector, x_length, 1);
-	    print_cmatrix("best_d_vector", best_d_vector, p_length, 1);
+	    (void)printf("# sum_d_squared      %13.6e\n", sum_d_squared);
 #endif /* DEBUG */
 
 	    /*
-	     * Apply d_vector to vnss_p_vector.
+	     * Calculate the squared magnitude of the differences in x_vector.
 	     */
-	    for (int i = 0; i < p_length; ++i) {
-		vnssp->vnss_p_vector[i][findex] -= d_vector[i];
+	    for (int i = 0; i < x_length; ++i) {
+		sum_dx_squared += _vnacommon_cabs2(x_vector[i] -
+						   best_x_vector[i]);
 	    }
 #ifdef DEBUG
-	    (void)printf("p = [\n");
-	    for (int i = 0; i < p_length; ++i) {
-		(void)printf("  %f%+fj\n",
-			creal(vnssp->vnss_p_vector[i][findex]),
-			cimag(vnssp->vnss_p_vector[i][findex]));
-	    }
-	    (void)printf("]\n\n");
+	    (void)printf("# sum_dx_squared     %13.6e\n", sum_dx_squared);
+	    (void)printf("# vn_p_tolerance     %13.6e\n", vnp->vn_p_tolerance);
+	    (void)printf("# vn_et_tolerance    %13.6e\n", vnp->vn_et_tolerance);
 #endif /* DEBUG */
-	    vs_update_s_matrices(vnssp);
-	    backtrack_count = 0;
 
-	/*
-	 * If the new solution is worse: we must have over-corrected.
-	 * Use a backtracking line search that keeps dividing d_vector
-	 * in half and retrying from the best solution.
-	 */
-	} else {
-	    if (++backtrack_count > 6) {
+	    /*
+	     * If the error is within the target tolerance, stop.
+	     */
+	    if (scale * sum_d_squared / (double)p_length <=
+		    vnp->vn_p_tolerance * vnp->vn_p_tolerance &&
+		scale * sum_dx_squared / (double)x_length <=
+		    vnp->vn_et_tolerance * vnp->vn_et_tolerance) {
 #ifdef DEBUG
-	    (void)printf("# stop: backtrack count\n");
+		(void)printf("# stop: converged (iteration %d)\n", iteration);
 #endif /* DEBUG */
+		up_to_date = true;
 		break;
 	    }
-#ifdef DEBUG
-	    (void)printf("# retry with half d_vector\n");
-#endif /* DEBUG */
-	    for (int i = 0; i < p_length; ++i) {
-		best_d_vector[i] *= 0.5;
-#ifdef DEBUG
-	    (void)printf("# half-d[%2d] = %13.6e %+13.6ej\n", i,
-		    creal(best_d_vector[i]),
-		    cimag(best_d_vector[i]));
-#endif /* DEBUG */
-		vnssp->vnss_p_vector[i][findex] =
-		    best_p_vector[i] - best_d_vector[i];
-	    }
-	    vs_update_s_matrices(vnssp);
-	    if (prev_v_matrices != NULL) {
-		restore_v_matrices(vnssp, prev_v_matrices);
-	    }
-#ifdef DEBUG
-	    for (int i = 0; i < p_length; ++i) {
-		(void)printf("# p[%2d] = %13.6e %+13.6ej\n", i,
-			creal(vnssp->vnss_p_vector[i][findex]),
-			cimag(vnssp->vnss_p_vector[i][findex]));
-	    }
-#endif /* DEBUG */
 	}
 
 	/*
@@ -1005,5 +1062,7 @@ success:
 out:
     free((void *)prev_v_matrices);
     free((void *)w_vector);
+    free((void *)best_k_vector);
+    free((void *)best_j_matrix);
     return rv;
 }
