@@ -50,6 +50,7 @@ git tag -a v0.0.3 -m "v0.0.3"
 - Checkout the master branch, add the release and push to github
 
 ```
+git checkout master
 git rebase development
 git push
 git push --tags
