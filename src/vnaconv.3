@@ -205,6 +205,11 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .BI "const double complex " z0 "[2]);"
 .RE
 .PP
+.BI "void vnaconv_ztoy(const double complex " z "[2][2],"
+.if n .RS +4n
+.BI "double complex " y "[2][2]);"
+.if n .RE
+.PP
 .BI "void vnaconv_ztoh(const double complex " z "[2][2],"
 .if n .RS +4n
 .BI "double complex " h "[2][2]);"
@@ -245,6 +250,11 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .if !n .RS +4n
 .BI "const double complex " z0 "[2]);"
 .RE
+.PP
+.BI "void vnaconv_ytoz(const double complex " y "[2][2],"
+.if n .RS +4n
+.BI "double complex " z "[2][2]);"
+.if n .RE
 .PP
 .BI "void vnaconv_ytoh(const double complex " y "[2][2],"
 .if n .RS +4n
