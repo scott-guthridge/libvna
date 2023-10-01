@@ -42,6 +42,15 @@ int vnacal_make_scalar_parameter(vnacal_t *vcp, double complex gamma)
 	errno = EINVAL;
 	return -1;
     }
+    if (gamma == 0.0) {
+	return VNACAL_MATCH;
+    }
+    if (gamma == 1.0) {
+	return VNACAL_OPEN;
+    }
+    if (gamma == -1.0) {
+	return VNACAL_SHORT;
+    }
     vpmrp = _vnacal_alloc_parameter("vnacal_make_scalar_parameter", vcp);
     if (vpmrp == NULL) {
 	return -1;

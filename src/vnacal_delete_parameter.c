@@ -39,9 +39,7 @@ int vnacal_delete_parameter(vnacal_t *vcp, int parameter)
     vnacal_parameter_t *vpmrp;
 
     if (parameter < VNACAL_PREDEFINED_PARAMETERS) {
-	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_delete_parameter: %s",
-		strerror(errno));
-	return -1;
+	return 0;
     }
     vpmrp = _vnacal_get_parameter(vcp, parameter);
     if (vpmrp == NULL || vpmrp->vpmr_deleted) {
