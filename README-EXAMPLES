@@ -1,6 +1,6 @@
 == LIBVNA Examples ==
 
-The example programs from the man pages are included here.
+Several example programs are included with the library.
 
 vnacal-SOLT-example.c:
     Example of using the vnacal functions to calibrate a simulated
@@ -23,6 +23,21 @@ vnacal-SOLT-example.c:
     covered by the S21 calibrated curve and expected points.
 
 
+vnacal-TRL-example.c:
+    Example of using the vnacal functions to calibrate a simulated
+    imperfect vector network analyzer using "through", "reflect",
+    "line" calibration.  This example demonstrates 2x2 ten term T and E
+    error correction.  The plot command first shows the corrected device
+    under test, then shows the now known reflect and line parameters.
+
+    Build:
+	cc -g -o vnacal-TRL-example vnacal-TRL-example.c -lvna -lyaml -lm
+
+    Run:
+	./vnacal-TRL-example > vnacal-TRL-example.out
+	gnuplot vnacal-TRL-example.gnuplot
+
+
 vnacal-TSD-example.c:
     Example of using the vnacal functions to calibrate a simulated
     imperfect vector network analyzer using "through", "short", "delay"
@@ -37,9 +52,19 @@ vnacal-TSD-example.c:
 	gnuplot vnacal-TSD-example.gnuplot
 
 
+vnaproperty-example.c:
+    Use the vnaproperty module to load and print a YAML file.
+
+    Build:
+	cc -g -o vnaproperty-example vnaproperty-example.c -lvna -lyaml -lm
+
+    Run:
+	./vnaproperty-example input.yaml
+
+
 vnaconv-example.c:
-    Simple of example of converting a 2x2 s-parameter matrix to
-    z-parameters.
+    Use network parameter conversion to analyze the 50-ohm to 75-ohm
+    L-pad.
 
     Build:
 	cc -g -o vnaconv-example vnaconv-example.c -lvna -lm
