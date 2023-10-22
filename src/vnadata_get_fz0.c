@@ -44,7 +44,7 @@ double complex vnadata_get_fz0(const vnadata_t *vdp, int findex, int port)
 	errno = EINVAL;
 	return HUGE_VAL;
     }
-    if (findex < 0 || findex > vdp->vd_frequencies) {
+    if (findex < 0 || findex >= vdp->vd_frequencies) {
 	_vnadata_error(vdip, VNAERR_USAGE,
 		"vnadata_get_fz0: frequency index: %d: out of bounds", findex);
 	return HUGE_VAL;

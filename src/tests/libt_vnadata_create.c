@@ -385,20 +385,22 @@ libt_result_t libt_vnadata_validate(const libt_vnadata_t *tdp,
 	/*
 	 * Check single vnadata_get_z0 and vnadata_fz0.
 	 */
-	for (int port = 0; port < ports; ++port) {
-	    double complex value;
+	if (frequencies >= 1) {
+	    for (int port = 0; port < ports; ++port) {
+		double complex value;
 
-	    value = vnadata_get_z0(vdp, port);
-	    if (!libt_isequal_c_rpt("vnadata_get_z0", value,
-			tdp->td_z0_vector[port])) {
-		libt_fail(": port %d\n", port);
-		return T_FAIL;
-	    }
-	    value = vnadata_get_fz0(vdp, 0, port);
-	    if (!libt_isequal_c_rpt("vnadata_get_fz0", value,
-			tdp->td_z0_vector[port])) {
-		libt_fail(": port %d no per-f-z0\n", port);
-		return T_FAIL;
+		value = vnadata_get_z0(vdp, port);
+		if (!libt_isequal_c_rpt("vnadata_get_z0", value,
+			    tdp->td_z0_vector[port])) {
+		    libt_fail(": port %d\n", port);
+		    return T_FAIL;
+		}
+		value = vnadata_get_fz0(vdp, 0, port);
+		if (!libt_isequal_c_rpt("vnadata_get_fz0", value,
+			    tdp->td_z0_vector[port])) {
+		    libt_fail(": port %d no per-f-z0\n", port);
+		    return T_FAIL;
+		}
 	    }
 	}
 

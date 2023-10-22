@@ -45,7 +45,7 @@ int vnadata_set_fz0_vector(vnadata_t *vdp, int findex,
 	errno = EINVAL;
 	return -1;
     }
-    if (findex < 0 || findex > vdp->vd_frequencies) {
+    if (findex < 0 || findex >= vdp->vd_frequencies) {
 	_vnadata_error(vdip, VNAERR_USAGE,
 		"vnadata_set_fz0_vector: invalid frequency index: %d", findex);
 	return -1;

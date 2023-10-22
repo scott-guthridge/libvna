@@ -45,7 +45,7 @@ int vnadata_set_fz0(vnadata_t *vdp, int findex, int port, double complex z0)
 	errno = EINVAL;
 	return -1;
     }
-    if (findex < 0 || findex > vdp->vd_frequencies) {
+    if (findex < 0 || findex >= vdp->vd_frequencies) {
 	_vnadata_error(vdip, VNAERR_USAGE,
 		"vnadata_set_fz0: invalid frequency index: %d", findex);
 	return -1;
