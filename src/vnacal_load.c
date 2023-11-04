@@ -830,7 +830,7 @@ static int parse_data(vnacal_load_state_t *vlsp, const vnacal_layout_t *vlp,
 	for (pair = child->data.mapping.pairs.start;
 	     pair < child->data.mapping.pairs.top; ++pair) {
 	    yaml_node_t *key, *value;
-	    char prefix[4];
+	    char prefix[5];
 #define PREFIX(c1, c2, c3, c4) \
 	((c1) | ((c2) << 8) | ((c3) << 16) | ((c4) << 24))
 
@@ -848,15 +848,15 @@ static int parse_data(vnacal_load_state_t *vlsp, const vnacal_layout_t *vlp,
 	    }
 
 	    /*
-	     * Get the first four bytes of the key, padded on the right
+	     * Get the first four bytes of the key padded on the right
 	     * with zeros, convert to integer in an endian neutral
-	     * way and switch.  To match a string longer than three
+	     * way and switch.	To match a string longer than three
 	     * characters, simply switch on the first four, then use
 	     * strcmp to check the rest.
 	     */
 	    (void)memset((void *)prefix, 0, sizeof(prefix));
 	    (void)strncpy((void *)prefix, (void *)key->data.scalar.value,
-		    sizeof(prefix));
+		    sizeof(prefix) - 1);
 	    switch (PREFIX(prefix[0], prefix[1], prefix[2], prefix[3])) {
 	    case PREFIX('e',   0,   0,   0):
 		matrices[E] = value;

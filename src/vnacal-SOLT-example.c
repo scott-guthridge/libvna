@@ -68,8 +68,8 @@
  */
 #define PI	3.14159265358979323846264338327950288419716939937508
 #define Z0	50.0
-#define W1	(2 * M_PI * 10e+6)
-#define W2	(2 * M_PI * 1e+6)
+#define W1	(2 * PI * 10e+6)
+#define W2	(2 * PI * 1e+6)
 
 /*
  * EL21: phase-shifted leakage from port 1 signal source into detector 2
@@ -119,7 +119,7 @@ static int vna_measure(measurement_t measurement,
      */
     for (int findex = 0; findex < frequencies; ++findex) {
 	double f = FMIN * exp((double)findex / (frequencies - 1) * c);
-	double complex s = I * 2 * M_PI * f;
+	double complex s = I * 2 * PI * f;
 	double complex d, detector1, detector2;
 
 	switch (measurement) {
@@ -371,7 +371,7 @@ static void apply_calibration()
      */
     (void)printf("# expected\n");
     for (int i = 0; i < M_FREQUENCIES; ++i) {
-	double complex s = 2 * M_PI * I * frequency_vector[i];
+	double complex s = 2 * PI * I * frequency_vector[i];
 	double complex d = s*s + 2*W2*s + 2*W2*W2;
 	double complex s11 =  s*s     / d;
 	double complex s12 =  2*W2*W2 / d;

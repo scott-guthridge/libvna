@@ -34,6 +34,9 @@
 void vnaconv_stoyn(const double complex *s, double complex *y,
 	       const double complex *z0, int n)
 {
+    if (n <= 0)
+	return;
+
     double complex a[n * n];
     double complex b[n * n];
     double ki[n];

@@ -34,6 +34,9 @@
 void vnaconv_ztozin(const double complex *z, double complex *zi,
 	const double complex *z0, int n)
 {
+    if (n <= 0)
+	return;
+
     double complex a[n * n];
     double complex x[n * n];
 #define A(i, j)		(a[(i) * n + (j)])

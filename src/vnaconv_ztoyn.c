@@ -33,6 +33,9 @@
  */
 void vnaconv_ztoyn(const double complex *z, double complex *y, int n)
 {
+    if (n <= 0)
+	return;
+
     double complex u[n * n];
 
     (void)memcpy((void *)u, (void *)z, n * n * sizeof(double complex));

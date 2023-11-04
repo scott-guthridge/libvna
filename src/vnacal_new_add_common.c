@@ -529,6 +529,8 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
      * of flags indicating exactly which rows and columns were given.
      * These are used below to decide which equations to generate.
      */
+    assert(full_m_rows >= 0);
+    assert(full_m_columns >= 0);
     (void)memset((void *)m_row_given, 0, full_m_rows * sizeof(bool));
     (void)memset((void *)m_column_given, 0, full_m_columns * sizeof(bool));
     (void)memset((void *)s_row_given, 0, full_s_rows * sizeof(bool));

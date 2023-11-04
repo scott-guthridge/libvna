@@ -34,6 +34,9 @@
 void vnaconv_ytozin(const double complex *y, double complex *zi,
 	const double complex *z0, int n)
 {
+    if (n <= 0)
+	return;
+
     double complex a[n * n];
     double complex b[n * n];
     double complex s[n * n];
