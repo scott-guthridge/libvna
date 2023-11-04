@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libvna
+Description: Vector Network Analyzer Calibration, Conversion, Load and Save
+Version: @VERSION@
+Libs: -L${libdir} -lvna
+Cflags: -I${includedir}

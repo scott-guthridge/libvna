@@ -87,6 +87,12 @@ dist_man_MANS = vnacal.3 vnacal_new.3 vnacal_parameter.3 vnaconv.3 \
 	vnadata.3 vnaerr.3 vnaproperty.3
 
 #
+# Package Data
+#
+pkgconfigdir = $(libdir)/pkgconfig
+nodist_pkgconfig_DATA = libvna.pc
+
+#
 # Examples
 #
 noinst_PROGRAMS = vnaproperty-example vnacal-SOLT-example vnacal-TSD-example \

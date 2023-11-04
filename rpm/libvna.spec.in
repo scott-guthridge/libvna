@@ -48,8 +48,9 @@ make clean
 %files devel
 %{_docdir}/%{name}/*
 %{_includedir}/*
-%{_libdir}/*.so
 %{_libdir}/*.a
+%{_libdir}/pkgconfig/*.pc
+%{_libdir}/*.so
 %{_mandir}/*/*
 
 %changelog
