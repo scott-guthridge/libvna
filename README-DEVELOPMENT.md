@@ -38,6 +38,8 @@ TODO: add in library versioning rules
 - Run make -j12 check
 - Run make distcheck
 - Run make rpm
+- Push to origin/development
+- Make sure CI/CD build succeeds
 - On the development branch, update the version in the AC_INIT macro
   of configure.ac.  
 - Commit with a message in this format "version 0.0.3"

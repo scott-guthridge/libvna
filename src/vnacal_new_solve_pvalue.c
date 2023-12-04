@@ -21,7 +21,6 @@
 #include <assert.h>
 #include <complex.h>
 #include <errno.h>
-#include <float.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
