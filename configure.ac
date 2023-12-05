@@ -35,7 +35,7 @@ AC_CHECK_FUNCS([insque isascii mkdir random remque strcasecmp strdup vasprintf])
 
 # Init libtool
 AM_PROG_AR
-LT_INIT
+LT_INIT([win32-dll])
 
 # Generate files.
 AC_CONFIG_HEADERS([config.h])

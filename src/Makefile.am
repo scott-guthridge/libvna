@@ -78,7 +78,8 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnaproperty_import_yaml_from_string.c \
 	vnaproperty_import_yaml_from_file.c \
 	vnaproperty_export_yaml_to_file.c
-
+libvna_la_LIBADD = -lyaml -lm
+libvna_la_LDFLAGS = -no-undefined
 
 #
 # Man pages
