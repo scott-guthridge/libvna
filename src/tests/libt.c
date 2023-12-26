@@ -179,8 +179,8 @@ bool libt_isequal(double complex actual, double complex expected)
  */
 double libt_randn2(double *second)
 {
-    double u1 = (random() + 1.0) / RAND_MAX;	/* Box Muller method */
-    double u2 = (double)random() / RAND_MAX;
+    double u1 = (random() + 1.0) / RANDOM_MAX;	/* Box Muller method */
+    double u2 = (double)random() / RANDOM_MAX;
     double r = sqrt(-2.0 * log(u1));
     double a = 2 * M_PI * u2;
 

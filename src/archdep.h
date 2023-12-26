@@ -35,9 +35,15 @@
 #define isascii(c)	((c) >= 0 && (c) <= 0x7f)
 #endif /* HAVE_ISASCII */
 
+#ifndef RANDOM_MAX
+#define RANDOM_MAX	0x7FFFFFFF
+#endif /* RANDOM_MAX */
+
 #ifndef HAVE_RANDOM	/* POSIX.1-2001, POSIX.1-2008, 4.3BSD */
-#define random rand
-#define srandom srand
+extern void _vna_srandom(long seed);
+extern long _vna_random(void);
+#define random	_vna_random
+#define srandom	_vna_srandom
 #endif
 
 #ifdef HAVE_FLOAT_H

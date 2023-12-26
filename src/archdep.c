@@ -19,6 +19,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -61,6 +62,38 @@ void _vna_remque(void *elem)
 }
 
 #endif /* HAVE_REMQUE */
+#ifndef HAVE_RANDOM
+
+static uint64_t _vna_random_state = 0x0139408DCBBF7A44LL;
+
+/*
+ * _vna_srandom: seed the random number generator
+ */
+void _vna_srandom(long seed)
+{
+    _vna_random_state = 0x0139408DCBBF7A44LL ^ (seed - 1);
+}
+
+/*
+ * _vna_random: xor-shift random number generator
+ *     From Marsaglia, G. (2003). Xorshift RNGs. Journal of Statistical
+ *     Software, 8(14), 1–6. https://doi.org/10.18637/jss.v008.i14
+ *     code licensed under GPL.
+ */
+long _vna_random(void)
+{
+    uint64_t x;
+
+    x = _vna_random_state;
+    x ^= (x << 13);
+    x ^= (x >> 7);
+    x ^= (x << 17);
+    _vna_random_state = x;
+
+    return (long)(x & 0x7FFFFFFFU);
+}
+
+#endif /* HAVE_RANDOM */
 #ifndef HAVE_STRCASECMP
 
 /*
