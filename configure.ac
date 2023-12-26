@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 #
-AC_PREREQ([2.71])
+AC_PREREQ([2.69])
 AC_INIT([libvna], [0.3.9], [bugs@rompromity.net])
 AC_CONFIG_SRCDIR([src/vnaconv-example.c])
 AC_CONFIG_MACRO_DIR([m4])
