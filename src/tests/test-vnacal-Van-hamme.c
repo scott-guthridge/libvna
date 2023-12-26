@@ -16,6 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * This test follows the example given in H. Van Hamme and M. Vanden
+ * Bossche, "Flexible vector network analyzer calibration with accuracy
+ * bounds using an 8-term or a 16-term error correction model," in IEEE
+ * Transactions on Microwave Theory and Techniques, vol. 42, no. 6,
+ * pp. 976-987, June 1994, doi: 10.1109/22.293566 using the 16-term
+ * calibration model.
+ */
+
 #include "archdep.h"
 
 #include <assert.h>
@@ -97,7 +106,9 @@ typedef enum {
 } standards_t;
 
 /*
- * Quadratic approximations of the sigma curves given in the paper.
+ * Best effort quadratic approximations of the sigma curves given in
+ * the paper (based on ruler measurements of the published curves).
+ *
  * With f in GHz, the sigma value is:
  *
  *    10^(coef[0] + coef[1] * f + coef[2] * f^2 - 6)
@@ -686,7 +697,7 @@ out:
 }
 
 /*
- * test_vnacal_van_hamme: through-reflect-line calibration
+ * test_vnacal_van_hamme: run the test trials
  */
 static libt_result_t test_vnacal_van_hamme()
 {
