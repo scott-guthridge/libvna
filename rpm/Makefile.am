@@ -1,24 +1,21 @@
 rpmspec= $(PACKAGE_TARNAME).spec
 
 rpmmacros=\
- --define="_rpmdir $${PWD}"\
- --define="_srcrpmdir $${PWD}"\
+ --define="_topdir $${PWD}"\
  --define="_sourcedir $${PWD}/.."\
- --define="_specdir $${PWD}"\
- --define="_builddir $${PWD}"
+ --define="_specdir $${PWD}"
 
 RPMBUILD= rpmbuild
-RPMFLAGS= --buildroot="$${PWD}/root"
 
 srcrpm: $(rpmspec)
-	$(RPMBUILD) $(RPMFLAGS) -bs $(rpmmacros) $(rpmspec)
+	$(RPMBUILD) -bs $(rpmmacros) $(rpmspec)
 
 rpm: $(rpmspec)
-	$(RPMBUILD) $(RPMFLAGS) -ba $(rpmmacros) $(rpmspec)
+	$(RPMBUILD) -ba $(rpmmacros) $(rpmspec)
 
 rpms: rpm	# alias
 
 clean-local:
-	rm -rf *.rpm */*.rpm $(PACKAGE_TARNAME)-$(PACKAGE_VERSION) root
+	rm -rf BUILD BUILDROOT RPMS SRPMS
 
 .PHONY: srcrpm rpm rpms

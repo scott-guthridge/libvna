@@ -28,11 +28,11 @@ Makefile.in
 /ltmain.sh
 /m4/
 /missing
-/rpm/libvna-*/
+/rpm/BUILD
+/rpm/BUILDROOT
 /rpm/libvna.spec
-/rpm/libvna-*.src.rpm
-/rpm/root/
-/rpm/x86_64/
+/rpm/RPMS
+/rpm/SRPMS
 /src/convert-parameters
 /src/cscope.out
 /src/SOLT.vnacal
