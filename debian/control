@@ -1,7 +1,7 @@
 Source: libvna
 Priority: optional
 Maintainer: Scott Guthridge <scott_guthridge@rompromity.net>
-Build-Depends: debhelper-compat (= 13), autotools-dev, libyaml-dev
+Build-Depends: debhelper-compat (= 12), libyaml-dev
 Standards-Version: 4.5.1
 Section: libs
 Homepage: https://github.com/scott-guthridge/libvna
