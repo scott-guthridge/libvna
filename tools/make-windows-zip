@@ -1,0 +1,78 @@
+#!/bin/sh
+#
+# This script is meant to run after makepkg has completed.  It raids
+# the src and pkg directories to create zip version of the library
+# compatible with native MSVC.
+#
+# Run from the top-level source directory.
+#
+set -e -x
+umask 022
+echo "pwd=`pwd`"
+project=libvna
+version=`echo libvna-*.tar.gz | sed -ne 's/^libvna-\([^ ]*\)\.tar\.gz$/\1/p'`
+topdir=`/bin/pwd`
+pkgdir=package/pkg
+srcdir=${pkgdir}/src/${project}-${version}
+rootdir=${pkgdir}/pkg/${project}
+zipname=${project}-${version}-windows-x64-stdc.zip
+zipdir=${pkgdir}/zip
+
+# Create the zip dir and move the pkgconfig install targets into it.
+mkdir "${zipdir}"
+mv ${rootdir}/ucrt64/* ${zipdir}/
+
+# Copy in the libyaml files
+cp /ucrt64/include/yaml.h "${zipdir}/include/"
+cp /ucrt64/bin/libyaml*.dll "${zipdir}/bin/"
+cp /ucrt64/lib/libyaml*.a "${zipdir}/lib/"
+cp /ucrt64/lib/pkgconfig/yaml-*.pc "${zipdir}/lib/pkgconfig/"
+
+# Simplify the directory hierarchy.
+(
+    cd "${zipdir}"
+    [ -d doc ] || mkdir doc
+    mv share/doc/${project}/COPYING doc/
+    mv share/doc/${project}/examples examples
+    rm -rf share
+)
+
+# Make the PDF man pages and move them in.
+(
+    cd "${srcdir}"
+    make pdfman
+)
+mv ${srcdir}/src/*.pdf "${zipdir}/doc/"
+
+# Create the stdc zip file.
+( cd ${zipdir} && zip -r "../${zipname}" * )
+
+# Edit header files and examples to change instances of double complex
+# to MSVC's _Dcomplex.
+(
+    cd "${zipdir}"
+
+    # The vnalcal- examples use significant complex arithmetic and aren't
+    # easy to convert.  Just remove them for now.
+    rm -f examples/vnacal-*
+
+    # For the others, convert the complex type and apply patches.
+    sed -i -e 's/\<double complex\>/_Dcomplex/g' include/*.h examples/*.[hc]
+    patch -p0 < "${topdir}/tools/examples-msvc.diffs"
+)
+
+# Similarly, convert double complex in the man pages and re-generate.
+(
+    cd "${srcdir}"
+    sed -i -e '
+      s/\<double complex\>/_Dcomplex/g
+      s/\<fBdouble complex\>/fB_Dcomplex/g
+    ' src/*.3
+    make pdfman
+)
+rm -f "${zipdir}/doc/"*.pdf
+mv ${srcdir}/src/*.pdf "${zipdir}/doc/"
+
+# Create the msvc zip file.
+zipname=`echo "${zipname}" | sed -e 's/-stdc\.zip$/-msvc.zip/'`
+( cd ${zipdir} && zip -r "../${zipname}" * )

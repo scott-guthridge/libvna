@@ -1,0 +1,41 @@
+diff -ru examples/vnaconv-example.c examples/vnaconv-example.c
+--- examples/vnaconv-example.c	2024-01-26 23:57:15.041724730 -0800
++++ examples/vnaconv-example.c	2024-01-27 12:00:48.706581616 -0800
+@@ -31,13 +31,13 @@
+ #define R2	(sqrt(Z1) * Z2 / sqrt(Z1 - Z2))
+ 
+ /* system impedance vector */
+-static const _Dcomplex z0[] = { Z1, Z2 };
++static const _Dcomplex z0[] = {{ Z1, 0.0 }, { Z2, 0.0 }};
+ 
+ int main(int argc, char **argv)
+ {
+     const _Dcomplex z[2][2] = { /* Z-parameters of the L pad */
+-	{ R1+R2, R2 },
+-	{ R2,    R2 }
++	{{ R1+R2, 0.0 }, { R2, 0.0 }},
++	{{ R2,    0.0 }, { R2, 0.0 }}
+     };
+     _Dcomplex s[2][2];
+     _Dcomplex zi[2];
+diff -ru examples/vnadata-example.c examples/vnadata-example.c
+--- examples/vnadata-example.c	2024-01-26 23:57:15.042724736 -0800
++++ examples/vnadata-example.c	2024-01-27 13:11:56.468551480 -0800
+@@ -58,14 +58,14 @@
+     }
+     for (int findex = 0; findex < N; ++findex) {
+ 	double f = FMIN * exp((double)findex * fstep);
+-	_Dcomplex s = 2 * PI * I * f;
++	double w = 2 * PI * f;
+ 	_Dcomplex z[2][2];
+ 
+ 	if (vnadata_set_frequency(vdp, findex, f) == -1) {
+ 	    exit(2);
+ 	}
+-	z[0][0] = 1.0 / (C * s) + L * s;
+-	z[0][1] = 1.0 / (C * s);
++	z[0][0] = _Cbuild(0.0, L * w - 1.0 / (C * w));
++	z[0][1] = _Cbuild(0.0, -1.0 / (C * w));
+ 	z[1][0] = z[0][1];
+ 	z[1][1] = z[0][1];
+ 	if (vnadata_set_matrix(vdp, findex, &z[0][0]) == -1) {

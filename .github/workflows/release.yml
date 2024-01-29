@@ -5,22 +5,91 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    name: Build assets for ${{matrix.buildplat.sys}} ${{matrix.buildplat.arch}}
+    strategy:
+      matrix:
+        buildplat:
+        - { sys: ubuntu-20.04, arch: x86_64 }
+        - { sys: windows-2019, arch: x86_64 }
+      fail-fast: true
+    runs-on: ${{ matrix.buildplat.sys }}
     steps:
-    - name: Install Dependencies
+    - name: Prepare git (Windows)
+      # Tell git not to convert newlines to CR-LF.
+      if: ${{ runner.os == 'Windows' }}
+      run: |
+        git config --global core.autocrlf false
+        git config --global core.eol lf
+    - name: Checkout Code
+      uses: actions/checkout@v3
+    - name: Build Debian Package (Linux)
+      if: ${{ runner.os == 'Linux' }}
       run: |
         sudo apt-get update
         sudo apt-get install autoconf automake build-essential \
              debhelper-compat devscripts libtool libyaml-dev make
-    - name: Checkout Code
-      uses: actions/checkout@v3
-    - name: Build Debian Package
+        ./bootstrap
+        ./configure
+        make -j10 deb
+    - name: Build Manylinux RPM Package (Linux)
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        podman run --rm -v "`pwd`:/libvna" \
+            quay.io/pypa/manylinux2014_x86_64:latest \
+            /libvna/tools/make-rpm
+    - name: Upload Artifacts (Linux)
+      if: ${{ runner.os == 'Linux' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.buildplat.sys }}-${{ matrix.buildplat.arch }}
+        path: |
+          libvna-*.tar.gz
+          package/deb/*.deb
+          package/deb/*.dsc
+          package/deb/*.buildinfo
+          package/rpm/SRPMS/*.src.rpm
+          package/rpm/RPMS/${{ matrix.buildplat.arch }}/*.rpm
+    - name: Setup MSYS2 (Windows)
+      if: ${{ runner.os == 'Windows' }}
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: UCRT64
+        update: true
+        install: mingw-w64-ucrt-${{matrix.buildplat.arch}}-gcc
+                 mingw-w64-ucrt-${{matrix.buildplat.arch}}-ghostscript
+                 mingw-w64-ucrt-${{matrix.buildplat.arch}}-libyaml
+                 autoconf automake git groff make libtool patch pkg-config zip
+    - name: Build Libvna (Windows)
+      if: ${{ runner.os == 'Windows' }}
+      shell: msys2 {0}
       run: |
         ./bootstrap
         ./configure
-        make -j8 deb
+        make pkg
+        bash tools/make-windows-zip
+        ls -l package/pkg
+    - name: Upload Artifacts (Windows)
+      if: ${{ runner.os == 'Windows' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.buildplat.sys }}-${{ matrix.buildplat.arch }}
+        path: |
+            package/pkg/libvna-*.pkg.tar.zst
+            package/pkg/libvna-*-windows-*.zip
+
+  make_release:
+    # Collect artifacts from the matrix above, create and release
+    # and upload release assets.
+    name: Make Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        merge-multiple: true
     - name: Create Release
-      id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -34,4 +103,4 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
       with:
-        asset_paths: '["libvna-*.tar.gz", "deb/*.deb", "deb/*.dsc", "deb/*.buildinfo"]'
+        asset_paths: '["artifacts/**/*"]'
