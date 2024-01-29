@@ -28,6 +28,7 @@ Makefile.in
 /missing
 /package/deb/libvna-*
 /package/deb/libvna_*
+/package/pkg/PKGBUILD
 /package/rpm/BUILD
 /package/rpm/BUILDROOT
 /package/rpm/libvna.spec

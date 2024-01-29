@@ -19,6 +19,9 @@ deb: dist
 srcrpm rpm rpms: dist
 	(cd package && $(MAKE) $(AM_MAKEFLAGS) $@)
 
+pkg: dist
+	(cd package && $(MAKE) $(AM_MAKEFLAGS) $@)
+
 plot: all
 	(cd src && $(MAKE) $(AM_MAKEFLAGS) $@)
 
@@ -28,4 +31,4 @@ pdfman:
 #clean-local:
 #	rm -f
 
-.PHONY: deb pdfman plot rpm rpms srcrpm
+.PHONY: deb pdfman pkg plot rpm rpms srcrpm

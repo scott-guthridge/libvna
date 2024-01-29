@@ -1,0 +1,27 @@
+pkgname=@PACKAGE_TARNAME@
+pkgver=@PACKAGE_VERSION@
+pkgrel=1
+pkgdesc="Vector Network Analyzer Calibration, Conversion & Load/Save Library"
+arch=('@host_cpu@')
+source=${pkgname}-${pkgver}.tar.gz
+md5sums=()
+url='https://www.github.com/scott-guthridge/libvna'
+license='GPL-3.0-or-later'
+depends=('mingw-w64-ucrt-x86_64-libyaml')
+
+build() {
+    cd "${pkgname}-${pkgver}" &&
+    ./configure "LDFLAGS=-static-libgcc" &&
+    make -j12
+}
+
+check() {
+    cd "${pkgname}-${pkgver}" &&
+    make -j12 check
+}
+
+package() {
+    cd "${pkgname}-${pkgver}" &&
+    echo "pkgdir=${pkgdir}" &&
+    make DESTDIR="${pkgdir}" install
+}

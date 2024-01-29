@@ -44,6 +44,8 @@ AC_CONFIG_FILES([
     debian/Makefile
     package/Makefile
     package/deb/Makefile
+    package/pkg/Makefile
+    package/pkg/PKGBUILD
     package/rpm/libvna.spec
     package/rpm/Makefile
     src/libvna.pc
