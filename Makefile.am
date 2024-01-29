@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS= -I m4
 libvna_ladir= $(libdir)
 
-SUBDIRS= src deb rpm
+SUBDIRS= src debian package
 
 examplesdir = $(docdir)/examples
 
@@ -11,27 +11,13 @@ dist_noinst_SCRIPTS = bootstrap
 
 dist_noinst_DATA = \
 	README-BUILD.md \
-	README-DEVELOPMENT.md \
-	debian/changelog \
-	debian/control \
-	debian/copyright \
-	debian/libvna-dev.docs \
-	debian/libvna-dev.examples \
-	debian/libvna-dev.install \
-	debian/libvna-dev.manpages \
-	debian/libvna.install \
-	debian/not-installed \
-	debian/postinst_run \
-	debian/postrm_run \
-	debian/rules \
-	debian/source/format \
-	debian/source/options
+	README-DEVELOPMENT.md
 
 deb: dist
-	(cd deb && $(MAKE) $(AM_MAKEFLAGS) $@)
+	(cd package && $(MAKE) $(AM_MAKEFLAGS) $@)
 
 srcrpm rpm rpms: dist
-	(cd rpm && $(MAKE) $(AM_MAKEFLAGS) $@)
+	(cd package && $(MAKE) $(AM_MAKEFLAGS) $@)
 
 plot: all
 	(cd src && $(MAKE) $(AM_MAKEFLAGS) $@)
@@ -42,4 +28,4 @@ pdfman:
 #clean-local:
 #	rm -f
 
-.PHONY: srcrpm rpm plot pdfman
+.PHONY: deb pdfman plot rpm rpms srcrpm

@@ -9,14 +9,16 @@ ORIGTAR=$(tarname)_$(version).orig.tar.gz
 
 deb: $(distdir)
 	( cd $(distdir) && debuild -uc -us --lintian-opts \
-	  --suppress-tags file-without-copyright-information )
+	    --suppress-tags file-without-copyright-information )
 
 $(distdir): $(ORIGTAR)
 	tar xzf $(ORIGTAR)
-	sed -i -e 's/%%VERSION%%/$(version)/g' $(distdir)/debian/changelog
+	( cd "$(distdir)" && \
+	  sed -i -e 's/%%VERSION%%/$(version)/g' debian/changelog )
+	dpkg-source --commit $(distdir)
 
-$(ORIGTAR): ../$(distdir).tar.gz
-	ln -s ../$(distdir).tar.gz "$@"
+$(ORIGTAR): $(top_builddir)/$(distdir).tar.gz
+	ln -s $(top_builddir)/$(distdir).tar.gz "$@"
 
 clean-local:
 	rm -rf $(distdir)

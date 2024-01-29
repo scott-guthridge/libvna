@@ -2,7 +2,7 @@ rpmspec= $(PACKAGE_TARNAME).spec
 
 rpmmacros=\
  --define="_topdir $${PWD}"\
- --define="_sourcedir $${PWD}/.."\
+ --define="_sourcedir $${PWD}/../.."\
  --define="_specdir $${PWD}"
 
 RPMBUILD= rpmbuild

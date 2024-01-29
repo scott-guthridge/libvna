@@ -41,9 +41,11 @@ LT_INIT([win32-dll])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
     Makefile
-    deb/Makefile
-    rpm/Makefile
-    rpm/libvna.spec
+    debian/Makefile
+    package/Makefile
+    package/deb/Makefile
+    package/rpm/libvna.spec
+    package/rpm/Makefile
     src/libvna.pc
     src/Makefile
     src/tests/Makefile
