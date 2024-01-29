@@ -1,0 +1,32 @@
+name: Test Windows
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: windows-2019
+    steps:
+    - name: Prepare git (Windows)
+      # Tell git not to convert newlines to CR-LF.
+      run: |
+        git config --global core.autocrlf false
+        git config --global core.eol lf
+    - name: Checkout Code
+      uses: actions/checkout@v3
+    - name: Setup MSYS2 (Windows)
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: UCRT64
+        update: true
+        install: mingw-w64-ucrt-x86_64-gcc
+                 mingw-w64-ucrt-x86_64-ghostscript
+                 mingw-w64-ucrt-x86_64-libyaml
+                 autoconf automake git groff make libtool patch pkg-config zip
+    - name: Build Libvna (Windows)
+      shell: msys2 {0}
+      run: |
+        ./bootstrap
+        ./configure
+        make pkg
+        bash tools/make-windows-zip
+        ls -l package/pkg
