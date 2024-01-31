@@ -309,19 +309,19 @@ typedef struct vnacal_layout {
  *      A = c1_um11 - c1_ux11 s11               - c1_ux22 s12
  *                  - c1_ux11 s21       c1_um22 - c1_ux22 s22
  *
- *      B = c1_us11 + c1_us11 s11
- *                    c1_us11 s21
+ *      B = c1_us11 s11 - c1_ui11
+ *          c1_us11 s21
  *
  *  M(:,2) = El(:,2) + A^-1 B with:
  *      A = c2_um11 - c2_ux11 s11               - c2_ux22 s12
  *                  - c2_ux11 s21       c2_um22 - c2_ux22 s22
  *
- *      B = c2_us11 + c2_us11 s11
- *                    c2_us11 s21
+ *      B = c2_us11 s12
+ *          c2_us11 s22 - c2_ui11
  *
  *  ...
  *
- * We can solve for S column by column as follows:
+ * We can solve for S by building the columns as follows:
  *
  *  S = B A^-1 with:
  *      A = c1_ux11 m11 + c1_us11        c2_ux11 m12			...
@@ -450,7 +450,7 @@ typedef struct vnacal_layout {
  *
  *  ...
  *
- * We can solve for S column by column as follows:
+ * We can solve for S by building the columns as follows:
  *
  *  S = B A^-1 with:
  *      B = (m11 - c1_el11) / c1_er11		(m12 - c2_el12) / c2_er11  ...
