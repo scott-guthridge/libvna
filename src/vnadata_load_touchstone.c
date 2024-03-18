@@ -1039,6 +1039,9 @@ int _vnadata_load_touchstone(vnadata_internal_t *vdip, FILE *fp,
      * Parse the [Version] line if present.
      */
     if (tps.tps_token == T_KW_VERSION) {
+	double value;
+	char *endptr;
+
 	if (next_token(&tps, F_NOCONV) == -1) {
 	    goto out;
 	}
@@ -1048,12 +1051,16 @@ int _vnadata_load_touchstone(vnadata_internal_t *vdip, FILE *fp,
 		tps.tps_filename, tps.tps_line, get_token_name(&tps));
 	    goto out;
 	}
-	if (strcmp(tps.tps_text, "2.0") == 0) {
+	value = strtod(tps.tps_text, &endptr);
+	if (endptr != tps.tps_text && *endptr != '\000') {
+	    value = 0.0;	/* invalid if, e.g. "2.0a" */
+	}
+	if (value == 2.0) {
 	    version = 2;
 
-	} else if (strcmp(tps.tps_text, "1.0") == 0) {
+	} else if (value >= 1.0 && value < 2.0) {
 	    _vnadata_error(vdip, VNAERR_WARNING, "%s (line %d) warning: "
-		    "file contains dubious [Version] 1.0 line",
+		    "Touchstone file contains dubious [Version] 1.x line",
 		    tps.tps_filename, tps.tps_line);
 	    version = 1;
 
