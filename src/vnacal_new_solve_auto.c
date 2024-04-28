@@ -351,9 +351,49 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	double complex aprimex_matrix[equations][p_length];
 #endif
 
-#if DEBUG >= 3
+#if DEBUG
 	(void)printf("# iteration %d\n", iteration);
 #endif
+
+	/*
+	 * If this is not the first iteration, update the V matrices
+	 * from the best x_vector.
+	 */
+	if (iteration > 0) {
+	    if (vs_update_all_v_matrices("vnacal_new_solve",
+			vnssp, best_x_vector, x_length) == -1) {
+		goto out;
+	    }
+	}
+#ifdef DEBUG
+	if (vs_have_v(vnssp)) {
+	    int standard = 0;
+	    int v_rows, v_columns;
+	    vnacal_new_measurement_t *vnmp;
+
+	    if (VL_IS_T(vlp)) {
+		v_rows    = VL_S_COLUMNS(vlp);
+		v_columns = VL_M_COLUMNS(vlp);
+	    } else {
+		v_rows    = VL_M_ROWS(vlp);
+		v_columns = VL_S_ROWS(vlp);
+	    }
+	    for (vnmp = vnp->vn_measurement_list; vnmp != NULL;
+		    vnmp = vnmp->vnm_next) {
+		vnacal_new_msv_matrices_t *vnmmp;
+
+		vnmmp = &vnssp->vnss_msv_matrices[vnmp->vnm_index];
+		for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
+		    char name[24];
+
+		    (void)sprintf(name, "v%d_%d", standard + 1, sindex + 1);
+		    print_cmatrix(name, vnmmp->vnsm_v_matrices[sindex],
+			    v_rows, v_columns);
+		}
+		++standard;
+	    }
+	}
+#endif /* DEBUG */
 	/*
 	 * Build a_matrix and right-hand-side b_vector.  This linear
 	 * system is used to solve for the error parameters (x_vector).
@@ -458,46 +498,6 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		equations, x_length, 1);
 #ifdef DEBUG
 	print_cmatrix("x", x_vector, x_length, 1);
-#endif /* DEBUG */
-
-	/*
-	 * Save then update the V matrices from the new x_vector.
-	 */
-	if (prev_v_matrices != NULL) {
-	    save_v_matrices(vnssp, prev_v_matrices);
-	}
-	if (vs_update_all_v_matrices("vnacal_new_solve",
-		    vnssp, x_vector, x_length) == -1) {
-	    goto out;
-	}
-#ifdef DEBUG
-	if (vs_have_v(vnssp)) {
-	    int standard = 0;
-	    int v_rows, v_columns;
-	    vnacal_new_measurement_t *vnmp;
-
-	    if (VL_IS_T(vlp)) {
-		v_rows    = VL_S_COLUMNS(vlp);
-		v_columns = VL_M_COLUMNS(vlp);
-	    } else {
-		v_rows    = VL_M_ROWS(vlp);
-		v_columns = VL_S_ROWS(vlp);
-	    }
-	    for (vnmp = vnp->vn_measurement_list; vnmp != NULL;
-		    vnmp = vnmp->vnm_next) {
-		vnacal_new_msv_matrices_t *vnmmp;
-
-		vnmmp = &vnssp->vnss_msv_matrices[vnmp->vnm_index];
-		for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
-		    char name[10];
-
-		    (void)sprintf(name, "v%d_%d", standard + 1, sindex + 1);
-		    print_cmatrix(name, vnmmp->vnsm_v_matrices[sindex],
-			    v_rows, v_columns);
-		}
-		++standard;
-	    }
-	}
 #endif /* DEBUG */
 
 	/*
@@ -646,15 +646,15 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 *
 	 *   k(p) =  Q2(p)^H b
 	 *
-	 * To find the correction in p, can solve:
+	 * To find the correction in p, we can solve:
 	 *
 	 *   J(p) d = k(p)
 	 *
 	 * Which would be the Gauss-Newton solution.  But Gauss-Newton
 	 * may not converge if the initial guesses aren't very close.
 	 * Instead, we create a modified system, J1 d = k1, that
-	 * introduces the Marquardt parameter.	From here on, we'll drop
-	 * the (p) argument from the equations.
+	 * introduces the Marquardt parameter.  From here on, we'll
+	 * drop the (p) argument from the equations.
 	 *
 	 *   J1 = J^H J + lambda I
 	 *   k1 = J^H k
@@ -667,7 +667,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 * choice lamba = ||j||^2 provides quadratic convergence.  We use
 	 * a variation on this: lambda = marquardt_multiplier * ||j||^2.
 	 * Where marquardt_multiplier is initially 1.  If the system
-	 * diverges, then we doulbe marquart_multiplier and try again
+	 * diverges, then we double marquart_multiplier and try again
 	 * until we get a better solution.  When we get a better solution,
 	 * we shrink marquardt_multiplier such that it's the greater of
 	 * 1 and the previous value scaled by the improvement in ||j||^2.
@@ -680,8 +680,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 *
 	 *   p -= d
 	 *
-	 * until the magnitude of d scaled by marquardt_multiplier is
-	 * sufficiently small.
+	 * until the magnitude of k_vector is sufficiently small.
 	 */
 	for (int i = 0; i < j_rows; ++i) {
 	    for (int j = 0; j < p_length; ++j) {
@@ -864,8 +863,25 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 #ifdef DEBUG
 	    (void)printf("# best\n");
 #endif /* DEBUG */
+	    /*
+	     * Calculate the squared magnitude of the differences in x_vector.
+	     */
+	    for (int i = 0; i < x_length; ++i) {
+		sum_dx_squared += _vnacommon_cabs2(x_vector[i] -
+						   best_x_vector[i]);
+	    }
+#ifdef DEBUG
+	    (void)printf("# sum_dx_squared     %13.6e\n", sum_dx_squared);
+#endif /* DEBUG */
+
+	    /*
+	     * Save the best solution so far.
+	     */
 	    for (int i = 0; i < p_length; ++i) {
 		best_p_vector[i] = vnssp->vnss_p_vector[i][findex];
+	    }
+	    if (prev_v_matrices != NULL) {
+		save_v_matrices(vnssp, prev_v_matrices);
 	    }
 	    (void)memcpy((void *)best_x_vector, (void *)x_vector,
 		    x_length * sizeof(double complex));
@@ -894,6 +910,11 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 #if DEBUG >= 2
 	    (void)printf("# increasing marquardt parameter\n");
 #endif
+	    marquardt_multiplier *= 2.0;
+
+	    /*
+	     * Restore best solution.
+	     */
 	    for (int i = 0; i < p_length; ++i) {
 		vnssp->vnss_p_vector[i][findex] = best_p_vector[i];
 	    }
@@ -901,11 +922,12 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    if (prev_v_matrices != NULL) {
 		restore_v_matrices(vnssp, prev_v_matrices);
 	    }
+	    (void)memcpy((void *)x_vector, (void *)best_x_vector,
+		    x_length * sizeof(double complex));
 	    (void)memcpy((void *)&j_matrix[0][0], (void *)best_j_matrix,
 		    j_rows * p_length * sizeof(double complex));
 	    (void)memcpy((void *)k_vector, (void *)best_k_vector,
 		    j_rows * sizeof(double complex));
-	    marquardt_multiplier *= 2.0;
 	}
 	lambda = marquardt_multiplier * best_sum_k_squared;
 #if DEBUG >= 2
@@ -1003,17 +1025,6 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    }
 #ifdef DEBUG
 	    (void)printf("# sum_d_squared      %13.6e\n", sum_d_squared);
-#endif /* DEBUG */
-
-	    /*
-	     * Calculate the squared magnitude of the differences in x_vector.
-	     */
-	    for (int i = 0; i < x_length; ++i) {
-		sum_dx_squared += _vnacommon_cabs2(x_vector[i] -
-						   best_x_vector[i]);
-	    }
-#ifdef DEBUG
-	    (void)printf("# sum_dx_squared     %13.6e\n", sum_dx_squared);
 	    (void)printf("# vn_p_tolerance     %13.6e\n", vnp->vn_p_tolerance);
 	    (void)printf("# vn_et_tolerance    %13.6e\n", vnp->vn_et_tolerance);
 #endif /* DEBUG */
