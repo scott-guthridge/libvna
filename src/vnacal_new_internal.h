@@ -358,7 +358,7 @@ typedef struct vnacal_new_msv_matrices {
     double complex *vnmm_s_matrix;
 
     /* vector of matrices (one per system) that transform the residuals
-       of the equations into units of the measurement primary associated
+       of the equations into units of the measurement primarily associated
        with the equation. */
     double complex **vnsm_v_matrices;
 

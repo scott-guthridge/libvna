@@ -566,11 +566,13 @@ double *_vnacal_new_solve_calc_weights(vnacal_new_solve_state_t *vnssp)
 	    vnacal_new_measurement_t *vnmp = vnep->vne_vnmp;
 	    vnacal_new_msv_matrices_t *vnmmp;
 	    int eq_cell = vnep->vne_row * m_columns + vnep->vne_column;
-	    double weight2;
+	    double weight2 = 0.0;
 
 	    vnmmp = &vnssp->vnss_msv_matrices[vnmp->vnm_index];
-	    weight2 = _vnacommon_cabs2(vnmmp->vnmm_m_matrix[eq_cell]);
-	    weight2 *= tracking * tracking;
+	    if (tracking != 0) {
+		weight2 = _vnacommon_cabs2(vnmmp->vnmm_m_matrix[eq_cell]) *
+			  tracking * tracking;
+	    }
 	    weight2 += noise * noise;
 	    w_vector[k++] = 1.0 / sqrt(weight2);
 	}
