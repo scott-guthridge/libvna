@@ -50,6 +50,10 @@ extern long _vna_random(void);
 #include <float.h>
 #endif
 
+#ifndef FLT_MIN
+#define FLT_MIN	1.0e-37	/* minimum normalized float */
+#endif
+
 #ifdef HAVE_SEARCH_H
 #include <search.h>	/* for POSIX insque; sometimes in string.h */
 #endif /* HAVE_SEARCH_H */

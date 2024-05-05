@@ -249,7 +249,7 @@ double _vnacal_new_solve_calc_pvalue(vnacal_new_solve_state_t *vnssp,
     }
 
     /*
-     * Note that we don't collect residuals from correlated parameters.
+     * Note that we don't collect residuals from unknown parameters.
      * The reason is that these are already accounted for in the linear
      * system.  If we know the p's, we can find the x's by solution of
      * a linear system, and while it's less obvious, the converse is
@@ -260,17 +260,19 @@ double _vnacal_new_solve_calc_pvalue(vnacal_new_solve_state_t *vnssp,
      */
 
     /*
-     * If there are no degrees of freedom, then the p-value is zero.
+     * If there are no degrees of freedom, then the p-value for any
+     * non-zero chisq value is zero.  We're using FLT_MIN as essentially
+     * zero.
      */
     if (df < 1) {
-	return 0.0;
+	return chisq > FLT_MIN ? 0.0 : 1.0;
     }
 
     /*
-     * Calculate the probabilty that the chi square statistic in our
-     * assumed statistical model is greater than or equal to chisq.
-     * If the result is small, we can reject the null hypothesis that
-     * the data are consistent with the model.
+     * Calculate the probabilty of finding a chi-square statistic
+     * greater than or equal to the value we computed above.  If the
+     * result is small, we can reject the null hypothesis that the data
+     * are consistent with the model.
      */
     assert(!isnan(chisq));
     assert(chisq >= 0.0);
