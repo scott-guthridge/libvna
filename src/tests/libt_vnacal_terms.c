@@ -347,44 +347,21 @@ libt_vnacal_terms_t *libt_vnacal_generate_error_terms(vnacal_t *vcp,
      */
     (void)memset((void *)&ti, 0, sizeof(ti));
 
-    if (!(flags & LIBT_CLOSE_ETERMS)) {
-	/*
-	 * Create the complex random number generator for off-diagonal terms
-	 * with magnitude distributed to the Rayleigh distribution such that
-	 * median value is 1.0.
-	 */
-	ti.ti_cg0 = libt_crand_generator(0.0, LIBT_IRLOG4, 0.0, 1000.0,
-	                                 0.0, 360.0);
+    /*
+     * Create the complex random number generator for off-diagonal terms
+     * with magnitude distributed to the Rayleigh distribution such that
+     * median value is 1.0.
+     */
+    ti.ti_cg0 = libt_crand_generator(0.0, LIBT_IRLOG4, 0.0, 1000.0,
+				     0.0, 360.0);
 
-	/*
-	 * Create the complex random number generator for diagonal terms with
-	 * magnitude distributed according to the truncated Rice distribution
-	 * with minimum value 0.1 and median value of 1.0.
-	 */
-	ti.ti_cg1 = libt_crand_generator(0.857148, 0.5, 0.1, 1000.0,
-	                                 0.0, 360.0);
-
-    } else { /* temp hack for poor convergence in vnacal_new_solve_auto */
-	/*
-	 * Create the complex random number generator for off-diagonal terms
-	 * with magnitude distributed to the Rayleigh distribution with sigma
-	 * 0.1, max 0.2.
-	 */
-	ti.ti_cg0 = libt_crand_generator(0.0, 0.1, 0.0, 0.2,
-	                                 0.0, 360.0);
-
-	/*
-	 * Create the complex random number generator for diagonal terms with
-	 * magnitude distributed according to the truncated Rice distribution
-	 * with magnitude in [0.8 .. 2.0] and angle with 30 degrees of real.
-	 */
-	ti.ti_cg1 = libt_crand_generator(0.857148, 0.5, 0.8, 2.0,
-	                                 0.0, 30.0);
-    }
-     libt_crand_generator_t *libt_crand_generator(double nu, double sigma,
-        double min, double max, double rotation, double angle);
-
-
+    /*
+     * Create the complex random number generator for diagonal terms with
+     * magnitude distributed according to the truncated Rice distribution
+     * with minimum value 0.1 and median value of 1.0.
+     */
+    ti.ti_cg1 = libt_crand_generator(0.857148, 0.5, 0.1, 1000.0,
+				     0.0, 360.0);
 
     /*
      * Create the error terms structure.

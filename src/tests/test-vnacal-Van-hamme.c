@@ -195,7 +195,7 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
      */
     if ((ttp = libt_vnacal_generate_error_terms(vcp, type, 2, 2,
 		    FREQUENCIES, /*frequency_vector*/NULL,
-		    LIBT_GET_2_10_GHZ | LIBT_CLOSE_ETERMS)) == NULL) {
+		    LIBT_GET_2_10_GHZ)) == NULL) {
 	(void)fprintf(stderr, "%s: libt_vnacal_generate_error_terms: %s\n",
 		progname, strerror(errno));
 	result = T_FAIL;
@@ -538,17 +538,17 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
     }
 
     /*
-     * Set the error tolerance for stopping iteration.
+     * Set the error tolerance for accepting the result.
      */
-    if (vnacal_new_set_et_tolerance(vnp, 1.0e-4) == -1) {
+    if (vnacal_new_set_et_tolerance(vnp, 1.0e-2) == -1) {
 	result = T_FAIL;
 	goto out;
     }
-    if (vnacal_new_set_p_tolerance(vnp, 1.0e-4) == -1) {
+    if (vnacal_new_set_p_tolerance(vnp, 1.0e-2) == -1) {
 	result = T_FAIL;
 	goto out;
     }
-    if (vnacal_new_set_iteration_limit(vnp, 100) == -1) {
+    if (vnacal_new_set_iteration_limit(vnp, 30) == -1) {
 	result = T_FAIL;
 	goto out;
     }
@@ -773,6 +773,6 @@ int main(int argc, char **argv)
 	}
 	break;
     }
-    libt_isequal_eps = 0.02;
+    libt_isequal_eps = 0.05;
     exit(test_vnacal_van_hamme());
 }

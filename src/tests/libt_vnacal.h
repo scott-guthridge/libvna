@@ -75,7 +75,6 @@ extern const double *libt_vnacal_sigma_t;
  * Flags for libt_vnacal_generate_error_tersm
  */
 #define LIBT_GET_2_10_GHZ	1	/* generate f in 2..10 GHz range */
-#define LIBT_CLOSE_ETERMS	2	/* use closer to perfect error terms */
 
 /* libt_vnacal_generate_error_terms: generate random error terms */
 extern libt_vnacal_terms_t *libt_vnacal_generate_error_terms(
