@@ -57,7 +57,7 @@
  *   percentage of trials will fail.  Permit a small number of failures.
  *   The first 2 is for T16 and U16.
  */
-#define MAX_FAILURES	(2 * FREQUENCIES * NTRIALS * 2 / 100)	/* 2% */
+#define MAX_FAILURES	(2 * FREQUENCIES * NTRIALS * 5 / 100)	/* 5% */
 
 /*
  * Command Line Options
@@ -371,18 +371,6 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
     }
 
     /*
-     * Hack: scale the actual measurement error to less than the
-     * expected level we set above to avoid too many cases failing.
-     * We shouldn't have to do this -- it's unclear whether the problem
-     * is that measurment error modeling in the library doesn't work as
-     * expected, or if the problem is in this particular example.
-     */
-    for (int findex = 0; findex < FREQUENCIES; ++findex) {
-	sigma_tr[findex] *= 0.2;
-	sigma_fl[findex] *= 0.2;
-    }
-
-    /*
      * Set the pvalue limit to expect 1 false positive per 1000
      * solutions, which is also the default.
      */
@@ -538,13 +526,13 @@ static libt_result_t run_vnacal_van_hamme_trial(int trial, vnacal_type_t type)
     }
 
     /*
-     * Set the error tolerance for accepting the result.
+     * Set the error tolerance for convergence.
      */
-    if (vnacal_new_set_et_tolerance(vnp, 1.0e-2) == -1) {
+    if (vnacal_new_set_et_tolerance(vnp, 1.0e-4) == -1) {
 	result = T_FAIL;
 	goto out;
     }
-    if (vnacal_new_set_p_tolerance(vnp, 1.0e-2) == -1) {
+    if (vnacal_new_set_p_tolerance(vnp, 1.0e-4) == -1) {
 	result = T_FAIL;
 	goto out;
     }
