@@ -29,6 +29,29 @@
 
 /* #define DEBUG */
 
+#ifdef DEBUG
+/*
+ * print_cmatrix: print an m by n serialized complex matrix in octave form
+ *   @name: name of matrix
+ *   @a: pointer to first element of matrix
+ *   @m: number of rows
+ *   @n: number of columns
+ */
+static void print_cmatrix(const char *name, double complex *a, int m, int n)
+{
+    (void)printf("%s = [\n", name);
+    for (int i = 0; i < m; ++i) {
+	for (int j = 0; j < n; ++j) {
+	    double complex v = a[i * n + j];
+
+	    (void)printf(" %+.6f%+.6fj", creal(v), cimag(v));
+	}
+	(void)printf("\n");
+    }
+    (void)printf("]\n");
+}
+#endif
+
 /*
  * _vnacal_new_solve_simple: solve when all s-parameters are known
  *   @vnssp: solve state structure
@@ -50,7 +73,7 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 
     /*
      * If a measurement error vector was given, calculates weights
-     * for each measurement and allocate the prev_v_vector.
+     * for each measurement and allocate the prev_x_vector.
      */
     if (vnp->vn_m_error_vector != NULL) {
 	if ((w_vector = vs_calc_weights(vnssp)) == NULL) {
@@ -82,6 +105,36 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 	    double complex b_vector[equations];
 	    double sum_dx_squared;
 	    int eq_count = 0;
+
+#ifdef DEBUG
+	    if (vs_have_v(vnssp)) {
+		int standard = 0;
+		int v_rows, v_columns;
+		vnacal_new_measurement_t *vnmp;
+
+		if (VL_IS_T(vlp)) {
+		    v_rows    = VL_S_COLUMNS(vlp);
+		    v_columns = VL_M_COLUMNS(vlp);
+		} else {
+		    v_rows    = VL_M_ROWS(vlp);
+		    v_columns = VL_S_ROWS(vlp);
+		}
+		for (vnmp = vnp->vn_measurement_list; vnmp != NULL;
+			vnmp = vnmp->vnm_next) {
+		    vnacal_new_msv_matrices_t *vnmmp;
+
+		    vnmmp = &vnssp->vnss_msv_matrices[vnmp->vnm_index];
+		    for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
+			char name[24];
+
+			(void)sprintf(name, "v%d_%d", standard + 1, sindex + 1);
+			print_cmatrix(name, vnmmp->vnsm_v_matrices[sindex],
+				v_rows, v_columns);
+		    }
+		    ++standard;
+		}
+	    }
+#endif /* DEBUG */
 
 	    /*
 	     * Build the coefficient matrix (a) and right-hand side vector (b).
@@ -151,6 +204,10 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 		    return -1;
 		}
 	    }
+#ifdef DEBUG
+	print_cmatrix("x", x_vector, x_length, 1);
+#endif /* DEBUG */
+
 	    /*
 	     * If measurement errors were not given or if this particular
 	     * system is not over-determined, then we don't need to iterate.
@@ -173,8 +230,15 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 
 		sum_dx_squared += _vnacommon_cabs2(d);
 	    }
+#ifdef DEBUG
+	    (void)printf("RMS change in x_vector %e\n",
+		    sqrt(sum_dx_squared / (double)x_length));
+#endif /* DEBUG */
 	    if (sum_dx_squared / (double)x_length <= vnp->vn_et_tolerance *
 						     vnp->vn_et_tolerance) {
+#ifdef DEBUG
+		(void)printf("stop: converged\n");
+#endif /* DEBUG */
 		break;
 	    }
 	    if (++iteration >= vnp->vn_iteration_limit) {
