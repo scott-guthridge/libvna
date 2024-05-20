@@ -65,26 +65,26 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
     vnacal_t *vcp = vnp->vn_vcp;
     const vnacal_layout_t *vlp = &vnp->vn_layout;
     const int findex = vnssp->vnss_findex;
-    const int unknowns = vlp->vl_t_terms - 1;
+    const int unknowns = vlp->vl_t_terms - 1;	/* unknowns per system */
     double frequency = vnp->vn_frequency_vector[findex];
     double *w_vector = NULL;
-    double complex *prev_x_vector = NULL;
+    double complex *prev_x_segment = NULL;
     int rv = -1;
 
     /*
      * If a measurement error vector was given, calculates weights
-     * for each measurement and allocate the prev_x_vector.
+     * for each measurement and allocate the prev_x_segment.
      */
     if (vnp->vn_m_error_vector != NULL) {
 	if ((w_vector = vs_calc_weights(vnssp)) == NULL) {
 	    goto out;
 	}
-	prev_x_vector = malloc(x_length * sizeof(double complex));
-	if (prev_x_vector == NULL) {
+	prev_x_segment = malloc(unknowns * sizeof(double complex));
+	if (prev_x_segment == NULL) {
 	    _vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
 	    goto out;
 	}
-	_vnacal_new_solve_init_x_vector(vnssp, prev_x_vector, x_length);
+	_vnacal_new_solve_init_x_vector(vnssp, x_vector, x_length);
     }
 
     /*
@@ -93,9 +93,18 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
     assert(x_length == vnp->vn_systems * unknowns);
     for (int sindex = 0; sindex < vnp->vn_systems; ++sindex) {
 	const int offset = sindex * unknowns;
+	double complex *x_segment = &x_vector[offset];
 	vnacal_new_system_t *vnsp = &vnp->vn_system_vector[sindex];
 	const int equations = vnsp->vns_equation_count;
 	int iteration = 0;
+
+	/*
+	 * Initialize prev_x_segment if in-use.
+	 */
+	if (prev_x_segment != NULL) {
+	    (void)memcpy((void *)prev_x_segment, (void *)x_segment,
+		         unknowns * sizeof(double complex));
+	}
 
 	/*
 	 * For each iteration on the V matrices (if in use)...
@@ -186,7 +195,7 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 	    if (equations == unknowns) {
 		double complex determinant;
 
-		determinant = _vnacommon_mldivide(&x_vector[offset],
+		determinant = _vnacommon_mldivide(x_segment,
 			&a_matrix[0][0], b_vector, unknowns, 1);
 		if (determinant == 0.0 || !isnormal(cabs(determinant))) {
 		    _vnacal_error(vcp, VNAERR_MATH, "vnacal_new_solve: "
@@ -196,7 +205,7 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 	    } else {
 		int rank;
 
-		rank = _vnacommon_qrsolve(&x_vector[offset], &a_matrix[0][0],
+		rank = _vnacommon_qrsolve(x_segment, &a_matrix[0][0],
 			b_vector, eq_count, unknowns, 1);
 		if (rank < unknowns) {
 		    _vnacal_error(vcp, VNAERR_MATH, "vnacal_new_solve: "
@@ -205,7 +214,12 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 		}
 	    }
 #ifdef DEBUG
-	print_cmatrix("x", x_vector, x_length, 1);
+	    {
+		char buf[6 * sizeof(int) + 12];
+
+		(void)sprintf(buf, "x[%d..%d]", offset, offset + unknowns - 1);
+		print_cmatrix(buf, x_segment, unknowns, 1);
+	    }
 #endif /* DEBUG */
 
 	    /*
@@ -217,24 +231,24 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 	    }
 
 	    /*
-	     * Here, x_vector depends on the V matrices and the V matrices
-	     * depend on x_vector.  Iterate until they converge.
+	     * x_segment depends on the V matrices and the V matrices
+	     * depend on x_segment.  Iterate until they converge.
 	     */
 	    if (vs_update_v_matrices("vnacal_new_solve", vnssp, sindex,
-			&x_vector[offset], unknowns) == -1) {
+			x_segment, unknowns) == -1) {
 		return -1;
 	    }
 	    sum_dx_squared = 0.0;
-	    for (int i = 0; i < x_length; ++i) {
-		double complex d = x_vector[i] - prev_x_vector[i];
+	    for (int i = 0; i < unknowns; ++i) {
+		double complex d = x_segment[i] - prev_x_segment[i];
 
 		sum_dx_squared += _vnacommon_cabs2(d);
 	    }
 #ifdef DEBUG
-	    (void)printf("RMS change in x_vector %e\n",
-		    sqrt(sum_dx_squared / (double)x_length));
+	    (void)printf("RMS change in x_segment %e\n",
+		    sqrt(sum_dx_squared / (double)unknowns));
 #endif /* DEBUG */
-	    if (sum_dx_squared / (double)x_length <= vnp->vn_et_tolerance *
+	    if (sum_dx_squared / (double)unknowns <= vnp->vn_et_tolerance *
 						     vnp->vn_et_tolerance) {
 #ifdef DEBUG
 		(void)printf("stop: converged\n");
@@ -247,14 +261,14 @@ int _vnacal_new_solve_simple(vnacal_new_solve_state_t *vnssp,
 			frequency);
 		goto out;
 	    }
-	    (void)memcpy((void *)prev_x_vector, (void *)x_vector,
-		    x_length * sizeof(double complex));
+	    (void)memcpy((void *)prev_x_segment, (void *)x_segment,
+		    unknowns * sizeof(double complex));
 	}
     }
     rv = 0;
 
 out:
-    free((void *)prev_x_vector);
+    free((void *)prev_x_segment);
     free((void *)w_vector);
     return rv;
 }
