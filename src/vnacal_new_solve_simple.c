@@ -27,7 +27,7 @@
 #include <string.h>
 #include "vnacal_new_internal.h"
 
-/* #define DEBUG */
+#define DEBUG
 
 #ifdef DEBUG
 /*

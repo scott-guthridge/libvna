@@ -73,7 +73,7 @@ static const char *const help[] = {
     NULL
 };
 bool opt_a = false;
-int  opt_v = 0;
+int  opt_v = 1;
 
 /*
  * Allow a small number of vnacal_new_solve calls to fail in each trial
