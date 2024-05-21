@@ -30,8 +30,3 @@ jobs:
         make pkg
         bash tools/make-windows-zip
         ls -l package/pkg
-
-    - name: Show Test Log
-      if: always()
-      shell: msys2 {0}
-      run: cat /d/a/libvna/libvna/package/pkg/src/libvna-0.3.11/src/tests/test-vnacal-pvalue.log
