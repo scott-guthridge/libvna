@@ -40,6 +40,8 @@ TODO: add in library versioning rules
 - Run make rpm
 - Push to origin/development
 - Make sure CI/CD build succeeds
+- Manually trigger the Manylinux & Windows tests on github making sure
+  to run them on the development branch.  Make sure they succed.
 - On the development branch, update the version in the AC_INIT macro
   of configure.ac.  
 - Commit with a message in this format "version 0.0.3"
