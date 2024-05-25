@@ -739,7 +739,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	    sum_k_squared += _vnacommon_cabs2(k_vector[i]);
 	}
 	lambda = marquardt_multiplier * sum_k_squared;
-#if DEBUG >= 2
+#ifdef DEBUG
 	(void)printf("# marquardt_multiplier %13.6e\n", marquardt_multiplier);
 	(void)printf("# lambda               %13.6e\n", lambda);
 #endif /* DEBUG */
@@ -857,7 +857,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 * multiplier.
 	 */
 	} else {
-#if DEBUG >= 2
+#ifdef DEBUG
 	    (void)printf("# increasing marquardt parameter\n");
 #endif
 

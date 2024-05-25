@@ -205,7 +205,7 @@ int _vnacal_new_solve_trl(vnacal_new_solve_state_t *vnssp,
 
     /*
      * Solve for the unknown line parameter, l.  There are two
-     * solutions, which because a == c are reciprocals of each
+     * solutions, which because a == c, are reciprocals of each
      * other: choose the one closest to the initial guess.
      *
      * In theory, ml12 * mt21 should be equal to ml21 * mt12.
