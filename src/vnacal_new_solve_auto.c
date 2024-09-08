@@ -269,17 +269,18 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 #endif /* DEBUG */
 	/*
 	 * Build a_matrix and right-hand-side b_vector.  This linear
-	 * system is used to solve for the error parameters (x_vector).
-	 * It's built from the measurements of the calibration standards
-	 * added to the vnacal_new_t structure via the vnacal_new_add_*
-	 * functions.
+	 * system is built from the measurements of the calibration
+	 * standards added to the vnacal_new_t structure via the
+	 * vnacal_new_add_* functions.	It's used to solve for the error
+	 * parameters (x_vector).
 	 *
-	 * Note that in calibration types other than T16 and U16, the
-	 * leakage equations are handled outside of the system and will
-	 * have already been subtracted out.  For example, a double
-	 * reflect standard in 2x2 T8 contributes only two equations
-	 * intead of four.  In TE10 and UE10, the other two are used to
-	 * compute leakage terms -- that's done outside of this function.
+	 * Note that in calibration types other than T16 and U16,
+	 * the leakage equations are handled outside of the system
+	 * and will have already been subtracted out.  For example,
+	 * a double reflect standard in 2x2 T8 contributes only two
+	 * equations instead of four.  In TE10 and UE10, the other two
+	 * are used to compute VNA internal leakage terms, done outside
+	 * of this function.
 	 */
 	for (int i = 0; i < equations; ++i) {
 	    for (int j = 0; j < x_length; ++j) {
@@ -673,7 +674,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		 *
 		 *   weight p[i] - weight p[j] = 0
 		 *
-		 * where weight is one over the sigmal value (standard
+		 * where weight is one over the sigma value (standard
 		 * deviation) associated with the correlated parameter.
 		 * When the correlated parameter is correlated with
 		 * a constant parameter, we can describe it with an
@@ -745,7 +746,7 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 #endif /* DEBUG */
 
 	/*
-	 * Solve the j_matrix, k_vector system with Marquardt parameter
+	 * Solve the j1_matrix, k1_vector system with Marquardt parameter
 	 * to create d_vector, the Levenburg-Marquardt correction to
 	 * vnss_p_vector.
 	 */
