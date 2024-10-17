@@ -1,6 +1,6 @@
 #
 # Vector Network Analyzer Library
-# Copyright © 2020-2023 D Scott Guthridge <scott_guthridge@rompromity.net>
+# Copyright © 2020-2024 D Scott Guthridge <scott_guthridge@rompromity.net>
 #
 ACLOCAL_AMFLAGS= -I m4
 GNUPLOT= gnuplot
@@ -49,19 +49,22 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnaconv_htob.c vnaconv_htog.c vnaconv_htos.c vnaconv_htot.c \
 	vnaconv_htou.c vnaconv_htoy.c vnaconv_htoz.c vnaconv_htozi.c \
 	vnaconv_internal.h vnaconv_stoa.c vnaconv_stob.c vnaconv_stog.c \
-	vnaconv_stoh.c vnaconv_stot.c vnaconv_stou.c vnaconv_stoy.c \
-	vnaconv_stoyn.c vnaconv_stoz.c vnaconv_stozi.c \
-	vnaconv_stozin.c vnaconv_stozn.c vnaconv_ttoa.c vnaconv_ttob.c \
-	vnaconv_ttog.c vnaconv_ttoh.c vnaconv_ttos.c vnaconv_ttou.c \
-	vnaconv_ttoy.c vnaconv_ttoz.c vnaconv_ttozi.c vnaconv_utoa.c \
-	vnaconv_utob.c vnaconv_utog.c vnaconv_utoh.c vnaconv_utos.c \
-	vnaconv_utot.c vnaconv_utoy.c vnaconv_utoz.c vnaconv_utozi.c \
-	vnaconv_ytoa.c vnaconv_ytob.c vnaconv_ytog.c vnaconv_ytoh.c \
-	vnaconv_ytos.c vnaconv_ytosn.c vnaconv_ytot.c vnaconv_ytou.c \
-	vnaconv_ytoz.c vnaconv_ytozi.c vnaconv_ytozin.c vnaconv_ytozn.c \
-	vnaconv_ztoa.c vnaconv_ztob.c vnaconv_ztog.c vnaconv_ztoh.c \
-	vnaconv_ztos.c vnaconv_ztosn.c vnaconv_ztot.c vnaconv_ztou.c \
-	vnaconv_ztoy.c vnaconv_ztoyn.c vnaconv_ztozi.c vnaconv_ztozin.c \
+	vnaconv_stoh.c vnaconv_stosr.c vnaconv_stosrn.c vnaconv_stot.c \
+	vnaconv_stotr.c vnaconv_stou.c vnaconv_stour.c vnaconv_stoy.c \
+	vnaconv_stoyn.c vnaconv_stoz.c vnaconv_stozi.c vnaconv_stozin.c \
+	vnaconv_stozn.c vnaconv_ttoa.c vnaconv_ttob.c vnaconv_ttog.c \
+	vnaconv_ttoh.c vnaconv_ttos.c vnaconv_ttosr.c vnaconv_ttotr.c \
+	vnaconv_ttou.c vnaconv_ttour.c vnaconv_ttoy.c vnaconv_ttoz.c \
+	vnaconv_ttozi.c vnaconv_utoa.c vnaconv_utob.c vnaconv_utog.c \
+	vnaconv_utoh.c vnaconv_utos.c vnaconv_utosr.c vnaconv_utot.c \
+	vnaconv_utotr.c vnaconv_utour.c vnaconv_utoy.c vnaconv_utoz.c \
+	vnaconv_utozi.c vnaconv_ytoa.c vnaconv_ytob.c vnaconv_ytog.c \
+	vnaconv_ytoh.c vnaconv_ytos.c vnaconv_ytosn.c vnaconv_ytot.c \
+	vnaconv_ytou.c vnaconv_ytoz.c vnaconv_ytozi.c vnaconv_ytozin.c \
+	vnaconv_ytozn.c vnaconv_ztoa.c vnaconv_ztob.c vnaconv_ztog.c \
+	vnaconv_ztoh.c vnaconv_ztos.c vnaconv_ztosn.c vnaconv_ztot.c \
+	vnaconv_ztou.c vnaconv_ztoy.c vnaconv_ztoyn.c vnaconv_ztozi.c \
+	vnaconv_ztozin.c \
 	vnadata_add_frequency.c vnadata_alloc.c vnadata_convert.c \
 	vnadata_convert_to_fz0.c vnadata_convert_to_z0.c \
 	vnadata_format_to_name.c vnadata_get_dprecision.c \

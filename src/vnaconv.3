@@ -1,7 +1,7 @@
 .\" e t
 .\"
 .\" Vector Network Analyzer Library
-.\" Copyright © 2020-2023 D Scott Guthridge <scott_guthridge@rompromity.net>
+.\" Copyright © 2020-2024 D Scott Guthridge <scott_guthridge@rompromity.net>
 .\"
 .\" This program is free software: you can redistribute it and/or modify
 .\" it under the terms of the GNU General Public License as published
@@ -16,17 +16,17 @@
 .\" You should have received a copy of the GNU General Public License
 .\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
 .\"
-.TH VNACONV 3 "2023-09-03" GNU
+.TH VNACONV 3 "2024-10-18" GNU
 .nh
 .SH NAME
-vnaconv_atob, vnaconv_atog, vnaconv_atoh, vnaconv_atos, vnaconv_atot, vnaconv_atou, vnaconv_atoy, vnaconv_atoz, vnaconv_atozi, vnaconv_btoa, vnaconv_btog, vnaconv_btoh, vnaconv_btos, vnaconv_btot, vnaconv_btou, vnaconv_btoy, vnaconv_btoz, vnaconv_btozi, vnaconv_gtoa, vnaconv_gtob, vnaconv_gtoh, vnaconv_gtos, vnaconv_gtot, vnaconv_gtou, vnaconv_gtoy, vnaconv_gtoz, vnaconv_gtozi, vnaconv_htoa, vnaconv_htob, vnaconv_htog, vnaconv_htos, vnaconv_htot, vnaconv_htou, vnaconv_htoy, vnaconv_htoz, vnaconv_htozi, vnaconv_stoa, vnaconv_stob, vnaconv_stog, vnaconv_stoh, vnaconv_stot, vnaconv_stou, vnaconv_stoy, vnaconv_stoyn, vnaconv_stoz, vnaconv_stozi, vnaconv_stozin, vnaconv_stozn, vnaconv_ttoa, vnaconv_ttob, vnaconv_ttog, vnaconv_ttoh, vnaconv_ttos, vnaconv_ttou, vnaconv_ttoy, vnaconv_ttoz, vnaconv_ttozi, vnaconv_utoa, vnaconv_utob, vnaconv_utog, vnaconv_utoh, vnaconv_utos, vnaconv_utot, vnaconv_utoy, vnaconv_utoz, vnaconv_utozi, vnaconv_ytoa, vnaconv_ytob, vnaconv_ytog, vnaconv_ytoh, vnaconv_ytos, vnaconv_ytosn, vnaconv_ytot, vnaconv_ytou, vnaconv_ytoz, vnaconv_ytozi, vnaconv_ytozin, vnaconv_ytozn, vnaconv_ztoa, vnaconv_ztob, vnaconv_ztog, vnaconv_ztoh, vnaconv_ztos, vnaconv_ztosn, vnaconv_ztot, vnaconv_ztou, vnaconv_ztoy, vnaconv_ztoyn, vnaconv_ztozi, vnaconv_ztozin \- convert 2-port and N-port network parameters
+vnaconv_atob, vnaconv_atog, vnaconv_atoh, vnaconv_atos, vnaconv_atot, vnaconv_atou, vnaconv_atoy, vnaconv_atoz, vnaconv_atozi, vnaconv_btoa, vnaconv_btog, vnaconv_btoh, vnaconv_btos, vnaconv_btot, vnaconv_btou, vnaconv_btoy, vnaconv_btoz, vnaconv_btozi, vnaconv_gtoa, vnaconv_gtob, vnaconv_gtoh, vnaconv_gtos, vnaconv_gtot, vnaconv_gtou, vnaconv_gtoy, vnaconv_gtoz, vnaconv_gtozi, vnaconv_htoa, vnaconv_htob, vnaconv_htog, vnaconv_htos, vnaconv_htot, vnaconv_htou, vnaconv_htoy, vnaconv_htoz, vnaconv_htozi, vnaconv_stoa, vnaconv_stob, vnaconv_stog, vnaconv_stoh, vnaconv_stosr, vnaconv_stosrn, vnaconv_stot, vnaconv_stotr, vnaconv_stou, vnaconv_stour, vnaconv_stoy, vnaconv_stoyn, vnaconv_stoz, vnaconv_stozi, vnaconv_stozin, vnaconv_stozn, vnaconv_ttoa, vnaconv_ttob, vnaconv_ttog, vnaconv_ttoh, vnaconv_ttos, vnaconv_ttosr, vnaconv_ttotr, vnaconv_ttou, vnaconv_ttour, vnaconv_ttoy, vnaconv_ttoz, vnaconv_ttozi, vnaconv_utoa, vnaconv_utob, vnaconv_utog, vnaconv_utoh, vnaconv_utos, vnaconv_utosr, vnaconv_utot, vnaconv_utotr, vnaconv_utour, vnaconv_utoy, vnaconv_utoz, vnaconv_utozi, vnaconv_ytoa, vnaconv_ytob, vnaconv_ytog, vnaconv_ytoh, vnaconv_ytos, vnaconv_ytosn, vnaconv_ytot, vnaconv_ytou, vnaconv_ytoz, vnaconv_ytozi, vnaconv_ytozin, vnaconv_ytozn, vnaconv_ztoa, vnaconv_ztob, vnaconv_ztog, vnaconv_ztoh, vnaconv_ztos, vnaconv_ztosn, vnaconv_ztot, vnaconv_ztou, vnaconv_ztoy, vnaconv_ztoyn, vnaconv_ztozi, vnaconv_ztozin \- convert 2-port and N-port network parameters
 .\"
 .SH SYNOPSIS
 .SS "Include and Link"
 .B #include <vnaconv.h>
 .PP
 Link with \fI-lvna\fP \fI-lm\fP.
-.SS "Two-Port Matrix Conversions"
+.SS "Two-Port Conversions"
 .PP
 .BI "void vnaconv_stot(const double complex " s "[2][2],"
 .if n .RS +4n
@@ -525,7 +525,7 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .BI "const double complex " z0 "[2]);"
 .RE
 .\"
-.SS "N-Port Matrix Conversions"
+.SS "N-Port Conversions"
 .PP
 .BI "void vnaconv_stozn(const double complex *" s ", double complex *" z ,
 .RS +4n
@@ -569,19 +569,117 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .RS +4n
 .BI "const double complex *" z0 ", int " n ");"
 .RE
+.SS "Two-port Renormalizing Conversions"
+.PP
+.BI "void vnaconv_stosr(const double complex " s_in "[2][2],"
+.if n .RS +4n
+.BI "double complex " s_out "[2][2],"
+.if !n .RS +4n
+.BI "const double complex " z1 "[2],"
+.if n .br
+.BI "const double complex " z2 "[2]);"
+.RE
+.PP
+.BI "void vnaconv_stotr(const double complex " s "[2][2],"
+.if n .RS +4n
+.BI "double complex " t "[2][2],"
+.if !n .RS +4n
+.BI "const double complex " z1 "[2],"
+.if n .br
+.BI "const double complex " z2 "[2]);"
+.RE
+.PP
+.BI "void vnaconv_stour(const double complex " s "[2][2],"
+.if n .RS +4n
+.BI "double complex " u "[2][2],"
+.if !n .RS +4n
+.BI "const double complex " z1 "[2],"
+.if n .br
+.BI "const double complex " z2 "[2]);"
+.RE
+.PP
+.BI "void vnaconv_ttosr(const double complex " t "[2][2],"
+.if n .RS +4n
+.BI "double complex " s "[2][2],"
+.if !n .RS +4n
+.BI "const double complex " z1 "[2],"
+.if n .br
+.BI "const double complex " z2 "[2]);"
+.RE
+.PP
+.BI "void vnaconv_ttotr(const double complex " t_in "[2][2],"
+.if n .RS +4n
+.BI "double complex " t_out "[2][2],"
+.if !n .RS +4n
+.BI "const double complex " z1 "[2],"
+.if n .br
+.BI "const double complex " z2 "[2]);"
+.RE
+.PP
+.BI "void vnaconv_ttour(const double complex " t "[2][2],"
+.if n .RS +4n
+.BI "double complex " u "[2][2],"
+.if !n .RS +4n
+.BI "const double complex " z1 "[2],"
+.if n .br
+.BI "const double complex " z2 "[2]);"
+.RE
+.PP
+.BI "void vnaconv_utosr(const double complex " u "[2][2],"
+.if n .RS +4n
+.BI "double complex " s "[2][2],"
+.if !n .RS +4n
+.BI "const double complex " z1 "[2],"
+.if n .br
+.BI "const double complex " z2 "[2]);"
+.RE
+.PP
+.BI "void vnaconv_utotr(const double complex " u "[2][2],"
+.if n .RS +4n
+.BI "double complex " t "[2][2],"
+.if !n .RS +4n
+.BI "const double complex " z1 "[2],"
+.if n .br
+.BI "const double complex " z2 "[2]);"
+.RE
+.PP
+.BI "void vnaconv_utour(const double complex " u_in "[2][2],"
+.if n .RS +4n
+.BI "double complex " u_out "[2][2],"
+.if !n .RS +4n
+.BI "const double complex " z1 "[2],"
+.if n .br
+.BI "const double complex " z2 "[2]);"
+.SS "N-port Renormalizing Conversions"
+.PP
+.BI "void vnaconv_stosrn(const double complex *" s_in ","
+.if n .RS +4n
+.BI "double complex *" s_out ","
+.if !n .RS +4n
+.BI "const double complex *" z1 ","
+.if n .br
+.BI "const double complex *" z2 ");"
+.RE
 .\"
 .SH DESCRIPTION
-These functions convert between various mathematical representations
-of electrical n-port networks.
-Representations include scattering (s-parameters), scattering-transfer
-(t-parameters), inverse scattering-transfer (u-parameters), impedance
-(z-parameters), admittance (y-parameters), hybrid (h-parameters),
-inverse hybrid (g-parameters), \s-2ABCD\s+2 (a-parameters) and inverse
-\s-2ABCD\s+2 (b-parameters).
+These functions convert between various mathematical representations of
+electrical n-port networks.
+Representations include s (scattering), t (scattering-transfer), u
+(inverse scattering-transfer), z (impedance), y (admittance), h (hybrid),
+g (inverse hybrid), a (\s-2ABCD\s+2) and b (inverse \s-2ABCD\s+2)
+parameters.
+While s, z and y parameters are defined for any number of ports, t, u,
+h, g, a and b parameters are defined for two-port networks only.
 .PP
-While s-parameters, z-parameters and y-parameters are defined for any
-number of ports, t-parameters, u-paramters, h-parameters, g-parameters,
-a-parameters and b-parameters are defined for two-port networks only.
+The s, t and u representations are always associated with a vector of
+reference impedances, \fIz0\fP, indicating the defined impedances seen
+by the network when looking out of each of its ports.
+The impedance vector must be given when converting from one of these to
+any of the other parameter types, and vice versa.
+The renormalizing conversions, e.g. \fBvnaconv_stosr\fP() convert s, t
+and u parameters from an initial set of reference impedances, \fIz1\fP,
+to a new set of reference impedances, \fIz2\fP.
+.PP
 The library contains one set of functions for two-port networks and
 another set of functions for n-port networks \- the later all have names
 ending in \fBn\fP.
@@ -594,10 +692,6 @@ x \fIn\fP complex matrix (appearing in memory in C row-major order).
 In both cases, the input and output matrices can refer to the same
 memory, i.e. you can pass the same matrix as input and output
 to do an in-place conversion.
-.PP
-The \fIz0\fP parameter, common to both cases, is a pointer to a vector
-of system impedances, i.e. the impedance seen by the network looking out
-of each of its ports.
 .PP
 Two-port example:
 .RS +4n
@@ -621,27 +715,28 @@ vnaconv_stozn(&s[0][0], &z[0][0], z0, 3);
 .fi
 .RE
 .\"
+.SS "Theory of Operation"
 .PP
-In order to give a more detailed description of the various parameter
-matrices, we must first give a few definitions:
+The functions in this library follow the Kurokawa power wave model,
+where scattering parameters represent ratios of root power.
+In order to delve into the mathematical definitions of each parameter
+type, we need to start with few definitions:
 .sp
 .RS +4n
-a1 and a2 are the incident voltages into ports 1 and 2,
+a1 and a2 are incident root power into ports 1 and 2,
 .br
-b1 and b2 are the reflected voltages out of ports 1 and 2,
+b1 and b2 are reflected root power out of ports 1 and 2,
 .br
 v1 and v2 are the voltages at ports 1 and 2,
 .br
 i1 and i2 are the currents into ports 1 and 2, and
 .br
-Z1 and Z2 are the system impedances the device sees looking out of
-its ports.
+Z1 and Z2 are the defined reference impedances the device sees looking
+out of its ports.
 .PP
-Note that for a1, a2, b1 and b2, we're using \(lqvoltage\(rq loosely.
-More precisely, these values are defined as root power in units of
-Watt^(1/2).
-In most cases, this distinction isn't important because the scale
-factor divides out.
+The a1, a2, b1 and b2 are defined as root power in units of Watt^(1/2).
+In most cases, the precise unit in which these parameters are defined
+isn't important because the scale factor divides out.
 .RE
 .sp
 The relationships between
@@ -906,7 +1001,7 @@ above.
 In addition to the functions that convert between parameter forms,
 there are also functions that calculate the input impedances looking
 into each port of the network when all other ports are terminated at
-the system impedances.
+the reference impedances.
 For example, \fBvnaconv_stozi\fP() finds the input impedances from a
 2x2 s-parameter matrix, while \fBvnaconv_ztozin\fP() finds the input
 impedances from an \fIn\fP by \fIn\fP z-parameter matrix.
@@ -941,7 +1036,7 @@ In the include file, they're written in the pointer to element form.
 #include <stdlib.h>
 #include <vnaconv.h>
 
-/* system impedances */
+/* reference impedances */
 #define Z1      75.0
 #define Z2      50.0
 
@@ -949,7 +1044,7 @@ In the include file, they're written in the pointer to element form.
 #define R1      (sqrt(Z1) * sqrt(Z1 - Z2))
 #define R2      (sqrt(Z1) * Z2 / sqrt(Z1 - Z2))
 
-/* system impedance vector */
+/* reference impedance vector */
 static const double complex z0[] = { Z1, Z2 };
 
 int main(int argc, char **argv)

@@ -60,6 +60,8 @@ Makefile.in
 /src/tests/test-vnacommon-qrsolve2
 /src/tests/test-vnaconv-2x2
 /src/tests/test-vnaconv-3x3
+/src/tests/test-vnaconv-renormalize-2x2
+/src/tests/test-vnaconv-renormalize-NxN
 /src/tests/test-vnadata-basic
 /src/tests/test-vnadata.npd
 /src/tests/test-vnadata.s1p

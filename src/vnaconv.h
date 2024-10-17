@@ -88,8 +88,15 @@ extern void vnaconv_stog(const double complex (*s)[2], double complex (*g)[2],
 	const double complex *z0);
 extern void vnaconv_stoh(const double complex (*s)[2], double complex (*h)[2],
 	const double complex *z0);
+extern void vnaconv_stosr(const double complex (*si)[2],
+	double complex (*so)[2], const double complex *z1,
+	const double complex *z2);
 extern void vnaconv_stot(const double complex (*s)[2], double complex (*t)[2]);
+extern void vnaconv_stotr(const double complex (*s)[2], double complex (*t)[2],
+	const double complex *z1, const double complex *z2);
 extern void vnaconv_stou(const double complex (*s)[2], double complex (*u)[2]);
+extern void vnaconv_stour(const double complex (*s)[2], double complex (*u)[2],
+	const double complex *z1, const double complex *z2);
 extern void vnaconv_stoy(const double complex (*s)[2], double complex (*y)[2],
 	const double complex *z0);
 extern void vnaconv_stoz(const double complex (*s)[2], double complex (*z)[2],
@@ -105,7 +112,14 @@ extern void vnaconv_ttog(const double complex (*t)[2], double complex (*g)[2],
 extern void vnaconv_ttoh(const double complex (*t)[2], double complex (*h)[2],
 	const double complex *z0);
 extern void vnaconv_ttos(const double complex (*t)[2], double complex (*s)[2]);
+extern void vnaconv_ttosr(const double complex (*t)[2], double complex (*s)[2],
+	const double complex *z1, const double complex *z2);
+extern void vnaconv_ttotr(const double complex (*ti)[2],
+	double complex (*to)[2], const double complex *z1,
+	const double complex *z2);
 extern void vnaconv_ttou(const double complex (*t)[2], double complex (*u)[2]);
+extern void vnaconv_ttour(const double complex (*t)[2], double complex (*u)[2],
+	const double complex *z1, const double complex *z2);
 extern void vnaconv_ttoy(const double complex (*t)[2], double complex (*y)[2],
 	const double complex *z0);
 extern void vnaconv_ttoz(const double complex (*t)[2], double complex (*z)[2],
@@ -121,7 +135,14 @@ extern void vnaconv_utog(const double complex (*u)[2], double complex (*g)[2],
 extern void vnaconv_utoh(const double complex (*u)[2], double complex (*h)[2],
 	const double complex *z0);
 extern void vnaconv_utos(const double complex (*u)[2], double complex (*s)[2]);
+extern void vnaconv_utosr(const double complex (*u)[2], double complex (*s)[2],
+	const double complex *z1, const double complex *z2);
 extern void vnaconv_utot(const double complex (*u)[2], double complex (*t)[2]);
+extern void vnaconv_utotr(const double complex (*u)[2], double complex (*t)[2],
+	const double complex *z1, const double complex *z2);
+extern void vnaconv_utour(const double complex (*ui)[2],
+	double complex (*uo)[2], const double complex *z1,
+	const double complex *z2);
 extern void vnaconv_utoy(const double complex (*u)[2], double complex (*y)[2],
 	const double complex *z0);
 extern void vnaconv_utoz(const double complex (*u)[2], double complex (*z)[2],
@@ -158,6 +179,8 @@ extern void vnaconv_ztozi(const double complex (*z)[2], double complex *zi,
 /*
  * NxN conversions
  */
+extern void vnaconv_stosrn(const double complex *si, double complex *so,
+	const double complex *z1, const double complex *z2, int n);
 extern void vnaconv_stoyn(const double complex *s, double complex *y,
 	const double complex *z0, int n);
 extern void vnaconv_stozin(const double complex *s, double complex *zi,

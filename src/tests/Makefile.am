@@ -1,6 +1,6 @@
 #
 # Vector Network Analyzer Library
-# Copyright © 2020-2023 D Scott Guthridge <scott_guthridge@rompromity.net>
+# Copyright © 2020-2024 D Scott Guthridge <scott_guthridge@rompromity.net>
 #
 ACLOCAL_AMFLAGS= -I m4
 
@@ -38,6 +38,7 @@ TESTS = \
 	test-vnacal-pvalue \
 	test-vnacal-TRL test-vnacal-Van-hamme test-vnacal-compat-V2 \
 	test-vnaconv-2x2 test-vnaconv-3x3 \
+	test-vnaconv-renormalize-2x2 test-vnaconv-renormalize-NxN \
 	test-vnadata-basic test-vnadata-save-load-convert
 check_PROGRAMS = \
 	test-vnacommon-lu test-vnacommon-mldivide test-vnacommon-mrdivide \
@@ -50,6 +51,7 @@ check_PROGRAMS = \
 	test-vnacal-pvalue \
 	test-vnacal-TRL test-vnacal-Van-hamme test-vnacal-compat-V2 \
 	test-vnaconv-2x2 test-vnaconv-3x3 \
+	test-vnaconv-renormalize-2x2 test-vnaconv-renormalize-NxN \
 	test-vnadata-basic test-vnadata-save-load-convert
 
 test_vnacommon_lu_SOURCES = test-vnacommon-lu.c
@@ -103,6 +105,14 @@ test_vnaconv_2x2_LDFLAGS = -static
 test_vnaconv_3x3_SOURCES = test-vnaconv-3x3.c
 test_vnaconv_3x3_LDADD = libt.a $(top_builddir)/src/libvna.la -lm
 test_vnaconv_3x3_LDFLAGS = -static
+
+test_vnaconv_renormalize_2x2_SOURCES = test-vnaconv-renormalize-2x2.c
+test_vnaconv_renormalize_2x2_LDADD = libt.a $(top_builddir)/src/libvna.la -lm
+test_vnaconv_renormalize_2x2_LDFLAGS = -static
+
+test_vnaconv_renormalize_NxN_SOURCES = test-vnaconv-renormalize-NxN.c
+test_vnaconv_renormalize_NxN_LDADD = libt.a $(top_builddir)/src/libvna.la -lm
+test_vnaconv_renormalize_NxN_LDFLAGS = -static
 
 #vnadata_test_SOURCES = libt.h libt.c vnadata-libt.c
 #vnadata_test_LDADD = $(top_builddir)/src/libvna.la -lm
