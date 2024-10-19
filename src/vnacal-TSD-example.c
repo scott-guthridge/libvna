@@ -40,7 +40,7 @@ char *progname;
  * PI, Z0: misc constants
  *   PI: used below to convert from Hz to angular frequency
  *   C:  speed of light in vacuum
- *   Z0: system impedance
+ *   Z0: reference impedance
  *   FC: center frequency of the line standard
  */
 #define PI		3.14159265358979
@@ -91,7 +91,7 @@ static void multiply(const row_type *a, const row_type *b, row_type *c)
 }
 
 /*
- * z0: system impedances for vnaconv_*
+ * z0: reference impedances for vnaconv_*
  */
 static const double complex z0[2] = { Z0, Z0 };
 

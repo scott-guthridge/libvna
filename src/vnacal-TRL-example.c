@@ -45,7 +45,7 @@ char *progname;
  * PI, C, Z0, ER_EFF: misc constants
  *   PI: used below to convert from Hz to angular frequency
  *   C:  speed of light in vacuum
- *   Z0: system impedance
+ *   Z0: reference impedance
  *   ER_EFF: effective permittivity of line dielectric
  */
 #define PI		3.14159265358979
@@ -135,7 +135,7 @@ char *progname;
 typedef double complex row_type[2];
 
 /*
- * z0: system impedances for vnaconv_*
+ * z0: reference impedances for vnaconv_*
  */
 static const double complex z0[2] = { Z0, Z0 };
 

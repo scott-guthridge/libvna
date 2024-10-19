@@ -194,7 +194,7 @@ typedef struct vnacal_calibration {
     int cal_frequencies;
     double *cal_frequency_vector;
 
-    /* system impedance of the VNA ports (currently assumed all the same) */
+    /* reference impedance of the VNA ports (currently assumed all the same) */
     double complex cal_z0;
 
     /* vector, one per error term, of vectors of values, one per frequency */

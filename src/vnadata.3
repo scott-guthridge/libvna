@@ -151,7 +151,7 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .BI "const double complex *" vector );
 .if n .in -4n
 .\" --------------------------------------------------------------------------
-.SS "Ordinary System Impedances"
+.SS "Ordinary Reference Impedances"
 .PP
 .BI "double complex vnadata_get_z0(const vnadata_t *" vdp ", int " port );
 .\"
@@ -171,7 +171,7 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .BI "int vnadata_set_all_z0(vnadata_t *" vdp ", double complex " z0 );
 .\"
 .\" --------------------------------------------------------------------------
-.SS "Frequency-Dependent System Impedances"
+.SS "Frequency-Dependent Reference Impedances"
 .PP
 .BI "bool vnadata_has_fz0(const vnadata_t *" vdp );
 .PP
@@ -336,43 +336,42 @@ These functions are useful for translating between the matrix of vectors
 form used for VNA measurements, and the vector of matrices form used
 internally by vnadata.
 .\" --------------------------------------------------------------------------
-.SS "Ordinary System Impedances"
+.SS "Ordinary Reference Impedances"
 .PP
 The \fBvnadata_get_z0\fP() and \fBvnadata_set_z0\fP() functions get and
-set the system impedance for the given \fIport\fP.
+set the reference impedance for the given \fIport\fP.
 The \fBvnadata_get_z0_vector\fP() and \fBvnadata_set_z0_vector\fP()
-functions get and set system impedances for all ports, where the length
-of \fIz0_vector\fP is the maximum of \fIrows\fP and \fIcolumns\fP.
-The \fBvnadata_set_all_z0\fP() function sets the system impedances of
-all ports to the same value, \fIz0\fP.
-If not set, all system impedances default to 50 ohms.
+functions get and set reference impedances for all ports, where the
+length of \fIz0_vector\fP is the maximum of \fIrows\fP and \fIcolumns\fP.
+The \fBvnadata_set_all_z0\fP() function sets the reference impedances
+of all ports to the same value, \fIz0\fP.
+If not set, all reference impedances default to 50 ohms.
 .PP
 Calling \fBvnadata_set_z0\fP(), \fBvnadata_set_z0_vector\fP(), or
 \fBvnadata_set_all_z0\fP() when frequency-dependent impedances are in-use
 (see below) discards all frequency-dependent z0 values and returns to
-ordinary system impedances with all other impedance values initialized
+ordinary reference impedances with all other impedance values initialized
 to 50 ohms.
 If frequency-dependent impedances are in-use, \fBvnadata_get_z0\fP()
 and \fBvnadata_get_z0_vector\fP() return failure.
 .\" --------------------------------------------------------------------------
-.SS "Frequency-Dependent System Impedances"
+.SS "Frequency-Dependent Reference Impedances"
 .PP
-The \fBvnadata_get_fz0\fP() and \fBvnadata_set_fz0\fP() functions
-get and set the system impedance for the given port on a per-frequency
-basis.
+The \fBvnadata_get_fz0\fP() and \fBvnadata_set_fz0\fP() functions get and
+set the reference impedance for the given port on a per-frequency basis.
 The \fBvnadata_get_fz0_vector\fP() and \fBvnadata_set_fz0_vector\fP()
-functions get and set the system impedances for all ports at a given
+functions get and set the reference impedances for all ports at a given
 frequency index, where the length of \fIz0_vector\fP is the maximum of
 \fIrows\fP and \fIcolumns\fP.
 .PP
-The \fBvnadata_has_fz0\fP() function tests if per-frequency system
+The \fBvnadata_has_fz0\fP() function tests if per-frequency reference
 impedances are in effect and returns true if they are.
 If frequency-dependent impedances are not in-use, the
 \fBvnadata_set_fz0\fP() and \fBvnadata_set_fz0_vector\fP() functions
-establish frequency-dependent system impedances, preserving the ordinary
-system impedances for all other entries.
+establish frequency-dependent reference impedances, preserving the
+ordinary reference impedances for all other entries.
 \fBvnadata_get_fz0\fP() and \fBvnadata_get_fz0_vector\fP() functions
-work regardless of whether frequency-dependent system impedances are
+work regardless of whether frequency-dependent reference impedances are
 in-effect; in the later case, they don't use the \fIfindex\fP argument.
 .\"
 .\" --------------------------------------------------------------------------

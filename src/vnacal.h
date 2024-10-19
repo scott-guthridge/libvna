@@ -106,12 +106,12 @@ extern int vnacal_new_set_frequency_vector(vnacal_new_t *vnp,
 	const double *frequency_vector);
 
 /*
- * vnacal_new_set_z0: set the system impedance for all VNA ports
+ * vnacal_new_set_z0: set the reference impedance for all VNA ports
  *   @vnp: pointer to vnacal_new_t structure
  *   @z0: nominal impedance looking into a VNA port
  *
  * Note:
- *   In this implementation, all VNA ports must have the same system
+ *   In this implementation, all VNA ports must have the same reference
  *   impedance.  If not set, the default is 50 ohms.
  */
 extern int vnacal_new_set_z0(vnacal_new_t *vnp, double complex z0);
@@ -505,7 +505,7 @@ extern const double *vnacal_get_frequency_vector(const vnacal_t *vcp,
 	int ci);
 
 /*
- * vnacal_get_z0: return the system impedance for the given calibration
+ * vnacal_get_z0: return the reference impedance for the given calibration
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @ci: calibration index
  */

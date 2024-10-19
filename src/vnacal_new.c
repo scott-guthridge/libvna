@@ -219,13 +219,13 @@ int vnacal_new_set_frequency_vector(vnacal_new_t *vnp,
 }
 
 /*
- * vnacal_new_set_z0: set the system impedance for all VNA ports
+ * vnacal_new_set_z0: set the reference impedance for all VNA ports
  *   @vnp: pointer to vnacal_new_t structure
  *   @z0: nominal impedance looking into a VNA port
  *
  * Note:
- *   In this implementation, all VNA ports must have the same system
- *   impedance.	 If not set, the default is 50 ohms.
+ *   In this implementation, all VNA ports must have the same reference
+ *   impedance.  If not set, the default is 50 ohms.
  */
 int vnacal_new_set_z0(vnacal_new_t *vnp, double complex z0)
 {

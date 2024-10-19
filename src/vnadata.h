@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 /*
- * VNADATA_DEFAULT_Z0: default system impedance
+ * VNADATA_DEFAULT_Z0: default reference impedance
  */
 #define VNADATA_DEFAULT_Z0	50.0
 

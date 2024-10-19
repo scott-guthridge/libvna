@@ -228,7 +228,7 @@ struct vnacal_new {
     /* point where next unknown parameter should be linked */
     vnacal_new_parameter_t **vn_unknown_parameter_anchor;
 
-    /* system impedance of the VNA ports (currently assumed all the same) */
+    /* reference impedance of the VNA ports (currently assumed all the same) */
     double complex vn_z0;
 
     /* vector of measurement error values */

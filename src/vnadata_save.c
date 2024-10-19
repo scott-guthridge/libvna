@@ -607,7 +607,7 @@ static void print_npd_header(vnadata_internal_t *vdip, FILE *fp)
  *   @vdip:   internal parameter matrix
  *   @fp: file pointer
  *   @vdp: input data
- *   @z0_touchstone: the first system impedance (before normalization)
+ *   @z0_touchstone: the first reference impedance (before normalization)
  */
 static void print_touchstone_header(vnadata_internal_t *vdip, FILE *fp,
 	double z0_touchstone)
@@ -889,7 +889,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 	}
 
 	/*
-	 * Touchstone doesn't support frequency-dependent system
+	 * Touchstone doesn't support frequency-dependent reference
 	 * impedances.
 	 */
 	if (z0_vector == NULL) {
@@ -935,7 +935,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 
 	/*
 	 * Touchstone 1 format doesn't support ports having different
-	 * system impedances.
+	 * reference impedances.
 	 */
 	for (int i = 1; i < ports; ++i) {
 	    if (z0_vector[i] != z0_vector[0]) {
@@ -1024,7 +1024,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
     }
 
     /*
-     * If touchstone 1, normalize all system impedances to 1.
+     * If touchstone 1, scale all component impedances from z0 to 1.
      */
     if (vdip->vdi_filetype == VNADATA_FILETYPE_TOUCHSTONE1 &&
 	    z0_vector[0] != 1.0) {
@@ -1032,8 +1032,9 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 	vnadata_parameter_type_t target_type;
 
 	/*
-	 * If the input type is S or T, make a writeable copy.	Otherwise,
-	 * convert to S using the existing z0.
+	 * Make a writable copy of the data.  If the input type is S, T,
+	 * or U, just copy the existing parameters; otherwise, convert
+	 * to S using the existing z0.
 	 */
 	if ((vdp_copy = vnadata_alloc(vdip->vdi_error_fn,
 			vdip->vdi_error_arg)) == NULL) {
@@ -1071,8 +1072,8 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 	/*
 	 * Save the copy in the conversions array so that it gets freed
 	 * at out.  Replace vdp and z0_vector.	Even if we need the
-	 * original type, we have to convert it from out new matrix in
-	 * order to normalize impedances.
+	 * original type, we have to convert it from our new matrix in
+	 * order to scale component impedances.
 	 */
 	conversions[target_type] = vdp_copy;
 	vdp = vdp_copy;
@@ -1162,7 +1163,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 		vnadata_get_frequency(vdp, findex));
 
 	/*
-	 * Add frequency-dependent system impedances.
+	 * Add frequency-dependent reference impedances.
 	 */
 	if (z0_vector == NULL) {
 	    const double complex *fz0_vector;

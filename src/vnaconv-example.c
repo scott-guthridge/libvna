@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <vnaconv.h>
 
-/* system impedances */
+/* reference impedances */
 #define Z1	75.0
 #define Z2	50.0
 
@@ -30,7 +30,7 @@
 #define R1	(sqrt(Z1) * sqrt(Z1 - Z2))
 #define R2	(sqrt(Z1) * Z2 / sqrt(Z1 - Z2))
 
-/* system impedance vector */
+/* reference impedance vector */
 static const double complex z0[] = { Z1, Z2 };
 
 int main(int argc, char **argv)

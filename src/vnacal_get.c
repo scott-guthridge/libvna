@@ -211,7 +211,7 @@ const double *vnacal_get_frequency_vector(const vnacal_t *vcp, int ci)
 }
 
 /*
- * vnacal_get_z0: return the system impedance for the given calibration
+ * vnacal_get_z0: return the reference impedance for the given calibration
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @ci: calibration index
  */

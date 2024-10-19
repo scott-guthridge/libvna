@@ -28,7 +28,7 @@
  * vnaconv_ytozin: calculate the two-port input port impedances
  *   @y:  serialized z matrix in (n x n)
  *   @zi: zin vector out (length n)
- *   @z0: system impedance vector in (length n)
+ *   @z0: reference impedance vector in (length n)
  *   @n:  length
  */
 void vnaconv_ytozin(const double complex *y, double complex *zi,

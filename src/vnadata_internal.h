@@ -100,7 +100,7 @@ typedef struct vnadata_internal {
     /* allocation of each vd_data[findex] matrix */
     int vdi_m_allocation;
 
-    /* per-port and optionally also per-frequency system impedances */
+    /* per-port and optionally also per-frequency reference impedances */
     union {
 	double complex *vdi_z0_vector;		/* frequency-independent */
 	double complex **vdi_z0_vector_vector;	/* frequency-dependent */

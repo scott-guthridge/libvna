@@ -185,7 +185,7 @@ Next, start a new calibration by calling \fBvnacal_new_alloc\fP(),
 giving the error term type, dimensions of the calibration, and
 the number of frequency points to be used in the calibration.
 Load the calibration frequencies using \fBvnacal_new_set_frequency_vector\fP(),
-and set the system impedance using \fBvnacal_new_set_z0\fP().
+and set the reference impedance using \fBvnacal_new_set_z0\fP().
 Next, make measurements of calibration standards and add the results of
 each using the various \fBvnacal_new_add_\fP*() functions.
 Solve for the error terms using \fBvnacal_new_solve\fP().
@@ -391,7 +391,7 @@ If the standard has fewer ports than the VNA, the S-parameters measured
 by the unused VNA ports don't matter as long as they remain constant
 over the measurement, and as long as, except for leakage, they have no
 through signal to or from the ports under test.
-When possible, terminate unused VNA ports with loads close to the system
+When possible, terminate unused VNA ports with loads close to the reference
 impedance to avoid adding unnecessary noise into the leakage measurements.
 .\"
 .SS "Starting a New Calibration"
@@ -410,7 +410,7 @@ calibration frequency points into the \fBvnacal_new_t\fP structure;
 ascending values with length equal to the \fIfrequencies\fP argument
 given to \fBvnacal_new_alloc\fP().
 .PP
-\fBvnacal_new_set_z0\fP() sets the system impedance for the vector
+\fBvnacal_new_set_z0\fP() sets the reference impedance for the vector
 network analyzer.
 If not called, the value defaults to 50 ohms.
 The library assumes all VNA ports have the same reference impedance.

@@ -62,7 +62,7 @@
 /*
  * PI, Z0, W1, W2: misc constants
  *   PI is used below to convert from Hz to angular frequency
- *   Z0 is the system impedance
+ *   Z0 is the reference impedance
  *   W1 is the undamped natural frequency of the errors in our VNA
  *   W2 is the undamped natural frequency of our simulated DUT
  */

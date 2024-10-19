@@ -670,8 +670,8 @@ int _vnadata_load_npd(vnadata_internal_t *vdip, FILE *fp, const char *filename)
     }
 
     /*
-     * If the system impedances are frequency-dependent, add in
-     * the Z0 fields.
+     * If the reference impedances are frequency-dependent, add in the
+     * Z0 fields.
      */
     if (fz0) {
 	n_fields += 2 * ports;
