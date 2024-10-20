@@ -39,7 +39,8 @@ TESTS = \
 	test-vnacal-TRL test-vnacal-Van-hamme test-vnacal-compat-V2 \
 	test-vnaconv-2x2 test-vnaconv-3x3 \
 	test-vnaconv-renormalize-2x2 test-vnaconv-renormalize-NxN \
-	test-vnadata-basic test-vnadata-save-load-convert
+	test-vnadata-basic test-vnadata-save-load-convert \
+	test-vnadata-rconvert
 check_PROGRAMS = \
 	test-vnacommon-lu test-vnacommon-mldivide test-vnacommon-mrdivide \
 	test-vnacommon-minverse test-vnacommon-qr test-vnacommon-qrsolve \
@@ -52,7 +53,8 @@ check_PROGRAMS = \
 	test-vnacal-TRL test-vnacal-Van-hamme test-vnacal-compat-V2 \
 	test-vnaconv-2x2 test-vnaconv-3x3 \
 	test-vnaconv-renormalize-2x2 test-vnaconv-renormalize-NxN \
-	test-vnadata-basic test-vnadata-save-load-convert
+	test-vnadata-basic test-vnadata-save-load-convert \
+	test-vnadata-rconvert
 
 test_vnacommon_lu_SOURCES = test-vnacommon-lu.c
 test_vnacommon_lu_LDADD = libt.a $(top_builddir)/src/libvna.la -lm
@@ -173,6 +175,12 @@ test_vnadata_save_load_convert_SOURCES = libt.h libt.c \
 test_vnadata_save_load_convert_LDADD = libt.a $(top_builddir)/src/libvna.la \
 	-lyaml -lm
 test_vnadata_save_load_convert_LDFLAGS = -static
+
+test_vnadata_rconvert_SOURCES = libt.h libt.c \
+	test-vnadata-rconvert.c
+test_vnadata_rconvert_LDADD = libt.a $(top_builddir)/src/libvna.la \
+	-lyaml -lm
+test_vnadata_rconvert_LDFLAGS = -static
 
 clean-local:
 	rm -f test-vnacal.vnacal test-vnadata.s1p test-vnadata.s2p \

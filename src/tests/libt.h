@@ -70,7 +70,7 @@ extern bool libt_isequal_label(double complex actual, double complex expected,
 	const char *label);
 
 /* libt_print_cmatrix: print an m by n serialized complex matrix */
-extern void libt_print_cmatrix(const char *tag, double complex *a,
+extern void libt_print_cmatrix(const char *tag, const double complex *a,
 	int m, int n);
 
 /* libt_randn: return a normally distributed random number */

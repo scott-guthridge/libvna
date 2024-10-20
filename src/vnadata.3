@@ -18,7 +18,7 @@
 .TH VNADATA 3 "2022-03-03" GNU
 .nh
 .SH NAME
-vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get_type, vnadata_get_type_name, vnadata_set_type, vnadata_get_rows, vnadata_get_columns, vnadata_get_frequencies, vnadata_free, vnadata_get_fmin, vnadata_get_fmax, vnadata_get_frequency, vnadata_set_frequency, vnadata_get_frequency_vector, vnadata_set_frequency_vector, vnadata_add_frequency, vnadata_get_cell, vnadata_set_cell, vnadata_get_matrix, vnadata_set_matrix, vnadata_get_to_vector, vnadata_set_from_vector, vnadata_get_z0, vnadata_set_z0, vnadata_get_z0_vector, vnadata_set_z0_vector, vnadata_set_all_z0, vnadata_has_fz0, vnadata_get_fz0, vnadata_set_fz0, vnadata_get_fz0_vector, vnadata_set_fz0_vector, vnadata_convert, vnadata_load, vnadata_fload, vnadata_save, vnadata_fsave, vnadata_cksave, vnadata_get_filetype, vnadata_set_filetype, vnadata_get_format, vnadata_set_format, vnadata_get_fprecision, vnadata_set_fprecision, vnadata_get_dprecision, vnadata_set_dprecision \- Network Parameter Data
+vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get_type, vnadata_get_type_name, vnadata_set_type, vnadata_get_rows, vnadata_get_columns, vnadata_get_frequencies, vnadata_free, vnadata_get_fmin, vnadata_get_fmax, vnadata_get_frequency, vnadata_set_frequency, vnadata_get_frequency_vector, vnadata_set_frequency_vector, vnadata_add_frequency, vnadata_get_cell, vnadata_set_cell, vnadata_get_matrix, vnadata_set_matrix, vnadata_get_to_vector, vnadata_set_from_vector, vnadata_get_z0, vnadata_set_z0, vnadata_get_z0_vector, vnadata_set_z0_vector, vnadata_set_all_z0, vnadata_has_fz0, vnadata_get_fz0, vnadata_set_fz0, vnadata_get_fz0_vector, vnadata_set_fz0_vector, vnadata_convert, vnadata_rconvert, vnadata_load, vnadata_fload, vnadata_save, vnadata_fsave, vnadata_cksave, vnadata_get_filetype, vnadata_set_filetype, vnadata_get_format, vnadata_set_format, vnadata_get_fprecision, vnadata_set_fprecision, vnadata_get_dprecision, vnadata_set_dprecision \- Network Parameter Data
 .\"
 .SH SYNOPSIS
 .B #include <vnadata.h>
@@ -204,6 +204,14 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .in +4n
 .BI "vnadata_parameter_type_t " new_type );
 .in -4n
+.PP
+.BI "int vnadata_rconvert(const vnadata_t *" vdp_in ", vnadata_t *" vdp_out ,
+.in +4n
+.BI "vnadata_parameter_type_t " new_type ", const double complex *" new_z0 ,
+.if n .in +4n
+.BI "int " new_z0_length );
+.if n .in -4n
+.in -4n
 .\" --------------------------------------------------------------------------
 .SS "Load and Save"
 .PP
@@ -385,6 +393,17 @@ If \fIvdp_out\fP is not the same as \fIvdp_in\fP and \fInew_parameter\fP
 is the same type as the input matrix, the data are simply copied.
 \fBvnadata_convert\fP() supports all 72 parameter conversions plus 9
 conversions from parameter data to input impedances at each port.
+.PP
+The \fBvnadata_rconvert\fP() function re-normalizes the reference
+impedances to those given in \fInew_z0\fP, optionally also converting
+the parameter type.
+The \fInew_z0_length\fP parameter gives the number of elements in
+\fInew_z0\fP.
+The length must be 1, the number of ports, or the number of frequencies
+times the number of ports.
+Note that this function does not scale component impedances as is done
+in the touchstone v1 save format, i.e. z, y, h, g, a and b parameters
+have intrinsic values regardless of the choice of reference impedance.
 .\" --------------------------------------------------------------------------
 .SS "Load and Save"
 .PP

@@ -201,7 +201,7 @@ double libt_randn()
 /*
  * libt_print_cmatrix: print an m by n serialized complex matrix
  */
-void libt_print_cmatrix(const char *tag, double complex *a, int m, int n)
+void libt_print_cmatrix(const char *tag, const double complex *a, int m, int n)
 {
     (void)printf("%s:\n", tag);
     for (int i = 0; i < m; ++i) {

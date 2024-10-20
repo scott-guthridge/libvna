@@ -588,12 +588,28 @@ extern int vnadata_set_fz0_vector(vnadata_t *vdp, int findex,
 
 /*
  * vnadata_convert: convert the matrix from one parameter type to another
- *   @vdp_in:  pointer to input vnadata_t structure
- *   @vdp_out: pointer to output vnadata_t structure (may be same as vdp_in)
- *   @new_parameter: new parameter type
+ *   @vdp_in:  input network parameter data
+ *   @vdp_out: output network parameter data (can be same as vdp_in)
+ *   @newtype: new parameter type (can be the same as old)
  */
-extern int vnadata_convert(const vnadata_t *vdp_in,
-	vnadata_t *vdp_out, vnadata_parameter_type_t new_parameter);
+extern int vnadata_convert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
+	vnadata_parameter_type_t new_type);
+
+/*
+ * vnadata_rconvert: renormalizing conversion
+ *   @vdp_in:  input network parameter data
+ *   @vdp_out: output network parameter data (can be same as vdp_in)
+ *   @newtype: new parameter type (can be the same as old)
+ *   @new_z0:  new reference impedances
+ *   @new_z0_length:  length of new_z0 (1, #ports, or #frequencies * #ports)
+ *
+ * Note: vdp_out and vdp_in may be the same.  The length field
+ * gives the number of elements in new_z0.  It can be 1, #ports,
+ * or #frequencies x #ports.
+ */
+extern int vnadata_rconvert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
+	vnadata_parameter_type_t newtype, const double complex *new_z0,
+	int new_z0_length);
 
 /*
  * vnadata_add_frequency: add a new frequency entry
