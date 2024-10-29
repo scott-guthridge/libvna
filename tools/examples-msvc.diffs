@@ -4,7 +4,7 @@ diff -ru examples/vnaconv-example.c examples/vnaconv-example.c
 @@ -31,13 +31,13 @@
  #define R2	(sqrt(Z1) * Z2 / sqrt(Z1 - Z2))
  
- /* system impedance vector */
+ /* reference impedance vector */
 -static const _Dcomplex z0[] = { Z1, Z2 };
 +static const _Dcomplex z0[] = {{ Z1, 0.0 }, { Z2, 0.0 }};
  
