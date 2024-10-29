@@ -12,7 +12,7 @@ jobs:
         git config --global core.autocrlf false
         git config --global core.eol lf
     - name: Checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Setup MSYS2 (Windows)
       uses: msys2/setup-msys2@v2
       with:
