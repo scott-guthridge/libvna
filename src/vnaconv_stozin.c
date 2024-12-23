@@ -33,9 +33,6 @@
 void vnaconv_stozin(const double complex *s, double complex *zi,
 	const double complex *z0, int n)
 {
-    if (n <= 0)
-	return;
-
     for (int i = 0; i < n; ++i) {
 	const double complex sii = s[(n + 1) * i];
 
