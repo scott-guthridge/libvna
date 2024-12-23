@@ -49,7 +49,7 @@ make rpm
 Next, install:
 
 ```
-sudo yum install -y rpm/*/*.rpm
+sudo yum install -y package/rpm/*/*.rpm
 ```
 
 Finally, clean up:
@@ -109,7 +109,7 @@ make deb
 Next, install:
 
 ```
-( cd deb; sudo apt install ./\*.deb )
+( cd package/deb; sudo apt install ./\*.deb )
 ```
 
 Finally, clean up:
