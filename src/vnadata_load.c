@@ -62,13 +62,12 @@ static int vnadata_load_common(vnadata_internal_t *vdip,
     case VNADATA_FILETYPE_TOUCHSTONE2:
 	/*
 	 * Load touchstone formats.  Warn if filename_ports doesn't
-	 * match actual ports, except allow .s2p as wild.
+	 * match actual number of ports.
 	 */
 	if (_vnadata_load_touchstone(vdip, fp, filename) == -1) {
 	    return -1;
 	}
-	if (filename_ports != -1 && filename_ports != 2 &&
-		filename_ports != vdp->vd_columns) {
+	if (filename_ports != -1 && filename_ports != vdp->vd_columns) {
 	    _vnadata_error(vdip, VNAERR_WARNING,
 		    "%s: warning: filename suggests %d port(s) but found %d",
 		    filename, filename_ports, vdp->vd_columns);
