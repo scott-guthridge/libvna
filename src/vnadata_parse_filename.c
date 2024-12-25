@@ -63,14 +63,14 @@ vnadata_filetype_t _vnadata_parse_filename(const char *filename, int *ports)
     /*
      * If the file has a suffix matching s[0-9]+p, assume touchstone 1.
      */
-    if (suffix[0] == 's') {
+    if (suffix[0] == 's' || suffix[0] == 'S') {
 	const char *cp = suffix + 1;
 
 	if (isdigit(*cp)) {
 	    do {
 		++cp;
 	    } while (isdigit(*cp));
-	    if (cp[0] == 'p' && cp[1] == '\000') {
+	    if ((cp[0] == 'p' || cp[0] == 'P') && cp[1] == '\000') {
 		if (ports != NULL) {
 		    *ports = atoi(&suffix[1]);
 		}
