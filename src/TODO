@@ -1,7 +1,21 @@
 == Misc ==
 
+    - In vnadata_save, if saving to a .ts file, set the save type to
+      Touchstone v2 instead of the currently somewhat confusing logic
+      that first tries v1 then promotes to v2 if needed.  In general,
+      VNADATA_FILETYPE_AUTO is always implied because load and save
+      both override the type if they can determine it from the filename.
+      Make this more clear in the docs -- that the type is used only if
+      load/save cannot determine it and that load sets the type to that
+      of the file loaded.
+
+    - Don't treat .s2p as wild for any number of ports -- warn if it
+      doesn't match actual.
+      DONE
+
     - In vnadata_load, make the filename extension case-insensitive
       for determining the file type, e.g. .S4P === .s4p.
+      DONE
 
     - Consider renaming El (leakage) to Ed (directivity), and Ef (forward)
       to Et (transmission tracking).  Maintain backward compatiblity in
@@ -58,6 +72,7 @@
     - For the major diagonal of the error term matrix, instead of using
       1.0 plus a complex normal, use a more general non-central random
       number generator.
+      DONE
 
     - Make tests that invoke each of the examples.  Create expected output
       files and compare that values are approximately equal.  Be careful
@@ -85,22 +100,23 @@
       Complex reference impedances make sense only if you can specify
       frequency dependent values.
 
-    - Bring back vnacal_apply_t from the git history (consider renaming
-      to vnacal_map_t to better match what it does and avoid confusion
-      with the vnacal_apply functions).  The purpose of this function
-      is to permit using a VNA with fewer ports than the DUT, and
-      making several measurements with different combinations of the DUT
-      connected to the VNA ports to determine the S parameters of the DUT.
-      When the other DUT ports are terminated in perfect match standards,
-      it's relatively simple -- it essentially amounts to just piecing
-      together the partial S parameters generated from each measurement.
-      A more interesting case, however is where the other DUT ports
-      are terminated in standards that are not quite perfect, either
-      known or unknown.  Note that even if these imperfect standards
-      are completely known, the S parameters can no longer be solved
-      as a linear system as the system contains products of the unknown
-      DUT S parameters.  In principle, though, it should be possible to
-      solve the system numerically if we're given enough measurements.
+    - Bring back vnacal_apply_t and related methods from the git
+      history (consider renaming to vnacal_map_t to better match what
+      it does and avoid confusion with the vnacal_apply functions).
+      The purpose of this structure is to permit using a VNA with
+      fewer ports than the DUT, and making several measurements with
+      different combinations of the DUT connected to the VNA ports to
+      determine the S parameters of the DUT.  When the other DUT ports
+      are terminated in perfect match standards, it's relatively simple
+      -- it essentially amounts to just piecing together the partial S
+      parameters generated from each measurement.  A more interesting
+      case, however is where the other DUT ports are terminated in
+      standards that are not quite perfect, either known or unknown.
+      Note that even if these imperfect standards are completely known,
+      the S parameters can no longer be solved as a linear system as
+      the system contains products of the unknown DUT S parameters.
+      In principle, though, it should be possible to solve the system
+      numerically if we're given enough measurements.
 
       For each measurement, to describe what each DUT port is connected
       to, we can use a port map with one entry per DUT port.  When the
