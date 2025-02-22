@@ -4,17 +4,12 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    container:
-      image: quay.io/pypa/manylinux2014_x86_64:latest
+    runs-on: ubuntu-latest
     steps:
-    - name: Checkout Source
+    - name: Checkout Code
       uses: actions/checkout@v4
-    - name: Run the Test Build
+    - name: Build Manylinux RPM Package (Linux)
       run: |
-        yum install -y autoconf automake gcc git libtool libyaml-devel \
-            make rpm-build
-        ./bootstrap
-        ./configure
-        make -j12 check
-        make distcheck
+        podman run --rm -v "`pwd`:/libvna" \
+            quay.io/pypa/manylinux2014_x86_64:latest \
+            /libvna/tools/make-rpm
