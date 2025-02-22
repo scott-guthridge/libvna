@@ -210,5 +210,5 @@ int _vnacal_add_calibration_common(const char *function, vnacal_t *vcp,
      */
     _vnacal_calibration_free(vcp->vc_calibration_vector[cur]);
     vcp->vc_calibration_vector[cur] = calp;
-    return 0;
+    return cur;
 }
