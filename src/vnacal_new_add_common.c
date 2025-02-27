@@ -683,13 +683,6 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 	    goto out;
 	}
     }
-    if ((vnmp->vnm_s_matrix = full_s_matrix =
-		calloc(full_s_rows * full_s_columns,
-		    sizeof(vnacal_new_parameter_t *))) == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM,
-		"calloc %s", strerror(errno));
-	goto out;
-    }
     vnmp->vnm_vnp = vnp;
 
     /*
