@@ -53,9 +53,6 @@ typedef struct vnacal_new_parameter {
     /* pointer to corresponding vnacal_parameter_t structure */
     vnacal_parameter_t *vnpr_parameter;
 
-    /* back pointer to vnacal_new_t structure */
-    vnacal_new_t *vnpr_cmp;
-
     /* true if the parameter value is unknown and must be determined */
     bool vnpr_unknown;
 
@@ -288,7 +285,7 @@ typedef struct vnacal_new_add_arguments {
     const char			       *vnaa_function;
 
     /* associated vnacal_new_t structure */
-    vnacal_new_t		       *vnaa_cmp;
+    vnacal_new_t		       *vnaa_vnp;
 
     /* matrix of voltages leaving each VNA port */
     const double complex	*const *vnaa_a_matrix;

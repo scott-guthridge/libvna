@@ -246,7 +246,7 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 {
     /* make short aliases for the commonly used arguments */
     const char *const function = vnaa.vnaa_function;
-    vnacal_new_t *const vnp = vnaa.vnaa_cmp;
+    vnacal_new_t *const vnp = vnaa.vnaa_vnp;
     const double complex *const *const a_matrix = vnaa.vnaa_a_matrix;
     const int a_rows = vnaa.vnaa_a_rows;
     const int a_columns = vnaa.vnaa_a_columns;
@@ -1022,7 +1022,7 @@ int vnacal_new_add_single_reflect(vnacal_new_t *vnp,
     }
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
-    vnaa.vnaa_cmp		= vnp;
+    vnaa.vnaa_vnp		= vnp;
     vnaa.vnaa_a_matrix		= (const double complex *const *)a;
     vnaa.vnaa_a_rows		= a_rows;
     vnaa.vnaa_a_columns		= a_columns;
@@ -1061,7 +1061,7 @@ int vnacal_new_add_single_reflect_m(vnacal_new_t *vnp,
     }
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
-    vnaa.vnaa_cmp		= vnp;
+    vnaa.vnaa_vnp		= vnp;
     vnaa.vnaa_a_matrix		= NULL;
     vnaa.vnaa_a_rows		= 0;
     vnaa.vnaa_a_columns		= 0;
@@ -1108,7 +1108,7 @@ int vnacal_new_add_double_reflect(vnacal_new_t *vnp,
     }
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
-    vnaa.vnaa_cmp		= vnp;
+    vnaa.vnaa_vnp		= vnp;
     vnaa.vnaa_a_matrix		= (const double complex *const *)a;
     vnaa.vnaa_a_rows		= a_rows;
     vnaa.vnaa_a_columns		= a_columns;
@@ -1150,7 +1150,7 @@ int vnacal_new_add_double_reflect_m(vnacal_new_t *vnp,
     }
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
-    vnaa.vnaa_cmp		= vnp;
+    vnaa.vnaa_vnp		= vnp;
     vnaa.vnaa_a_matrix		= NULL;
     vnaa.vnaa_a_rows		= 0;
     vnaa.vnaa_a_columns		= 0;
@@ -1210,7 +1210,7 @@ int vnacal_new_add_line(vnacal_new_t *vnp,
     }
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
-    vnaa.vnaa_cmp		= vnp;
+    vnaa.vnaa_vnp		= vnp;
     vnaa.vnaa_a_matrix		= (const double complex *const *)a;
     vnaa.vnaa_a_rows		= a_rows;
     vnaa.vnaa_a_columns		= a_columns;
@@ -1251,7 +1251,7 @@ int vnacal_new_add_line_m(vnacal_new_t *vnp,
     }
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
-    vnaa.vnaa_cmp		= vnp;
+    vnaa.vnaa_vnp		= vnp;
     vnaa.vnaa_a_matrix		= NULL;
     vnaa.vnaa_a_rows		= 0;
     vnaa.vnaa_a_columns		= 0;
@@ -1297,7 +1297,7 @@ int vnacal_new_add_through(vnacal_new_t *vnp,
     }
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
-    vnaa.vnaa_cmp		= vnp;
+    vnaa.vnaa_vnp		= vnp;
     vnaa.vnaa_a_matrix		= (const double complex *const *)a;
     vnaa.vnaa_a_rows		= a_rows;
     vnaa.vnaa_a_columns		= a_columns;
@@ -1339,7 +1339,7 @@ int vnacal_new_add_through_m(vnacal_new_t *vnp,
     }
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
-    vnaa.vnaa_cmp		= vnp;
+    vnaa.vnaa_vnp		= vnp;
     vnaa.vnaa_a_matrix		= NULL;
     vnaa.vnaa_a_rows		= 0;
     vnaa.vnaa_a_columns		= 0;
@@ -1385,7 +1385,7 @@ int vnacal_new_add_mapped_matrix(vnacal_new_t *vnp,
     }
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
-    vnaa.vnaa_cmp		= vnp;
+    vnaa.vnaa_vnp		= vnp;
     vnaa.vnaa_a_matrix		= (const double complex *const *)a;
     vnaa.vnaa_a_rows		= a_rows;
     vnaa.vnaa_a_columns		= a_columns;
@@ -1427,7 +1427,7 @@ int vnacal_new_add_mapped_matrix_m(vnacal_new_t *vnp,
     }
     (void)memset((void *)&vnaa, 0, sizeof(vnaa));
     vnaa.vnaa_function		= __func__;
-    vnaa.vnaa_cmp		= vnp;
+    vnaa.vnaa_vnp		= vnp;
     vnaa.vnaa_a_matrix		= NULL;
     vnaa.vnaa_a_rows		= 0;
     vnaa.vnaa_a_columns		= 0;

@@ -289,7 +289,6 @@ vnacal_new_parameter_t *_vnacal_new_get_parameter(const char *function,
     (void)memset((void *)vnprp, 0, sizeof(*vnprp));
     _vnacal_hold_parameter(vpmrp);
     vnprp->vnpr_parameter = vpmrp;
-    vnprp->vnpr_cmp = vnp;
     hash_insert(vnphp, vnprp);
 
     /*
