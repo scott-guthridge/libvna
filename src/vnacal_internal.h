@@ -19,6 +19,8 @@
 #ifndef _VNACAL_INTERNAL_H
 #define _VNACAL_INTERNAL_H
 
+#include <assert.h>
+
 #include "vnacal.h"
 #include "vnacommon_internal.h"
 #include "vnaerr_internal.h"
@@ -58,8 +60,72 @@ typedef enum vnacal_parameter_type {
     VNACAL_SCALAR,
     VNACAL_VECTOR,
     VNACAL_UNKNOWN,
-    VNACAL_CORRELATED
+    VNACAL_CORRELATED,
+    VNACAL_CALKIT,
+    VNACAL_DATA
 } vnacal_parameter_type_t;
+
+/*
+ * vnacal_data_standard_t: a standard based on network parameter data
+ */
+typedef struct vnacal_data_standard {
+    /* number of frequency points */
+    int vds_frequencies;
+
+    /* vector of frequency values */
+    double *vds_frequency_vector;
+
+    /* indicates per-frequency reference impedances */
+    bool vds_has_fz0;
+
+    /* most recent segment used in _vnacal_rfi */
+    int vds_segment;
+
+    /* reference impedances */
+    union {
+	/* vector of reference impedances by port */
+	double complex *vds_z0_vector;
+
+	/* vector by port of vector by frequency of reference impedances */
+	double complex **vds_z0_vector_vector;
+    } u;
+
+    /* serialized matrix of vectors (by frequency) of S parameters */
+    double complex **vds_data;
+
+} vnacal_data_standard_t;
+
+/*
+ * vnacal_standard_t: a computed or data standard
+ */
+typedef struct vnacal_standard {
+    /* type of standard */
+    vnacal_parameter_type_t std_type;
+
+    /* name of standard for error messages */
+    char *std_name;
+
+    /* number of ports (assumed square) */
+    int std_ports;
+
+    /* reference count */
+    int std_refcount;
+
+    /* back pointer to vnacal_t structure */
+    vnacal_t *std_vcp;
+
+    /* details based on standard type */
+    union {
+	vnacal_calkit_data_t calkit_data;
+	vnacal_data_standard_t data_standard;
+    } u;
+} vnacal_standard_t;
+
+/*
+ * Hide the union.
+ */
+#define std_calkit_data			u.calkit_data
+#define std_data_standard		u.data_standard
 
 /*
  * vnacal_parameter_t: internal representation of a parameter
@@ -77,9 +143,6 @@ typedef struct vnacal_parameter {
     /* index into vprmc_vector */
     int vpmr_index;
 
-    /* start position for _vnacal_rfi */
-    int vpmr_segment;
-
     /* back pointer to vnacal_t */
     vnacal_t *vpmr_vcp;
 
@@ -96,6 +159,10 @@ typedef struct vnacal_parameter {
 	    int frequencies;
 	    double *frequency_vector;
 	    double complex *coefficient_vector;
+
+	    /* start position for _vnacal_rfi */
+	    int segment;
+
 	    struct {
 		/* pointer to related parameter */
 		struct vnacal_parameter *other;
@@ -117,6 +184,14 @@ typedef struct vnacal_parameter {
 		} u;
 	    } unknown;	/* including correlated */
 	} vector;
+	struct {
+	    /* associated n-port standard */
+	    vnacal_standard_t *stdp;
+
+	    /* row and column of standard matrix */
+	    int row, column;
+
+	} standard;
     } u;
 } vnacal_parameter_t;
 
@@ -127,12 +202,16 @@ typedef struct vnacal_parameter {
 #define vpmr_frequencies		u.vector.frequencies
 #define vpmr_frequency_vector		u.vector.frequency_vector
 #define vpmr_coefficient_vector		u.vector.coefficient_vector
+#define vpmr_segment			u.vector.segment
 #define vpmr_other			u.vector.unknown.other
 #define vmpr_correlated			u.vector.unknown.u.correlated
 #define vpmr_sigma_frequencies		vmpr_correlated.sigma_frequencies
 #define vpmr_sigma_frequency_vector	vmpr_correlated.sigma_frequency_vector
 #define vpmr_sigma_vector		vmpr_correlated.sigma_vector
 #define vpmr_sigma_spline		vmpr_correlated.sigma_spline
+#define vpmr_stdp			u.standard.stdp
+#define vpmr_row			u.standard.row
+#define vpmr_column			u.standard.column
 
 /*
  * VNACAL_GET_PARAMETER_TYPE: access the parameter type
@@ -154,6 +233,126 @@ typedef struct vnacal_parameter {
     ((vpmrp)->vpmr_type == VNACAL_UNKNOWN || \
      (vpmrp)->vpmr_type == VNACAL_CORRELATED ? \
      ((vpmrp)->vpmr_other) : NULL)
+
+/*
+ * VNACAL_IS_STANDARD_PARAMETER: test if a parameter uses vnacal_standard_t
+ */
+#define VNACAL_IS_STANDARD_PARAMETER(vpmrp) \
+    ((vpmrp)->vpmr_type == VNACAL_CALKIT || \
+     (vpmrp)->vpmr_type == VNACAL_DATA)
+
+/*
+ * The parameter matrix for a calibration standard that is given to the
+ * vnacal_new_add_* functions can consist of regular scalar or vector
+ * parameters, unknown or correlated parameters that the library must
+ * solve for, or calkit and data standards.  Regular scalar or vector
+ * parameters are just numbers to the library -- it's the caller's
+ * responsibility to pass values that are consistent with the reference
+ * impedance(s) of the calibration.  In order to evaluate calkit or
+ * data parameters, however, we need to know the reference impedances
+ * of the VNA ports, and this implies that there has to be a consistent
+ * mapping between the ports of the standard and the ports of the VNA.
+ * For example, suppose we have a four-port VNA and that a two-port
+ * standard described by a vnadata_t structure is connected to VNA
+ * ports 1 and 2, a calkit open parameter is connected to VNA port 3,
+ * and a perfect short described by VNACAL_SHORT (a regular scalar
+ * parameter) is connected to port 4.  Suppose the S parameters of the
+ * data standard are called d11, d12, d21, and d22; the S parameter
+ * of the open standard is o11, and the perfect short is called s11.
+ * A valid parameter matrix for this would be:
+ *
+ *    d22 d21 0   0
+ *    d12 d11 0   0
+ *    0   0   s11 0
+ *    0   0   0   m11
+ *
+ * Note that the two ports of the data standard are connected in reverse
+ * so the port mapping is:
+ *
+ *    VNA port 1 : Data standard port 2
+ *    VNA port 2 : Data standard port 1
+ *    VNA port 3 : Open standard (port 1)
+ *    VNA port 4 : Short standard (port 1)
+ *
+ * But an invalid parameter matrix could also have been given, e.g.:
+ *
+ *   d22 d12 0    0
+ *   d21 o11 0    0
+ *   0   0   0    0
+ *   0   0   s11  0
+ *
+ * There are several problems here.  First, the two data port standards
+ * have an inconsistent mapping with s11 of the parameter matrix
+ * suggesting that VNA port 1 maps to data standard port 2, but s12
+ * and s21 suggesting that VNA port 1 maps to data standard port 1
+ * and VNA port 2 maps to data standard port 2.  VNA port 2 appears
+ * to be connected to both the data standard and the open standard.
+ * And single port standard s11 is not on the major diagonal.
+ *
+ * The following data structures represent the mapping between the ports
+ * of the parameter matrix and those of the standards.
+ *
+ * Note that the vnacal_new_add_* functions allow another layer of port
+ * remapping on top of this, where the ports of the parameter matrix
+ * may be only a subset of VNA ports or may be connected out of order.
+ */
+
+/*
+ * vnacal_standard_rmap_t: map of ports of a standard to those of the
+ *	parameter matrix
+ */
+typedef struct vnacal_standard_rmap {
+    /* pointer to standard */
+    vnacal_standard_t *vsrm_stdp;
+
+    /* map from port of standard to port of parameter matrix (zero-based) */
+    int *vsrm_rmap_vector;
+
+    /* cell of parameter matrix that created each entry in vsrm_rmap_vector */
+    int *vsrm_cell_vector;
+
+    /* next in list */
+    struct vnacal_standard_rmap *vsrm_next;
+
+} vnacal_standard_rmap_t;
+
+/*
+ * vnacal_parameter_rmap_t: location of a regular parameter in the parameter
+ *	matrix
+ */
+typedef struct vnacal_parameter_rmap {
+    /* pointer to regular parameter */
+    vnacal_parameter_t *vprm_parameter;
+
+    /* cell of parameter matrix this parameter fills */
+    int vprm_cell;
+
+    /* next in list */
+    struct vnacal_parameter_rmap *vprm_next;
+
+} vnacal_parameter_rmap_t;
+
+/*
+ * vnacal_parameter_matrix_map_t: how the parameter matrix maps to regular
+ *     parameters, calkit standards and data standards
+ */
+typedef struct vnacal_parameter_matrix_map {
+    /* associated calibration structure */
+    vnacal_t *vpmm_vcp;
+
+    /* number of rows in parameter matrix */
+    int vpmm_rows;
+
+    /* number of columns in parameter matrix */
+    int vpmm_columns;
+
+    /* linked list of (multi-port) standards */
+    vnacal_standard_rmap_t *vpmm_standard_rmap;
+
+    /* linked list of regular parameters */
+    vnacal_parameter_rmap_t *vpmm_parameter_rmap;
+
+} vnacal_parameter_matrix_map_t;
 
 /*
  * vnacal_parameter_collection_t: collection of parameters
@@ -344,17 +543,34 @@ extern void _vnacal_hold_parameter(vnacal_parameter_t *vpmrp);
 /* _vnacal_release_parameter: decrease the hold count and free if zero */
 extern void _vnacal_release_parameter(vnacal_parameter_t *vpmrp);
 
+/* _vnacal_get_calkit_name: return calkit name and number of ports */
+extern const char *_vnacal_get_calkit_name(const vnacal_calkit_data_t *vcdp,
+	int *ip_ports);
+
+/* _vnacal_free_standard: free a vnacal_standard_t structure */
+extern void _vnacal_free_standard(vnacal_standard_t *stdp);
+
 /* _vnacal_get_parameter_frange: get the frequency limits for the parameter */
 extern void _vnacal_get_parameter_frange(vnacal_parameter_t *vpmrp,
 	double *fmin, double *fmax);
 
-/* _vnacal_get_parameter_value_i: get the value of the parameter at frequency */
-extern double complex _vnacal_get_parameter_value_i(vnacal_parameter_t *vpmrp,
-	double frequency);
+/* vnacal_eval_parameter_matrix: evaluate parameter matrix at given frequency */
+extern int _vnacal_eval_parameter_matrix_i(const char *function,
+	const vnacal_parameter_matrix_map_t *vpmmp, double frequency,
+	const double complex *z0_vector, double complex *result_matrix);
 
 /* _vnacal_get_correlated_sigma: return the sigma value for the given f */
 extern double _vnacal_get_correlated_sigma(vnacal_parameter_t *vpmrp,
 	double frequency);
+
+/* _vnacal_analyze_parameter_matrix: check matrix and build standard maps */
+extern vnacal_parameter_matrix_map_t *_vnacal_analyze_parameter_matrix(
+	const char *function, vnacal_t *vcp, vnacal_parameter_t **matrix,
+	int rows, int columns, bool initial);
+
+/* _vnacal_free_parameter_matrix_map: free a vnacal_parameter_matrix_map_t */
+extern void _vnacal_free_parameter_matrix_map(
+	vnacal_parameter_matrix_map_t *vpmmp);
 
 /* _vnacal_setup_parameter_collection: allocate the parameter collection */
 extern int _vnacal_setup_parameter_collection(const char *function,
@@ -364,7 +580,7 @@ extern int _vnacal_setup_parameter_collection(const char *function,
 extern void _vnacal_teardown_parameter_collection(vnacal_t *vcp);
 
 /* _vnacal_rfi: apply rational function interpolation */
-extern double complex _vnacal_rfi(const double *xp, double complex *yp,
+extern double complex _vnacal_rfi(const double *xp, const double complex *yp,
 	int n, int m, int *segment, double x);
 
 #ifdef __cplusplus

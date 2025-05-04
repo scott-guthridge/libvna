@@ -18,7 +18,8 @@
 .TH VNACAL_PARAMETER 3 "2022-11-25" GNU
 .nh
 .SH NAME
-vnacal_make_scalar_parameter, vnacal_make_vector_parameter, vnacal_make_unknown_parameter, vnacal_make_correlated_parameter, get_parameter_value, vnacal_delete_parameter \- vnacal s-parameter functions
+vnacal_make_scalar_parameter, vnacal_make_vector_parameter, vnacal_make_calkit_parameter, vnacal_make_calkit_parameter_matrix, vnacal_make_data_parameter, vnacal_make_data_parameter_matrix, vnacal_make_unknown_parameter, vnacal_make_correlated_parameter, vnacal_get_parameter_value, vnacal_eval_parameter, vnacal_eval_parameter_matrix, vnacal_delete_parameter, vnacal_delete_parameter_matrix \- calibration parameter construction and evaluation
+
 .\"
 .SH SYNOPSIS
 .B #include <vnacal.h>
@@ -38,10 +39,41 @@ ll.
 .\"
 .PP
 .BI "int vnacal_make_vector_parameter(vnacal_t *" vcp ,
-.RS +4n
-.BI "const double *" frequency_vector ", int " frequencies ,
+.if n .RS +4n
+.BI "const double *" frequency_vector ,
+.if !n .RS +4n
+.BI "int " frequencies ,
 .if n .br
 .BI "const double complex *" coefficient_vector );
+.RS -4n
+.\"
+.PP
+.BI "int vnacal_make_calkit_parameter(vnacal_t *" vcp ,
+.if n .RS +4n
+.BI "const vnacal_calkit_data_t *" vcdp );
+.if n .RS -4n
+.\"
+.PP
+.BI "int vnacal_make_calkit_parameter_matrix(vnacal_t *" vcp ,
+.if n .RS +4n
+.BI "const vnacal_calkit_data_t *" vcdp ,
+.if !n .RS +4n
+.BI "int *" parameter_matrix ,
+.if n .br
+.BI "size_t " parameter_matrix_size );
+.RS -4
+.\"
+.PP
+.BI "int vnacal_make_data_parameter(vnacal_t *" vcp ", const vnadata_t *" vdp );
+.\"
+.PP
+.BI "int vnacal_make_data_parameter_matrix(vnacal_t *" vcp ,
+.if n .RS +4n
+.BI "const vnadata_t *" vdp ",
+.if !n .RS +4n
+.BI "int *" parameter_matrix ,
+.if n .br
+.BI "size_t " parameter_matrix_size );
 .RS -4n
 .\"
 .PP
@@ -61,25 +93,64 @@ ll.
 .if n .RS -4n
 .\"
 .PP
+.BI "double complex vnacal_eval_parameter(vnacal_t *" vcp ,
+.if n .RS +4n
+.BI "int " parameter ", double " frequency ",
+.if !n .RS +4n
+.BI "double complex " z0 );
+.RS -4n
+.\"
+.PP
+.BI "int vnacal_eval_parameter_matrix(vnacal_t *" vcp ,
+.if n .RS +4n
+.BI "const int *" parameter_matrix ", int " rows ", int " columns ,
+.ie n .br
+.el .RS +4n
+.BI "double " frequency ", const double complex *" z0_vector ,
+.if n .br
+.BI "double complex *" result_matrix );
+.RS -4n
+.\"
+.PP
+.BI "int vnacal_parameter_matrix_to_data(vnacal_t *" vcp ,
+.if n .RS +4n
+.BI "const int *" parameter_matrix ,
+.if !n .RS +4n
+.BI "int " rows ", int " columns ,
+.if n .br
+.BI "vnadata_t *" vdp );
+.RS -4n
+.\"
+.PP
 .BI "int vnacal_delete_parameter(vnacal_t *" vcp ", int " parameter );
+.\"
+.PP
+.BI "void vnacal_delete_parameter_matrix(vnacal_t *" vcp ,
+.if n .RS +4n
+.BI "const int *" parameter_matrix ,
+.if !n .RS +4n
+.BI "int " rows ", int " columns );
+.RS -4n
 .\"
 .PP
 Link with \fI-lvna\fP \fI-lyaml\fP \fI-lm\fP.
 .sp
 .\"
 .SH DESCRIPTION
-These functions are used to specify the S-parameters for calibration
-standards used by the \fBvnacal_new_add_\fP*() functions.
 .PP
+These functions construct calibration standard parameter objects as
+required for the \fBvnacal_new_add_\fP*() functions.
 Instead of taking a matrix of complex numbers that specify the
-S-parameters directly, the \fBvnacal_new_add_\fP*() functions instead
-take a matrix of type \fBint\fP, filled with either the predefined
-constants:
-\fB\s-2VNACAL_MATCH\s+2\fP, \fB\s-2VNACAL_OPEN\s+2\fP,
-\fB\s-2VNACAL_SHORT\s+2\fP, \fB\s-2VNACAL_ZERO\s+2\fP,
-\fB\s-2VNACAL_ONE\s+2\fP, or the integer handles returned from the four
-\fBvnacal_make_\fP*\fP_parameter\fP() functions described here.
-There are two reasons for this extra level of abstraction.
+S-parameters of a standard directly, the \fBvnacal_new_add_\fP*()
+functions take a matrix of type \fBint\fP, filled with
+either the predefined constants: \fB\s-2VNACAL_MATCH\s+2\fP,
+\fB\s-2VNACAL_OPEN\s+2\fP, \fB\s-2VNACAL_SHORT\s+2\fP,
+\fB\s-2VNACAL_ZERO\s+2\fP, \fB\s-2VNACAL_ONE\s+2\fP, or integer handles
+returned from the \fBvnacal_make_\fP*\fP_parameter\fP() functions
+described here.
+Each integer value represents a persistent parameter object with
+internal reference counting maintained by the library.
+There are two reasons for this added level of abstraction.
 First, it unifies the interface between scalar parameters \- parameters
 that are constant across all frequencies (e.g. -1.0 for short) \- and
 vector parameters that are given at a list of frequency points.
@@ -101,16 +172,99 @@ The library uses rational function interpolation to interpolate between
 frequencies if the given frequency points don't align with the calibration
 frequencies.
 .PP
+\fBvnacal_make_calkit_parameter\fP() returns a parameter for a single-port
+calibration kit standard.
+.PP
+\fBvnacal_make_calkit_parameter_matrix\fP() fills the caller-supplied
+\fIparameter_matrix\fP with parameters for a one or two port calibration
+kit standard and returns the number of ports of the standard.
+For short, open and load standards, the resulting parameter matrix
+has dimensions 1x1 and return value is 1; for the through standard,
+the resulting parameter matrix has dimensions 2x2 and return value is 2.
+The parameter matrix is indexed in standard row-major order.
+The \fIparameter_matrix_size\fP parameter gives the size of
+\fIparameter_matrix\fP in bytes and is used to protect against buffer
+overrun.
+Both calkit parameter functions take a pointer to the following structure
+describing the standard:
+.sp
+.nf
+.RS
+\f[C]
+typedef struct vnacal_calkit_data {
+    vnacal_calkit_type_t vcd_type;        /* type of standard */
+    uint32_t vcd_flags;                   /* flags */
+    double vcd_offset_delay;              /* delay (s) */
+    double vcd_offset_loss;               /* loss (\(*W/s) */
+    double vcd_offset_z0;                 /* lossless Zc (\(*W) */
+    double vcd_fmin;                      /* min frequency (Hz) */
+    double vcd_fmax;                      /* max frequency (Hz) */
+
+    /* then, depending on type, at most one of... */
+    double complex vcd_l_coefficients[4]; /* short only */
+    double complex vcd_c_coefficients[4]; /* open only */
+    double complex vcd_zl;                /* load only (\(*W) */
+} vnacal_calkit_data_t;
+\f[]
+.RE
+.fi
+.sp
+\fBvcd_type\fP can be \s-2VNACAL_CALKIT_SHORT\s+2,
+\s-2VNACAL_CALKIT_OPEN\s+2, \s-2VNACAL_CALKIT_LOAD\s+2, or
+\s-2VNACAL_CALKIT_THROUGH\s+2.
+\fBvcd_flags\fP is a bitwise-OR of flag values, only one of which
+is currently defined.
+The \s-2VNACAL_CKF_TRADITIONAL\s+2 flag instructs the library to use the
+traditional transmission line model described in Agilent note AN-1287-11
+where an approximation was used to avoid the need for complex square root.
+By default, the library uses the Keysight revised transmission line model.
+The three offset parameters are as described in Keysight documentation.
+Note that the units are seconds, ohms per second, and ohms, respectively,
+for consistency with the rest of the library.
+The \fBvcd_fmin\fP and \fBvcd_fmax\fP parameters give the minimum and
+maximum frequencies in Hz for which the standard is valid.
+The remaining parameters are in a union (not shown), thus only one
+can be valid at a time, depending on \fBvcd_type\fP.
+For the short standard, \fBvcd_l_coefficients\fP are the coefficients
+of a frequency polynomial modeling the inductance of the standard.
+The elements of this array can also be accessed using \fBvcd_l0\fP,
+\fBvcd_l1\fP. \fBvcd_l2\fP and \fBvcd_l3\fP.
+Units of the coefficients are Henries, Henries/Hz, Henries/Hz^2 and
+Henries/Hz^3, respectively.
+For the open standard, \fBvcd_c_coefficients\fP are the coefficients
+of a frequency polynomial modeling the capacitance of the standard.
+The elements of this array can also be accessed using \fBvcd_c0\fP,
+\fBvcd_c1\fP. \fBvcd_c2\fP and \fBvcd_c3\fP.
+Units of the coefficients are Farads, Farads/Hz, Farads/Hz^2 and
+Farads/Hz^3, respectively.
+For the load standard, \fBvcd_zl\fP is the load impedance in ohms.
+It can in general be complex, which can be valid over a small
+frequency range.
+.PP
+\fBvnacal_make_data_parameter\fP() returns a parameter for a single-port
+data standard.
+The given \fBvnadata_t\fP object must have dimensions 1x1 and must
+be in or convertible to scattering parameters.
+The library implicitly renormalizes reference impedances of data
+standards to those of the VNA ports.
+Rational function interpolation is used to interpolate frequency points.
+.PP
+\fBvnacal_make_data_parameter_matrix\fP() fills the caller-supplied
+\fIparameter_matrix\fP with parameters for an NxN data standard
+and returns the number of ports of the standard.
+The \fIparameter_matrix_size\fP parameter gives the size of
+\fIparameter_matrix\fP in bytes and is used to protect against buffer
+overrun.
+.PP
 \fBvnacal_make_unknown_parameter\fP() creates a parameter with unknown
 value, where \fIinitial_guess\fP is either one of the pre-defined
-constants or the value returned from \fBvnacal_make_scalar_parameter\fP()
-or \fBvnacal_make_vector_parameter\fP(), giving a starting point for
-the solution.
+constants or any scalar, vector, calkit or data parameter (including
+the matrix variants), giving a starting point for the solution.
 .PP
 \fBvnacal_make_correlated_parameter\fP() creates a parameter with unknown
 value that is correlated with another (possibly unknown) parameter,
-\fIother\fP, with per-frequency standard deviations of the differences
-given in \fIsigma_vector\fP.
+\fIother\fP, with per-frequency standard deviation of the difference
+between them given in \fIsigma_vector\fP.
 The \fIsigma_frequency_vector\fP argument gives the list of frequencies
 where sigma values are specified, and \fIsigma_frequencies\fP gives the
 length of both \fIsigma_vector\fP and \fIsigma_frequency_vector\fP.
@@ -126,22 +280,51 @@ don't necessarily have to be the same as, those given in either
 \fBvnacal_new_set_frequency_vector\fP() or those given in a vector
 parameter referred to by \fIother\fP.
 The library uses natural cubic-spline interpolation to interpolate sigma
-values between frequency points as needed.
+values between frequency points.
 .PP
 \fBvnacal_get_parameter_value\fP() returns the value of the parameter
 at a given frequency.
 If given a scalar parameter, \fBvnacal_get_parameter_value\fP() ignores
-\fIfrequency\fP, and simply returns the fixed gamma value; if given
-a vector parameter, it computes the value at the given frequency,
+\fIfrequency\fP, and simply returns the fixed complex parameter value;
+if given a vector parameter, it computes the value at the given frequency,
 interpolating as necessary.
-The \fIfrequency\fP parameter must lie within the frequency range of
-the parameter.
+For vector parameters, the \fIfrequency\fP argument must lie within the
+frequency range of the parameter.
+This function cannot be used for calkit or data parameters, which require
+explicit reference impedances; use \fBvnacal_eval_parameter\fP() or
+\fBvnacal_eval_parameter_matrix\fP() instead.
 If given an unknown or correlated parameter, this function returns the
 most recent value computed by \fBvnacal_new_solve\fP(), or fails if the
 parameter has not been solved.
 .PP
+\fBvnacal_eval_parameter\fP() is the same as \fBvnacal_get_parameter_value\fP()
+except that it takes the reference impedance needed for calkit and data
+parameters.
+.PP
+\fBvnacal_eval_parameter_matrix\fP() evaluates the parameter matrix
+at the given frequency and stores the result in the user-supplied
+\fIresult_matrix\fP.
+If given a scalar parameter, \fBvnacal_eval_parameter_matrix\fP() ignores
+\fIfrequency\fP, and simply returns the fixed complex parameter value;
+if given a vector, calkit or data parameter, it computes the value at
+the given frequency.
+For vector, calkit and data parameters, \fIfrequency\fP must lie within
+the valid frequency range of the parameter.
+The \fIz0_vector\fP parameter gives the reference impedances for
+each port, needed to evaluate calkit and data parameters.
+.PP
+\fBvnacal_parameter_matrix_to_data\fP() evaluates the parameter matrix
+using the frequencies and reference impedances given in the \fBvnadata_t\fP
+structure and stores the result back into the \fBvnadata_t\fP structure.
+The \fIrows\fP and \fIcolumns\fP parameters give the dimensions of
+\fIparameter_matrix\fP and must match the dimensions of the \fBvnadata_t\fP
+object.
+.PP
 \fBvnacal_delete_parameter\fP() removes a parameter from the
 \fBvnacal_t\fP structure.
+Similarly, \fBvnacal_delete_parameter_matrix\fP() deletes all parameters
+in the given \fIparameter_matrix\fP.
+Note that this function does not call \fBfree\fP(3) on \fIparameter_matrix\fP.
 It's not an error to delete a parameter that has been added to a
 \fBvnacal_new_t\fP structure \- a copy of the parameter will continue
 to exist internally until the last reference has been released.
@@ -149,9 +332,11 @@ to exist internally until the last reference has been released.
 .SH "RETURN VALUE"
 The \fBvnacal_make_\fP*\fB_parameter\fP() functions return an integer
 handle to the newly formed parameter on success or -1 on error.
+The \fBvnacal_make_\fP*\fB_parameter_matrix\fP() functions return the
+number of ports of the standard.
 The \fBvnacal_get_parameter_value\fP() function returns a complex number
 on success or \s-2HUGE_VAL\s+2 on error.
-\fBvnacal_delete_parameter\fP() returns 0 on success or -1 on error.
+The remaining integer-valued functions return 0 on success or -1 on error.
 .\"
 .SH ERRORS
 On error, these functions invoke the \fIerror_fn\fP,

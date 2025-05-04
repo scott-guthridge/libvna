@@ -61,6 +61,65 @@ typedef enum vnacal_type {
     VNACAL_E12,		/* 12-term generalized classic SOLT */
 } vnacal_type_t;
 
+
+/*
+ * VNACAL_CK_MAGIC: magic number for validating vnacal_calkit_data_t
+ */
+#define VNACAL_CK_MAGIC	0x636b0000
+
+/*
+ * vnacal_calkit_type_t: type of parameterized calibration kit standard
+ */
+typedef enum vnacal_calkit_type {
+    VNACAL_CALKIT_SHORT		= VNACAL_CK_MAGIC + 0,
+    VNACAL_CALKIT_OPEN		= VNACAL_CK_MAGIC + 1,
+    VNACAL_CALKIT_LOAD		= VNACAL_CK_MAGIC + 2,
+    VNACAL_CALKIT_THROUGH	= VNACAL_CK_MAGIC + 3,
+} vnacal_calkit_type_t;
+
+/*
+ * vnacal_calkit_data_t: parameters describing a calibration kit standard
+ *
+ * Note: we may add additional unions to this structure with defines
+ * to hide them for source-level compatiblity, and we may extend the
+ * struct to support new types of standards, but we must maintain binary
+ * compatibilty with existing compiled code.
+ */
+typedef struct vnacal_calkit_data {
+    vnacal_calkit_type_t vcd_type;
+    uint32_t vcd_flags;         /* flags: see below */
+    double vcd_offset_delay;	/* delay (s) */
+    double vcd_offset_loss;	/* loss (Ω/s) */
+    double vcd_offset_z0;	/* lossless characteristic Z (Ω) */
+    double vcd_fmin;		/* minimum allowed frequency */
+    double vcd_fmax;		/* maximum allowed frequency */
+    union {
+        double _vcd_coefficients[4];
+        double complex _vcd_zl;
+    } u;
+} vnacal_calkit_data_t;
+#define vcd_l_coefficients	u._vcd_coefficients
+#define vcd_c_coefficients	u._vcd_coefficients
+#define vcd_l0			u._vcd_coefficients[0]
+#define vcd_l1			u._vcd_coefficients[1]
+#define vcd_l2			u._vcd_coefficients[2]
+#define vcd_l3			u._vcd_coefficients[3]
+#define vcd_c0			u._vcd_coefficients[0]
+#define vcd_c1			u._vcd_coefficients[1]
+#define vcd_c2			u._vcd_coefficients[2]
+#define vcd_c3			u._vcd_coefficients[3]
+#define vcd_zl			u._vcd_zl
+
+/*
+ * Calkit Flags: vcd_flags is a bitwise OR of these flags
+ *
+ * VNACAL_CKF_TRADITIONAL:
+ *     Use the traditional transmission line model described in Agilent
+ *     note AN-1287-11 that uses an approximation to avoid the need for
+ *     complex square root.  Otherwise, use the Keysight revised version.
+ */
+#define VNACAL_CKF_TRADITIONAL	0x0001U
+
 /*
  * vnacal_t: opaque type returned from vnacal_load and vnacal_create
  */
@@ -117,7 +176,7 @@ static inline int vnacal_new_set_z0(vnacal_new_t *vnp, double complex z0)
     extern int _vnacal_new_set_z0_vector(const char *function,
 	    vnacal_new_t *vnp, const double complex *z0_vector, int length);
 
-    return _vnacal_new_set_z0_vector(__FUNCTION__, vnp, &z0, 1);
+    return _vnacal_new_set_z0_vector(__func__, vnp, &z0, 1);
 }
 
 /*
@@ -134,7 +193,7 @@ static inline int vnacal_new_set_z0_vector(vnacal_new_t *vnp,
     extern int _vnacal_new_set_z0_vector(const char *function,
 	    vnacal_new_t *vnp, const double complex *z0_vector, int length);
 
-    return _vnacal_new_set_z0_vector(__FUNCTION__, vnp, z0_vector, length);
+    return _vnacal_new_set_z0_vector(__func__, vnp, z0_vector, length);
 }
 
 /*
@@ -390,13 +449,116 @@ extern int vnacal_make_correlated_parameter(vnacal_t *vcp, int other,
 	const double *sigma_vector);
 
 /*
+ * vnacal_make_calkit_parameter: make a parameter for a one-port kit standard
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @vcdp: data describing the calkit standard
+ */
+extern int vnacal_make_calkit_parameter(vnacal_t *vcp,
+	const vnacal_calkit_data_t *vcdp);
+
+/*
+ * vnacal_make_calkit_parameter_matrix: make parameter matrix for kit standard
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @vcdp: data describing the calkit standard
+ *   @parameter_matrix: caller-supplied result matrix
+ *   @parameter_matrix_size: size in bytes of the result matrix
+ *
+ * Fill parameter_matrix with parameter indices suitable for passing to
+ * the vnacal_new_add_single_reflect* or vnadata_new_add_line* functions.
+ * The parameter_matrix_size parameter is the allocation in bytes of the
+ * result matrix, used to protect against buffer overrun.
+ *
+ * Returns the number of ports (rows and columns) of the standard.
+ * Caller can delete the returned parameters by a call to
+ * vnacal_delete_parameter_matrix.
+ */
+extern int vnacal_make_calkit_parameter_matrix(vnacal_t *vcp,
+	const vnacal_calkit_data_t *vcdp, int *parameter_matrix,
+	size_t parameter_matrix_size);
+
+/*
+ * vnacal_make_data_parameter: make a parameter from 1x1 network parameter data
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @vdp: network parameter data for a calibration standard
+ *
+ * Dimensions of vdp must be 1x1. Data must be convertable to
+ * S-parameters.  Automatically handles parameter
+ * conversion, interpolation and renormalization as needed.
+ */
+extern int vnacal_make_data_parameter(vnacal_t *vcp,
+	const vnadata_t *vdp);
+
+/*
+ * vnacal_make_data_parameter_matrix: make a parameter matrix from data
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @vdp: network parameter data for a calibration standard
+ *   @parameter_matrix: caller-allocated matrix to receive result
+ *   @parameter_matrix_size: size in bytes of the result matrix
+ *
+ * Fill parameter_matrix with parameter indices suitable for passing to
+ * the vnacal_new_add_* functions.  Automatically handles parameter
+ * conversion, interpolation and renormalization.  Data must be
+ * convertable to S-parameters.  The parameter_matrix_size parameter is
+ * the allocation in bytes of the result matrix, used to protect against
+ * buffer overrun.
+ *
+ * Returns the number of ports (rows and columns) of the standard.
+ * Caller can delete the returned parameters by a call to
+ * vnacal_delete_parameter_matrix.
+ */
+extern int vnacal_make_data_parameter_matrix(vnacal_t *vcp,
+	const vnadata_t *vdp, int *parameter_matrix,
+	size_t parameter_matrix_size);
+
+/*
  * vnacal_get_parameter_value: evaluate a parameter at a given frequency
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @parameter: index of parameter
  *   @frequency: frequency at which to evaluate the parameter
+ *
+ * Note: this function works only on scalar, vector, unknown and
+ * correlated parameters where the reference impedance is implicit.
+ * For calkit and data parameters, use the more general functions
+ * vnacal_eval_parameter, vnacal_eval_parameter_matrix and
+ * vnacal_parameter_matrix_to_data.
  */
 extern double complex vnacal_get_parameter_value(vnacal_t *vcp,
 	int parameter, double frequency);
+
+/*
+ * vnacal_eval_parameter: evaluate a parameter at a given frequency
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @parameter: index of parameter
+ *   @frequency: frequency at which to evaluate the parameter
+ *   @z0: reference impedance for the result
+ */
+extern double complex vnacal_eval_parameter(vnacal_t *vcp, int parameter,
+	double frequency, double complex z0);
+
+/*
+ * vnacal_eval_parameter_matrix: evaluate parameter matrix at a given frequency
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @parameter_matrix: index of parameter
+ *   @rows: number of rows in parameter matrix
+ *   @columns: number of columns in parameter matrix
+ *   @frequency: frequency at which to evaluate the parameter
+ *   @z0_vector: reference impedance for each port of the result
+ *   @result_matrix: caller-supplied matrix to hold the result
+ */
+extern int vnacal_eval_parameter_matrix(vnacal_t *vcp,
+	const int *parameter_matrix, int rows, int columns, double frequency,
+	const double complex *z0_vector, double complex *result_matrix);
+
+/*
+ * vnacal_parameter_matrix_to_data: convert parameter matrix to parameter data
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @parameter_matrix: index of parameter
+ *   @rows: number of rows in parameter matrix
+ *   @columns: number of columns in parameter matrix
+ *   @vdp: takes frequency vector, z0 and type as input; returns data
+ */
+extern int vnacal_parameter_matrix_to_data(vnacal_t *vcp,
+	const int *parameter_matrix, int rows, int columns, vnadata_t *vdp);
 
 /*
  * vnacal_delete_parameter: delete the parameter with given index
@@ -404,6 +566,19 @@ extern double complex vnacal_get_parameter_value(vnacal_t *vcp,
  *   @parameter: parameter to delete
  */
 extern int vnacal_delete_parameter(vnacal_t *vcp, int parameter);
+
+/*
+ * vnacal_delete_parameter_matrix: delete the parameters in the given matrix
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @parameter_matrix: matrix of parameter indices
+ *   @rows: rows in parameter_matrix
+ *   @columns: columns in parameter_matrix
+ *
+ * Note: this function does not free the parameter matrix itself.  Use
+ * free to return the memory.
+ */
+extern void vnacal_delete_parameter_matrix(vnacal_t *vcp,
+	const int *parameter_matrix, int rows, int columns);
 
 /*
  * vnacal_create: create the main structure for a new calibration

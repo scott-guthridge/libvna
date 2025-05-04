@@ -778,10 +778,27 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 		"calloc: %s", strerror(errno));
 	goto out;
     }
-    for (int s_cell = 0; s_cell < s_cells; ++s_cell) {
-	if ((full_s_matrix[s_cell_map[s_cell]] =
-		    _vnacal_new_get_parameter(function, vnp,
-			s_matrix[s_cell])) == NULL) {
+    {
+	vnacal_parameter_t **matrix = NULL;
+
+	vnmp->vnm_parameter_matrix = matrix = (vnacal_parameter_t **)calloc(
+		full_s_rows * full_s_columns, sizeof(vnacal_parameter_t *));
+	if (matrix == NULL) {
+	    goto out;
+	}
+	for (int s_cell = 0; s_cell < s_cells; ++s_cell) {
+	    int full_cell = s_cell_map[s_cell];
+
+	    if ((full_s_matrix[full_cell] = _vnacal_new_get_parameter(function,
+			    vnp, s_matrix[s_cell])) == NULL) {
+		goto out;
+	    }
+	    matrix[full_cell] = full_s_matrix[full_cell]->vnpr_parameter;
+	}
+	if ((vnmp->vnm_parameter_map = _vnacal_analyze_parameter_matrix(
+			function, vcp, matrix, full_s_rows,
+			full_s_columns, /*initial=*/true)) == NULL) {
+		free((void *)matrix);
 	    goto out;
 	}
     }

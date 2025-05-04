@@ -33,6 +33,20 @@ AC_FUNC_REALLOC
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([insque isascii mkdir random remque strcasecmp strdup vasprintf])
 
+# Check if binary zero is double zero
+AC_MSG_CHECKING([whether zeroed double is equal to 0.0])
+AC_RUN_IFELSE(
+  [AC_LANG_PROGRAM([#include <string.h>], [
+     double x;
+     memset(&x, 0, sizeof(x));
+     return x == 0.0 ? 0 : 1;
+  ])],
+  [AC_MSG_RESULT(yes)
+   AC_DEFINE([BINARY_ZERO_IS_DOUBLE_ZERO], [1],
+             [Define if a zeroed double is equal to 0.0])],
+  [AC_MSG_RESULT(no)]
+)
+
 # Init libtool
 AM_PROG_AR
 LT_INIT([win32-dll])

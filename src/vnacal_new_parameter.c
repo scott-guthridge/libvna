@@ -299,6 +299,12 @@ vnacal_new_parameter_t *_vnacal_new_get_parameter(const char *function,
 	vnprp->vnpr_unknown_index = vnp->vn_unknown_parameters++;
 	if (type == VNACAL_CORRELATED) {
 	    ++vnp->vn_correlated_parameters;
+	    if (!vnprp_correlate->vnpr_unknown &&
+		    !vnprp_correlate->vnpr_known_correlate) {
+		vnprp_correlate->vnpr_known_correlate = true;
+		vnprp_correlate->vnpr_known_correlate_index =
+		    vnp->vn_known_correlates++;
+	    }
 	}
 	vnprp->vnpr_correlate = vnprp_correlate;
 	*vnp->vn_unknown_parameter_anchor = vnprp;

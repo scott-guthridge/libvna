@@ -256,23 +256,27 @@ error:
 
 /*
  * libt_vnacal_print_standard: show a calibration standard
- *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ttp: test terms structure
  *   @s: s-parameter indices matrix describing the standard
  *   @s_rows: rows in s_matrix
  *   @s_columns: columns in s_matrix
- *   @frequencies: number of calibration frequencies
- *   @frequency_vector: vector of frequencies
  *   @port_map: map from standard port to VNA port
  */
-void libt_vnacal_print_standard(vnacal_t *vcp, const int *s,
-	int s_rows, int s_columns,
-	int frequencies, const double *frequency_vector,
-	const int *port_map)
+void libt_vnacal_print_standard(const libt_vnacal_terms_t *ttp,
+	const int *s, int s_rows, int s_columns, const int *port_map)
 {
-    bool has_vector = false;
+    vnacal_new_t *vnp = ttp->tt_vnp;
+    vnacal_t *vcp = vnp->vn_vcp;
+    const int ports = MAX(s_rows, s_columns);
+    const double *frequency_vector = ttp->tt_frequency_vector;
+    const int frequencies = ttp->tt_frequencies;
+    vnacal_parameter_t *vpmrp_matrix[s_rows][s_columns];
+    vnacal_parameter_matrix_map_t *vpmmp = NULL;
+    bool by_frequency = false;
 
     /*
-     * First scan to determine if any standards are of vector type.
+     * Find the parameter pointer for each cell of s.  Determine if any
+     * standards are of vector, calkit or data type.
      */
     for (int row = 0; row < s_rows; ++row) {
 	for (int column = 0; column < s_columns; ++column) {
@@ -280,6 +284,7 @@ void libt_vnacal_print_standard(vnacal_t *vcp, const int *s,
 	    vnacal_parameter_t *vpmrp;
 
 	    vpmrp = _vnacal_get_parameter(vcp, s[cell]);
+	    vpmrp_matrix[row][column] = vpmrp;
 	    for (;;) {
 		switch (vpmrp->vpmr_type) {
 		case VNACAL_NEW:
@@ -287,7 +292,9 @@ void libt_vnacal_print_standard(vnacal_t *vcp, const int *s,
 		case VNACAL_SCALAR:
 		    break;
 		case VNACAL_VECTOR:
-		    has_vector = true;
+		case VNACAL_CALKIT:
+		case VNACAL_DATA:
+		    by_frequency = true;
 		    break;
 		case VNACAL_UNKNOWN:
 		case VNACAL_CORRELATED:
@@ -300,40 +307,58 @@ void libt_vnacal_print_standard(vnacal_t *vcp, const int *s,
     }
 
     /*
+     * Determine if frequency-dependendent reference impedances are in-use.
+     */
+    if (ttp->tt_z0_vector_length > ports)
+	by_frequency = true;
+
+    /*
+     * Analyze the parameter matrix.
+     */
+    vpmmp = _vnacal_analyze_parameter_matrix("libt_vnacal_print_standard",
+	    vcp, *vpmrp_matrix, s_rows, s_columns, /*initial=*/true);
+    if (vpmmp == NULL)
+	goto out;
+
+    /*
      * Print
      */
     (void)printf("standard %d x %d:\n", s_rows, s_columns);
-    if (has_vector) {
-	for (int findex = 0; findex < frequencies; ++findex) {
-	    double f = frequency_vector[findex];
+    for (int findex = 0; findex < frequencies; ++findex) {
+	double f = frequency_vector[findex];
+	const double complex *full_z0_vector = libt_get_z0_vector(ttp, findex);
+	double complex z0_vector[ports];
+	double complex s_values[s_rows][s_columns];
 
+	if (by_frequency)
 	    (void)printf("f %e\n", frequency_vector[findex]);
-	    for (int row = 0; row < s_rows; ++row) {
-		for (int column = 0; column < s_columns; ++column) {
-		    int cell = row * s_columns + column;
-		    vnacal_parameter_t *vpmrp;
-		    double complex value;
 
-		    vpmrp = _vnacal_get_parameter(vcp, s[cell]);
-		    value = _vnacal_get_parameter_value_i(vpmrp, f);
-		    (void)printf("  s%d%d: %8.5f%+8.5fj\n",
-			row + 1, column + 1, creal(value), cimag(value));
-		}
+	/*
+	 * Find z0_vector and get the values.
+	 */
+	if (port_map == NULL) {
+	    for (int port = 0; port < ports; ++port) {
+		z0_vector[port] = full_z0_vector[port];
+	    }
+	} else {
+	    for (int port = 0; port < ports; ++port) {
+		z0_vector[port] = full_z0_vector[port_map[port] - 1];
 	    }
 	}
-    } else {
+	if (_vnacal_eval_parameter_matrix_i("libt_vnacal_print_standard",
+		    vpmmp, f, z0_vector, *s_values) == -1) {
+	    goto out;
+	}
 	for (int row = 0; row < s_rows; ++row) {
 	    for (int column = 0; column < s_columns; ++column) {
-		int cell = row * s_columns + column;
-		vnacal_parameter_t *vpmrp;
-		double complex value;
+		double complex value = s_values[row][column];
 
-		vpmrp = _vnacal_get_parameter(vcp, s[cell]);
-		value = _vnacal_get_parameter_value_i(vpmrp, 0.0);
 		(void)printf("  s%d%d: %8.5f%+8.5fj\n",
-			row + 1, column + 1, creal(value), cimag(value));
+		    row + 1, column + 1, creal(value), cimag(value));
 	    }
 	}
+	if (!by_frequency)
+	    break;
     }
     if (port_map != NULL) {
 	int ports = MAX(s_rows, s_columns);
@@ -345,6 +370,9 @@ void libt_vnacal_print_standard(vnacal_t *vcp, const int *s,
 	(void)printf("\n");
     }
     (void)printf("\n");
+
+out:
+    _vnacal_free_parameter_matrix_map(vpmmp);
 }
 
 /*

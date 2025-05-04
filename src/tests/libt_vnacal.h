@@ -112,9 +112,8 @@ extern libt_vnacal_terms_t *libt_vnacal_make_random_calibration(vnacal_t *vcp,
 	bool ab);
 
 /* libt_vnacal_print_standard: show a calibration standard */
-extern void libt_vnacal_print_standard(vnacal_t *vcp, const int *s,
-	int s_rows, int s_columns, int frequencies,
-	const double *frequency_vector, const int *port_map);
+extern void libt_vnacal_print_standard(const libt_vnacal_terms_t *ttp,
+	const int *s, int s_rows, int s_columns, const int *port_map);
 
 /* libt_vnacal_add_single_reflect: measure a single reflect standard */
 extern int libt_vnacal_add_single_reflect(const libt_vnacal_terms_t *ttp,

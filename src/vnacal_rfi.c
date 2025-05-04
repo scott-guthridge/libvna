@@ -51,7 +51,7 @@
  *   @ip_segment: addr of left x index that bounds x (used as hint on entry)
  *   @x:          dependent variable to interpolate
  */
-double complex _vnacal_rfi(const double *xp, double complex *yp,
+double complex _vnacal_rfi(const double *xp, const double complex *yp,
 	int n, int m, int *ip_segment, double x)
 {
     int base;

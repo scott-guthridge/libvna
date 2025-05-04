@@ -23,7 +23,6 @@
 #include <errno.h>
 #include <math.h>
 #include <stdarg.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,49 +30,45 @@
 
 
 /*
- * vnacal_get_parameter_value: evaluate a parameter at a given frequency
+ * vnacal_eval_parameter_matrix: evaluate parameter matrix at a given frequency
  *   @vcp: pointer returned from vnacal_create or vnacal_load
- *   @parameter: index of parameter
- *   @frequency: frequency at which to evaluate parameter
+ *   @parameter_matrix: index of parameter
+ *   @ports: number of rows and nuumber of columns in paramter_matrix
+ *   @frequency: frequency at which to evaluate the parameter
+ *   @z0_vector: reference impedance for each port of the result
+ *   @result_matrix: caller-supplied matrix to hold the result
  */
-double complex vnacal_get_parameter_value(vnacal_t *vcp,
-	int parameter, double frequency)
+int vnacal_eval_parameter_matrix(vnacal_t *vcp,
+	const int *parameter_matrix, int rows, int columns, double frequency,
+	const double complex *z0_vector, double complex *result_matrix)
 {
-    vnacal_parameter_t *vpmrp = NULL;
+    vnacal_parameter_t **matrix = NULL;
     vnacal_parameter_matrix_map_t *vpmmp = NULL;
-    double complex result;
-    const char *alt;
+    int rc = -1;
 
-    if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
-	errno = EINVAL;
-	return HUGE_VAL;
+    matrix = calloc(rows * columns, sizeof(vnacal_parameter_t *));
+    if (matrix == NULL) {
+	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
+	goto out;
     }
-    if ((vpmrp = _vnacal_get_parameter(vcp, parameter)) == NULL) {
-	return HUGE_VAL;
+    for (int cell = 0; cell < rows * columns; ++cell) {
+	vnacal_parameter_t *vpmrp;
+
+	vpmrp = _vnacal_get_parameter(vcp, parameter_matrix[cell]);
+	if (vpmrp == NULL) {
+	    goto out;
+	}
+	matrix[cell] = vpmrp;
     }
     if ((vpmmp = _vnacal_analyze_parameter_matrix(__func__, vcp,
-		    &vpmrp, 1, 1, /*initial=*/false)) == NULL) {
-	return HUGE_VAL;
-    }
-    if (vpmmp->vpmm_standard_rmap != NULL) {
-        if (vpmrp->vpmr_stdp->std_ports == 1) {
-            alt = "vnacal_eval_parameter";
-        } else {
-            alt = "vnacal_eval_parameter_matrix";
-        }
-        _vnacal_error(vpmrp->vpmr_vcp, VNAERR_USAGE,
-                "%s: cannot be used on calkit "
-                "or data parameters; use %s instead",
-                __func__, alt);
-        result = HUGE_VAL;
+		    matrix, rows, columns, /*initial=*/false)) == NULL) {
 	goto out;
     }
-    if (_vnacal_eval_parameter_matrix_i(__func__, vpmmp, frequency,
-	    NULL, &result) == -1) {
-	result = HUGE_VAL;
-	goto out;
-    }
+    rc = _vnacal_eval_parameter_matrix_i(__func__, vpmmp, frequency,
+	    z0_vector, result_matrix);
+
 out:
     _vnacal_free_parameter_matrix_map(vpmmp);
-    return result;
+    free((void *)matrix);
+    return rc;
 }

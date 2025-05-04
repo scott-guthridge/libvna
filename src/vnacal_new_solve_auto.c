@@ -713,13 +713,17 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 		    vnssp->vnss_p_vector[pindex1][findex];
 		if (vnprp2->vnpr_unknown) {
 		    int pindex2 = vnprp2->vnpr_unknown_index;
+
 		    j_matrix[j_row][pindex2] = -weight;
 		    k_vector[j_row] -=
 			weight * vnssp->vnss_p_vector[pindex2][findex];
-		} else { /* known parameter value */
+		} else { /* correlate is a known parameter */
+		    int pindex2;
+
+		    assert(vnprp2->vnpr_known_correlate);
+		    pindex2 = vnprp2->vnpr_known_correlate_index;
 		    k_vector[j_row] -= weight *
-			_vnacal_get_parameter_value_i(vnprp2->vnpr_parameter,
-				frequency);
+			vnssp->vnss_known_correlate_vector[pindex2][findex];
 		}
 		++j_row;
 	    }

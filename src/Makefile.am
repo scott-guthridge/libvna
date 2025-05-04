@@ -16,17 +16,22 @@ include_HEADERS = vnacal.h vnaconv.h vnadata.h vnaerr.h vnaproperty.h
 lib_LTLIBRARIES = libvna.la
 libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnacal_new_internal.h \
-	vnacal_add_calibration.c vnacal_apply.c vnacal_calibration.c \
-	vnacal_create.c vnacal_delete_calibration.c \
-	vnacal_delete_parameter.c vnacal_error.c vnacal_find_calibration.c \
+	vnacal_add_calibration.c vnacal_apply.c \
+	vnacal_build_error_term_list.c vnacal_calibration.c \
+	vnacal_create.c vnacal_delete_calibration.c vnacal_delete_parameter.c \
+	vnacal_delete_parameter_matrix.c vnacal_error.c \
+	vnacal_eval_parameter.c vnacal_eval_parameter_matrix.c \
+	vnacal_eval_parameter_matrix_i.c vnacal_find_calibration.c \
 	vnacal_free.c vnacal_get.c vnacal_get_parameter_value.c \
 	vnacal_get_z0_vector.c \
 	vnacal_layout.c vnacal_layout.h vnacal_load.c \
+	vnacal_make_calkit_parameter_matrix.c \
 	vnacal_make_correlated_parameter.c vnacal_make_scalar_parameter.c \
-	vnacal_build_error_term_list.c \
+	vnacal_make_data_parameter_matrix.c \
 	vnacal_make_unknown_parameter.c vnacal_make_vector_parameter.c \
 	vnacal_name_to_type.c vnacal_new_add_common.c vnacal_new.c \
-	vnacal_new_parameter.c vnacal_new_set_m_error.c \
+	vnacal_new_parameter.c vnacal_parameter_matrix_to_data.c \
+	vnacal_new_set_m_error.c \
 	vnacal_new_set_p_tolerance.c vnacal_new_set_et_tolerance.c \
 	vnacal_new_set_iteration_limit.c vnacal_new_solve_init_x_vector.c \
 	vnacal_new_solve.c vnacal_new_solve_auto.c vnacal_new_solve_simple.c \
@@ -35,7 +40,7 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnacal_new_solve_update_v_matrices.c vnacal_new_solve_pvalue.c \
 	vnacal_parameter.c vnacal_property.c vnacal_rfi.c \
 	vnacal_save.c vnacal_set_dprecision.c vnacal_set_fprecision.c \
-	vnacal_type_to_name.c \
+	vnacal_standard.c vnacal_type_to_name.c \
 	vnacommon_internal.h vnacommon_lu.c vnacommon_mmultiply.c \
 	vnacommon_minverse.c vnacommon_mldivide.c vnacommon_mrdivide.c \
 	vnacommon_qrd.c vnacommon_qr.c vnacommon_qrsolve.c \

@@ -544,26 +544,48 @@ static int calc_m(const vnacal_layout_t *vlp, const double complex *e,
  *   @ttp: pointer to test error terms structure
  *   @tmp: caller-allocated libt_vnacal_measurements structure to hold result
  *   @s_matrix: s-parameter indices matrix describing the standard
- *   @s_matrix_rows: rows in s_matrix
- *   @s_matrix_columns: columns in s_matrix
- *   @port_map: map from standard port to VNA port
+ *   @s_rows: rows in s_matrix
+ *   @s_columns: columns in s_matrix
+ *   @port_map: map from standard port to VNA port (1-based)
  *   @findex: frequency index
  *   @m: caller-allocated output matrix
  */
 static int calc_measurements_helper(const libt_vnacal_terms_t *ttp,
 	libt_vnacal_measurements_t *tmp, const int *s_matrix,
-	int s_matrix_rows, int s_matrix_columns, const int *port_map,
+	int s_rows, int s_columns, const int *port_map,
 	int findex, double complex *m)
 {
     vnacal_new_t *vnp = ttp->tt_vnp;
     vnacal_t *vcp = vnp->vn_vcp;
     const vnacal_layout_t *vlp = &ttp->tt_layout;
-    const int s_rows = VL_S_ROWS(vlp);
-    const int s_columns = VL_S_COLUMNS(vlp);
+    const int s_ports = MAX(s_rows, s_columns);
+    const int full_s_rows = VL_S_ROWS(vlp);
+    const int full_s_columns = VL_S_COLUMNS(vlp);
     double f = ttp->tt_frequency_vector[findex];
-    double complex s[s_rows * s_columns];
-    bool port_used[MAX(s_rows, s_columns)];
-    bool cell_defined[s_rows * s_columns];
+    double complex s_values[s_rows * s_columns];
+    double complex full_s_values[full_s_rows * full_s_columns];
+    const double complex *full_z0_vector = libt_get_z0_vector(ttp, findex);
+    double complex z0_vector[s_ports];
+    bool port_used[MAX(full_s_rows, full_s_columns)];
+    bool cell_defined[full_s_rows * full_s_columns];
+
+    /*
+     * Evaluate the standard into s_values.
+     */
+    if (port_map == NULL) {
+	for (int port = 0; port < s_ports; ++port) {
+	    z0_vector[port] = full_z0_vector[port];
+	}
+    } else {
+	for (int port = 0; port < s_ports; ++port) {
+	    z0_vector[port] = full_z0_vector[port_map[port] - 1];
+	}
+    }
+    if (vnacal_eval_parameter_matrix(vcp,
+		s_matrix, s_rows, s_columns,
+		f, z0_vector, s_values) == -1) {
+	return -1;
+    }
 
     /*
      * Fill in the full S matrix following the example below.  Here,
@@ -576,7 +598,7 @@ static int calc_measurements_helper(const libt_vnacal_terms_t *ttp,
      * s-parameters between VNA ports 1 and 5, but we assume they remain
      * consistent over the measurement and that they have no external
      * connection to ports 2, 3, 4.  Because of this, we know that S12,
-     * S13, S14, S21, S25, etc. are zero.      All remaining cells of s
+     * S13, S14, S21, S25, etc. are zero.  All remaining cells of matrix
      * (marked with "*") are unknown, and to reflect that, we fill them
      * with random values.
      *
@@ -588,59 +610,45 @@ static int calc_measurements_helper(const libt_vnacal_terms_t *ttp,
      */
     (void)memset((void *)port_used, 0, sizeof(port_used));
     (void)memset((void *)cell_defined, 0, sizeof(cell_defined));
-    for (int r = 0; r < s_matrix_rows; ++r) {
-	for (int c = 0; c < s_matrix_columns; ++c) {
-	    int s_row =    port_map != NULL ? port_map[r] - 1 : r;
-	    int s_column = port_map != NULL ? port_map[c] - 1 : c;
-	    int s_matrix_cell = r * s_matrix_columns + c;
-	    int s_cell = s_row * s_columns + s_column;
+    for (int r = 0; r < s_rows; ++r) {
+	for (int c = 0; c < s_columns; ++c) {
+	    int full_s_row =    port_map != NULL ? port_map[r] - 1 : r;
+	    int full_s_column = port_map != NULL ? port_map[c] - 1 : c;
+	    int s_cell = r * s_columns + c;
+	    int full_s_cell = full_s_row * full_s_columns + full_s_column;
 
-	    assert(s_row >= 0 && s_row < s_rows);
-	    assert(s_column >= 0 && s_column < s_columns);
-	    vnacal_parameter_t *vpmrp = _vnacal_get_parameter(vcp,
-		    s_matrix[s_matrix_cell]);
-
-	    if (vpmrp == NULL) {
-		(void)fprintf(stderr, "%s: _vnacal_get_parameter: %s\n",
-			progname, strerror(errno));
-		return -1;
-	    }
-	    /*
-	     * TODO: handle 'unknown' parameters here
-	     *
-	     * First time a particular unknown is seen, create an
-	     * entry in a new tt_unknown_parameters vector and fill it
-	     * with an random value.  Use that value in the s matrix.
-	     * If the same unknown is seen again on subsequent calls,
-	     * use the same value as before.
-	     */
-	    s[s_cell] = _vnacal_get_parameter_value_i(vpmrp, f);
-	    port_used[s_row] = true;
-	    port_used[s_column] = true;
-	    cell_defined[s_cell] = true;
+	    assert(full_s_row >= 0 && full_s_row < full_s_rows);
+	    assert(full_s_column >= 0 && full_s_column < full_s_columns);
+	    full_s_values[full_s_cell] = s_values[s_cell];
+	    port_used[full_s_row] = true;
+	    port_used[full_s_column] = true;
+	    cell_defined[full_s_cell] = true;
 	}
     }
-    for (int s_row = 0; s_row < s_rows; ++s_row) {
-	for (int s_column = 0; s_column < s_columns; ++s_column) {
-	    int s_cell = s_row * s_columns + s_column;
+    for (int full_s_row = 0; full_s_row < full_s_rows; ++full_s_row) {
+	for (int full_s_column = 0; full_s_column < full_s_columns;
+		++full_s_column) {
+	    int full_s_cell = full_s_row * full_s_columns + full_s_column;
 
-	    if ((port_used[s_row] && !port_used[s_column]) ||
-		(!port_used[s_row] && port_used[s_column])) {
-		s[s_cell] = 0.0;
-		cell_defined[s_cell] = true;
+	    if ((port_used[full_s_row] && !port_used[full_s_column]) ||
+		(!port_used[full_s_row] && port_used[full_s_column])) {
+		full_s_values[full_s_cell] = 0.0;
+		cell_defined[full_s_cell] = true;
 	    }
 	}
     }
-    for (int s_cell = 0; s_cell < s_rows * s_columns; ++s_cell) {
-	if (!cell_defined[s_cell]) {
-	    s[s_cell] = libt_crandn();
+    for (int full_s_cell = 0; full_s_cell < full_s_rows * full_s_columns;
+	    ++full_s_cell) {
+	if (!cell_defined[full_s_cell]) {
+	    full_s_values[full_s_cell] = libt_crandn();
 	}
     }
 
     /*
      * Calculate M.
      */
-    if (calc_m(vlp, ttp->tt_error_term_vector[findex], s, m) == -1) {
+    if (calc_m(vlp, ttp->tt_error_term_vector[findex],
+		full_s_values, m) == -1) {
 	return -1;
     }
     return 0;
@@ -673,12 +681,8 @@ int libt_vnacal_calculate_measurements(const libt_vnacal_terms_t *ttp,
      * If verbose, show the standard.
      */
     if (opt_v >= 2) {
-	vnacal_new_t *vnp = ttp->tt_vnp;
-	vnacal_t *vcp = vnp->vn_vcp;
-
-	libt_vnacal_print_standard(vcp, s_matrix, s_matrix_rows,
-		s_matrix_columns, ttp->tt_frequencies,
-		ttp->tt_frequency_vector, port_map);
+	libt_vnacal_print_standard(ttp, s_matrix, s_matrix_rows,
+		s_matrix_columns, port_map);
     }
 
     /*

@@ -83,7 +83,8 @@ static libt_result_t run_vnacal_apply_trial(int trial,
     libt_vnacal_measurements_t *tmp = NULL;
     int ci = -1;
     int s[ports * ports];
-    vnadata_t *vdp = NULL;
+    vnadata_t *vdp_expected = NULL;
+    vnadata_t *vdp_actual = NULL;
     libt_result_t result = T_FAIL;
 
     /*
@@ -132,7 +133,7 @@ static libt_result_t run_vnacal_apply_trial(int trial,
     }
 
     /*
-     * Create random s-parameters for the DUT.
+     * Create random s-parameters for the DUT and evaluate.
      */
     if (libt_vnacal_generate_random_parameters(vcp, s, ports * ports) == -1) {
 	result = T_FAIL;
@@ -143,11 +144,33 @@ static libt_result_t run_vnacal_apply_trial(int trial,
 	result = T_FAIL;
 	goto out;
     }
+    if ((vdp_expected = vnadata_alloc(error_fn, NULL)) == NULL) {
+	result = T_FAIL;
+	goto out;
+    }
+    if (vnadata_init(vdp_expected, VPT_S, ports, ports, frequencies) == -1) {
+	result = T_FAIL;
+	goto out;
+    }
+    if (vnadata_set_frequency_vector(vdp_expected,
+		ttp->tt_frequency_vector) == -1) {
+	result = T_FAIL;
+	goto out;
+    }
+    if (vnadata_set_z0_vector(vdp_expected, ttp->tt_z0_vector) == -1) {
+	result = T_FAIL;
+	goto out;
+    }
+    if (vnacal_parameter_matrix_to_data(vcp, s, ports, ports,
+		vdp_expected) == -1) {
+	result = T_FAIL;
+	goto out;
+    }
 
     /*
-     * Create a vnadata_t structure to hold the result.
+     * Create a vnadata_t structures to hold the actual result.
      */
-    if ((vdp = vnadata_alloc(error_fn, NULL)) == NULL) {
+    if ((vdp_actual = vnadata_alloc(error_fn, NULL)) == NULL) {
 	result = T_FAIL;
 	goto out;
     }
@@ -158,14 +181,14 @@ static libt_result_t run_vnacal_apply_trial(int trial,
     if (ab) {
 	if (vnacal_apply(vcp, ci, ttp->tt_frequency_vector, ttp->tt_frequencies,
 		    tmp->tm_a_matrix, tmp->tm_a_rows, tmp->tm_b_columns,
-		    tmp->tm_b_matrix, ports, ports, vdp) == -1) {
+		    tmp->tm_b_matrix, ports, ports, vdp_actual) == -1) {
 	    result = T_FAIL;
 	    goto out;
 	}
     } else {
 	if (vnacal_apply_m(vcp, ci, ttp->tt_frequency_vector,
 		    ttp->tt_frequencies, tmp->tm_b_matrix,
-		    ports, ports, vdp) == -1) {
+		    ports, ports, vdp_actual) == -1) {
 	    result = T_FAIL;
 	    goto out;
 	}
@@ -183,17 +206,9 @@ static libt_result_t run_vnacal_apply_trial(int trial,
 	    for (int s_row = 0; s_row < ports; ++s_row) {
 		(void)printf("  ");
 		for (int s_column = 0; s_column < ports; ++s_column) {
-		    int s_cell = s_row * ports + s_column;
-		    vnacal_parameter_t *vpmrp;
 		    double complex v;
 
-		    if ((vpmrp = _vnacal_get_parameter(vcp,
-				    s[s_cell])) == NULL) {
-			result = T_FAIL;
-			goto out;
-		    }
-		    v = _vnacal_get_parameter_value_i(vpmrp, f);
-
+		    v = vnadata_get_cell(vdp_expected, findex, s_row, s_column);
 		    (void)printf(" %8.5f%+8.5fj", creal(v), cimag(v));
 		}
 		(void)printf("\n");
@@ -205,7 +220,7 @@ static libt_result_t run_vnacal_apply_trial(int trial,
 		for (int s_column = 0; s_column < ports; ++s_column) {
 		    double complex v;
 
-		    v = vnadata_get_cell(vdp, findex, s_row, s_column);
+		    v = vnadata_get_cell(vdp_actual, findex, s_row, s_column);
 		    (void)printf(" %8.5f%+8.5fj", creal(v), cimag(v));
 		}
 		(void)printf("\n");
@@ -222,8 +237,10 @@ static libt_result_t run_vnacal_apply_trial(int trial,
 		    result = T_FAIL;
 		    goto out;
 		}
-		expected = _vnacal_get_parameter_value_i(vpmrp, f);
-		actual = vnadata_get_cell(vdp, findex, s_row, s_column);
+		expected = vnadata_get_cell(vdp_expected,
+			findex, s_row, s_column);
+		actual = vnadata_get_cell(vdp_actual,
+			findex, s_row, s_column);
 		if (!libt_isequal(actual, expected)) {
 		    if (opt_a) {
 			assert(!"data miscompare");
@@ -240,7 +257,8 @@ static libt_result_t run_vnacal_apply_trial(int trial,
     result = T_PASS;
 
 out:
-    vnadata_free(vdp);
+    vnadata_free(vdp_expected);
+    vnadata_free(vdp_actual);
     libt_vnacal_free_measurements(tmp);
     libt_vnacal_free_error_terms(ttp);
     vnacal_free(vcp);

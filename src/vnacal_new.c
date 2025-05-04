@@ -135,7 +135,7 @@ vnacal_new_t *vnacal_new_alloc(vnacal_t *vcp, vnacal_type_t type,
     vnp->vn_correlated_parameters = 0;
     vnp->vn_unknown_parameter_list = NULL;
     vnp->vn_unknown_parameter_anchor = &vnp->vn_unknown_parameter_list;
-    if (_vnacal_new_set_z0_vector(__FUNCTION__, vnp, &default_z0, 1) == -1) {
+    if (_vnacal_new_set_z0_vector(__func__, vnp, &default_z0, 1) == -1) {
 	goto error;
     }
     vnp->vn_m_error_vector = NULL;
@@ -322,6 +322,8 @@ void _vnacal_new_free_measurement(vnacal_new_measurement_t *vnmp)
 	    }
 	    free((void *)vnmp->vnm_m_matrix);
 	}
+	_vnacal_free_parameter_matrix_map(vnmp->vnm_parameter_map);
+	free((void *)vnmp->vnm_parameter_matrix);
 	free((void *)vnmp->vnm_s_matrix);
 	free((void *)vnmp);
     }

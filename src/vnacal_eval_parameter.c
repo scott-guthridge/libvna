@@ -23,26 +23,24 @@
 #include <errno.h>
 #include <math.h>
 #include <stdarg.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "vnacal_internal.h"
 
-
 /*
- * vnacal_get_parameter_value: evaluate a parameter at a given frequency
+ * vnacal_eval_parameter: evaluate a parameter at a given frequency
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @parameter: index of parameter
- *   @frequency: frequency at which to evaluate parameter
+ *   @frequency: frequency at which to evaluate the parameter
+ *   @z0: reference impedance for the result
  */
-double complex vnacal_get_parameter_value(vnacal_t *vcp,
-	int parameter, double frequency)
+double complex vnacal_eval_parameter(vnacal_t *vcp, int parameter,
+        double frequency, double complex z0)
 {
     vnacal_parameter_t *vpmrp = NULL;
     vnacal_parameter_matrix_map_t *vpmmp = NULL;
     double complex result;
-    const char *alt;
 
     if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
 	errno = EINVAL;
@@ -55,21 +53,8 @@ double complex vnacal_get_parameter_value(vnacal_t *vcp,
 		    &vpmrp, 1, 1, /*initial=*/false)) == NULL) {
 	return HUGE_VAL;
     }
-    if (vpmmp->vpmm_standard_rmap != NULL) {
-        if (vpmrp->vpmr_stdp->std_ports == 1) {
-            alt = "vnacal_eval_parameter";
-        } else {
-            alt = "vnacal_eval_parameter_matrix";
-        }
-        _vnacal_error(vpmrp->vpmr_vcp, VNAERR_USAGE,
-                "%s: cannot be used on calkit "
-                "or data parameters; use %s instead",
-                __func__, alt);
-        result = HUGE_VAL;
-	goto out;
-    }
     if (_vnacal_eval_parameter_matrix_i(__func__, vpmmp, frequency,
-	    NULL, &result) == -1) {
+	    &z0, &result) == -1) {
 	result = HUGE_VAL;
 	goto out;
     }

@@ -181,6 +181,29 @@ int _vnacal_new_solve_init(vnacal_new_solve_state_t *vnssp, vnacal_new_t *vnp)
     }
 
     /*
+     * If there are correlated parameters with correlates that are
+     * not unknown, allocate a vector, on per frequency, of vectors
+     * of the known parameter values.
+     */
+    if (vnp->vn_known_correlates != 0) {
+	if ((vnssp->vnss_known_correlate_vector = calloc(
+		vnp->vn_known_correlates, sizeof(double complex *))) == NULL) {
+	    _vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
+	    vs_free(vnssp);
+	    return -1;
+	}
+	for (int i = 0; i < vnp->vn_known_correlates; ++i) {
+	    if ((vnssp->vnss_known_correlate_vector[i] = calloc(
+		    vnp->vn_frequencies, sizeof(double complex))) == NULL) {
+		_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s",
+			strerror(errno));
+		vs_free(vnssp);
+		return -1;
+	    }
+	}
+    }
+
+    /*
      * Init the equation iterator state.
      */
     vnssp->vnss_iterator_state = VNACAL_NI_END_EQUATIONS;
@@ -290,15 +313,6 @@ int _vnacal_new_solve_start_frequency(vnacal_new_solve_state_t *vnssp,
     }
 
     /*
-     * Initialize the unknown parameter values.
-     */
-    for (vnacal_new_parameter_t *vnprp = vnp->vn_unknown_parameter_list;
-	    vnprp != NULL; vnprp = vnprp->vnpr_next_unknown) {
-	vnssp->vnss_p_vector[vnprp->vnpr_unknown_index][findex] =
-	    _vnacal_get_parameter_value_i(vnprp->vnpr_parameter, frequency);
-    }
-
-    /*
      * For each measured standard...
      */
     for (vnacal_new_measurement_t *vnmp = vnp->vn_measurement_list;
@@ -337,32 +351,45 @@ int _vnacal_new_solve_start_frequency(vnacal_new_solve_state_t *vnssp,
 
 	/*
 	 * Fill vnmm_s_matrix, interpolating between frequency points
-	 * as necessary.  The _vnacal_get_parameter_value_i function
-	 * returns initial guesses for unknown parameters.
+	 * as necessary.  Unknown values are set to their initial guess
+	 * values.
+	 */
+	if (_vnacal_eval_parameter_matrix_i("vnacal_new_solve",
+		vnmp->vnm_parameter_map, frequency,
+		_vnacal_new_get_z0_vector(vnp, findex),
+		vnmmp->vnmm_s_matrix) == -1) {
+	    return -1;
+	}
+
+	/*
+	 * Copy the unknown parameter values info vnss_p_vector and
+	 * known correlate values into vnss_known_correlate_vector.
+	 * Note that we set these cells redundantly because the same
+	 * parameter may appear multiple times in the same standard
+	 * and may also appear across standards.  But if the user is
+	 * consistent with the reference impedance context, we should
+	 * be filling in the same value each time.
 	 */
 	for (int s_row = 0; s_row < s_rows; ++s_row) {
 	    for (int s_column = 0; s_column < s_columns; ++s_column) {
-		const int s_cell = s_row * s_columns + s_column;
-		vnacal_new_parameter_t *vnprp;
-		double complex value;
+		int s_cell = s_row * s_columns + s_column;
+		vnacal_new_parameter_t *vnprp = vnmp->vnm_s_matrix[s_cell];
+		vnacal_parameter_t *vpmrp;
 
-		if ((vnprp = vnmp->vnm_s_matrix[s_cell]) == NULL) {
-#ifdef NAN
-		    value = NAN;
-#else
-		    value = 0.0;
-#endif
+		if (vnprp == NULL)
+		    continue;
 
-		} else if (vnprp->vnpr_unknown) {
-		    int uindex = vnprp->vnpr_unknown_index;
-
-		    value = vnssp->vnss_p_vector[uindex][findex];
-
-		} else {
-		    value = _vnacal_get_parameter_value_i(vnprp->vnpr_parameter,
-			    frequency);
+		vpmrp = vnprp->vnpr_parameter;
+		if (vnprp->vnpr_unknown) {
+		    vnssp->vnss_p_vector[vnprp->vnpr_unknown_index][findex] =
+			vnmmp->vnmm_s_matrix[s_cell];
 		}
-		vnmmp->vnmm_s_matrix[s_cell] = value;
+		if (vpmrp->vpmr_type == VNACAL_CORRELATED &&
+			vnprp->vnpr_correlate->vnpr_known_correlate) {
+		    int idx = vnprp->vnpr_correlate->vnpr_known_correlate_index;
+		    vnssp->vnss_known_correlate_vector[idx][findex] =
+			vnmmp->vnmm_s_matrix[s_cell];
+		}
 	    }
 	}
     }
@@ -594,6 +621,13 @@ void _vnacal_new_solve_free(vnacal_new_solve_state_t *vnssp)
     const int m_rows    = VL_M_ROWS(vlp);
     const int m_columns = VL_M_COLUMNS(vlp);
 
+    if (vnssp->vnss_known_correlate_vector != NULL) {
+	for (int i = vnp->vn_known_correlates - 1; i >= 0; --i) {
+	    free((void *)vnssp->vnss_known_correlate_vector[i]);
+	}
+	free((void *)vnssp->vnss_known_correlate_vector);
+	vnssp->vnss_known_correlate_vector = NULL;
+    }
     if (vnssp->vnss_p_vector != NULL) {
 	for (int i = vnp->vn_unknown_parameters - 1; i >= 0; --i) {
 	    free((void *)vnssp->vnss_p_vector[i]);

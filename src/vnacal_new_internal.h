@@ -56,6 +56,9 @@ typedef struct vnacal_new_parameter {
     /* true if the parameter value is unknown and must be determined */
     bool vnpr_unknown;
 
+    /* true if this is a correlate of another parameter and not unknown */
+    bool vnpr_known_correlate;
+
     /* union keyed on vnpr_unknown */
     union {
 	struct {
@@ -75,9 +78,10 @@ typedef struct vnacal_new_parameter {
 
 } vnacal_new_parameter_t;
 
-#define vnpr_unknown_index	u.vnpr_unknown.unknown_index
-#define vnpr_correlate		u.vnpr_unknown.correlate
-#define vnpr_next_unknown	u.vnpr_unknown.next_unknown
+#define vnpr_unknown_index		u.vnpr_unknown.unknown_index
+#define vnpr_known_correlate_index	u.vnpr_unknown.unknown_index
+#define vnpr_correlate			u.vnpr_unknown.correlate
+#define vnpr_next_unknown		u.vnpr_unknown.next_unknown
 
 /*
  * vnacal_new_parameter_hash_t: collection of new calibration parameters
@@ -159,6 +163,12 @@ typedef struct vnacal_new_measurement {
     /* s_rows x s_columns matrix of the S parameters of the standard */
     vnacal_new_parameter_t **vnm_s_matrix;
 
+    /* s_rows x s_columns underlying parameter matrix */
+    vnacal_parameter_t **vnm_parameter_matrix;
+
+    /* internal standards map of vnm_parameter_matrix */
+    vnacal_parameter_matrix_map_t *vnm_parameter_map;
+
     /* transitive closure of vnm_s_matrix */
     bool *vnm_connectivity_matrix;
 
@@ -218,6 +228,9 @@ struct vnacal_new {
 
     /* number of unknown correlated parameters */
     int vn_correlated_parameters;
+
+    /* number of correlates that are not unknown */
+    int vn_known_correlates;
 
     /* linked list of unknown parameters */
     vnacal_new_parameter_t *vn_unknown_parameter_list;
@@ -405,6 +418,9 @@ typedef struct vnacal_new_solve_state {
 
     /* vector of vector of unknown parameter values [index][findex] */
     double complex **vnss_p_vector;
+
+    /* vector of known correlate values [index][findex] */
+    double complex **vnss_known_correlate_vector;
 
     /* equation iterator state */
     vnacal_new_iterator_state_t vnss_iterator_state;
