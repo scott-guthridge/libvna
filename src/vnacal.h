@@ -371,7 +371,7 @@ extern int vnacal_make_correlated_parameter(vnacal_t *vcp, int other,
  * vnacal_get_parameter_value: evaluate a parameter at a given frequency
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @parameter: index of parameter
- *   @frequency: frequency at which to evaluate parameter
+ *   @frequency: frequency at which to evaluate the parameter
  */
 extern double complex vnacal_get_parameter_value(vnacal_t *vcp,
 	int parameter, double frequency);
@@ -384,14 +384,14 @@ extern double complex vnacal_get_parameter_value(vnacal_t *vcp,
 extern int vnacal_delete_parameter(vnacal_t *vcp, int parameter);
 
 /*
- * vnacal_create: construct a calibration structure from measured data
+ * vnacal_create: create the main structure for a new calibration
  *   @error_fn: optional error reporting function (NULL if not used)
  *   @error_arg: user data passed through to the error function (or NULL)
  */
 extern vnacal_t *vnacal_create(vnaerr_error_fn_t *error_fn, void *error_arg);
 
 /*
- * vnacal_load: load the calibration from a file
+ * vnacal_load: load an existing calibration from a file
  *   @pathname: calibration file name
  *   @error_fn: error reporting callback or NULL
  *   @error_arg: arbitrary argument passed through to error_fn or NULL

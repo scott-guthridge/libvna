@@ -30,7 +30,6 @@
 
 /*
  * _vnacal_get_parameter: return a pointer to the parameter
- *   @function: name of user-called function
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @parameter: index of parameter
  *
