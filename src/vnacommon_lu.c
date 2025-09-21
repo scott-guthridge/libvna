@@ -61,7 +61,10 @@ double complex _vnacommon_lu(complex double *a, int *row_index, int n)
 		max = temp;
 	    }
 	}
-	row_scale[i] = max;
+	if (max == 0) {
+	    return 0.0;
+	}
+	row_scale[i] = 1.0 / max;
 	row_index[i] = i;
     }
 
@@ -77,9 +80,8 @@ double complex _vnacommon_lu(complex double *a, int *row_index, int n)
 	 * Compute U terms above the major diagonal.
 	 */
 	for (int i = 0; i < j; ++i) {
-	    double complex s = 0.0;
+	    double complex s = A(i, j);
 
-	    s = A(i, j);
 	    for (int k = 0; k < i; ++k) {
 		s -= A(i, k) * A(k, j);
 	    }
