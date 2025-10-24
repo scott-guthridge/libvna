@@ -856,7 +856,7 @@ typedef struct expr {
  * parser_t: parser state
  */
 typedef struct parser {
-    scanner_t		prs_scn;		/* scanner state */
+    scanner_t		prs_scn;	/* scanner state */
     expr_t	       *prs_head;	/* expression list head */
     expr_t	       *prs_tail;	/* expression list tail */
     vnaproperty_t      *prs_collection;	/* if last elem is map/list */
@@ -2176,6 +2176,32 @@ static int add_mapping_entry(vnaproperty_yaml_t *vymlp, int t_map,
 }
 
 /*
+ * _vnaproperty_get_line: return the line number where a node was parsed
+ *   @vprp: property node
+ *
+ * Undocumented function to return the line number where a node was
+ * parsed.  Works only on YAML imports.  Returns 0 if no line information
+ * is available.
+ *
+ * We could provide a public function, e.g.
+ *   int vnaproperty_line(const vnaproperty_t *vprp, const char *descriptor)
+ *
+ * where the descriptor might allow "key" for the line where a key
+ * appears and "key." for where the data appears.  This function could
+ * also still return the line number when the data value is null (as
+ * long as the root is not NULL).  But implementing these would require
+ * adding line number information to the entries of maps and lists --
+ * more heavyweight than the current simple mechanism -- and yet more
+ * APIs would be needed to allow users to add the same line number
+ * information to the elements of a property tree when not imported
+ * from YAML.  For now, keep it simple and undocumented.
+ */
+int _vnaproperty_get_line(const vnaproperty_t *vprp)
+{
+    return vprp->vpr_line;
+}
+
+/*
  * _vnaproperty_yaml_import: import properties from the given YAML document
  *   @vymlp:    common argument structure
  *   @rootptr:  address of property tree root
@@ -2211,6 +2237,7 @@ int _vnaproperty_yaml_import(vnaproperty_yaml_t *vymlp,
 		    vymlp->vyml_filename, strerror(errno));
 	    goto out;
 	}
+	(*rootptr)->vpr_line = node->start_mark.line;
 	return 0;
 
     case YAML_MAPPING_NODE:
@@ -2223,6 +2250,7 @@ int _vnaproperty_yaml_import(vnaproperty_yaml_t *vymlp,
 			vymlp->vyml_filename, strerror(errno));
 		goto out;
 	    }
+	    (*rootptr)->vpr_line = node->start_mark.line;
 	    for (pair = node->data.mapping.pairs.start;
 		    pair < node->data.mapping.pairs.top; ++pair) {
 		yaml_node_t *key, *value;
@@ -2261,6 +2289,7 @@ int _vnaproperty_yaml_import(vnaproperty_yaml_t *vymlp,
 			vymlp->vyml_filename, strerror(errno));
 		goto out;
 	    }
+	    (*rootptr)->vpr_line = node->start_mark.line;
 	    for (item = node->data.sequence.items.start;
 		    item < node->data.sequence.items.top; ++item) {
 		int index = item - node->data.sequence.items.start;
@@ -2412,7 +2441,7 @@ int _vnaproperty_yaml_export(vnaproperty_yaml_t *vymlp,
 
 	    errno = 0;
 	    if ((sequence = yaml_document_add_sequence(document, NULL,
-			    YAML_BLOCK_SEQUENCE_STYLE)) == 0) {
+			    YAML_ANY_SEQUENCE_STYLE)) == 0) {
 		if (errno == 0) {
 		    errno = EINVAL;
 		}

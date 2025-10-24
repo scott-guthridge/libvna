@@ -31,115 +31,347 @@
 #include "vnacal_internal.h"
 #include "vnaproperty_internal.h"
 
-/*
- * matrix_id_t: which error term matrix
- */
-typedef enum matrix_id {
-    E,
-    EL, ER, EM,
-    TS, TI, TX, TM,
-    UM, UI, UX, US,
-    MATRIX_IDS
-} matrix_id_t;
 
 /*
- * matrix_names: names of the matrices
+ * Version Codes
  */
-static const char *matrix_names[] = {
-    "e",
-    "el", "em", "er",
-    "ts", "ti", "tx", "tm",
-    "um", "ui", "ux", "us",
+typedef enum vncal_version {
+    V_UNSUPPORTED = -1,
+    V0_2,
+    V1_0
+} vnacal_version_t;
+
+/*
+ * version_t: version table entry
+ */
+typedef struct version {
+    int major;
+    int minor;
+    vnacal_version_t version;
+} version_t;
+
+/*
+ * Version Table
+ */
+const version_t version_table[] = {
+    {  1,  0, V1_0 },
+    {  0,  2, V0_2 },
+    { -1, -1, V_UNSUPPORTED },
 };
 
-#define E_MASK	((1U << EL) | (1U << ER) | (1U << EM))
-#define T_MASK	((1U << TS) | (1U << TI) | (1U << TX) | (1U << TM))
-#define U_MASK	((1U << UM) | (1U << UI) | (1U << UX) | (1U << US))
-
 /*
- * vnacal_load_state_t: parser state
+ * parse_version: parse the version line and return the verson code
+ *   @vcp: vnacal structure
+ *   @version_line: .vnacal version line
  */
-typedef struct vnacal_load_state {
-    vnacal_t *vls_vcp;
-    yaml_document_t vls_document;
-    int vls_major_version;
-    int vls_minor_version;
-    int vls_findex;
-} vnacal_load_state_t;
-
-/*
- * parse_int: parse an integer
- *   @vlsp: pointer to vnacal_load info structure
- *   @node: yaml node containing text
- *   @result: returned integer
- */
-static int parse_int(vnacal_load_state_t *vlsp,
-	yaml_node_t *node, int *result)
+static vnacal_version_t parse_version(vnacal_t *vcp, const char *version_line)
 {
-    vnacal_t *vcp = vlsp->vls_vcp;
-    char extra;
+    int major_version, minor_version;
 
-    if (node->type != YAML_SCALAR_NODE) {
-	goto error;
-    }
-    if (sscanf((const char *)node->data.scalar.value, "%d %c",
-		result, &extra) != 1) {
-	goto error;
-    }
-    return 0;
+    if (sscanf(version_line, "#VNACal %d.%d",
+		&major_version, &minor_version) != 2) {
+	int old_major, old_minor;
 
-error:
-    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: expected integer",
-	    vcp->vc_filename, node->start_mark.line + 1);
+	/*
+	 * We maintain compatibility with two older versions of the
+	 * calibration file.  Before libvna version 1.0, the #VNACal line
+	 * was all upper case and there were two versions supported: 2.x
+	 * and 3.x.  The old 2.x supports only E12 terms and stores them
+	 * in a different format.  The old 3.x is the same as the new 1.0.
+	 */
+	if (sscanf(version_line, "#VNACAL %d.%d",
+		    &old_major, &old_minor) != 2) {
+	    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line 1) error: "
+		    "expected #VNACal <major>.<minor>", vcp->vc_filename);
+	    return V_UNSUPPORTED;
+	}
+	if (old_major == 2) {
+	    major_version = 0;	/* map old 2.x to 0.2 */
+	    minor_version = 2;
+	} else if (old_major == 3) {
+	    major_version = 1;	/* map old 3.x to 1.0 */
+	    minor_version = 0;
+	} else {
+	    _vnacal_error(vcp, VNAERR_VERSION, "%s (line 1) error: "
+		    "unsupported pre-release vnacal file version %d.%d",
+		    vcp->vc_filename, old_major, old_minor);
+	    return V_UNSUPPORTED;
+	}
+    }
+    for (const version_t *vp = version_table; vp->major != -1; ++vp) {
+	if (vp->major == major_version && vp->minor == minor_version)
+	    return vp->version;
+    }
+    _vnacal_error(vcp, VNAERR_VERSION, "%s (line 1) error: "
+	    "unsupported vnacal file version %d.%d",
+	    vcp->vc_filename, major_version, minor_version);
     return -1;
 }
 
 /*
- * parse_double: parse a double
- *   @vlsp: pointer to vnacal_load info structure
- *   @node: yaml node containing text
- *   @result: returned double
+ * get_line: get the line number associated with node (+1 for version line)
+ *   @node: a node in the property tree
  */
-static int parse_double(vnacal_load_state_t *vlsp,
-	yaml_node_t *node, double *result)
+static int get_line(const vnaproperty_t *node)
 {
-    vnacal_t *vcp = vlsp->vls_vcp;
-    char extra;
-
-    if (node->type != YAML_SCALAR_NODE) {
-	goto error;
-    }
-    if (sscanf((const char *)node->data.scalar.value, "%lf %c",
-		result, &extra) != 1) {
-	goto error;
-    }
-    return 0;
-
-error:
-    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: expected number",
-	    vcp->vc_filename, node->start_mark.line + 1);
-    return -1;
+    return _vnaproperty_get_line(node) + 1;
 }
 
 /*
- * parse_complex: parse a complex number
- *   @vlsp: pointer to vnacal_load info structure
- *   @node: yaml node containing text
- *   @result: returned double
+ * get_key: get a required key and check the type
+ *   @vcp: vnacal structure
+ *   @mapping: a mapping node
+ *   @key: requested key
+ *   @required_type: 'm' (mapping), 'l' (sequence), 's' (scalar), or -1 (null)
  */
-static int parse_complex(vnacal_load_state_t *vlsp,
-	yaml_node_t *node, double complex *result)
+static const vnaproperty_t *get_key(vnacal_t *vcp,
+	const vnaproperty_t *mapping, const char *key, int required_type)
 {
-    vnacal_t *vcp = vlsp->vls_vcp;
+    const vnaproperty_t *vprp;
+
+    if ((vprp = vnaproperty_get_subtree(mapping, "%s", key)) == NULL) {
+	_vnacal_error(vcp, VNAERR_SYNTAX, "vnacal_load: %s (line %d): "
+		"missing required key %s",
+		vcp->vc_filename, get_line(mapping), key);
+	return NULL;
+    }
+    if (vnaproperty_type(vprp, ".") != required_type) {
+	_vnacal_error(vcp, VNAERR_SYNTAX, "vnacal_load: %s (line %d): "
+		"\"%s\" must have type %s",
+		vcp->vc_filename, get_line(vprp), key,
+		required_type == 'm' ? "mapping" :
+		required_type == 'l' ? "sequence" :
+		required_type == 's' ? "scalar" : "null");
+	return NULL;
+    }
+    return vprp;
+}
+
+/*
+ * top_level_keys: valid keys in top-level mapping
+ */
+static const char *top_level_keys[] = {
+    "calibrations",
+    "properties",
+    NULL
+};
+
+/*
+ * calibration_keys: valid keys in each calibration
+ */
+static const char *calibration_keys[] = {
+    "columns",
+    "data",
+    "frequencies",
+    "name",
+    "properties",
+    "rows",
+    "type",
+    "z0",
+    NULL
+};
+
+/*
+ * error_terms_keys: valid error term keys
+ */
+static const char *frequency_keys[] = {
+    "el", "em", "er", "f",
+    "ti", "tm", "ts", "tx",
+    "ui", "um", "us", "ux",
+    NULL
+};
+
+/*
+ * v0_2_top_level_keys: valid top-level keys in version 0.2
+ */
+static const char *v0_2_top_level_keys[] = {
+    "sets",
+    NULL
+};
+
+/*
+ * v0_2_calibration_keys: valid keys in each calibration in version 0.2
+ */
+static const char *v0_2_calibration_keys[] = {
+    "columns",
+    "data",
+    "frequencies",
+    "name",
+    "rows",
+    "z0",
+    NULL
+};
+
+/*
+ * v0_2_frequency_keys: valid per-frequency keys in version 0.2
+ */
+static const char *v0_2_frequency_keys[] = {
+    "e", "f",
+    NULL
+};
+
+/*
+ * cmp: string compare function for qsort
+ *   @arg1: first string
+ *   @arg2: second string
+ */
+static int cmp(const void *arg1, const void *arg2)
+{
+    return strcmp(*(const char **)arg1, *(const char **)arg2);
+}
+
+/*
+ * check_mapping: check that all keys in a mapping are expected
+ *   @vcp: vnacal structure
+ *   @mapping: element expected to be a mapping
+ *   @allowed_keys: sorted NULL-terminated vector of valid keys
+ */
+static int check_mapping(vnacal_t *vcp, const vnaproperty_t *mapping,
+	const char *const *allowed_keys)
+{
+    const char **keys;
+    const char *const *ptr1;
+    const char *const *ptr2;
+    int count;
+
+    assert(vnaproperty_type(mapping, ".") == 'm');
+    if ((count = vnaproperty_count(mapping, "{}")) == -1) {
+	abort();
+    }
+    if ((keys = vnaproperty_keys(mapping, "{}")) == NULL) {
+	if (errno == ENOMEM) {
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "malloc: %s", strerror(errno));
+	    return -1;
+	}
+	abort();	/* internal error */
+    }
+    qsort((void *)keys, count, sizeof(char *), cmp);
+    ptr1 = keys;
+    ptr2 = allowed_keys;
+    for (;;) {
+	int rv;
+
+	if (*ptr1 == NULL) {
+	    free((void *)keys);
+	    return 0;
+	}
+	if (*ptr2 == NULL || (rv = strcmp(*ptr1, *ptr2)) < 0) {
+	    _vnacal_error(vcp, VNAERR_SYNTAX, "vnacal_load: %s (line %d): "
+		"error: unexpected key: %s", vcp->vc_filename,
+		get_line(mapping), *ptr1);
+	    free((void *)keys);
+	    return -1;
+	}
+	if (rv == 0) {
+	    ++ptr1;
+	}
+	++ptr2;
+    }
+}
+
+/*
+ * Assign bits to each matrix.
+ */
+enum {
+    TS = 0x0001,
+    TI = 0x0002,
+    TX = 0x0004,
+    TM = 0x0008,
+
+    UM = 0x0010,
+    UI = 0x0020,
+    UX = 0x0040,
+    US = 0x0080,
+
+    EL = 0x0100,
+    ER = 0x0200,
+    EM = 0x0400,
+};
+
+/*
+ * matrix_names: names corresponding to each bit position
+ */
+const char *matrix_names[] = {
+    "ts", "ti", "tx", "tm",
+    "um", "ui", "ux", "us",
+    "el", "er", "em",
+};
+#define N_MATRIX_NAMES	(sizeof(matrix_names) / (sizeof(const char *)))
+
+/*
+ * check_for_stray_matrices: check for extraneous error term matrices
+ *   @calp: calibration structure
+ *   @vprp_frequency: per-frequency entry of a calibration
+ */
+static int check_for_stray_matrices(const vnacal_calibration_t *calp,
+	const vnaproperty_t *vprp_frequency)
+{
+    vnacal_t *vcp = calp->cal_vcp;
+    uint32_t mask = 0;	/* mask of wanted keys */
+
+    switch (calp->cal_type) {
+    case VNACAL_TE10:
+	mask |= EL;
+	/*FALLTHROUGH*/
+    case VNACAL_T8:
+    case VNACAL_T16:
+	mask |= TS|TI|TX|TM;
+	break;
+
+    case VNACAL_UE10:
+    case VNACAL_UE14:
+	mask |= EL;
+	/*FALLTHROUGH*/
+    case VNACAL_U8:
+    case VNACAL_U16:
+	mask |= UM|UI|UX|US;
+	break;
+
+    case VNACAL_E12:
+	mask |= EL|ER|EM;
+	break;
+
+    default:
+	abort();
+    }
+    for (int i; i < N_MATRIX_NAMES; ++i) {
+	if (mask & (1U << i)) {
+	    continue;
+	}
+	if (vnaproperty_get_subtree(vprp_frequency, "%s",
+		    matrix_names[i]) != NULL) {
+	    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    "key \"%s\" is not expected here",
+		    vcp->vc_filename, get_line(vprp_frequency),
+		    matrix_names[i]);
+	    return -1;
+	}
+    }
+    return 0;
+}
+
+/*
+ * parse_complex: parse a complex from a vnaproperty node and descriptor
+ *   @root: vnaproperty node
+ *   @format: property descriptor format (printf-like)
+ *   @...: optional arguments depending on format
+ */
+static double complex parse_complex(const vnaproperty_t *root,
+	const char *format, ...)
+{
+    va_list ap;
     const char *cur;
     char *end;
     double value1 = 0.0, value2 = 0.0;
     int code = 0;
 
-    if (node->type != YAML_SCALAR_NODE) {
-	goto error;
+    va_start(ap, format);
+    cur = vnaproperty_vget(root, format, ap);
+    va_end(ap);
+    if (cur == NULL) {
+	return HUGE_VAL;
     }
-    cur = (const char *)node->data.scalar.value;
     value1 = strtod(cur, &end);
     if (end != cur) {
 	++code;
@@ -179,815 +411,376 @@ static int parse_complex(vnacal_load_state_t *vlsp,
 	++cur;
     }
     if (*cur != '\000') {
-	goto error;
+	return HUGE_VAL;
     }
     switch (code) {
     case 1:	/* number */
-	*result = value1;
-	break;
+	return value1;
     case 4:	/* j */
-	*result = I;
-	break;
+	return I;
     case 5:	/* number j */
-	*result = value1 * I;
-	break;
+	return value1 * I;
     case 6:	/* number number j */
-	*result = value1 + value2 * I;
-	break;
+	return value1 + value2 * I;
     case 12:	/* +j */
-	*result = I;
-	break;
+	return I;
     case 13:	/* number + j */
-	*result = value1 + I;
-	break;
+	return value1 + I;
     case 20:	/* -j */
-	*result = -I;
-	break;
+	return -I;
     case 21:	/* number - j */
-	*result = value1 - I;
-	break;
+	return value1 - I;
     default:
-	goto error;
+	break;
     }
-    return 0;
-
-error:
-    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: expected number",
-	    vcp->vc_filename, node->start_mark.line + 1);
-    return -1;
+    return HUGE_VAL;
 }
 
 /*
- * parse_type:
- *   @vlsp: pointer to vnacal_load info structure
- *   @node: yaml node containing text
- *   @result: returned double
+ * parse_type_from_map: parse a required vnacal type from a mapping
+ *   @vcp: vnacal structure
+ *   @mapping: mapping to parse
+ *   @key: required key
  */
-static int parse_type(vnacal_load_state_t *vlsp,
-	yaml_node_t *node, vnacal_type_t *result)
+static vnacal_type_t parse_type_from_map(vnacal_t *vcp,
+	const vnaproperty_t *mapping, const char *key)
 {
-    vnacal_t *vcp = vlsp->vls_vcp;
+    const vnaproperty_t *scalar;
+    const char *s;
+    vnacal_type_t type;
 
-    if (node->type != YAML_SCALAR_NODE) {
-	goto error;
+    if ((scalar = get_key(vcp, mapping, key, 's')) == NULL) {
+	return VNACAL_NOTYPE;
     }
-    *result = vnacal_name_to_type((const char *)node->data.scalar.value);
-    if (*result == (vnacal_type_t)-1) {
-	goto error;
+    s = vnaproperty_get(scalar, ".");
+    assert(s != NULL);
+    if ((type = vnacal_name_to_type(s)) == -1) {
+	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		"unknown calibration type: %s",
+		vcp->vc_filename, get_line(scalar), s);
+	return VNACAL_NOTYPE;
     }
-    return 0;
-
-error:
-    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: expected type",
-	    vcp->vc_filename, node->start_mark.line + 1);
-    return -1;
+    return type;
 }
 
 /*
- * parse_properties: parse user properties
- *   @vlsp: pointer to vnacal_load info structure
- *   @node: user properties
+ * parse_int_from_map: parse a required integer from a mapping
+ *   @vcp: vnacal structure
+ *   @mapping: mapping to parse
+ *   @key: required key
+ *   @min: minimum valid value for the int
  */
-static int parse_properties(vnacal_load_state_t *vlsp, vnaproperty_t **rootptr,
-	yaml_node_t *node)
+static int parse_int_from_map(vnacal_t *vcp, const vnaproperty_t *mapping,
+	const char *key, int min)
 {
-    vnacal_t *vcp = vlsp->vls_vcp;
-    vnaproperty_yaml_t vyml;
+    const vnaproperty_t *scalar;
+    const char *s;
+    char *e;
+    int value;
 
-    (void)memset((void *)&vyml, 0, sizeof(vyml));
-    vyml.vyml_document = (void *)&vlsp->vls_document;
-    vyml.vyml_filename = vcp->vc_filename;
-    vyml.vyml_error_fn = vcp->vc_error_fn;
-    vyml.vyml_error_arg = vcp->vc_error_arg;
-
-    return _vnaproperty_yaml_import(&vyml, rootptr, (void *)node);
+    if ((scalar = get_key(vcp, mapping, key, 's')) == NULL) {
+	return -1;
+    }
+    s = vnaproperty_get(scalar, ".");
+    assert(s != NULL);
+    value = strtol(s, &e, 0);
+    if (*s == '\000' || *e != '\000') {
+	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		"%s: invalid integer: \"%s\"",
+		vcp->vc_filename, get_line(scalar), key, s);
+	return -1;
+    }
+    if (value < min) {
+	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		"%s must be at least %d (found %d)",
+		vcp->vc_filename, get_line(scalar),
+		key, min, value);
+	return -1;
+    }
+    return value;
 }
 
 /*
- * parse_vector: parse a vector
- *   @vlsp: pointer to vnacal_load info structure
- *   @vector: where to place data
- *   @length: expected length
- *   @node: yaml node to parse
+ * parse_double_from_map: parse a required double from a mapping
+ *   @vcp: vnacal structure
+ *   @mapping: mapping to parse
+ *   @key: required key
  */
-static int parse_vector(vnacal_load_state_t *vlsp, double complex **vector,
-	int length, yaml_node_t *node)
+static double parse_double_from_map(vnacal_t *vcp,
+	const vnaproperty_t *mapping, const char *key)
 {
-    vnacal_t *vcp = vlsp->vls_vcp;
-    int findex = vlsp->vls_findex;
-    yaml_node_item_t *item;
-    int items;
+    const vnaproperty_t *scalar;
+    const char *s;
+    char *e;
+    double value;
 
-    if (node->type != YAML_SEQUENCE_NODE) {
-	_vnacal_error(vcp, VNAERR_SYNTAX,
-		"%s (line %ld) error: expected sequence",
-		vcp->vc_filename, node->start_mark.line + 1);
-	return -1;
+    if ((scalar = get_key(vcp, mapping, key, 's')) == NULL) {
+	return HUGE_VAL;
     }
-    items = node->data.sequence.items.top - node->data.sequence.items.start;
-    if (items != length) {
-	_vnacal_error(vcp, VNAERR_SYNTAX,
-		"%s (line %ld) error: expected %d terms but found %d",
-		vcp->vc_filename, node->start_mark.line + 1, length, items);
-	return -1;
+    s = vnaproperty_get(scalar, ".");
+    assert(s != NULL);
+    value = strtod(s, &e);
+    if (*s == '\000' || *e != '\000') {
+	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		"%s: invalid floating point number: \"%s\"",
+		vcp->vc_filename, get_line(scalar), key, s);
+	return HUGE_VAL;
     }
-    for (item = node->data.sequence.items.start;
-	 item < node->data.sequence.items.top; ++item) {
-	int term = item - node->data.sequence.items.start;
-	yaml_node_t *term_node;
-
-	term_node = yaml_document_get_node(&vlsp->vls_document, *item);
-	if (parse_complex(vlsp, term_node, &vector[term][findex]) == -1) {
-	    return -1;
-	}
-    }
-    return 0;
+    return value;
 }
 
 /*
- * parse_old_e_matrix: parse the "VNACAL 2.0" format e matrix
- *   @vlsp: pointer to vnacal_load info structure
- *   @e_matrices: array of El, Er, Em matrices, each with [cell][findex]
- *   @rows: number of expected rows
- *   @columns: number of expected columns
- *   @matrix_node: yaml node to parse
+ * parse_double_from_map: parse a required complex from a mapping
+ *   @vcp: vnacal structure
+ *   @mapping: mapping to parse
+ *   @key: required key
  */
-static int parse_old_e_matrix(vnacal_load_state_t *vlsp,
-	double complex ***e_matrices, int rows, int columns,
-	yaml_node_t *matrix_node)
+static double complex parse_complex_from_map(vnacal_t *vcp,
+	const vnaproperty_t *mapping, const char *key)
 {
-    vnacal_t *vcp = vlsp->vls_vcp;
-    int findex = vlsp->vls_findex;
-    int items;
-    int cell = 0;
+    const vnaproperty_t *scalar;
+    double complex value;
 
-    if (matrix_node->type != YAML_SEQUENCE_NODE) {
-	_vnacal_error(vcp, VNAERR_SYNTAX,
-		"%s (line %ld) error: expected sequence",
-		vcp->vc_filename, matrix_node->start_mark.line + 1);
-	return -1;
+    if ((scalar = get_key(vcp, mapping, key, 's')) == NULL) {
+	return HUGE_VAL;
     }
-    items = matrix_node->data.sequence.items.top -
-	matrix_node->data.sequence.items.start;
-    if (items != rows) {
-	_vnacal_error(vcp, VNAERR_SYNTAX,
-		"%s (line %ld) error: expected %d rows but found %d",
-		vcp->vc_filename, matrix_node->start_mark.line + 1,
-		rows, items);
-	return -1;
+    if ((value = parse_complex(scalar, ".")) == HUGE_VAL) {
+	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		"%s: invalid complex number: \"%s\"",
+		vcp->vc_filename, get_line(scalar), key,
+		vnaproperty_get(scalar, "."));
+	return HUGE_VAL;
     }
-    for (yaml_node_item_t *row_item = matrix_node->data.sequence.items.start;
-	 row_item < matrix_node->data.sequence.items.top; ++row_item) {
-	yaml_node_t *row_node;
-	yaml_node_item_t *column_item;
-
-	row_node = yaml_document_get_node(&vlsp->vls_document, *row_item);
-	if (row_node->type != YAML_SEQUENCE_NODE) {
-	    _vnacal_error(vcp, VNAERR_SYNTAX,
-		    "%s (line %ld) error: expected sequence",
-		    vcp->vc_filename, row_node->start_mark.line + 1);
-	    return -1;
-	}
-	items = row_node->data.sequence.items.top -
-	    row_node->data.sequence.items.start;
-	if (items != columns) {
-	    _vnacal_error(vcp, VNAERR_SYNTAX,
-		    "%s (line %ld) error: expected %d columns but found %d",
-		    vcp->vc_filename, row_node->start_mark.line + 1,
-		    columns, items);
-	    return -1;
-	}
-	for (column_item = row_node->data.sequence.items.start;
-	     column_item < row_node->data.sequence.items.top; ++column_item) {
-	    yaml_node_t *cell_node;
-	    yaml_node_item_t *term_item;
-
-	    cell_node = yaml_document_get_node(&vlsp->vls_document,
-		    *column_item);
-	    if (cell_node->type != YAML_SEQUENCE_NODE) {
-		_vnacal_error(vcp, VNAERR_SYNTAX,
-			"%s (line %ld) error: expected sequence",
-			vcp->vc_filename, row_node->start_mark.line + 1);
-		return -1;
-	    }
-	    items = cell_node->data.sequence.items.top -
-		cell_node->data.sequence.items.start;
-	    if (items != 3) {
-		_vnacal_error(vcp, VNAERR_SYNTAX,
-			"%s (line %ld) error: expected 3 terms but found %d",
-			vcp->vc_filename, row_node->start_mark.line + 1,
-			items);
-		return -1;
-	    }
-	    for (term_item = cell_node->data.sequence.items.start;
-		    term_item < cell_node->data.sequence.items.top;
-		    ++term_item) {
-		int term = term_item - cell_node->data.sequence.items.start;
-		yaml_node_t *term_node;
-
-		term_node = yaml_document_get_node(&vlsp->vls_document,
-			*term_item);
-		if (term_node->type != YAML_SCALAR_NODE) {
-		    _vnacal_error(vcp, VNAERR_SYNTAX,
-			    "%s (line %ld) error: expected scalar",
-			    vcp->vc_filename, row_node->start_mark.line + 1);
-		    return -1;
-		}
-		if (parse_complex(vlsp, term_node,
-			    &e_matrices[term][cell][findex]) == -1) {
-		    return -1;
-		}
-	    }
-	    ++cell;
-	}
-    }
-    return 0;
+    return value;
 }
 
 /*
- * parse_matrix: parse a matrix
- *   @vlsp: pointer to vnacal_load info structure
- *   @matrix: where to place data
- *   @rows: number of expected rows
- *   @columns: number of expected columns
- *   @matrix_node: yaml node to parse
- *   @no_diagonal: matrix should have ~'s on its major diagonal
- */
-static int parse_matrix(vnacal_load_state_t *vlsp, double complex **matrix,
-	int rows, int columns, yaml_node_t *matrix_node, bool no_diagonal)
-{
-    vnacal_t *vcp = vlsp->vls_vcp;
-    int findex = vlsp->vls_findex;
-    int items;
-    int cell = 0;
-
-    if (matrix_node->type != YAML_SEQUENCE_NODE) {
-	_vnacal_error(vcp, VNAERR_SYNTAX,
-		"%s (line %ld) error: expected sequence",
-		vcp->vc_filename, matrix_node->start_mark.line + 1);
-	return -1;
-    }
-    items = matrix_node->data.sequence.items.top -
-	matrix_node->data.sequence.items.start;
-    if (items != rows) {
-	_vnacal_error(vcp, VNAERR_SYNTAX,
-		"%s (line %ld) error: expected %d rows but found %d",
-		vcp->vc_filename, matrix_node->start_mark.line + 1,
-		rows, items);
-	return -1;
-    }
-    for (yaml_node_item_t *row_item = matrix_node->data.sequence.items.start;
-	 row_item < matrix_node->data.sequence.items.top; ++row_item) {
-	int row = row_item - matrix_node->data.sequence.items.start;
-	yaml_node_t *row_node;
-	yaml_node_item_t *column_item;
-
-	row_node = yaml_document_get_node(&vlsp->vls_document, *row_item);
-	if (row_node->type != YAML_SEQUENCE_NODE) {
-	    _vnacal_error(vcp, VNAERR_SYNTAX,
-		    "%s (line %ld) error: expected sequence",
-		    vcp->vc_filename, row_node->start_mark.line + 1);
-	    return -1;
-	}
-	items = row_node->data.sequence.items.top -
-	    row_node->data.sequence.items.start;
-	if (items != columns) {
-	    _vnacal_error(vcp, VNAERR_SYNTAX,
-		    "%s (line %ld) error: expected %d columns but found %d",
-		    vcp->vc_filename, row_node->start_mark.line + 1,
-		    columns, items);
-	    return -1;
-	}
-	for (column_item = row_node->data.sequence.items.start;
-	     column_item < row_node->data.sequence.items.top; ++column_item) {
-	    int column = column_item - row_node->data.sequence.items.start;
-	    yaml_node_t *cell_node;
-
-	    cell_node = yaml_document_get_node(&vlsp->vls_document,
-		    *column_item);
-	    if (no_diagonal && row == column) {
-		const char *value;
-
-		if (cell_node->type != YAML_SCALAR_NODE) {
-		    _vnacal_error(vcp, VNAERR_SYNTAX,
-			    "%s (line %ld) error: expected scalar",
-			    vcp->vc_filename, row_node->start_mark.line + 1);
-		    return -1;
-		}
-		value = (const char *)cell_node->data.scalar.value;
-		if ((value[0] != '~' || value[1] != '\000') &&
-			strcmp(value, "null") != 0) {
-		    _vnacal_error(vcp, VNAERR_SYNTAX,
-			    "%s (line %ld) error: expected ~ in diagonal",
-			    vcp->vc_filename, row_node->start_mark.line + 1);
-		    return -1;
-		}
-	    } else {
-		if (parse_complex(vlsp, cell_node,
-			    &matrix[cell++][findex]) == -1) {
-		    return -1;
-		}
-	    }
-	}
-
-    }
-    return 0;
-}
-
-/*
- * parse_matrices: parse the error terms matrices
- *   @vlsp: pointer to vnacal_load info structure
- *   @vlp: pointer to vnacal_layout_t structure
+ * parse_frequency_entry_v0_2: parse a single frequency entry in v0.2
  *   @calp: pointer to calibration structure
- *   @matrices: yaml_node pointers of matrices found
+ *   @vprp_frequency: per-frequency mapping to parse
+ *   @error_terms: array of El, Er, Em matrices, each with [cell][findex]
+ *   @findex: frequency index
  */
-static int parse_matrices(vnacal_load_state_t *vlsp, const vnacal_layout_t *vlp,
-	vnacal_calibration_t *calp, yaml_node_t **matrices)
+static int parse_frequency_entry_v0_2(vnacal_calibration_t *calp,
+	const vnaproperty_t *vprp_frequency,
+	double complex ***error_terms, int findex)
 {
-    double complex **e = calp->cal_error_term_vector;
+    vnacal_t *vcp = calp->cal_vcp;
+    const vnaproperty_t *vprp_error_terms;
+    const int rows = calp->cal_rows;
+    const int columns = calp->cal_columns;
+    double f;
+    int count;
 
-    switch (calp->cal_type) {
-    case VNACAL_T8:
-    case VNACAL_TE10:
-	{
-	    const int ts_terms  = VL_TS_TERMS(vlp);
-	    const int ts_offset = VL_TS_OFFSET(vlp);
-	    const int ti_terms  = VL_TI_TERMS(vlp);
-	    const int ti_offset = VL_TI_OFFSET(vlp);
-	    const int tx_terms  = VL_TX_TERMS(vlp);
-	    const int tx_offset = VL_TX_OFFSET(vlp);
-	    const int tm_terms  = VL_TM_TERMS(vlp);
-	    const int tm_offset = VL_TM_OFFSET(vlp);
-	    double complex **ts = &e[ts_offset];
-	    double complex **ti = &e[ti_offset];
-	    double complex **tx = &e[tx_offset];
-	    double complex **tm = &e[tm_offset];
+    assert(vnaproperty_type(vprp_frequency, ".") == 'm');
+    if (check_mapping(vcp, vprp_frequency, v0_2_frequency_keys) == -1) {
+	return -1;
+    }
+    if ((f = parse_double_from_map(vcp, vprp_frequency, "f")) == HUGE_VAL) {
+	return -1;
+    }
+    calp->cal_frequency_vector[findex] = f;
+    if ((vprp_error_terms = get_key(vcp, vprp_frequency, "e", 'l')) == NULL) {
+	return -1;
+    }
+    count = vnaproperty_count(vprp_frequency, "e[]");
+    if (count != rows) {
+	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		"expected %d rows but found %d",
+		vcp->vc_filename, get_line(vprp_error_terms),
+		rows, count);
+	return -1;
+    }
+    for (int row = 0; row < rows; ++row) {
+	vnaproperty_t *vprp_row;
 
-	    if (parse_vector(vlsp, ts, ts_terms, matrices[TS]) == -1) {
-		return -1;
-	    }
-	    if (parse_vector(vlsp, ti, ti_terms, matrices[TI]) == -1) {
-		return -1;
-	    }
-	    if (parse_vector(vlsp, tx, tx_terms, matrices[TX]) == -1) {
-		return -1;
-	    }
-	    if (parse_vector(vlsp, tm, tm_terms, matrices[TM]) == -1) {
-		return -1;
-	    }
+	vprp_row = vnaproperty_get_subtree(vprp_error_terms, "[%d][]", row);
+	if (vprp_row == NULL) {
+	    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    "row %d of matrix must be a sequence",
+		    vcp->vc_filename, get_line(vprp_error_terms),
+		    row);
+	    return -1;
 	}
-	if (calp->cal_type == VNACAL_TE10) {
-	    const int el_rows    = VL_EL_ROWS(vlp);
-	    const int el_columns = VL_EL_COLUMNS(vlp);
-	    const int el_offset  = VL_EL_OFFSET(vlp);
-	    double complex **el = &e[el_offset];
-
-	    if (parse_matrix(vlsp, el, el_rows, el_columns,
-			matrices[EL], true) == -1) {
-		return -1;
-	    }
+	count = vnaproperty_count(vprp_row, "[]");
+	if (count != columns) {
+	    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    "expected row %d of matrix to have %d columns "
+		    "but found %d",
+		    vcp->vc_filename, get_line(vprp_error_terms),
+		    row, columns, count);
+	    return -1;
 	}
-	return 0;
+	for (int column = 0; column < columns; ++column) {
+	    const vnaproperty_t *vprp_terms;
+	    const int cell = row * columns + column;
 
-    case VNACAL_U8:
-    case VNACAL_UE10:
-	{
-	    const int um_terms  = VL_UM_TERMS(vlp);
-	    const int um_offset = VL_UM_OFFSET(vlp);
-	    const int ui_terms  = VL_UI_TERMS(vlp);
-	    const int ui_offset = VL_UI_OFFSET(vlp);
-	    const int ux_terms  = VL_UX_TERMS(vlp);
-	    const int ux_offset = VL_UX_OFFSET(vlp);
-	    const int us_terms  = VL_US_TERMS(vlp);
-	    const int us_offset = VL_US_OFFSET(vlp);
-	    double complex **um = &e[um_offset];
-	    double complex **ui = &e[ui_offset];
-	    double complex **ux = &e[ux_offset];
-	    double complex **us = &e[us_offset];
+	    vprp_terms = vnaproperty_get_subtree(vprp_row, "[%d][]", column);
+	    if (vprp_terms == NULL ||
+		    (count = vnaproperty_count(vprp_terms, "[]")) != 3) {
+		_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+			"matrix[%d][%d] must be a sequence of 3 error terms",
+			vcp->vc_filename, get_line(vprp_terms),
+			row, column);
+		return -1;
+	    }
+	    for (int term = 0; term < 3; ++term) {
+		double complex clf;
 
-	    if (parse_vector(vlsp, um, um_terms, matrices[UM]) == -1) {
-		return -1;
-	    }
-	    if (parse_vector(vlsp, ui, ui_terms, matrices[UI]) == -1) {
-		return -1;
-	    }
-	    if (parse_vector(vlsp, ux, ux_terms, matrices[UX]) == -1) {
-		return -1;
-	    }
-	    if (parse_vector(vlsp, us, us_terms, matrices[US]) == -1) {
-		return -1;
-	    }
-	}
-	if (calp->cal_type == VNACAL_UE10) {
-	    const int el_rows    = VL_EL_ROWS(vlp);
-	    const int el_columns = VL_EL_COLUMNS(vlp);
-	    const int el_offset  = VL_EL_OFFSET(vlp);
-	    double complex **el = &e[el_offset];
-
-	    if (parse_matrix(vlsp, el, el_rows, el_columns,
-			matrices[EL], true) == -1) {
-		return -1;
-	    }
-	}
-	return 0;
-
-    case VNACAL_T16:
-	{
-	    const int ts_rows    = VL_TS_ROWS(vlp);
-	    const int ts_columns = VL_TS_COLUMNS(vlp);
-	    const int ts_offset  = VL_TS_OFFSET(vlp);
-	    const int ti_rows    = VL_TI_ROWS(vlp);
-	    const int ti_columns = VL_TI_COLUMNS(vlp);
-	    const int ti_offset  = VL_TI_OFFSET(vlp);
-	    const int tx_rows    = VL_TX_ROWS(vlp);
-	    const int tx_columns = VL_TX_COLUMNS(vlp);
-	    const int tx_offset  = VL_TX_OFFSET(vlp);
-	    const int tm_rows    = VL_TM_ROWS(vlp);
-	    const int tm_columns = VL_TM_COLUMNS(vlp);
-	    const int tm_offset  = VL_TM_OFFSET(vlp);
-	    double complex **ts = &e[ts_offset];
-	    double complex **ti = &e[ti_offset];
-	    double complex **tx = &e[tx_offset];
-	    double complex **tm = &e[tm_offset];
-
-	    if (parse_matrix(vlsp, ts, ts_rows, ts_columns,
-			matrices[TS], false) == -1) {
-		return -1;
-	    }
-	    if (parse_matrix(vlsp, ti, ti_rows, ti_columns,
-			matrices[TI], false) == -1) {
-		return -1;
-	    }
-	    if (parse_matrix(vlsp, tx, tx_rows, tx_columns,
-			matrices[TX], false) == -1) {
-		return -1;
-	    }
-	    if (parse_matrix(vlsp, tm, tm_rows, tm_columns,
-			matrices[TM], false) == -1) {
-		return -1;
-	    }
-	}
-	return 0;
-
-    case VNACAL_U16:
-	{
-	    const int um_rows    = VL_UM_ROWS(vlp);
-	    const int um_columns = VL_UM_COLUMNS(vlp);
-	    const int um_offset  = VL_UM_OFFSET(vlp);
-	    const int ui_rows    = VL_UI_ROWS(vlp);
-	    const int ui_columns = VL_UI_COLUMNS(vlp);
-	    const int ui_offset  = VL_UI_OFFSET(vlp);
-	    const int ux_rows    = VL_UX_ROWS(vlp);
-	    const int ux_columns = VL_UX_COLUMNS(vlp);
-	    const int ux_offset  = VL_UX_OFFSET(vlp);
-	    const int us_rows    = VL_US_ROWS(vlp);
-	    const int us_columns = VL_US_COLUMNS(vlp);
-	    const int us_offset  = VL_US_OFFSET(vlp);
-	    double complex **um = &e[um_offset];
-	    double complex **ui = &e[ui_offset];
-	    double complex **ux = &e[ux_offset];
-	    double complex **us = &e[us_offset];
-
-	    if (parse_matrix(vlsp, um, um_rows, um_columns,
-			matrices[UM], false) == -1) {
-		return -1;
-	    }
-	    if (parse_matrix(vlsp, ui, ui_rows, ui_columns,
-			matrices[UI], false) == -1) {
-		return -1;
-	    }
-	    if (parse_matrix(vlsp, ux, ux_rows, ux_columns,
-			matrices[UX], false) == -1) {
-		return -1;
-	    }
-	    if (parse_matrix(vlsp, us, us_rows, us_columns,
-			matrices[US], false) == -1) {
-		return -1;
-	    }
-	}
-	return 0;
-
-    case VNACAL_UE14:
-	{
-	    const int m_columns  = VL_M_COLUMNS(vlp);
-	    const int um_terms   = VL_UM14_TERMS(vlp);
-	    const int ui_terms   = VL_UI14_TERMS(vlp);
-	    const int ux_terms   = VL_UX14_TERMS(vlp);
-	    const int us_terms   = VL_US14_TERMS(vlp);
-	    const int el_rows    = VL_EL_ROWS(vlp);
-	    const int el_columns = VL_EL_COLUMNS(vlp);
-	    const int el_offset  = VL_EL_OFFSET(vlp);
-	    double complex *packed_um[um_terms][m_columns];
-	    double complex *packed_ui[ui_terms][m_columns];
-	    double complex *packed_ux[ux_terms][m_columns];
-	    double complex *packed_us[us_terms][m_columns];
-	    double complex **el = &e[el_offset];
-
-	    for (int m_column = 0; m_column < m_columns; ++m_column) {
-		const int um_offset = VL_UM14_OFFSET(vlp, m_column);
-		const int ui_offset = VL_UI14_OFFSET(vlp, m_column);
-		const int ux_offset = VL_UX14_OFFSET(vlp, m_column);
-		const int us_offset = VL_US14_OFFSET(vlp, m_column);
-		double complex **um = &e[um_offset];
-		double complex **ui = &e[ui_offset];
-		double complex **ux = &e[ux_offset];
-		double complex **us = &e[us_offset];
-
-		for (int term = 0; term < um_terms; ++term) {
-		    packed_um[term][m_column] = um[term];
+		clf = parse_complex(vprp_terms, "[%d]", term);
+		if (clf == HUGE_VAL) {
+		    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+			    "invalid complex number at matrix[%d][%d][%d]",
+			    vcp->vc_filename, get_line(vprp_terms),
+			    row, column, term);
+		    return -1;
 		}
-		for (int term = 0; term < ui_terms; ++term) {
-		    packed_ui[term][m_column] = ui[term];
-		}
-		for (int term = 0; term < ux_terms; ++term) {
-		    packed_ux[term][m_column] = ux[term];
-		}
-		for (int term = 0; term < us_terms; ++term) {
-		    packed_us[term][m_column] = us[term];
+		error_terms[term][cell][findex] = clf;
+	    }
+	}
+    }
+    return 0;
+}
+
+/*
+ * parse_error_term_matrix: parse a single error term vector or matrix
+ *   @vcp: vnacal structure
+ *   @vprp_matrix: matrix to parse
+ *   @vetmp: description of matrix to parse
+ *   @findex: frequency index
+ */
+static int parse_error_term_matrix(const vnaproperty_t *vprp_matrix,
+	vnacal_error_term_matrix_t *vetmp, int findex)
+{
+    vnacal_calibration_t *calp = vetmp->vetm_calp;
+    vnacal_t *vcp = calp->cal_vcp;
+    int count;
+    double complex **matrix = vetmp->vetm_matrix;
+    const int rows = vetmp->vetm_rows;
+    const int columns = vetmp->vetm_columns;
+
+    assert(vnaproperty_type(vprp_matrix, ".") == 'l');
+    count = vnaproperty_count(vprp_matrix, "[]");
+    switch (vetmp->vetm_type) {
+    case VETM_VECTOR:
+	assert(rows == 1);
+	if (count != columns) {
+	    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    "expected %s vector to have %d elements but found %d",
+		    vcp->vc_filename, get_line(vprp_matrix),
+		    vetmp->vetm_name, columns, count);
+	    return -1;
+	}
+	for (int i = 0; i < vetmp->vetm_columns; ++i) {
+	    if ((matrix[i][findex] = parse_complex(vprp_matrix,
+			    "[%d]", i)) == HUGE_VAL) {
+		_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+			"invalid complex number in %s vector",
+			vcp->vc_filename, get_line(vprp_matrix),
+			vetmp->vetm_name);
+		return -1;
+	    }
+	}
+	break;
+
+    case VETM_MATRIX_ND:
+    case VETM_MATRIX:
+	if (count != rows) {
+	    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    "expected %s matrix to have %d rows but found %d",
+		    vcp->vc_filename, get_line(vprp_matrix),
+		    vetmp->vetm_name, rows, count);
+	    return -1;
+	}
+	for (int row = 0; row < rows; ++row) {
+	    const vnaproperty_t *vprp_row;
+
+	    vprp_row = vnaproperty_get_subtree(vprp_matrix, "[%d][]", row);
+	    if (vprp_row == NULL) {
+		_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+			"row %d of %s matrix must be a sequence",
+			vcp->vc_filename, get_line(vprp_matrix),
+			row, vetmp->vetm_name);
+		return -1;
+	    }
+	    count = vnaproperty_count(vprp_row, "[]");
+	    if (count != columns) {
+		_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+			"expected row %d of %s matrix to have %d columns "
+			"but found %d",
+			vcp->vc_filename, get_line(vprp_matrix),
+			row, vetmp->vetm_name, columns, count);
+		return -1;
+	    }
+	    for (int column = 0; column < columns; ++column) {
+		if (row != column || vetmp->vetm_type != VETM_MATRIX_ND) {
+		    double complex clf;
+
+		    clf = parse_complex(vprp_row, "[%d]", column);
+		    if (clf == HUGE_VAL) {
+			_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+				"invalid complex number at matrix element "
+				"%s[%d][%d]",
+				vcp->vc_filename, get_line(vprp_row),
+				vetmp->vetm_name, row, column);
+			return -1;
+		    }
+		    (*matrix++)[findex] = clf;
+		} else {
+		    if (vnaproperty_get_subtree(vprp_row, "[%d]",
+				column) != NULL) {
+			_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+				"expected diagonal matrix element %s[%d][%d] "
+				"to be null",
+				vcp->vc_filename, get_line(vprp_row),
+				vetmp->vetm_name, row, column);
+			return -1;
+		    }
 		}
 	    }
-	    if (parse_matrix(vlsp, &packed_um[0][0], um_terms, m_columns,
-			matrices[UM], false) == -1) {
-		return -1;
-	    }
-	    if (parse_matrix(vlsp, &packed_ui[0][0], ui_terms, m_columns,
-			matrices[UI], false) == -1) {
-		return -1;
-	    }
-	    if (parse_matrix(vlsp, &packed_ux[0][0], ux_terms, m_columns,
-			matrices[UX], false) == -1) {
-		return -1;
-	    }
-	    if (parse_matrix(vlsp, &packed_us[0][0], us_terms, m_columns,
-			matrices[US], false) == -1) {
-		return -1;
-	    }
-	    if (parse_matrix(vlsp, el, el_rows, el_columns,
-			matrices[EL], true) == -1) {
-		return -1;
-	    }
 	}
-	return 0;
-
-    case VNACAL_E12:
-	{
-	    const int m_rows    = VL_M_ROWS(vlp);
-	    const int m_columns = VL_M_COLUMNS(vlp);
-	    const int el_terms  = VL_EL12_TERMS(vlp);
-	    const int er_terms  = VL_ER12_TERMS(vlp);
-	    const int em_terms  = VL_EM12_TERMS(vlp);
-	    double complex *packed_el[el_terms][m_columns];
-	    double complex *packed_er[er_terms][m_columns];
-	    double complex *packed_em[em_terms][m_columns];
-
-	    for (int m_column = 0; m_column < m_columns; ++m_column) {
-		const int el_offset = VL_EL12_OFFSET(vlp, m_column);
-		const int er_offset = VL_ER12_OFFSET(vlp, m_column);
-		const int em_offset = VL_EM12_OFFSET(vlp, m_column);
-		double complex **el = &e[el_offset];
-		double complex **er = &e[er_offset];
-		double complex **em = &e[em_offset];
-
-		for (int term = 0; term < el_terms; ++term) {
-		    packed_el[term][m_column] = el[term];
-		}
-		for (int term = 0; term < er_terms; ++term) {
-		    packed_er[term][m_column] = er[term];
-		}
-		for (int term = 0; term < em_terms; ++term) {
-		    packed_em[term][m_column] = em[term];
-		}
-	    }
-	    if (vlsp->vls_major_version == 0) {	/* pre-release v2.0 */
-		double complex **e_matrices[3] = {
-		    &packed_el[0][0], &packed_er[0][0], &packed_em[0][0]
-		};
-		assert(el_terms == m_rows);
-		assert(er_terms == m_rows);
-		assert(em_terms == m_rows);
-		return parse_old_e_matrix(vlsp, e_matrices,
-			m_rows, m_columns, matrices[E]);
-	    }
-	    if (parse_matrix(vlsp, &packed_el[0][0], el_terms, m_columns,
-			matrices[EL], false) == -1) {
-		return -1;
-	    }
-	    if (parse_matrix(vlsp, &packed_er[0][0], er_terms, m_columns,
-			matrices[ER], false) == -1) {
-		return -1;
-	    }
-	    if (parse_matrix(vlsp, &packed_em[0][0], em_terms, m_columns,
-			matrices[EM], false) == -1) {
-		return -1;
-	    }
-	}
-	return 0;
+	break;
 
     default:
 	abort();
     }
+    return 0;
 }
 
 /*
- * parse_data: parse the error term vector
- *   @vlsp: pointer to vnacal_load info structure
- *   @vlp: pointer to vnacal_layout_t structure
- *   @calp: pointer to calibration structure
- *   @node: error term matrix
+ * parse_frequency_entry: parse a frequency entry of a calibration
+ *   @calp: calibration structure we're filling
+ *   @vprp_frequency: frequency mapping to parse
+ *   @matrix_list: list of error term matrix descriptors
+ *   @findex: frequency index
  */
-static int parse_data(vnacal_load_state_t *vlsp, const vnacal_layout_t *vlp,
-	vnacal_calibration_t *calp, yaml_node_t *node)
+static int parse_frequency_entry(vnacal_calibration_t *calp,
+	const vnaproperty_t *vprp_frequency,
+	vnacal_error_term_matrix_t *matrix_list, int findex)
 {
-    vnacal_t *vcp = vlsp->vls_vcp;
-    int count;
-    yaml_node_item_t *item;
-    yaml_node_pair_t *pair;
-    yaml_node_t *matrices[MATRIX_IDS];
-    uint32_t required_matrices = 0;
+    vnacal_t *vcp = calp->cal_vcp;
+    double f;
 
-    if (node->type != YAML_SEQUENCE_NODE) {
-	_vnacal_error(vcp, VNAERR_SYNTAX,
-		"%s (line %ld) error: expected sequence for \"data\"",
-		vcp->vc_filename, node->start_mark.line + 1);
+    assert(vnaproperty_type(vprp_frequency, ".") == 'm');
+    if (check_mapping(vcp, vprp_frequency, frequency_keys) == -1) {
 	return -1;
     }
-    count = node->data.sequence.items.top - node->data.sequence.items.start;
-    if (count != calp->cal_frequencies) {
-	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: "
-		"expected %d frequency entries but found %d",
-		vcp->vc_filename, node->start_mark.line + 1,
-		calp->cal_frequencies, count);
+    if (check_for_stray_matrices(calp, vprp_frequency) == -1) {
 	return -1;
     }
-    for (item = node->data.sequence.items.start;
-	 item < node->data.sequence.items.top; ++item) {
-	int findex = item - node->data.sequence.items.start;
-	yaml_node_t *child = yaml_document_get_node(&vlsp->vls_document,
-		*item);
-	double frequency = -1.0;
+    if ((f = parse_double_from_map(vcp, vprp_frequency, "f")) == HUGE_VAL) {
+	return -1;
+    }
+    calp->cal_frequency_vector[findex] = f;
+    for (vnacal_error_term_matrix_t *vetmp = matrix_list; vetmp != NULL;
+	    vetmp = vetmp->vetm_next) {
+	const vnaproperty_t *vprp_matrix;
 
-	for (pair = child->data.mapping.pairs.start;
-	     pair < child->data.mapping.pairs.top; ++pair) {
-	    yaml_node_t *key, *value;
-	    char prefix[5];
-#define PREFIX(c1, c2, c3, c4) \
-	((c1) | ((c2) << 8) | ((c3) << 16) | ((c4) << 24))
-
-	    /*
-	     * Get key and value nodes.
-	     */
-	    key   = yaml_document_get_node(&vlsp->vls_document, pair->key);
-	    value = yaml_document_get_node(&vlsp->vls_document, pair->value);
-
-	    /*
-	     * Match keys, ignoring non-scalar keys.
-	     */
-	    if (key->type != YAML_SCALAR_NODE) {
-		continue;
-	    }
-
-	    /*
-	     * Get the first four bytes of the key padded on the right
-	     * with zeros, convert to integer in an endian neutral
-	     * way and switch.	To match a string longer than three
-	     * characters, simply switch on the first four, then use
-	     * strcmp to check the rest.
-	     */
-	    (void)memset((void *)prefix, 0, sizeof(prefix));
-	    (void)strncpy((void *)prefix, (void *)key->data.scalar.value,
-		    sizeof(prefix) - 1);
-	    switch (PREFIX(prefix[0], prefix[1], prefix[2], prefix[3])) {
-	    case PREFIX('e',   0,   0,   0):
-		matrices[E] = value;
-		break;
-
-	    case PREFIX('e', 'l',   0,   0):
-		matrices[EL] = value;
-		break;
-
-	    case PREFIX('e', 'm',   0,   0):
-		matrices[EM] = value;
-		break;
-
-	    case PREFIX('e', 'r',   0,   0):
-		matrices[ER] = value;
-		break;
-
-	    case PREFIX('f',   0,   0,   0):
-		if (key->data.scalar.value[1] == '\000') {
-		    if (parse_double(vlsp, value, &frequency) == -1) {
-			return -1;
-		    }
-		    break;
-		}
-		break;
-
-	    case PREFIX('t', 'i',   0,   0):
-		matrices[TI] = value;
-		break;
-
-	    case PREFIX('t', 'm',   0,   0):
-		matrices[TM] = value;
-		break;
-
-	    case PREFIX('t', 's',   0,   0):
-		matrices[TS] = value;
-		break;
-
-	    case PREFIX('t', 'x',   0,   0):
-		matrices[TX] = value;
-		break;
-
-	    case PREFIX('u', 'i',   0,   0):
-		matrices[UI] = value;
-		break;
-
-	    case PREFIX('u', 'm',   0,   0):
-		matrices[UM] = value;
-		break;
-
-	    case PREFIX('u', 's',   0,   0):
-		matrices[US] = value;
-		break;
-
-	    case PREFIX('u', 'x',   0,   0):
-		matrices[UX] = value;
-		break;
-
-	    default:
-		break;
-	    }
-	}
-#undef PREFIX
-
-	/*
-	 * Make sure we have the required error terms matrices.
-	 */
-	if (vlsp->vls_major_version == 0) {
-	    required_matrices |= 1 << E;
-
-	} else switch (calp->cal_type) {
-	case VNACAL_TE10:
-	    required_matrices |= 1 << EL;
-	    /*FALLTHROUGH*/
-
-	case VNACAL_T8:
-	case VNACAL_T16:
-	    required_matrices |= T_MASK;
-	    break;
-
-	case VNACAL_UE10:
-	case VNACAL_UE14:
-	case _VNACAL_E12_UE14:
-	    required_matrices |= 1 << EL;
-	    /*FALLTHROUGH*/
-
-	case VNACAL_U8:
-	case VNACAL_U16:
-	    required_matrices |= U_MASK;
-	    break;
-
-	case VNACAL_E12:
-	    required_matrices |= E_MASK;
-	    break;
-
-	default:
-	    abort();
-	}
-	for (int i = 0; i < MATRIX_IDS; ++i) {
-	    if (((1 << i) & required_matrices) && matrices[i] == NULL) {
-		_vnacal_error(vcp, VNAERR_SYNTAX,
-			"%s (line %ld) error: missing required matrix \"%s\"",
-			vcp->vc_filename, child->start_mark.line + 1,
-			matrix_names[i]);
-		return -1;
-	    }
-	}
-
-	/*
-	 * Make sure we have the frequency and that it's ascending.
-	 */
-	if (frequency < 0.0) {
-	    _vnacal_error(vcp, VNAERR_SYNTAX,
-		    "%s (line %ld) error: missing required field \"f\"",
-		    vcp->vc_filename, child->start_mark.line + 1);
+	if ((vprp_matrix = get_key(vcp, vprp_frequency,
+			vetmp->vetm_name, 'l')) == NULL) {
 	    return -1;
 	}
-	if (findex > 1 &&
-		frequency <= calp->cal_frequency_vector[findex - 1]) {
-	    _vnacal_error(vcp, VNAERR_SYNTAX,
-		    "%s (line %ld) error: frequencies are not in "
-		    "ascending order",
-		    vcp->vc_filename, child->start_mark.line + 1);
-	    return -1;
-	}
-
-	/*
-	 * Parse the error terms matrices.
-	 */
-	calp->cal_frequency_vector[findex] = frequency;
-	vlsp->vls_findex = findex;
-	if (parse_matrices(vlsp, vlp, calp, matrices) == -1) {
+	if (parse_error_term_matrix(vprp_matrix, vetmp, findex) == -1) {
 	    return -1;
 	}
     }
@@ -995,253 +788,145 @@ static int parse_data(vnacal_load_state_t *vlsp, const vnacal_layout_t *vlp,
 }
 
 /*
- * parse_set: parse a calibration
- *   @vlsp: pointer to vnacal_load info structure
- *   @node: the calibration
+ * parse_calibration: parse a single calibration entry
+ *   @vcp: vnacal structure
+ *   @vprp_calibration: calibration entry to parse
+ *   @version: version code
  */
-static int parse_set(vnacal_load_state_t *vlsp, yaml_node_t *node)
+static int parse_calibration(vnacal_t *vcp,
+	const vnaproperty_t *vprp_calibration,
+	vnacal_version_t version)
 {
-    vnacal_t *vcp = vlsp->vls_vcp;
-    yaml_node_pair_t *pair;
-    const char *name = NULL;
-    vnacal_type_t type = (vnacal_type_t)-1;
-    int type_line = -1;
-    int rows = -1, columns = -1, frequencies = -1;
-    double complex z0 = VNADATA_DEFAULT_Z0;
-    yaml_node_t *properties = NULL;
-    yaml_node_t *data = NULL;
+    const char *name;
+    vnacal_type_t type = VNACAL_NOTYPE;
+    int rows, columns, frequencies;
+    double complex z0;
     vnacal_layout_t vl;
     vnacal_calibration_t *calp = NULL;
+    const vnaproperty_t *vprp_data;
+    int count;
+    vnacal_error_term_matrix_t *matrix_list = NULL;
+    int rc = -1;
 
-    if (node->type != YAML_MAPPING_NODE) {
-	_vnacal_error(vcp, VNAERR_SYNTAX,
-		"%s (line %ld) error: expected mapping "
-		"for \"calibration\"",
-		vcp->vc_filename, node->start_mark.line + 1);
-	return -1;
+    assert(vnaproperty_type(vprp_calibration, ".") == 'm');
+    if (check_mapping(vcp, vprp_calibration, version == V0_2 ?
+		v0_2_calibration_keys : calibration_keys) == -1) {
+	goto out;
     }
-    for (pair = node->data.mapping.pairs.start;
-	 pair < node->data.mapping.pairs.top; ++pair) {
-	yaml_node_t *key, *value;
-
-	/*
-	 * Get key and value nodes.
-	 */
-	key   = yaml_document_get_node(&vlsp->vls_document, pair->key);
-	value = yaml_document_get_node(&vlsp->vls_document, pair->value);
-
-	/*
-	 * Ignore non-scalar keys.
-	 */
-	if (key->type != YAML_SCALAR_NODE) {
-	    continue;
-	}
-
-	switch (key->data.scalar.value[0]) {
-	case 'c':
-	    if (strcmp((const char *)key->data.scalar.value, "columns") == 0) {
-		if (parse_int(vlsp, value, &columns) == -1) {
-		    return -1;
-		}
-		break;
-	    }
-	    break;
-
-	case 'd':
-	    if (strcmp((const char *)key->data.scalar.value, "data") == 0) {
-		data = value;
-		break;
-	    }
-	    break;
-
-	case 'f':
-	    if (strcmp((const char *)key->data.scalar.value,
-			"frequencies") == 0) {
-		if (parse_int(vlsp, value, &frequencies) == -1) {
-		    return -1;
-		}
-		break;
-	    }
-	    break;
-
-	case 'n':
-	    if (strcmp((const char *)key->data.scalar.value, "name") == 0) {
-		if (value->type != YAML_SCALAR_NODE) {
-		    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: "
-			    "expected scalar for name",
-			    vcp->vc_filename, value->start_mark.line + 1);
-		    return -1;
-		}
-		name = (const char *)value->data.scalar.value;
-		break;
-	    }
-	    break;
-
-	case 'p':
-	    if (strcmp((const char *)key->data.scalar.value,
-			"properties") == 0) {
-		properties = value;
-		break;
-	    }
-	    break;
-
-	case 'r':
-	    if (strcmp((const char *)key->data.scalar.value, "rows") == 0) {
-		if (parse_int(vlsp, value, &rows) == -1) {
-		    return -1;
-		}
-		break;
-	    }
-	    break;
-
-	case 't':
-	    if (strcmp((const char *)key->data.scalar.value, "type") == 0) {
-		if (parse_type(vlsp, value, &type) == -1) {
-		    return -1;
-		}
-		type_line = (int)value->start_mark.line + 1;
-		break;
-	    }
-	    break;
-
-	case 'z':
-	    if (strcmp((const char *)key->data.scalar.value, "z0") == 0) {
-		if (parse_complex(vlsp, value, &z0) == -1) {
-		    return -1;
-		}
-		break;
-	    }
-	    break;
-
-	default:
-	    break;
-	}
+    if ((name = vnaproperty_get(vprp_calibration, "name")) == NULL) {
+	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		"expected scalar \"name\"",
+		vcp->vc_filename, get_line(vprp_calibration));
+	goto out;
     }
-    if (name == NULL || rows < 0 || columns < 0 || frequencies < 0 ||
-	    data == NULL) {
-	_vnacal_error(vcp, VNAERR_SYNTAX,
-		"%s (line %ld) error: missing required field \"name\", "
-		"\"rows\", \"columns\", \"frequencies\" or \"data\"",
-		vcp->vc_filename, node->start_mark.line + 1);
-	return -1;
-    }
-    if (vlsp->vls_major_version == 0) {
-	if (type != (vnacal_type_t)-1 && type != VNACAL_E12) {
-	    _vnacal_error(vcp, VNAERR_SYNTAX,
-		    "%s (line %d) error: type unexpected in version %d.%d",
-		    vcp->vc_filename, type_line,
-		    vlsp->vls_major_version, vlsp->vls_minor_version);
-	    return -1;
+    if (version != V0_2) {
+	if ((type = parse_type_from_map(vcp, vprp_calibration, "type")) == -1) {
+	    goto out;
 	}
+    } else {
 	type = VNACAL_E12;
-
-    } else if (type == (vnacal_type_t)-1) {
-	_vnacal_error(vcp, VNAERR_SYNTAX,
-		"%s (line %ld) error: missing required field \"type\"",
-		vcp->vc_filename, node->start_mark.line + 1);
-	return -1;
+    }
+    errno = 0;
+    if ((rows = parse_int_from_map(vcp,
+		    vprp_calibration, "rows", 1)) == -1) {
+	goto out;
+    }
+    if ((columns = parse_int_from_map(vcp,
+		    vprp_calibration, "columns", 1)) == -1) {
+	goto out;
+    }
+    if ((frequencies = parse_int_from_map(vcp,
+		    vprp_calibration, "frequencies", 0)) == -1) {
+	goto out;
+    }
+    if ((z0 = parse_complex_from_map(vcp,
+		    vprp_calibration, "z0")) == HUGE_VAL) {
+	goto out;
     }
     _vnacal_layout(&vl, type, rows, columns);
     if ((calp = _vnacal_calibration_alloc(vcp, type, rows, columns,
 		    frequencies, VL_ERROR_TERMS(&vl))) == NULL) {
-	return -1;
+	goto out;
     }
-    calp->cal_z0 = z0;
-    if (properties != NULL) {
-	if (parse_properties(vlsp, &calp->cal_properties, properties) == -1) {
-	    _vnacal_calibration_free(calp);
-	    return -1;
+    if (version != V0_2) {
+	if (vnaproperty_copy(&calp->cal_properties,
+		vnaproperty_get_subtree(vprp_calibration,
+		    "properties")) == -1) {
+	    _vnacal_error(vcp, VNAERR_SYSTEM, "vnaproperty_copy: %s",
+		    strerror(errno));
+	    goto out;
 	}
     }
-    if (parse_data(vlsp, &vl, calp, data) == -1) {
-	_vnacal_calibration_free(calp);
-	return -1;
+    if ((vprp_data = get_key(vcp, vprp_calibration, "data", 'l')) == NULL) {
+	goto out;
+    }
+    count = vnaproperty_count(vprp_data, "[]");
+    if (count != frequencies) {
+	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		"expected %d frequency entries, but found %d",
+		vcp->vc_filename, get_line(vprp_data),
+		frequencies, count);
+	goto out;
+    }
+    if (_vnacal_build_error_term_list(calp, &vl, &matrix_list) == -1) {
+	goto out;
+    }
+    if (version == V0_2) {
+	double complex **error_terms[3];
+	static const char *error_term_names[3] = { "el", "er", "em" };
+
+	count = 0;
+	for (vnacal_error_term_matrix_t *vetmp = matrix_list;
+		vetmp != NULL; vetmp = vetmp->vetm_next) {
+	    assert(count < 3);
+	    assert(vetmp->vetm_rows == rows);
+	    assert(vetmp->vetm_columns == columns);
+	    assert(strcmp(vetmp->vetm_name, error_term_names[count]) == 0);
+	    error_terms[count++] = vetmp->vetm_matrix;
+	}
+	for (int findex = 0; findex < frequencies; ++findex) {
+	    const vnaproperty_t *vprp_frequency;
+
+	    vprp_frequency = vnaproperty_get_subtree(vprp_data, "[%d]", findex);
+	    assert(vprp_frequency != NULL);
+	    if (parse_frequency_entry_v0_2(calp, vprp_frequency,
+			error_terms, findex) == -1) {
+		goto out;
+	    }
+	}
+
+    } else {
+	for (int findex = 0; findex < frequencies; ++findex) {
+	    const vnaproperty_t *vprp_frequency;
+
+	    vprp_frequency = vnaproperty_get_subtree(vprp_data, "[%d]", findex);
+	    assert(vprp_frequency != NULL);
+	    if (parse_frequency_entry(calp, vprp_frequency,
+			matrix_list, findex) == -1) {
+		goto out;
+	    }
+	}
+    }
+    for (int findex = 1; findex < frequencies; ++findex) {
+	if (calp->cal_frequency_vector[findex - 1] >=
+	    calp->cal_frequency_vector[findex]) {
+	    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    "frequencies must be ascending",
+		    vcp->vc_filename, get_line(vprp_calibration));
+	    goto out;
+	}
     }
     if (_vnacal_add_calibration_common("vnacal_load", vcp, calp, name) == -1) {
+	goto out;
+    }
+    rc = 0;
+
+out:
+    _vnacal_free_error_term_matrices(&matrix_list);
+    if (rc != 0) {
 	_vnacal_calibration_free(calp);
-	return -1;
     }
-    return 0;
-}
-
-/*
- * parse_calibrations: parse a sequence of calibrations
- *   @vlsp: pointer to vnacal_load info structure
- *   @node: the calibration
- */
-static int parse_calibrations(vnacal_load_state_t *vlsp, yaml_node_t *node)
-{
-    vnacal_t *vcp = vlsp->vls_vcp;
-    yaml_node_item_t *item;
-
-    if (node->type != YAML_SEQUENCE_NODE) {
-	_vnacal_error(vcp, VNAERR_SYNTAX,
-		"%s (line %ld) error: expected sequence for \"calibrations\"",
-		vcp->vc_filename, node->start_mark.line + 1);
-	return -1;
-    }
-    for (item = node->data.sequence.items.start;
-	 item < node->data.sequence.items.top; ++item) {
-	yaml_node_t *child = yaml_document_get_node(&vlsp->vls_document,
-		*item);
-
-	if (parse_set(vlsp, child) == -1) {
-	    return -1;
-	}
-    }
-    return 0;
-}
-
-/*
- * parse_document: parse the YAML document
- *   @vlsp: pointer to vnacal_load info structure
- *   @node: top-level YAML node
- */
-static int parse_document(vnacal_load_state_t *vlsp, yaml_node_t *node)
-{
-    vnacal_t *vcp = vlsp->vls_vcp;
-    yaml_node_pair_t *pair;
-
-    if (node->type != YAML_MAPPING_NODE) {
-	_vnacal_error(vcp, VNAERR_SYNTAX,
-		"%s (line %ld) error: expected map at top level",
-		vcp->vc_filename, node->start_mark.line + 1);
-	return -1;
-    }
-    for (pair = node->data.mapping.pairs.start;
-	 pair < node->data.mapping.pairs.top; ++pair) {
-	yaml_node_t *key, *value;
-
-	/*
-	 * Get key and value.  Ignore non-scalar keys.
-	 */
-	key = yaml_document_get_node(&vlsp->vls_document, pair->key);
-	value = yaml_document_get_node(&vlsp->vls_document, pair->value);
-	if (key->type != YAML_SCALAR_NODE) {
-	    continue;
-	}
-
-	/*
-	 * Process global properties.
-	 */
-	if (strcmp((const char *)key->data.scalar.value, "properties") == 0) {
-	    if (parse_properties(vlsp, &vcp->vc_properties, value) == -1) {
-		return -1;
-	    }
-	}
-
-	/*
-	 * Process calibrations.
-	 */
-	if (strcmp((const char *)key->data.scalar.value, "calibrations") == 0 ||
-		(vlsp->vls_major_version == 0 &&
-		 strcmp((const char *)key->data.scalar.value, "sets") == 0)) {
-	    if (parse_calibrations(vlsp, value) == -1) {
-		return -1;
-	    }
-	}
-    }
-    return 0;
+    return rc;
 }
 
 /*
@@ -1256,12 +941,13 @@ static int parse_document(vnacal_load_state_t *vlsp, yaml_node_t *node)
 vnacal_t *vnacal_load(const char *pathname,
 	vnaerr_error_fn_t *error_fn, void *error_arg)
 {
-    vnacal_t *vcp;
-    FILE *fp;
-    vnacal_load_state_t vls;
-    yaml_parser_t parser;
-    yaml_node_t *root;
-    bool delete_document = false;
+    vnacal_t *vcp = NULL;
+    FILE *fp = NULL;
+    vnacal_version_t version;
+    vnaproperty_t *vprp_root = NULL;
+    const vnaproperty_t *vprp_calibrations;
+    const char *calibrations_name;
+    int calibrations;
     char line_buf[81];
 
     /*
@@ -1277,24 +963,16 @@ vnacal_t *vnacal_load(const char *pathname,
     if ((vcp->vc_filename = strdup(pathname)) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYSTEM,
 		"strdup: %s", strerror(errno));
-	vnacal_free(vcp);
-	return NULL;
+	goto error;
     }
 
     /*
-     * Init the parser state.
-     */
-    (void)memset((void *)&vls, 0, sizeof(vls));
-    vls.vls_vcp = vcp;
-
-    /*
-     * Open and parse the file.
+     * Open the file and parse the version line.
      */
     if ((fp = fopen(pathname, "r")) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYSTEM, "fopen: %s: %s",
 		vcp->vc_filename, strerror(errno));
-	vnacal_free(vcp);
-	return NULL;
+	goto error;
     }
     if (fgets(line_buf, sizeof(line_buf), fp) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line 1) error: "
@@ -1303,74 +981,76 @@ vnacal_t *vnacal_load(const char *pathname,
 	goto error;
     }
     line_buf[sizeof(line_buf) - 1] = '\000';
-    if (sscanf(line_buf, "#VNACal %d.%d",
-		&vls.vls_major_version, &vls.vls_minor_version) != 2) {
-	int old_major, old_minor;
-
-	/*
-	 * We maintain compatibility with two older versions of the
-	 * calibration file.  Before libvna version 1.0, the #VNACal
-	 * line was all upper case and there were two versions supported:
-	 * 2.x and 3.x.  The old 2.x supports only E12 terms and stores
-	 * the error terms differently in a different format.  The old
-	 * 3.x is the same as the new 1.0.
-	 *
-	 * Here, we map the old 2.x to 0.2, and the old 3.x to 1.0.
-	 */
-	if (sscanf(line_buf, "#VNACAL %d.%d", &old_major, &old_minor) != 2) {
-	    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line 1) error: "
-		    "expected #VNACal <major>.<minor>",
-		    vcp->vc_filename);
-	    goto error;
-	}
-	if (old_major == 2) {
-	    vls.vls_major_version = 0;	/* renumber old 2.x to 0.2 */
-	    vls.vls_minor_version = 2;
-	} else if (old_major == 3) {
-	    vls.vls_major_version = 1;	/* renumber old 3.x to 1.0 */
-	    vls.vls_minor_version = 0;
-	} else {
-	    _vnacal_error(vcp, VNAERR_VERSION, "%s (line 1) error: "
-		    "unsupported pre-release version %d.%d",
-		    vcp->vc_filename, old_major, old_minor);
-	    goto error;
-	}
-    }
-    if (vls.vls_major_version > 1) {
-	_vnacal_error(vcp, VNAERR_VERSION, "%s (line 1) error: "
-		"unsupported version %d.%d",
-		vcp->vc_filename, vls.vls_major_version, vls.vls_minor_version);
+    if ((version = parse_version(vcp, line_buf)) == -1) {
 	goto error;
     }
-    yaml_parser_initialize(&parser);
-    yaml_parser_set_input_file(&parser, fp);
-    if (!yaml_parser_load(&parser, &vls.vls_document)) {
-	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %ld) error: %s",
-		vcp->vc_filename, (long)parser.problem_mark.line + 1,
-		parser.problem);
+    if (vnaproperty_import_yaml_from_file(&vprp_root, fp, pathname,
+		error_fn, error_arg) == -1) {
 	goto error;
     }
-    delete_document = true;
-    (void)fclose(fp);
+    fclose(fp);
     fp = NULL;
-    if ((root = yaml_document_get_root_node(&vls.vls_document)) == NULL) {
-	_vnacal_error(vcp, VNAERR_SYNTAX, "%s error: empty YAML document",
+    if (vnaproperty_type(vprp_root, ".") != 'm') {
+	_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line 2) error: "
+		"top-level object must be a mapping",
 		vcp->vc_filename);
 	goto error;
     }
-    if (parse_document(&vls, root) == -1) {
+    if (version == V0_2) {
+	calibrations_name = "sets";
+	if (check_mapping(vcp, vprp_root, v0_2_top_level_keys) == -1) {
+	    goto error;
+	}
+    } else {
+	calibrations_name = "calibrations";
+	if (check_mapping(vcp, vprp_root, top_level_keys) == -1) {
+	    goto error;
+	}
+	/*
+	 * Copy global properties.  Treat lack of a properties line as
+	 * the same as properties set to null.
+	 */
+	if (vnaproperty_copy(&vcp->vc_properties,
+		vnaproperty_get_subtree(vprp_root, "properties")) == -1) {
+	    _vnacal_error(vcp, VNAERR_SYSTEM, "vnaproperty_copy: %s",
+		    strerror(errno));
+	    goto error;
+	}
+    }
+
+    /*
+     * Get and iterate through the calibrations sequence.
+     */
+    if ((vprp_calibrations = get_key(vcp, vprp_root,
+		    calibrations_name, 'l')) == NULL) {
 	goto error;
     }
-    yaml_document_delete(&vls.vls_document);
+    calibrations = vnaproperty_count(vprp_calibrations, "[]");
+    for (int calibration = 0; calibration < calibrations; ++calibration) {
+	vnaproperty_t *vprp_calibration;
+
+	vprp_calibration = vnaproperty_get_subtree(vprp_calibrations,
+		"[%d]{}", calibration);
+	if (vprp_calibration == NULL) {
+	    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    "calibration[%d] must be a mapping",
+		    vcp->vc_filename, get_line(vprp_calibrations),
+		    calibration);
+	    goto error;
+	}
+	if (parse_calibration(vcp, vprp_calibration, version) == -1) {
+	    goto error;
+	}
+    }
+    assert(fp == NULL);
+    (void)vnaproperty_delete(&vprp_root, ".");
     return vcp;
 
 error:
-    if (delete_document) {
-	yaml_document_delete(&vls.vls_document);
-    }
     if (fp != NULL) {
 	(void)fclose(fp);
     }
+    (void)vnaproperty_delete(&vprp_root, ".");
     vnacal_free(vcp);
     return NULL;
 }

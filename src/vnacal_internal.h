@@ -207,6 +207,33 @@ typedef struct vnacal_calibration {
 } vnacal_calibration_t;
 
 /*
+ * vnacal_error_term_matrix_type_t: error term type used in load/save
+ */
+typedef enum vnacal_error_term_matrix_type {
+    VETM_UNDEF,		/* invalid value */
+    VETM_VECTOR,	/* vector (rows == 1) */
+    VETM_MATRIX_ND,	/* matrix missing the major diagonal */
+    VETM_MATRIX		/* rows x columns matrix */
+} vnacal_error_term_matrix_type_t;
+
+/*
+ * vnacal_error_term_matrix_t: an error term vector/matrix used in load/save
+ *
+ * This structure is created by vnacal_build_error_term_list and used
+ * in vnacal_load and vnacal_save.  The vetm_matrix element is a shallow
+ * copy of elements from cal_error_term_vector.
+ */
+typedef struct vnacal_error_term_matrix {
+    vnacal_calibration_t               *vetm_calp;
+    vnacal_error_term_matrix_type_t	vetm_type;
+    const char                         *vetm_name;
+    double complex		      **vetm_matrix; /* matrix of vectors */
+    int					vetm_rows;
+    int					vetm_columns;
+    struct vnacal_error_term_matrix    *vetm_next;
+} vnacal_error_term_matrix_t;
+
+/*
  * vnacal_t: structure returned from vnacal_load
  */
 struct vnacal {
@@ -283,6 +310,13 @@ extern vnacal_calibration_t *_vnacal_get_calibration(const vnacal_t *vcp,
 /* _vnacal_add_calibration_common */
 extern int _vnacal_add_calibration_common(const char *function, vnacal_t *vcp,
 	vnacal_calibration_t *calp, const char *name);
+
+/* _vnacal_build_error_term_list: make list of ET matrices for load/save */
+extern int _vnacal_build_error_term_list(vnacal_calibration_t *calp,
+	const vnacal_layout_t *vlp, vnacal_error_term_matrix_t **head);
+
+/* _vnacal_free_error_term_matrix: free an error term matrix structure */
+extern void _vnacal_free_error_term_matrices(vnacal_error_term_matrix_t **head);
 
 /* _vnacal_get_parameter: return a pointer to the parameter */
 extern vnacal_parameter_t *_vnacal_get_parameter(const vnacal_t *vcp,

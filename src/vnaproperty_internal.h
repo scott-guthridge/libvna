@@ -43,6 +43,7 @@ struct vnaproperty_map;
  */
 struct vnaproperty {
     uint32_t vpr_type;
+    int vpr_line;	/* line number if imported from file */
 };
 
 /*
@@ -126,6 +127,9 @@ extern void _vnaproperty_yaml_error(const vnaproperty_yaml_t *vymlp,
     __attribute__((__format__(__printf__, 3, 4)))
 #endif
 ;
+
+/* _vnaproperty_get_line: return the line number where a node was parsed */
+extern int _vnaproperty_get_line(const vnaproperty_t *vprp);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -22,6 +22,7 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnacal_free.c vnacal_get.c vnacal_get_parameter_value.c \
 	vnacal_layout.c vnacal_layout.h vnacal_load.c \
 	vnacal_make_correlated_parameter.c vnacal_make_scalar_parameter.c \
+	vnacal_build_error_term_list.c \
 	vnacal_make_unknown_parameter.c vnacal_make_vector_parameter.c \
 	vnacal_name_to_type.c vnacal_new_add_common.c vnacal_new.c \
 	vnacal_new_parameter.c vnacal_new_set_m_error.c \
