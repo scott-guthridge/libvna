@@ -9,6 +9,7 @@
 config.h.in
 Makefile
 Makefile.in
+tags
 /aclocal.m4
 /ar-lib
 /autom4te.cache/
@@ -46,6 +47,7 @@ Makefile.in
 /src/tests/test-vnacal-save-load
 /src/tests/test-vnacal-Silvonen16
 /src/tests/test-vnacal-SOLT
+/src/tests/test-vnacal-standards
 /src/tests/test-vnacal-TRL
 /src/tests/test-vnacal-Van-hamme
 /src/tests/test-vnacal-v-matrices
@@ -64,6 +66,7 @@ Makefile.in
 /src/tests/test-vnaconv-renormalize-NxN
 /src/tests/test-vnadata-basic
 /src/tests/test-vnadata.npd
+/src/tests/test-vnadata-rconvert
 /src/tests/test-vnadata.s1p
 /src/tests/test-vnadata.s2p
 /src/tests/test-vnadata.s3p
