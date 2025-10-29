@@ -18,11 +18,6 @@
 
 #include "archdep.h"
 
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>	/* for htonl, ntohl */
-#elif HAVE_WINSOCK2_H
-#include <winsock2.h>
-#endif
 #include <assert.h>
 #include <complex.h>
 #include <ctype.h>
@@ -1151,7 +1146,6 @@ static int parse_set(vnacal_load_state_t *vlsp, yaml_node_t *node)
 		    frequencies, VL_ERROR_TERMS(&vl))) == NULL) {
 	return -1;
     }
-
     calp->cal_z0 = z0;
     if (properties != NULL) {
 	if (parse_properties(vlsp, &calp->cal_properties, properties) == -1) {

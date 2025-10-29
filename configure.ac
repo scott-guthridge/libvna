@@ -18,7 +18,7 @@ AC_CHECK_LIB([m], [sqrt])
 AC_CHECK_LIB([yaml], [yaml_document_initialize])
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h float.h search.h unistd.h winsock2.h])
+AC_CHECK_HEADERS([float.h search.h unistd.h winsock2.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
