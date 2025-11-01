@@ -684,9 +684,37 @@ int _vnacal_apply_common(vnacal_apply_args_t vaa)
 		strerror(errno));
 	return -1;
     }
+
+    /*
+     * Copy the frequency vector.
+     */
     if (vnadata_set_frequency_vector(vaa.vaa_s_parameters,
 		vaa.vaa_frequency_vector) == -1) {
 	return -1;
+    }
+
+    /*
+     * Copy the z0 values.
+     */
+    switch (calp->cal_z0_type) {
+    case VNACAL_Z0_SCALAR:
+	if (vnadata_set_all_z0(vaa.vaa_s_parameters, calp->cal_z0) == -1) {
+	    return -1;
+	}
+	break;
+
+    case VNACAL_Z0_VECTOR:
+	if (vnadata_set_z0_vector(vaa.vaa_s_parameters,
+		    calp->cal_z0_vector) == -1) {
+	    return -1;
+	}
+	break;
+
+    case VNACAL_Z0_MATRIX:	/* have to interpolate -- handled below */
+	break;
+
+    default:
+	abort();
     }
 
     /*
@@ -710,6 +738,25 @@ int _vnacal_apply_common(vnacal_apply_args_t vaa)
 	    t[term] = _vnacal_rfi(calp->cal_frequency_vector,
 		    calp->cal_error_term_vector[term], calp->cal_frequencies,
 		    MIN(calp->cal_frequencies, VNACAL_MAX_M), &segment, f);
+	}
+
+	/*
+	 * If frequency-dependent reference impedances are in effect,
+	 * interpolate to find the reference impedances for this
+	 * frequency.
+	 */
+	if (calp->cal_z0_type == VNACAL_Z0_MATRIX) {
+	    double complex z0_vector[c_ports];
+
+	    for (int port = 0; port < c_ports; ++port) {
+		z0_vector[port] = _vnacal_rfi(calp->cal_frequency_vector,
+			calp->cal_z0_matrix[port], calp->cal_frequencies,
+			MIN(calp->cal_frequencies, VNACAL_MAX_M), &segment, f);
+		if (vnadata_set_fz0_vector(vaa.vaa_s_parameters,
+			findex, z0_vector) == -1) {
+		    return -1;
+		}
+	    }
 	}
 
 	/*

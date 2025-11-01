@@ -106,15 +106,36 @@ extern int vnacal_new_set_frequency_vector(vnacal_new_t *vnp,
 	const double *frequency_vector);
 
 /*
- * vnacal_new_set_z0: set the reference impedance for all VNA ports
+ * vnacal_new_set_z0: set a common reference impedance for all VNA ports
  *   @vnp: pointer to vnacal_new_t structure
- *   @z0: nominal impedance looking into a VNA port
+ *   @z0: reference impedance for all ports
  *
- * Note:
- *   In this implementation, all VNA ports must have the same reference
- *   impedance.  If not set, the default is 50 ohms.
+ * Note: if not set, the default is 50 ohms for all ports.
  */
-extern int vnacal_new_set_z0(vnacal_new_t *vnp, double complex z0);
+static inline int vnacal_new_set_z0(vnacal_new_t *vnp, double complex z0)
+{
+    extern int _vnacal_new_set_z0_vector(const char *function,
+	    vnacal_new_t *vnp, const double complex *z0_vector, int length);
+
+    return _vnacal_new_set_z0_vector(__FUNCTION__, vnp, &z0, 1);
+}
+
+/*
+ * vnacal_new_set_z0_vector: set port/frequency specific reference impedances
+ *   @vnp: pointer to vnacal_new_t structure
+ *   @z0_vector: vector of z0 by port, or matrix of z0 by frequency, port
+ *   @length: 1, #ports, or #frequencies
+ *
+ * Note: if not set, the default is 50 ohms for all ports.
+ */
+static inline int vnacal_new_set_z0_vector(vnacal_new_t *vnp,
+	const double complex *z0_vector, int length)
+{
+    extern int _vnacal_new_set_z0_vector(const char *function,
+	    vnacal_new_t *vnp, const double complex *z0_vector, int length);
+
+    return _vnacal_new_set_z0_vector(__FUNCTION__, vnp, z0_vector, length);
+}
 
 /*
  * vnacal_new_set_m_error: set VNA measurement error by frequency
@@ -505,11 +526,64 @@ extern const double *vnacal_get_frequency_vector(const vnacal_t *vcp,
 	int ci);
 
 /*
+ * vnacal_z0_type_t: type of reference impedances in a calibration
+ */
+typedef enum vnacal_z0_type {
+    VNACAL_Z0_INVALID = -1,
+    VNACAL_Z0_SCALAR,	/* all ports are referenced to the same impedance */
+    VNACAL_Z0_VECTOR,	/* VNA ports have per-port reference impedances */
+    VNACAL_Z0_MATRIX	/* reference impedances vary by port and frequency */
+} vnacal_z0_type_t;
+
+/*
+ * vnacal_get_z0_type: return the reference impedance type
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
+ *
+ * Returns:
+ *   VNACAL_Z0_SCALAR  if all ports have the same reference impedance
+ *   VNACAL_Z0_VECTOR  if reference impedances vary by port
+ *   VNACAL_Z0_MATRIX  if reference impedances vary by port & frequency
+ *   -1                if the arguments are invalid
+ */
+extern vnacal_z0_type_t vnacal_get_z0_type(const vnacal_t *vcp, int ci);
+
+/*
  * vnacal_get_z0: return the reference impedance for the given calibration
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @ci: calibration index
+ *
+ *   This function can be used only when the z0 type is VNACAL_Z0_SCALAR,
+ *   i.e. the reference impedances of all ports are the same.
  */
 extern double complex vnacal_get_z0(const vnacal_t *vcp, int ci);
+
+/*
+ * vnacal_get_z0_vector: return a calibration reference impedance vector
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
+ *   @vector: caller-provided #ports-long buffer to receive result
+ *   @max_entries: number of double complex entries in vector
+ *   @f: frequency at which to evaluate
+ *
+ *   Copies #ports reference impedances into the caller-provided buffer.
+ *   The buffer should have space for at least one double complex entry
+ *   per VNA port.  The max_entries parameter gives the length of the
+ *   provided buffer to guard against buffer overrun.
+ *
+ *   When the z0 type is VNACAL_Z0_SCALAR, the single reference impedance
+ *   is duplicated for each port.  When it's VNACAL_Z0_VECTOR, the entries
+ *   are copied into the user's buffer.  When it's VNACAL_Z0_MATRIX,
+ *   then the function returns the reference impedances for the given
+ *   frequency, interpolating if necessary.  The frequency argument is
+ *   ignored if the z0 type is not VNACAL_Z0_MATRIX.
+ *
+ * Return:
+ *   number of VNA ports (number of entries placed into vector), or
+ *   -1 on error
+ */
+extern int vnacal_get_z0_vector(const vnacal_t *vcp, int ci,
+	double complex *vector, int max_entries, double f);
 
 /*
  * vnacal_set_fprecision: set the frequency value precision for vnacal_save

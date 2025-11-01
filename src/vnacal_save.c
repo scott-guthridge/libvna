@@ -91,6 +91,7 @@ int vnacal_save(vnacal_t *vcp, const char *pathname)
     vnacal_error_term_matrix_t *matrix_list = NULL;
     const int dprecision = vcp->vc_dprecision;
     char buf[81];
+    int minor_version = 0;
     int rc = -1;
 
     if ((fp = fopen(pathname, "w")) == NULL) {
@@ -118,6 +119,9 @@ int vnacal_save(vnacal_t *vcp, const char *pathname)
 
 	if (calp == NULL) {
 	    continue;
+	}
+	if (calp->cal_z0_type != VNACAL_Z0_SCALAR && minor_version < 1) {
+	    minor_version = 1;
 	}
 	_vnacal_layout(&vl, calp->cal_type, calp->cal_rows, calp->cal_columns);
 	if (_vnacal_build_error_term_list(calp, &vl, &matrix_list) == -1) {
@@ -147,9 +151,38 @@ int vnacal_save(vnacal_t *vcp, const char *pathname)
 		    calp->cal_frequencies) == -1) {
 	    goto vnaproperty_set_error;
 	}
-	format_complex(calp->cal_z0, dprecision, buf, sizeof(buf));
-	if (vnaproperty_set(vprpp_calibration, "z0=%s", buf) == -1) {
-	    goto vnaproperty_set_error;
+	switch (calp->cal_z0_type) {
+	case VNACAL_Z0_SCALAR:
+	    format_complex(calp->cal_z0, dprecision, buf, sizeof(buf));
+	    if (vnaproperty_set(vprpp_calibration, "z0=%s", buf) == -1) {
+		goto vnaproperty_set_error;
+	    }
+	    break;
+
+	case VNACAL_Z0_VECTOR:
+	    {
+		vnaproperty_t **vprpp;
+		int ports = MAX(calp->cal_rows, calp->cal_columns);
+
+		vprpp = vnaproperty_set_subtree(vprpp_calibration, "z0[]");
+		if (vprpp == NULL) {
+		    goto vnaproperty_set_error;
+		}
+		for (int port = 0; port < ports; ++port) {
+		    format_complex(calp->cal_z0_vector[port],
+			    dprecision, buf, sizeof(buf));
+		    if (vnaproperty_set(vprpp, "z0[%d]=%s", port, buf) == -1) {
+			goto vnaproperty_set_error;
+		    }
+		}
+	    }
+	    break;
+
+	case VNACAL_Z0_MATRIX:
+	    break;
+
+	default:
+	    abort();
 	}
 	if (add_properties(vprpp_calibration, calp->cal_properties) == -1) {
 	    goto vnaproperty_set_error;
@@ -169,6 +202,22 @@ int vnacal_save(vnacal_t *vcp, const char *pathname)
 	    if (vnaproperty_set(vprpp_frequency, "f=%.*e",
 			vcp->vc_fprecision, f) == -1) {
 		goto vnaproperty_set_error;
+	    }
+	    if (calp->cal_z0_type == VNACAL_Z0_MATRIX) {
+		vnaproperty_t **vprpp;
+		int ports = MAX(calp->cal_rows, calp->cal_columns);
+
+		vprpp = vnaproperty_set_subtree(vprpp_calibration, "z0[]");
+		if (vprpp == NULL) {
+		    goto vnaproperty_set_error;
+		}
+		for (int port = 0; port < ports; ++port) {
+		    format_complex(calp->cal_z0_matrix[port][findex],
+			    dprecision, buf, sizeof(buf));
+		    if (vnaproperty_set(vprpp, "z0[%d]=%s", port, buf) == -1) {
+			goto vnaproperty_set_error;
+		    }
+		}
 	    }
 	    for (vnacal_error_term_matrix_t *vetmp = matrix_list;
 		    vetmp != NULL; vetmp = vetmp->vetm_next) {
@@ -229,7 +278,7 @@ int vnacal_save(vnacal_t *vcp, const char *pathname)
 	}
 	_vnacal_free_error_term_matrices(&matrix_list);
     }
-    (void)fprintf(fp, "#VNACal 1.0\n");
+    (void)fprintf(fp, "#VNACal 1.%d\n", minor_version);
     if (vnaproperty_export_yaml_to_file(vprpp_root, fp, pathname,
 		vcp->vc_error_fn, vcp->vc_error_arg) == -1) {
 	goto out;

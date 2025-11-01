@@ -33,30 +33,32 @@
 
 
 /*
- * Version Codes
+ * Version Codes: index into version_table (highest version first)
  */
 typedef enum vncal_version {
     V_UNSUPPORTED = -1,
+    V1_1,
+    V1_0,
     V0_2,
-    V1_0
+    V_COUNT
 } vnacal_version_t;
 
 /*
- * version_t: version table entry
+ * version_entry_t: version table entry
  */
-typedef struct version {
+typedef struct version_entry {
     int major;
     int minor;
     vnacal_version_t version;
-} version_t;
+} version_entry_t;
 
 /*
  * Version Table
  */
-const version_t version_table[] = {
+const version_entry_t version_table[] = {
+    {  1,  1, V1_1 },
     {  1,  0, V1_0 },
     {  0,  2, V0_2 },
-    { -1, -1, V_UNSUPPORTED },
 };
 
 /*
@@ -98,9 +100,13 @@ static vnacal_version_t parse_version(vnacal_t *vcp, const char *version_line)
 	    return V_UNSUPPORTED;
 	}
     }
-    for (const version_t *vp = version_table; vp->major != -1; ++vp) {
-	if (vp->major == major_version && vp->minor == minor_version)
-	    return vp->version;
+    for (vnacal_version_t version = V_UNSUPPORTED + 1;
+	    version < V_COUNT; ++version) {
+	const version_entry_t *vp = &version_table[version];
+
+	if (vp->major == major_version && vp->minor == minor_version) {
+	    return version;
+	}
     }
     _vnacal_error(vcp, VNAERR_VERSION, "%s (line 1) error: "
 	    "unsupported vnacal file version %d.%d",
@@ -137,7 +143,7 @@ static const vnaproperty_t *get_key(vnacal_t *vcp,
     }
     if (vnaproperty_type(vprp, ".") != required_type) {
 	_vnacal_error(vcp, VNAERR_SYNTAX, "vnacal_load: %s (line %d): "
-		"\"%s\" must have type %s",
+		"\"%s\" must be a %s",
 		vcp->vc_filename, get_line(vprp), key,
 		required_type == 'm' ? "mapping" :
 		required_type == 'l' ? "sequence" :
@@ -772,6 +778,23 @@ static int parse_frequency_entry(vnacal_calibration_t *calp,
 	return -1;
     }
     calp->cal_frequency_vector[findex] = f;
+    if (calp->cal_z0_type == VNACAL_Z0_MATRIX) {
+	const vnaproperty_t *vprp_z0;
+	const int ports = MAX(calp->cal_rows, calp->cal_columns);
+
+	if ((vprp_z0 = get_key(vcp, vprp_frequency, "z0", 'l')) == NULL) {
+	    return -1;
+	}
+	for (int port = 0; port < ports; ++port) {
+	    if ((calp->cal_z0_matrix[port][findex] =
+			parse_complex(vprp_z0, ".")) == HUGE_VAL) {
+		_vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+			"invalid complex number at z0[%d]",
+			vcp->vc_filename, get_line(vprp_z0), port);
+		return -1;
+	    }
+	}
+    }
     for (vnacal_error_term_matrix_t *vetmp = matrix_list; vetmp != NULL;
 	    vetmp = vetmp->vetm_next) {
 	const vnaproperty_t *vprp_matrix;
@@ -800,9 +823,10 @@ static int parse_calibration(vnacal_t *vcp,
     const char *name;
     vnacal_type_t type = VNACAL_NOTYPE;
     int rows, columns, frequencies;
-    double complex z0;
     vnacal_layout_t vl;
     vnacal_calibration_t *calp = NULL;
+    const vnaproperty_t *vprp_z0;
+    vnacal_z0_type_t z0_type;
     const vnaproperty_t *vprp_data;
     int count;
     vnacal_error_term_matrix_t *matrix_list = NULL;
@@ -839,13 +863,29 @@ static int parse_calibration(vnacal_t *vcp,
 		    vprp_calibration, "frequencies", 0)) == -1) {
 	goto out;
     }
-    if ((z0 = parse_complex_from_map(vcp,
-		    vprp_calibration, "z0")) == HUGE_VAL) {
-	goto out;
+    vprp_z0 = vnaproperty_get_subtree(vprp_calibration, "z0");
+    if (version < V1_1) {
+	z0_type = VNACAL_Z0_SCALAR;
+    } else if (vprp_z0 != NULL) {
+	switch (vnaproperty_type(vprp_z0, ".")) {
+	case 's':
+	    z0_type = VNACAL_Z0_SCALAR;
+	    break;
+	case 'l':
+	    z0_type = VNACAL_Z0_VECTOR;
+	    break;
+	default:
+	    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+		    "\"z0\" must be a scalar or a sequence",
+		    vcp->vc_filename, get_line(vprp_z0));
+	    goto out;
+	}
+    } else {
+	z0_type = VNACAL_Z0_MATRIX;
     }
     _vnacal_layout(&vl, type, rows, columns);
     if ((calp = _vnacal_calibration_alloc(vcp, type, rows, columns,
-		    frequencies, VL_ERROR_TERMS(&vl))) == NULL) {
+		    frequencies, z0_type, VL_ERROR_TERMS(&vl))) == NULL) {
 	goto out;
     }
     if (version != V0_2) {
@@ -856,6 +896,37 @@ static int parse_calibration(vnacal_t *vcp,
 		    strerror(errno));
 	    goto out;
 	}
+    }
+    switch (z0_type) {
+    case VNACAL_Z0_SCALAR:
+	if ((calp->cal_z0 = parse_complex_from_map(vcp,
+			vprp_calibration, "z0")) == HUGE_VAL) {
+	    goto out;
+	}
+	break;
+
+    case VNACAL_Z0_VECTOR:
+	{
+	    const int ports = MAX(rows, columns);
+
+	    for (int port = 0; port < ports; ++port) {
+		if ((calp->cal_z0_vector[port] = parse_complex(vprp_z0,
+				".")) == HUGE_VAL) {
+		    _vnacal_error(vcp, VNAERR_SYNTAX, "%s (line %d) error: "
+			    "invalid complex number at z0[%d]",
+			    vcp->vc_filename, get_line(vprp_z0), port);
+		    goto out;
+		}
+	    }
+	}
+	break;
+
+    case VNACAL_Z0_MATRIX:
+	assert(vprp_z0 == NULL);
+	break;
+
+    default:
+	abort();
     }
     if ((vprp_data = get_key(vcp, vprp_calibration, "data", 'l')) == NULL) {
 	goto out;

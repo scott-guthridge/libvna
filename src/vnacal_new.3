@@ -18,7 +18,7 @@
 .TH VNACAL_NEW 3 "2022-09-03" GNU
 .nh
 .SH NAME
-vnacal_new_alloc, vnacal_new_free, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new_add_single_reflect, vnacal_new_add_single_reflect_m, vnacal_new_add_double_reflect, vnacal_new_add_double_reflect_m, vnacal_new_add_through, vnacal_new_add_through_m, vnacal_new_add_line, vnacal_new_add_line_m, vnacal_new_add_mapped_matrix, vnacal_new_add_mapped_matrix_m, vnacal_new_solve, vnacal_new_set_m_error, vnacal_new_set_et_tolerance, vnacal_new_set_p_tolerance, vnacal_new_set_iteration_limit, vnacal_new_set_pvalue_limit \- find error terms from measured standards
+vnacal_new_alloc, vnacal_new_free, vnacal_new_set_frequency_vector, vnacal_new_set_z0, vnacal_new_set_z0_vector, vnacal_new_add_single_reflect, vnacal_new_add_single_reflect_m, vnacal_new_add_double_reflect, vnacal_new_add_double_reflect_m, vnacal_new_add_through, vnacal_new_add_through_m, vnacal_new_add_line, vnacal_new_add_line_m, vnacal_new_add_mapped_matrix, vnacal_new_add_mapped_matrix_m, vnacal_new_solve, vnacal_new_set_m_error, vnacal_new_set_et_tolerance, vnacal_new_set_p_tolerance, vnacal_new_set_iteration_limit, vnacal_new_set_pvalue_limit \- find error terms from measured standards
 .\"
 .SH SYNOPSIS
 .B #include <vnacal.h>
@@ -38,6 +38,12 @@ vnacal_new_alloc, vnacal_new_free, vnacal_new_set_frequency_vector, vnacal_new_s
 .\"
 .PP
 .BI "int vnacal_new_set_z0(vnacal_new_t *" vnp ", double complex " z0 );
+.\"
+.PP
+.BI "int vnacal_new_set_z0_vector(vnacal_new_t *" vnp ,
+.if n .RS +4n
+.BI "const double complex *" z0_vector ", int " length )
+.if n .RS -4n
 .\"
 .SS "Adding Measured Standards"
 .PP
@@ -185,7 +191,8 @@ Next, start a new calibration by calling \fBvnacal_new_alloc\fP(),
 giving the error term type, dimensions of the calibration, and
 the number of frequency points to be used in the calibration.
 Load the calibration frequencies using \fBvnacal_new_set_frequency_vector\fP(),
-and set the reference impedance using \fBvnacal_new_set_z0\fP().
+and set the reference impedance using \fBvnacal_new_set_z0\fP() or
+\fBvnacal_new_set_z0_vector\fP().
 Next, make measurements of calibration standards and add the results of
 each using the various \fBvnacal_new_add_\fP*() functions.
 Solve for the error terms using \fBvnacal_new_solve\fP().
@@ -410,10 +417,16 @@ calibration frequency points into the \fBvnacal_new_t\fP structure;
 ascending values with length equal to the \fIfrequencies\fP argument
 given to \fBvnacal_new_alloc\fP().
 .PP
-\fBvnacal_new_set_z0\fP() sets the reference impedance for the vector
-network analyzer.
+\fBvnacal_new_set_z0\fP() sets the reference impedances for all
+VNA ports to \fIz0\fP.
 If not called, the value defaults to 50 ohms.
-The library assumes all VNA ports have the same reference impedance.
+.PP
+\fBvnacal_new_set_z0_vector\fP() sets the reference impedances
+for the VNA ports.
+The \fIlength\fP parameter gives the number of entries in \fIz0_vector\fP
+and must be 1 (equivalent to calling \fBvnacal_new_set_z0\fP()), the
+number of VNA ports, or the number of VNA ports times the number of
+frequencies.
 .\"
 .SS "Adding Measured Standards"
 .PP

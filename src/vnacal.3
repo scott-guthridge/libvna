@@ -18,7 +18,7 @@
 .TH VNACAL 3 "2022-11-25" GNU
 .nh
 .SH NAME
-vnacal_apply, vnacal_apply_m, vnacal_create, vnacal_add_calibration, vnacal_delete_calibration, vnacal_find_calibration, vnacal_free, vnacal_get_calibration_end, vnacal_get_columns, vnacal_get_filename, vnacal_get_fmax, vnacal_get_fmin, vnacal_get_frequencies, vnacal_get_frequency_vector, vnacal_get_name, vnacal_get_rows, vnacal_get_type, vnacal_get_z0, vnacal_load, vnacal_name_to_type, vnacal_property_count, vnacal_property_delete, vnacal_property_get, vnacal_property_get_subtree, vnacal_property_keys, vnacal_property_set, vnacal_property_set_subtree, vnacal_property_type, vnacal_save, vnacal_set_dprecision, vnacal_set_fprecision, vnacal_type_to_name \- vector network analyzer calibration
+vnacal_apply, vnacal_apply_m, vnacal_create, vnacal_add_calibration, vnacal_delete_calibration, vnacal_find_calibration, vnacal_free, vnacal_get_calibration_end, vnacal_get_columns, vnacal_get_filename, vnacal_get_fmax, vnacal_get_fmin, vnacal_get_frequencies, vnacal_get_frequency_vector, vnacal_get_name, vnacal_get_rows, vnacal_get_type, vnacal_get_z0_type, vnacal_get_z0, vnacal_get_z0_vector, vnacal_load, vnacal_name_to_type, vnacal_property_count, vnacal_property_delete, vnacal_property_get, vnacal_property_get_subtree, vnacal_property_keys, vnacal_property_set, vnacal_property_set_subtree, vnacal_property_type, vnacal_save, vnacal_set_dprecision, vnacal_set_fprecision, vnacal_type_to_name \- vector network analyzer calibration
 .\"
 .SH SYNOPSIS
 .B #include <vnacal.h>
@@ -88,7 +88,16 @@ vnacal_apply, vnacal_apply_m, vnacal_create, vnacal_add_calibration, vnacal_dele
 .if n .RS -4n
 .\"
 .PP
+.BI "vnacal_z0_type_t vnacal_get_z0_type(const vnacal_t *" vcp ", int " ci );
+.\"
+.PP
 .BI "double complex vnacal_get_z0(const vnacal_t *" vcp ", int " ci );
+.\"
+.PP
+.BI "int vnacal_get_z0_vector(const vnacal_t *" vcp ", int " ci ,
+.RS +4n
+.BI "double complex *" vector ", int " max_entries ", double " f );
+.RS -4n
 .\"
 .PP
 .BI "const char *vnacal_get_filename(const vnacal_t *" vcp );
@@ -304,7 +313,8 @@ calibration index \fIci\fP, or \s-2NULL\s+2 if no calibration
 has index \fIci\fP.
 .PP
 \fBvnacal_get_type\fP() returns the type of error terms used in the
-calibration.  Refer to \fBvnacal_new\fP(3) for the list of types.
+calibration, or VNACAL_NOTYPE if no calibration has index \Ici\fP.
+Refer to \fBvnacal_new\fP(3) for the list of valid types.
 .PP
 \fBvnacal_get_rows\fP() and \fBvnacal_get_columns\fP() return the
 dimensions of the calibration.  See \fBvnacal_new\fP(3).
@@ -317,8 +327,31 @@ the minimum and maximum frequency values, respectively, and
 \fBvnacal_get_frequency_vector\fP() returns a pointer to the full vector
 of calibration frequencies.
 .PP
+\fBvnacal_get_z0_type\fP() returns an \s-2VNACAL_Z0_SCALAR\s+2 if all
+VNA ports have the same reference impedance, \s-2VNACAL_Z0_VECTOR\s+2
+if reference impedances are per-port, or \s-2VNACAL_Z0_MATRIX\s+2 if
+the reference impedances of the calibration vary by both port and
+frequency.
+.PP
 \fBvnacal_get_z0\fP() returns the reference impedance for the given
-calibration.
+calibration.  This function is valid only when the reference impedance
+type is \s-2VNACAL_Z0_SCALAR\s+2.
+.PP
+\fBvnacal_get_z0_vector\fP() copies the reference impedances for each
+VNA port at the given frequency, \fIf\fP,  into the caller-provided buffer,
+\fIvector\fP.
+The buffer must have enough space for \s-2MAX\s+2(rows, columns) double
+complex entries.
+The \fImax_entries\fP parameter gives the length of the buffer to protect
+against accidental buffer overrun.
+When the reference impedance type is \s-2VNACAL_Z0_SCALAR\s+2,
+the common z0 value is duplicated for each port, when the type is
+\s-2VNACAL_Z0_VECTOR\s+2, the vector of reference impedances is copied
+into the buffer, and when the type is \s-2VNACAL_Z0_MATRIX\s+2, the
+reference impedances for each port are calculated for the given frequency,
+interpolating as necessary.
+The \fIf\fP parameter is ignored if the type is not
+\s-2VNACAL_Z0_VECTOR\fP.
 .PP
 \fBvnacal_get_filename\fP() returns a pointer to the file name of
 the calibration file last loaded from or saved to, or \s-2NULL\s+2
@@ -565,15 +598,16 @@ with a single line error message before returning failure.
 See \fBvnaerr\fP(3).
 .PP
 The \fBvnacal_find_calibration\fP(), \fBvnacal_delete_calibration\fP(),
-all the \fBvnacal_get_\fP*() functions and the \fBvnacal_property_\fP*()
-functions set \fBerrno\fP and return -1, \s-2NULL\s+2 or \s-2HUGE_VAL\s+2
-on failure, but don't invoke the error function.
-This makes it possible, for example, to use
-\fBvnacal_find_calibration\fP() to test if a given calibration name is
-present or \fBvnacal_get_name\fP() to test if there's a calibration at
-a given calibration index, without generating error messages.
+and the \fBvnacal_property_\fP*() functions set \fBerrno\fP and return -1,
+\s-2NULL\s+2 or \s-2HUGE_VAL\s+2 on failure, but don't invoke the error
+function.
+This makes it possible to use these functions to test if a given
+calibration or property element is present without generating error
+messages.
 The caller is responsible for reporting any actual errors from these
 functions.
+The \fBvnacal_get_z0_vector\fP() function returns the number of VNA
+ports (items placed into the result vector), or -1 on error.
 .\"
 .SH ERRORS
 The library functions reports the following errors:

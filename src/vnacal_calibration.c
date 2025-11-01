@@ -33,6 +33,7 @@
  *   @rows: number of VNA ports where signal is detected
  *   @columns: number of VNA ports where signal is generated
  *   @frequencies: number of frequency points
+ *   @z0_type: type of reference impedances
  *   @error_terms: number of error terms
  *
  *   Allocate the internal calibration data structure.
@@ -41,8 +42,9 @@
  */
 vnacal_calibration_t *_vnacal_calibration_alloc(vnacal_t *vcp,
 	vnacal_type_t type, int rows, int columns, int frequencies,
-	int error_terms)
+	vnacal_z0_type_t z0_type, int error_terms)
 {
+    const int ports = MAX(rows, columns);
     vnacal_calibration_t *calp;
 
     calp = (vnacal_calibration_t *)malloc(sizeof(vnacal_calibration_t));
@@ -62,6 +64,40 @@ vnacal_calibration_t *_vnacal_calibration_alloc(vnacal_t *vcp,
 	_vnacal_error(vcp, VNAERR_SYSTEM,
 		"calloc: %s", strerror(errno));
 	goto error;
+    }
+    calp->cal_z0_type = z0_type;
+    switch (z0_type) {
+    case VNACAL_Z0_SCALAR:
+	break;
+
+    case VNACAL_Z0_VECTOR:
+	if ((calp->cal_z0_vector = calloc(ports,
+			sizeof(double complex))) == NULL) {
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "calloc: %s", strerror(errno));
+	    goto error;
+	}
+	break;
+
+    case VNACAL_Z0_MATRIX:
+	if ((calp->cal_z0_matrix = calloc(ports,
+			sizeof(double complex *))) == NULL) {
+	    _vnacal_error(vcp, VNAERR_SYSTEM,
+		    "calloc: %s", strerror(errno));
+	    goto error;
+	}
+	for (int port = 0; port < ports; ++port) {
+	    if ((calp->cal_z0_matrix[port] = calloc(frequencies,
+			    sizeof(double complex))) == NULL) {
+		_vnacal_error(vcp, VNAERR_SYSTEM,
+			"calloc: %s", strerror(errno));
+		goto error;
+	    }
+	}
+	break;
+
+    default:
+	abort();
     }
     calp->cal_error_term_vector = calloc(error_terms, sizeof(double complex *));
     if (calp->cal_error_term_vector == NULL) {
@@ -114,6 +150,25 @@ void _vnacal_calibration_free(vnacal_calibration_t *calp)
 	(void)vnaproperty_delete(&calp->cal_properties, ".");
 	for (int term = 0; term < calp->cal_error_terms; ++term) {
 	    free((void *)calp->cal_error_term_vector[term]);
+	}
+	switch (calp->cal_z0_type) {
+	case VNACAL_Z0_SCALAR:
+	    break;
+	case VNACAL_Z0_VECTOR:
+	    free((void *)calp->cal_z0_vector);
+	    break;
+	case VNACAL_Z0_MATRIX:
+	    if (calp->cal_z0_matrix != NULL) {
+		const int ports = MAX(calp->cal_rows, calp->cal_columns);
+
+		for (int port = 0; port < ports; ++port) {
+		    free((void *)calp->cal_z0_matrix[port]);
+		}
+		free((void *)calp->cal_z0_matrix);
+	    }
+	    break;
+	default:
+	    abort();
 	}
 	free((void *)calp->cal_error_term_vector);
 	free((void *)calp->cal_frequency_vector);

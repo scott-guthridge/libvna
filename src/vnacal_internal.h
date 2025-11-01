@@ -194,8 +194,13 @@ typedef struct vnacal_calibration {
     int cal_frequencies;
     double *cal_frequency_vector;
 
-    /* reference impedance of the VNA ports (currently assumed all the same) */
-    double complex cal_z0;
+    /* reference impedances */
+    vnacal_z0_type_t cal_z0_type;
+    union {
+	double complex cal_z0;
+	double complex *cal_z0_vector;	/* vector[port] */
+	double complex **cal_z0_matrix;	/* matrix[port][findex] */
+    } u;
 
     /* vector, one per error term, of vectors of values, one per frequency */
     int cal_error_terms;
@@ -205,6 +210,13 @@ typedef struct vnacal_calibration {
     vnaproperty_t *cal_properties;
 
 } vnacal_calibration_t;
+
+/*
+ * Hide the union.
+ */
+#define cal_z0		u.cal_z0
+#define cal_z0_vector	u.cal_z0_vector
+#define cal_z0_matrix	u.cal_z0_matrix
 
 /*
  * vnacal_error_term_matrix_type_t: error term type used in load/save
@@ -290,7 +302,7 @@ extern vnacal_t *_vnacal_alloc(const char *function,
 /* _vnacal_calibration_alloc: alloc vnacal_calibration */
 extern vnacal_calibration_t *_vnacal_calibration_alloc(vnacal_t *vcp,
 	vnacal_type_t type, int rows, int columns, int frequencies,
-	int error_terms);
+	vnacal_z0_type_t z0_type, int error_terms);
 
 /* _vnacal_calibration_get_fmin_bound: get the lower frequency bound */
 extern double _vnacal_calibration_get_fmin_bound(

@@ -225,8 +225,11 @@ struct vnacal_new {
     /* point where next unknown parameter should be linked */
     vnacal_new_parameter_t **vn_unknown_parameter_anchor;
 
-    /* reference impedance of the VNA ports (currently assumed all the same) */
-    double complex vn_z0;
+    /* type of reference impedances */
+    vnacal_z0_type_t vn_z0_type;
+
+    /* reference impedance of the VNA ports (ports or ports*frequencies long) */
+    double complex *vn_z0_vector;
 
     /* vector of measurement error values */
     vnacal_new_m_error_t *vn_m_error_vector;
@@ -575,6 +578,14 @@ static inline double complex vs_get_v(vnacal_new_solve_state_t *vnssp)
 
     return vnmmp->vnsm_v_matrices[vnssp->vnss_sindex][v_cell];
 }
+
+/* _vnacal_new_set_z0_vector: set the reference impedances */
+extern int _vnacal_new_set_z0_vector(const char *function, vnacal_new_t *vnp,
+	const double complex *z0_vector, int length);
+
+/* _vnacal_new_get_z0_vector: return the z0 vector for the given freq index */
+extern const double complex *_vnacal_new_get_z0_vector(vnacal_new_t *vnp,
+	int findex);
 
 /* _vnacal_new_get_parameter: add/find parameter and return held */
 extern vnacal_new_parameter_t *_vnacal_new_get_parameter(

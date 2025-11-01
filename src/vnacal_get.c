@@ -29,7 +29,7 @@
 
 /*
  * _vnacal_get_calibration: return the calibration at the given index
- *   @function: name of user-called function
+ *   @function: name of user-called function (or NULL to suppress error)
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @ci: calibration index
  */
@@ -44,8 +44,10 @@ vnacal_calibration_t *_vnacal_get_calibration(const char *function,
     }
     if (ci < 0 || ci >= vcp->vc_calibration_allocation ||
 	    (calp = vcp->vc_calibration_vector[ci]) == NULL) {
-	_vnacal_error(vcp, VNAERR_USAGE,
-		"%s: invalid calibration index %d", function, ci);
+	if (function != NULL) {
+	    _vnacal_error(vcp, VNAERR_USAGE,
+		    "%s: invalid calibration index %d", function, ci);
+	}
 	return NULL;
     }
     return calp;
@@ -96,8 +98,7 @@ const char *vnacal_get_name(const vnacal_t *vcp, int ci)
 {
     const vnacal_calibration_t *calp;
 
-    if ((calp = _vnacal_get_calibration(__func__, vcp, ci)) == NULL) {
-	errno = EINVAL;
+    if ((calp = _vnacal_get_calibration(NULL, vcp, ci)) == NULL) {
 	return NULL;
     }
     return calp->cal_name;
@@ -107,14 +108,17 @@ const char *vnacal_get_name(const vnacal_t *vcp, int ci)
  * vnacal_get_type: return the type of error terms
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @ci: calibration index
+ *
+ *   If ci is invalid, this function returns VNACAL_NOTYPE and
+ *   does not report an error.  Thus, this function can be used
+ *   to test if a calibration index is valid.
  */
 vnacal_type_t vnacal_get_type(const vnacal_t *vcp, int ci)
 {
     const vnacal_calibration_t *calp;
 
-    if ((calp = _vnacal_get_calibration(__func__, vcp, ci)) == NULL) {
-	errno = EINVAL;
-	return -1;
+    if ((calp = _vnacal_get_calibration(NULL, vcp, ci)) == NULL) {
+	return VNACAL_NOTYPE;
     }
     return calp->cal_type;
 }
@@ -212,6 +216,27 @@ const double *vnacal_get_frequency_vector(const vnacal_t *vcp, int ci)
 }
 
 /*
+ * vnacal_get_z0_type: return the reference impedance type
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
+ *
+ * Returns:
+ *   VNACAL_Z0_SCALAR  if all ports have the same reference impedance
+ *   VNACAL_Z0_VECTOR  if reference impedances vary by port
+ *   VNACAL_Z0_MATRIX  if reference impedances vary by port & frequency
+ *   -1                if the arguments are invalid
+ */
+vnacal_z0_type_t vnacal_get_z0_type(const vnacal_t *vcp, int ci)
+{
+    const vnacal_calibration_t *calp;
+
+    if ((calp = _vnacal_get_calibration(__func__, vcp, ci)) == NULL) {
+	return VNACAL_Z0_INVALID;
+    }
+    return calp->cal_z0_type;
+}
+
+/*
  * vnacal_get_z0: return the reference impedance for the given calibration
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @ci: calibration index
@@ -222,6 +247,25 @@ double complex vnacal_get_z0(const vnacal_t *vcp, int ci)
 
     if ((calp = _vnacal_get_calibration(__func__, vcp, ci)) == NULL) {
 	return HUGE_VAL;
+    }
+    switch (calp->cal_z0_type) {
+    case VNACAL_Z0_SCALAR:
+	break;
+
+    case VNACAL_Z0_VECTOR:
+	_vnacal_error(vcp, VNAERR_USAGE, "%s: "
+		"calibration has a per-port reference impedances; "
+		"use vnacal_get_z0_vector", __func__);
+	return HUGE_VAL;
+
+    case VNACAL_Z0_MATRIX:
+	_vnacal_error(vcp, VNAERR_USAGE, "%s: "
+		"calibration has a per-port per-frequency reference "
+		"impedances; use vnacal_get_z0_vector", __func__);
+	return HUGE_VAL;
+
+    default:
+	abort();
     }
     return calp->cal_z0;
 }

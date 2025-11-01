@@ -43,6 +43,7 @@ vnacal_new_t *vnacal_new_alloc(vnacal_t *vcp, vnacal_type_t type,
 {
     vnacal_new_t *vnp = NULL;
     int systems;
+    const double complex default_z0 = VNADATA_DEFAULT_Z0;
 
     if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
 	errno = EINVAL;
@@ -119,25 +120,24 @@ vnacal_new_t *vnacal_new_alloc(vnacal_t *vcp, vnacal_type_t type,
 		    sizeof(double))) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYSTEM,
 		"calloc: %s", strerror(errno));
-	vnacal_new_free(vnp);
-	return NULL;
+	goto error;
     }
     vnp->vn_frequencies_valid = false;
     if (_vnacal_new_init_parameter_hash(__func__,
 		&vnp->vn_parameter_hash) == -1) {
-	vnacal_new_free(vnp);
-	return NULL;
+	goto error;
     }
     if ((vnp->vn_zero = _vnacal_new_get_parameter(__func__, vnp,
 		    VNACAL_ZERO)) == NULL) {
-	vnacal_new_free(vnp);
-	return NULL;
+	goto error;
     }
     vnp->vn_unknown_parameters = 0;
     vnp->vn_correlated_parameters = 0;
     vnp->vn_unknown_parameter_list = NULL;
     vnp->vn_unknown_parameter_anchor = &vnp->vn_unknown_parameter_list;
-    vnp->vn_z0 = VNADATA_DEFAULT_Z0;
+    if (_vnacal_new_set_z0_vector(__FUNCTION__, vnp, &default_z0, 1) == -1) {
+	goto error;
+    }
     vnp->vn_m_error_vector = NULL;
     vnp->vn_p_tolerance = VNACAL_NEW_DEFAULT_P_TOLERANCE;
     vnp->vn_et_tolerance = VNACAL_NEW_DEFAULT_ET_TOLERANCE;
@@ -148,8 +148,7 @@ vnacal_new_t *vnacal_new_alloc(vnacal_t *vcp, vnacal_type_t type,
 		    sizeof(vnacal_new_system_t))) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYSTEM,
 		"calloc: %s", strerror(errno));
-	vnacal_new_free(vnp);
-	return NULL;
+	goto error;
     }
     for (int i = 0; i < systems; ++i) {
 	vnacal_new_system_t *vnsp = &vnp->vn_system_vector[i];
@@ -169,6 +168,10 @@ vnacal_new_t *vnacal_new_alloc(vnacal_t *vcp, vnacal_type_t type,
     insque((void *)&vnp->vn_next, (void *)&vcp->vc_new_head);
 
     return vnp;
+
+error:
+    vnacal_new_free(vnp);
+    return NULL;
 }
 
 /*
@@ -219,22 +222,86 @@ int vnacal_new_set_frequency_vector(vnacal_new_t *vnp,
 }
 
 /*
- * vnacal_new_set_z0: set the reference impedance for all VNA ports
- *   @vnp: pointer to vnacal_new_t structure
- *   @z0: nominal impedance looking into a VNA port
- *
- * Note:
- *   In this implementation, all VNA ports must have the same reference
- *   impedance.  If not set, the default is 50 ohms.
+ * _vnacal_new_set_z0_vector: set the reference impedances
+ *   @function: name of user-called function
+ *   @vnp: vnacal_new_t structure
+ *   @z0_vector: vector of reference impedance values
+ *   @length: length of z0_vector: 1, ports or ports * frequencies
  */
-int vnacal_new_set_z0(vnacal_new_t *vnp, double complex z0)
+int _vnacal_new_set_z0_vector(const char *function, vnacal_new_t *vnp,
+	const double complex *z0_vector, int length)
 {
+    vnacal_t *vcp = vnp->vn_vcp;
+    int rows, columns, ports;
+    vnacal_z0_type_t z0_type;
+    double complex *clfp;
+
     if (vnp == NULL || vnp->vn_magic != VN_MAGIC) {
 	errno = EINVAL;
 	return -1;
     }
-    vnp->vn_z0 = z0;
+    rows = VL_M_ROWS(&vnp->vn_layout);
+    columns = VL_M_COLUMNS(&vnp->vn_layout);
+    ports = MAX(rows, columns);
+    if (length == 1) {
+	z0_type = VNACAL_Z0_SCALAR;
+    } else if (length == ports) {
+	z0_type = VNACAL_Z0_VECTOR;
+    } else if (length != ports * vnp->vn_frequencies) {
+	z0_type = VNACAL_Z0_MATRIX;
+    } else {
+	_vnacal_error(vcp, VNAERR_USAGE,
+		"%s: z0_vector length must be 1, number of ports, or "
+		"number of ports * freqeuncies", function);
+	return -1;
+    }
+
+    /*
+     * In the single z0 case, allocate a ports long vector and duplicate
+     * the z0 value into every cell so that we always have a vector.
+     */
+    if ((clfp = malloc(MAX(length, ports) * sizeof(double complex))) == NULL) {
+	_vnacal_error(vcp, VNAERR_SYSTEM,
+		"malloc: %s", strerror(errno));
+	return -1;
+    }
+    if (z0_type == VNACAL_Z0_SCALAR) {
+	for (int i = 0; i < ports; ++i) {
+	    clfp[i] = z0_vector[0];
+	}
+    } else {
+	(void)memcpy((void *)clfp, (void *)z0_vector,
+		length * sizeof(double complex));
+    }
+    free((void *)vnp->vn_z0_vector);
+    vnp->vn_z0_type = z0_type;
+    vnp->vn_z0_vector = clfp;
     return 0;
+}
+
+/*
+ * _vnacal_new_get_z0_vector: return the z0 vector for the given freq index
+ *   @vnp: vnacal_new_t structure
+ *   @findex: frequency index
+ */
+const double complex *_vnacal_new_get_z0_vector(vnacal_new_t *vnp, int findex)
+{
+    int rows, columns, ports;
+
+    switch (vnp->vn_z0_type) {
+    case VNACAL_Z0_SCALAR:
+    case VNACAL_Z0_VECTOR:
+	return vnp->vn_z0_vector;
+
+    case VNACAL_Z0_MATRIX:
+	rows = VL_M_ROWS(&vnp->vn_layout);
+	columns = VL_M_COLUMNS(&vnp->vn_layout);
+	ports = MAX(rows, columns);
+	return &vnp->vn_z0_vector[findex * ports];
+
+    default:
+	abort();
+    }
 }
 
 /*

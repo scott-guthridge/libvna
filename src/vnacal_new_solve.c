@@ -782,13 +782,50 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
      * Create the vnacal_calibration_t structure.
      */
     if ((calp = _vnacal_calibration_alloc(vcp, type_out, m_rows, m_columns,
-		    frequencies, error_terms_out)) == NULL) {
+		    frequencies, vnp->vn_z0_type, error_terms_out)) == NULL) {
 	goto out;
     }
+
+    /*
+     * Copy frequency vector.
+     */
     (void)memcpy((void *)calp->cal_frequency_vector,
 	    (void *)vnp->vn_frequency_vector,
 	    frequencies * sizeof(double));
-    calp->cal_z0 = vnp->vn_z0;
+
+    /*
+     * Copy z0 values.  In the matrix case, note that we're tranposing from
+     * [findex][port] to [port][findex].
+     */
+    switch (vnp->vn_z0_type) {
+    case VNACAL_Z0_SCALAR:
+	calp->cal_z0 = vnp->vn_z0_vector[0];
+	break;
+
+    case VNACAL_Z0_VECTOR:
+	(void)memcpy((void *)calp->cal_z0_vector, (void *)vnp->vn_z0_vector,
+		MAX(m_rows, m_columns) * sizeof(double complex));
+	break;
+
+    case VNACAL_Z0_MATRIX:
+	{
+	    const int ports = MAX(m_rows, m_columns);
+
+	    for (int port = 0; port < ports; ++port) {
+		double complex *z0_row = calp->cal_z0_matrix[port];
+
+		for (int findex = 0; findex < frequencies; ++findex) {
+		    const int cell = ports * frequencies + port;
+
+		    z0_row[findex] = vnp->vn_z0_vector[cell];
+		}
+	    }
+	}
+	break;
+
+    default:
+	abort();
+    }
 
     /*
      * Test if the we're solving a simple TRL calibration without
