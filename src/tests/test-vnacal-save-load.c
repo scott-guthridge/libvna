@@ -272,7 +272,7 @@ static libt_result_t run_vnacal_save_load_trial(int trial)
 	    result = T_FAIL;
 	    goto out;
 	}
-	if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
+	if ((calp = _vnacal_get_calibration(__func__, vcp, ci)) == NULL) {
 	    (void)fprintf(stderr, "%s: _vnacal_get_calibration: %s\n",
 		    progname, strerror(errno));
 	    result = T_FAIL;

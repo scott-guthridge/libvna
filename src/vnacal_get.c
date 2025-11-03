@@ -29,9 +29,12 @@
 
 /*
  * _vnacal_get_calibration: return the calibration at the given index
+ *   @function: name of user-called function
  *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ci: calibration index
  */
-vnacal_calibration_t *_vnacal_get_calibration(const vnacal_t *vcp, int ci)
+vnacal_calibration_t *_vnacal_get_calibration(const char *function,
+	const vnacal_t *vcp, int ci)
 {
     vnacal_calibration_t *calp;
 
@@ -39,12 +42,10 @@ vnacal_calibration_t *_vnacal_get_calibration(const vnacal_t *vcp, int ci)
 	errno = EINVAL;
 	return NULL;
     }
-    if (ci < 0 || ci >= vcp->vc_calibration_allocation) {
-	errno = EINVAL;
-	return NULL;
-    }
-    if ((calp = vcp->vc_calibration_vector[ci]) == NULL) {
-	errno = EINVAL;
+    if (ci < 0 || ci >= vcp->vc_calibration_allocation ||
+	    (calp = vcp->vc_calibration_vector[ci]) == NULL) {
+	_vnacal_error(vcp, VNAERR_USAGE,
+		"%s: invalid calibration index %d", function, ci);
 	return NULL;
     }
     return calp;
@@ -95,7 +96,7 @@ const char *vnacal_get_name(const vnacal_t *vcp, int ci)
 {
     const vnacal_calibration_t *calp;
 
-    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
+    if ((calp = _vnacal_get_calibration(__func__, vcp, ci)) == NULL) {
 	errno = EINVAL;
 	return NULL;
     }
@@ -111,7 +112,7 @@ vnacal_type_t vnacal_get_type(const vnacal_t *vcp, int ci)
 {
     const vnacal_calibration_t *calp;
 
-    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
+    if ((calp = _vnacal_get_calibration(__func__, vcp, ci)) == NULL) {
 	errno = EINVAL;
 	return -1;
     }
@@ -127,7 +128,7 @@ int vnacal_get_rows(const vnacal_t *vcp, int ci)
 {
     const vnacal_calibration_t *calp;
 
-    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
+    if ((calp = _vnacal_get_calibration(__func__, vcp, ci)) == NULL) {
 	errno = EINVAL;
 	return -1;
     }
@@ -143,7 +144,7 @@ int vnacal_get_columns(const vnacal_t *vcp, int ci)
 {
     const vnacal_calibration_t *calp;
 
-    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
+    if ((calp = _vnacal_get_calibration(__func__, vcp, ci)) == NULL) {
 	errno = EINVAL;
 	return -1;
     }
@@ -159,7 +160,7 @@ int vnacal_get_frequencies(const vnacal_t *vcp, int ci)
 {
     const vnacal_calibration_t *calp;
 
-    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
+    if ((calp = _vnacal_get_calibration(__func__, vcp, ci)) == NULL) {
 	return -1;
     }
     return calp->cal_frequencies;
@@ -174,7 +175,7 @@ double vnacal_get_fmin(const vnacal_t *vcp, int ci)
 {
     const vnacal_calibration_t *calp;
 
-    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
+    if ((calp = _vnacal_get_calibration(__func__, vcp, ci)) == NULL) {
 	return HUGE_VAL;
     }
     return calp->cal_frequency_vector[0];
@@ -189,7 +190,7 @@ double vnacal_get_fmax(const vnacal_t *vcp, int ci)
 {
     const vnacal_calibration_t *calp;
 
-    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
+    if ((calp = _vnacal_get_calibration(__func__, vcp, ci)) == NULL) {
 	return HUGE_VAL;
     }
     return calp->cal_frequency_vector[calp->cal_frequencies - 1];
@@ -204,7 +205,7 @@ const double *vnacal_get_frequency_vector(const vnacal_t *vcp, int ci)
 {
     const vnacal_calibration_t *calp;
 
-    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
+    if ((calp = _vnacal_get_calibration(__func__, vcp, ci)) == NULL) {
 	return NULL;
     }
     return calp->cal_frequency_vector;
@@ -219,7 +220,7 @@ double complex vnacal_get_z0(const vnacal_t *vcp, int ci)
 {
     const vnacal_calibration_t *calp;
 
-    if ((calp = _vnacal_get_calibration(vcp, ci)) == NULL) {
+    if ((calp = _vnacal_get_calibration(__func__, vcp, ci)) == NULL) {
 	return HUGE_VAL;
     }
     return calp->cal_z0;

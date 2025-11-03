@@ -304,8 +304,8 @@ extern double _vnacal_calibration_get_fmax_bound(
 extern void _vnacal_calibration_free(vnacal_calibration_t *calp);
 
 /* _vnacal_get_calibration: return the calibration at the given index */
-extern vnacal_calibration_t *_vnacal_get_calibration(const vnacal_t *vcp,
-	int ci);
+extern vnacal_calibration_t *_vnacal_get_calibration(const char *function,
+	const vnacal_t *vcp, int ci);
 
 /* _vnacal_add_calibration_common */
 extern int _vnacal_add_calibration_common(const char *function, vnacal_t *vcp,

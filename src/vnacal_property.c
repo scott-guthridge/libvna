@@ -29,8 +29,12 @@
 
 /*
  * _get_property_root: return the address of the appropriate property root
+ *   @function: user-called function
+ *   @vcp: vnacal structure
+ *   @ci: calibration index
  */
-static vnaproperty_t **_get_property_root(vnacal_t *vcp, int ci)
+static vnaproperty_t **_get_property_root(const char *function,
+	vnacal_t *vcp, int ci)
 {
     vnacal_calibration_t *calp;
 
@@ -41,7 +45,7 @@ static vnaproperty_t **_get_property_root(vnacal_t *vcp, int ci)
     if (ci == -1) {
 	return &vcp->vc_properties;
     }
-    if ((calp = _vnacal_get_calibration(vcp, ci)) != NULL) {
+    if ((calp = _vnacal_get_calibration(function, vcp, ci)) != NULL) {
 	return &calp->cal_properties;
     }
     errno = EINVAL;
@@ -61,7 +65,7 @@ int vnacal_property_type(vnacal_t *vcp, int ci,
     vnaproperty_t **anchor;
     int rv;
 
-    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
+    if ((anchor = _get_property_root(__func__, vcp, ci)) == NULL) {
 	return -1;
     }
     va_start(ap, format);
@@ -84,7 +88,7 @@ int vnacal_property_count(vnacal_t *vcp, int ci,
     vnaproperty_t **anchor;
     int count;
 
-    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
+    if ((anchor = _get_property_root(__func__, vcp, ci)) == NULL) {
 	return -1;
     }
     va_start(ap, format);
@@ -109,7 +113,7 @@ const char **vnacal_property_keys(vnacal_t *vcp, int ci,
     vnaproperty_t **anchor;
     const char **keys;
 
-    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
+    if ((anchor = _get_property_root(__func__, vcp, ci)) == NULL) {
 	return NULL;
     }
     va_start(ap, format);
@@ -132,7 +136,7 @@ const char *vnacal_property_get(vnacal_t *vcp, int ci,
     vnaproperty_t **anchor;
     const char *value;
 
-    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
+    if ((anchor = _get_property_root(__func__, vcp, ci)) == NULL) {
 	return NULL;
     }
     va_start(ap, format);
@@ -155,7 +159,7 @@ int vnacal_property_set(vnacal_t *vcp, int ci,
     vnaproperty_t **anchor;
     int rv;
 
-    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
+    if ((anchor = _get_property_root(__func__, vcp, ci)) == NULL) {
 	return -1;
     }
     va_start(ap, format);
@@ -178,7 +182,7 @@ int vnacal_property_delete(vnacal_t *vcp, int ci,
     vnaproperty_t **anchor;
     int rv;
 
-    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
+    if ((anchor = _get_property_root(__func__, vcp, ci)) == NULL) {
 	return -1;
     }
     va_start(ap, format);
@@ -202,7 +206,7 @@ vnaproperty_t *vnacal_property_get_subtree(vnacal_t *vcp, int ci,
     vnaproperty_t **anchor;
     vnaproperty_t *subtree;
 
-    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
+    if ((anchor = _get_property_root(__func__, vcp, ci)) == NULL) {
 	return NULL;
     }
     va_start(ap, format);
@@ -226,7 +230,7 @@ vnaproperty_t **vnacal_property_set_subtree(vnacal_t *vcp, int ci,
     vnaproperty_t **anchor;
     vnaproperty_t **subtree;
 
-    if ((anchor = _get_property_root(vcp, ci)) == NULL) {
+    if ((anchor = _get_property_root(__func__, vcp, ci)) == NULL) {
 	return NULL;
     }
     va_start(ap, format);

@@ -569,9 +569,8 @@ int _vnacal_apply_common(vnacal_apply_args_t vaa)
 	errno = EINVAL;
 	return -1;
     }
-    if ((calp = _vnacal_get_calibration(vcp, vaa.vaa_ci)) == NULL) {
-	_vnacal_error(vcp, VNAERR_USAGE, "%s: invalid calibration index: %d",
-		vaa.vaa_function, vaa.vaa_ci);
+    if ((calp = _vnacal_get_calibration(vaa.vaa_function,
+		    vcp, vaa.vaa_ci)) == NULL) {
 	return -1;
     }
     c_type    = calp->cal_type;
