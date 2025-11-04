@@ -61,6 +61,25 @@ static inline double complex crand1(const term_info_t *tip)
 }
 
 /*
+ * libt_get_z0_vector: return the reference impedance vector at findex
+ *   @ttp: test terms structure
+ *   @findex: frequency index
+ */
+const double complex *libt_get_z0_vector(const libt_vnacal_terms_t *ttp,
+	int findex)
+{
+    const vnacal_layout_t *vlp = &ttp->tt_layout;
+    const int rows = VL_M_ROWS(vlp);
+    const int columns = VL_M_COLUMNS(vlp);
+    const int ports = MAX(rows, columns);
+
+    if (ttp->tt_z0_vector_length > ports) {
+	return &ttp->tt_z0_vector[findex * ports];
+    }
+    return ttp->tt_z0_vector;
+}
+
+/*
  * gen_e_terms: generate random error terms
  *   @vlp: pointer to vnacal_layout_t structure
  *   @e: error term vector
@@ -338,9 +357,11 @@ libt_vnacal_terms_t *libt_vnacal_generate_error_terms(vnacal_t *vcp,
 	vnacal_type_t type, int m_rows, int m_columns, int frequencies,
 	const double *frequency_vector, uint32_t flags)
 {
+    const int ports = MAX(m_rows, m_columns);
     term_info_t ti;
     libt_vnacal_terms_t *ttp = NULL;
     vnacal_layout_t *vlp;
+    int z0_length = 1;
 
     /*
      * Init the term_info structure.
@@ -400,6 +421,52 @@ libt_vnacal_terms_t *libt_vnacal_generate_error_terms(vnacal_t *vcp,
 		(double)(i - 1) / (double)(frequencies - 2));
 	}
     }
+
+    /*
+     * Generate reference impedance values.
+     */
+    if (flags & LIBT_GET_FZ0) {
+	z0_length = ports * frequencies;
+    } else if (flags & LIBT_GET_Z0V) {
+	z0_length = ports;
+    } else {
+	z0_length = 1;
+    }
+    ttp->tt_z0_vector = malloc(MAX(z0_length, ports) * sizeof(double complex));
+    if (ttp->tt_z0_vector == NULL) {
+	(void)fprintf(stderr, "%s: malloc: %s\n", progname, strerror(errno));
+	exit(99);
+    }
+    if (flags & LIBT_GET_FZ0) {
+	for (int findex = 0; findex < frequencies; ++findex) {
+	    double f = ttp->tt_frequency_vector[findex];
+	    double complex y = 2.0 * M_PI * 333.e-15 * I * f;
+
+	    for (int port = 0; port < ports; ++port) {
+		double g = 1.0 / (50.0 + 60.0 * port / (double)(ports - 1));
+		int cell = findex * ports + port;
+
+		ttp->tt_z0_vector[cell] = 1.0 / (y + g);
+	    }
+	}
+    } else if (flags & LIBT_GET_Z0V) {
+	const double complex y = 1.0 / (50.0 * I);
+
+	for (int port = 0; port < ports; ++port) {
+	    double g = 1.0 / (50.0 + 60.0 * port / (double)(ports - 1));
+
+	    ttp->tt_z0_vector[port] = 1.0 / (y + g);
+	}
+    } else {
+	for (int port = 0; port < ports; ++port) {
+	    ttp->tt_z0_vector[port] = 50.0;
+	}
+    }
+    ttp->tt_z0_vector_length = z0_length;
+
+    /*
+     * Generate error terms.
+     */
     if ((ttp->tt_error_term_vector = calloc(frequencies,
 		    sizeof(double complex *))) == NULL) {
 	libt_vnacal_free_error_terms(ttp);
@@ -420,7 +487,8 @@ libt_vnacal_terms_t *libt_vnacal_generate_error_terms(vnacal_t *vcp,
     }
 
     /*
-     * Allocate the new calibration structure and set frequencies.
+     * Allocate the new calibration structure and set frequencies and
+     * reference impedances..
      */
     if ((ttp->tt_vnp = vnacal_new_alloc(vcp, type, m_rows, m_columns,
 		    frequencies)) == NULL) {
@@ -437,6 +505,14 @@ libt_vnacal_terms_t *libt_vnacal_generate_error_terms(vnacal_t *vcp,
 	libt_vnacal_free_error_terms(ttp);
 	ttp = NULL;
 	goto out;
+    }
+    if (z0_length > 1) {
+	if (vnacal_new_set_z0_vector(ttp->tt_vnp,
+		    ttp->tt_z0_vector, z0_length) == -1) {
+	    libt_vnacal_free_error_terms(ttp);
+	    ttp = NULL;
+	    goto out;
+	}
     }
 
     /*

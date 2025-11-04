@@ -39,6 +39,12 @@ typedef struct libt_vnacal_terms {
     /* number test frequencies */
     int tt_frequencies;
 
+    /* reference impedance vector */
+    double complex *tt_z0_vector;
+
+    /* 1, #ports, or #ports * #frequencies */
+    int tt_z0_vector_length;
+
     /* vector (one per frequency) of vectors of error terms */
     double complex **tt_error_term_vector;
 
@@ -75,6 +81,11 @@ extern const double *libt_vnacal_sigma_t;
  * Flags for libt_vnacal_generate_error_tersm
  */
 #define LIBT_GET_2_10_GHZ	1	/* generate f in 2..10 GHz range */
+#define LIBT_GET_Z0V		2	/* vary for each port */
+#define LIBT_GET_FZ0		4	/* vary z0 for each port/freq */
+
+extern const double complex *libt_get_z0_vector(const libt_vnacal_terms_t *ttp,
+	int findex);
 
 /* libt_vnacal_generate_error_terms: generate random error terms */
 extern libt_vnacal_terms_t *libt_vnacal_generate_error_terms(
