@@ -73,11 +73,17 @@ extern bool libt_isequal_label(double complex actual, double complex expected,
 extern void libt_print_cmatrix(const char *tag, const double complex *a,
 	int m, int n);
 
+/* libt_randu: uniformally distributed numbers between min and max */
+extern double libt_randu(double min, double max);
+
 /* libt_randn: return a normally distributed random number */
 extern double libt_randn();
 
 /* libt_randn: return a pair of normally distributed random numbers */
 extern double libt_randn2(double *);
+
+/* libt_rand_nsmm: return a truncated Rice(nu, sigma) random number */
+extern double libt_rand_nsmm(double nu, double sigma, double min, double max);
 
 /* libt_fail: report a test failure and abort if opt_a */
 extern void libt_fail(const char *format, ...)

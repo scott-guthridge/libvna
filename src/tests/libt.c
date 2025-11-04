@@ -175,6 +175,14 @@ bool libt_isequal(double complex actual, double complex expected)
 }
 
 /*
+ * libt_randu: uniformally distributed numbers between min and max
+ */
+double libt_randu(double min, double max)
+{
+    return min + (max - min) * random() / (double)RANDOM_MAX;
+}
+
+/*
  * libt_randn2: return a pair of normally distributed random numbers
  */
 double libt_randn2(double *second)

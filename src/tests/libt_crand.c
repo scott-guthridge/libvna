@@ -176,14 +176,13 @@ static double rice_inverse_cdf(double nu, double sigma, double q)
 }
 
 /*
- * random_truncated_rice: return a truncated Rice(nu, sigma) random number
+ * libt_rand_nsmm: return a truncated Rice(nu, sigma) random number
  *   @nu:    distance from reference point to origin
  *   @sigma: scale
  *   @min:   minimum value to return
  *   @max:   maximum value to return
  */
-static double random_truncated_rice(double nu, double sigma,
-	double min, double max)
+double libt_rand_nsmm(double nu, double sigma, double min, double max)
 {
     assert(0.0 <= nu && 0.0 <= sigma && 0.0 <= min && min <= max);
 
@@ -272,7 +271,7 @@ double complex libt_crand_nsmm(double nu, double sigma, double min, double max)
     double r, u;
 
     assert(nu >= 0.0 && sigma >= 0.0 && min >= 0 && min <= max);
-    r = random_truncated_rice(nu, sigma, min, max);
+    r = libt_rand_nsmm(nu, sigma, min, max);
     u = (double)random() / (RANDOM_MAX + 1.0);
     return r * cexp(2 * M_PI * I * u);
 }
@@ -294,7 +293,7 @@ double complex libt_crand_nsmmra(double nu, double sigma,
     assert(nu >= 0.0 && sigma >= 0.0 && min >= 0 && min <= max &&
 	    -360.0 <= rotation && rotation <= 360.0 &&
 	    -360.0 <= angle && angle <= 360.0);
-    r = random_truncated_rice(nu, sigma, min, max);
+    r = libt_rand_nsmm(nu, sigma, min, max);
     rotation *= M_PI / 180.0;
     if (angle != 0.0) {
 	double u = (double)random() / RANDOM_MAX;
