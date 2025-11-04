@@ -35,7 +35,7 @@ TESTS = \
 	test-vnaproperty-expr \
 	test-vnacal-SOLT test-vnacal-Silvonen16 test-vnacal-random \
 	test-vnacal-apply test-vnacal-save-load test-vnacal-v-matrices \
-	test-vnacal-pvalue \
+	test-vnacal-pvalue test-vnacal-standards \
 	test-vnacal-TRL test-vnacal-Van-hamme test-vnacal-compat-V2 \
 	test-vnaconv-2x2 test-vnaconv-3x3 \
 	test-vnaconv-renormalize-2x2 test-vnaconv-renormalize-NxN \
@@ -49,7 +49,7 @@ check_PROGRAMS = \
 	test-vnaproperty-expr \
 	test-vnacal-SOLT test-vnacal-Silvonen16 test-vnacal-random \
 	test-vnacal-apply test-vnacal-save-load test-vnacal-v-matrices \
-	test-vnacal-pvalue \
+	test-vnacal-pvalue test-vnacal-standards \
 	test-vnacal-TRL test-vnacal-Van-hamme test-vnacal-compat-V2 \
 	test-vnaconv-2x2 test-vnaconv-3x3 \
 	test-vnaconv-renormalize-2x2 test-vnaconv-renormalize-NxN \
@@ -165,6 +165,12 @@ test_vnacal_compat_V2_SOURCES = test-vnacal-compat-V2.c
 test_vnacal_compat_V2_LDADD = libt.a $(top_builddir)/src/libvna.la \
 	-lyaml -lm
 test_vnacal_compat_V2_LDFLAGS = -static
+
+test_vnacal_standards_SOURCES = libt.h libt.c \
+	test-vnacal-standards.c
+test_vnacal_standards_LDADD = libt.a $(top_builddir)/src/libvna.la \
+	-lyaml -lm
+test_vnacal_standards_LDFLAGS = -static
 
 test_vnadata_basic_SOURCES = libt.h libt.c test-vnadata-basic.c
 test_vnadata_basic_LDADD = libt.a $(top_builddir)/src/libvna.la -lyaml -lm
