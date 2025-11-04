@@ -49,9 +49,9 @@ void libt_isequal_init()
     }
 
     /*
-     * Set eps to half the available precision.
+     * Set eps to half the available precision minus one decimal place.
      */
-    libt_isequal_eps = sqrt(eps);
+    libt_isequal_eps = 10.0 * sqrt(eps);
 }
 
 /*
