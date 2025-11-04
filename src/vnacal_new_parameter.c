@@ -233,7 +233,7 @@ vnacal_new_parameter_t *_vnacal_new_get_parameter(const char *function,
     vnacal_new_parameter_t *vnprp;
     vnacal_parameter_t *vpmrp;
     vnacal_parameter_type_t type;
-    vnacal_new_parameter_t *ncprp_correlate = NULL;
+    vnacal_new_parameter_t *vnprp_correlate = NULL;
 
     /*
      * Search for the parameter in the hash and return if found.
@@ -271,7 +271,7 @@ vnacal_new_parameter_t *_vnacal_new_get_parameter(const char *function,
     if (type == VNACAL_CORRELATED) {
 	vnacal_parameter_t *vpmrp_correlate = VNACAL_GET_PARAMETER_OTHER(vpmrp);
 
-	if ((ncprp_correlate = _vnacal_new_get_parameter(function, vnp,
+	if ((vnprp_correlate = _vnacal_new_get_parameter(function, vnp,
 			VNACAL_GET_PARAMETER_INDEX(vpmrp_correlate))) == NULL) {
 	    free((void *)vnprp);
 	    return NULL;
@@ -300,7 +300,7 @@ vnacal_new_parameter_t *_vnacal_new_get_parameter(const char *function,
 	if (type == VNACAL_CORRELATED) {
 	    ++vnp->vn_correlated_parameters;
 	}
-	vnprp->vnpr_correlate = ncprp_correlate;
+	vnprp->vnpr_correlate = vnprp_correlate;
 	*vnp->vn_unknown_parameter_anchor = vnprp;
 	vnp->vn_unknown_parameter_anchor = &vnprp->vnpr_next_unknown;
     }

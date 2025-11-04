@@ -581,7 +581,7 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 	}
 
 	/*
-	 * Make a map from the cells of the argument strucure S matrix
+	 * Make a map from the cells of the argument structure S matrix
 	 * to the cells of the vnacal_new_measurement_t S matrix (with
 	 * port map).
 	 */
@@ -633,7 +633,7 @@ int _vnacal_new_add_common(vnacal_new_add_arguments_t vnaa)
 	}
 
 	/*
-	 * Make a map from the cells of the argument strucure S matrix
+	 * Make a map from the cells of the argument structure S matrix
 	 * to the cells of the vnacal_new_measurement_t S matrix (no
 	 * port map).
 	 */

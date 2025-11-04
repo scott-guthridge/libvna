@@ -61,8 +61,7 @@ vnacal_calibration_t *_vnacal_calibration_alloc(vnacal_t *vcp,
     calp->cal_frequencies = frequencies;
     calp->cal_frequency_vector = calloc(frequencies, sizeof(double));
     if (calp->cal_frequency_vector == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM,
-		"calloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	goto error;
     }
     calp->cal_z0_type = z0_type;
@@ -73,8 +72,7 @@ vnacal_calibration_t *_vnacal_calibration_alloc(vnacal_t *vcp,
     case VNACAL_Z0_VECTOR:
 	if ((calp->cal_z0_vector = calloc(ports,
 			sizeof(double complex))) == NULL) {
-	    _vnacal_error(vcp, VNAERR_SYSTEM,
-		    "calloc: %s", strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	    goto error;
 	}
 	break;
@@ -82,8 +80,7 @@ vnacal_calibration_t *_vnacal_calibration_alloc(vnacal_t *vcp,
     case VNACAL_Z0_MATRIX:
 	if ((calp->cal_z0_matrix = calloc(ports,
 			sizeof(double complex *))) == NULL) {
-	    _vnacal_error(vcp, VNAERR_SYSTEM,
-		    "calloc: %s", strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	    goto error;
 	}
 	for (int port = 0; port < ports; ++port) {
@@ -101,16 +98,14 @@ vnacal_calibration_t *_vnacal_calibration_alloc(vnacal_t *vcp,
     }
     calp->cal_error_term_vector = calloc(error_terms, sizeof(double complex *));
     if (calp->cal_error_term_vector == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM,
-		"calloc: %s", strerror(errno));
+	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	goto error;
     }
     calp->cal_error_terms = error_terms;
     for (int term = 0; term < error_terms; ++term) {
 	if ((calp->cal_error_term_vector[term] = calloc(frequencies,
 			sizeof(double complex))) == NULL) {
-	    _vnacal_error(vcp, VNAERR_SYSTEM,
-		    "calloc: %s", strerror(errno));
+	    _vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	    goto error;
 	}
     }

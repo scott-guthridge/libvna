@@ -105,7 +105,7 @@ int opt_v = 0;
 	    result = T_FAIL; \
 	    goto out; \
 	} \
-    } \
+    }
 
 /*
  * test_conversions_2x2: test parameter conversions

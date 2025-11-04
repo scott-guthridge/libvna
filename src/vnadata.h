@@ -441,7 +441,7 @@ static inline int vnadata_set_matrix(vnadata_t *vdp, int findex,
 }
 
 /*
- * vnadata_get_from_vector: copy a matrix cell into a by-frequency vector
+ * vnadata_get_to_vector: copy a matrix cell into a by-frequency vector
  *   @vdp:    a pointer to the vnadata_t structure
  *   @row:    matrix row
  *   @column: matrix column
