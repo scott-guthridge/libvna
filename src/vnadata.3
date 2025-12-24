@@ -18,7 +18,7 @@
 .TH VNADATA 3 "2022-03-03" GNU
 .nh
 .SH NAME
-vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get_type, vnadata_get_type_name, vnadata_set_type, vnadata_get_rows, vnadata_get_columns, vnadata_get_frequencies, vnadata_free, vnadata_get_fmin, vnadata_get_fmax, vnadata_get_frequency, vnadata_set_frequency, vnadata_get_frequency_vector, vnadata_set_frequency_vector, vnadata_add_frequency, vnadata_get_cell, vnadata_set_cell, vnadata_get_matrix, vnadata_set_matrix, vnadata_get_to_vector, vnadata_set_from_vector, vnadata_get_z0, vnadata_set_z0, vnadata_get_z0_vector, vnadata_set_z0_vector, vnadata_set_all_z0, vnadata_has_fz0, vnadata_get_fz0, vnadata_set_fz0, vnadata_get_fz0_vector, vnadata_set_fz0_vector, vnadata_convert, vnadata_rconvert, vnadata_load, vnadata_fload, vnadata_save, vnadata_fsave, vnadata_cksave, vnadata_get_filetype, vnadata_set_filetype, vnadata_get_format, vnadata_set_format, vnadata_get_fprecision, vnadata_set_fprecision, vnadata_get_dprecision, vnadata_set_dprecision \- Network Parameter Data
+vnadata_alloc, vnadata_init, vnadata_alloc_and_init, vnadata_resize, vnadata_get_type, vnadata_get_type_name, vnadata_set_type, vnadata_get_rows, vnadata_get_columns, vnadata_get_frequencies, vnadata_get_name, vnadata_set_name, vnadata_free, vnadata_get_fmin, vnadata_get_fmax, vnadata_get_frequency, vnadata_set_frequency, vnadata_get_frequency_vector, vnadata_set_frequency_vector, vnadata_add_frequency, vnadata_get_cell, vnadata_set_cell, vnadata_get_matrix, vnadata_set_matrix, vnadata_get_to_vector, vnadata_set_from_vector, vnadata_get_z0, vnadata_set_z0, vnadata_get_z0_vector, vnadata_set_z0_vector, vnadata_set_all_z0, vnadata_has_fz0, vnadata_get_fz0, vnadata_set_fz0, vnadata_get_fz0_vector, vnadata_set_fz0_vector, vnadata_convert, vnadata_rconvert, vnadata_load, vnadata_fload, vnadata_save, vnadata_fsave, vnadata_cksave, vnadata_get_filetype, vnadata_set_filetype, vnadata_get_format, vnadata_set_format, vnadata_get_fprecision, vnadata_set_fprecision, vnadata_get_dprecision, vnadata_set_dprecision \- Network Parameter Data
 .\"
 .SH SYNOPSIS
 .B #include <vnadata.h>
@@ -80,6 +80,12 @@ Link with \fI-lvna\fP \fI-lm\fP.
 .\"
 .PP
 .BI "int vnadata_get_frequencies(const vnadata_t *" vdp );
+.\"
+.PP
+.BI "const char *vnadata_get_name(const vnadata_t *" vdp );
+.\"
+.PP
+.BI "int vnadata_set_name(vnadata_t *" vdp ", const char *" name );
 .\"
 .PP
 .BI "void vnadata_free(vnadata_t *" vdp );
@@ -303,6 +309,17 @@ The \fItype\fP parameter must be consistent with the matrix dimensions.
 The \fBvnadata_get_rows\fP(), \fBvnadata_get_columns\fP(), and
 \fBvnadata_get_frequencies\fP() functions return the current dimensions
 of the matrix.
+.\"
+.PP
+The \fBvnadata_get_name\fP() and \fBvnadata_set_name\fP() functions
+provide a mechanism to get and set a meaningful name for a
+\fBvnadata_t\fP structure, such as the name of the device described by
+the network parameter data.
+This name is included in some error messages.
+If \fBvnadata_set_name\fP() has not been called,
+\fBvnadata_get_name\fP() returns a default name derived from the
+filename used in the most recent load or save operation, or, if no
+filename is available, from the dimensions of the data matrix.
 .\"
 .PP
 The \fBvnadata_free\fP() function frees the structure and its contents.

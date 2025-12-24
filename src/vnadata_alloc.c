@@ -69,6 +69,44 @@ void _vnadata_bounds_error(const char *function, const vnadata_t *vdp,
 	    function, what, value);
 }
 
+/* _vnadata_set_name_from_dimensions: provide a default name from dims
+ *   @vdip: pointer to vnadata_internal_t structure
+ */
+void _vnadata_set_name_from_dimensions(vnadata_internal_t *vdip)
+{
+    /*
+     * Set only if a better method hasn't been used.
+     */
+    if (!(vdip->vdi_flags & (VF_FILENAME_SEEN | VF_NAME_SET))) {
+	vnadata_t *vdp = &vdip->vdi_vd;
+	(void)snprintf(vdip->vdi_name, VNADATA_MAX_NAME + 1,
+		"unnamed-%dx%d", vdp->vd_rows, vdp->vd_columns);
+    }
+}
+
+/*
+ * vnadata_get_name: get the name of this device
+ *   @vdp: a pointer to the vnadata_t structure
+ *
+ *   Returns a name for the data object.  The returned pointer remains
+ *   valid for the life of the vnadata_t structure.
+ */
+const char *vnadata_get_name(const vnadata_t *vdp)
+{
+    const vnadata_internal_t *vdip;
+
+    if (vdp == NULL) {
+	errno = EINVAL;
+	return NULL;
+    }
+    vdip = VDP_TO_VDIP(vdp);
+    if (vdip->vdi_magic != VDI_MAGIC) {
+	errno = EINVAL;
+	return NULL;
+    }
+    return vdip->vdi_name;
+}
+
 /*
  * _vnadata_extend_p: extend the port allocation for Z0
  *   @vdip: pointer to vnadata_internal_t structure
@@ -269,6 +307,7 @@ vnadata_t *vnadata_alloc(vnaerr_error_fn_t *error_fn, void *error_arg)
     vdip->vdi_format_string = NULL;
     vdip->vdi_fprecision = 7;
     vdip->vdi_dprecision = 6;
+    _vnadata_set_name_from_dimensions(vdip);
 
     return &vdip->vdi_vd;
 }
@@ -471,6 +510,7 @@ int vnadata_resize(vnadata_t *vdp, vnadata_parameter_type_t type,
     vdp->vd_frequencies = frequencies;
     vdp->vd_rows	= rows;
     vdp->vd_columns	= columns;
+    _vnadata_set_name_from_dimensions(vdip);
 
     return 0;
 }

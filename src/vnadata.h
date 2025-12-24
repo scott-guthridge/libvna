@@ -222,6 +222,26 @@ static inline vnadata_parameter_type_t vnadata_get_type(const vnadata_t *vdp)
 extern int vnadata_set_type(vnadata_t *vdp, vnadata_parameter_type_t type);
 
 /*
+ * vnadata_get_name: get the name of this device
+ *   @vdp: a pointer to the vnadata_t structure
+ *
+ *   Returns a name for the data object.  The returned pointer remains
+ *   valid for the life of the vnadata_t structure.
+ */
+extern const char *vnadata_get_name(const vnadata_t *vdp);
+
+/*
+ * vnadata_set_name: set a name for this device
+ *   @vdp: a pointer to the vnadata_t structure
+ *   @name: name for the device
+ *
+ *   Sets a name for the device.  The name is limited to 31 characters
+ *   plus a terminating NUL.  If the given name is longer than this, it
+ *   will be truncated.
+ */
+extern int vnadata_set_name(vnadata_t *vdp, const char *name);
+
+/*
  * vnadata_get_fmin: get the minimum frequency
  *   @vdp:    a pointer to the vnadata_t structure
  */

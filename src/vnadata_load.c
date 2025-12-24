@@ -27,6 +27,43 @@
 #include <string.h>
 #include "vnadata_internal.h"
 
+/*
+ * _vnadata_set_name_from_filename: provide a default name from filename
+ *   @vdip:   internal parameter matrix
+ *   @filename: filename from which to derive the vnadata name
+ */
+void _vnadata_set_name_from_filename(vnadata_internal_t *vdip,
+	const char *filename)
+{
+    /*
+     * Set only if a name hasn't been explicitly set.
+     */
+    if (!(vdip->vdi_flags & VF_NAME_SET)) {
+	const char *start;
+	const char *cp;
+	size_t n = VNADATA_MAX_NAME;
+
+	/*
+	 * Strip any path prefix.
+	 */
+	if ((start = strrchr(filename, '/')) != NULL) {
+	    ++start;
+	} else {
+	    start = filename;
+	}
+	/*
+	 * Strip extension.
+	 */
+	if ((cp = strrchr(start, '.')) != NULL) {
+	    if (cp - start < n) {
+		n = cp - start;
+	    }
+	}
+	(void)strncpy(vdip->vdi_name, start, n);
+	vdip->vdi_name[n] = '\000';
+	vdip->vdi_flags |= VF_FILENAME_SEEN;
+    }
+}
 
 /*
  * vnadata_load_common: load network parameters from a file
@@ -87,6 +124,7 @@ static int vnadata_load_common(vnadata_internal_t *vdip,
 	abort();
 	/*NOTREACHED*/
     }
+    _vnadata_set_name_from_filename(vdip, filename);
     return 0;
 }
 

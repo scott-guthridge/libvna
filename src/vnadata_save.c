@@ -1521,6 +1521,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 	}
 	fp = NULL;
     }
+    _vnadata_set_name_from_filename(vdip, filename);
     rc = 0;
 
 out:

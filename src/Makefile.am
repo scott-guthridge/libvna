@@ -78,6 +78,7 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnadata_parse_filename.c vnadata_save.c vnadata_set_all_z0.c \
 	vnadata_set_dprecision.c vnadata_set_filetype.c vnadata_set_format.c \
 	vnadata_set_fprecision.c vnadata_set_fz0.c vnadata_set_fz0_vector.c \
+	vnadata_set_name.c \
 	vnadata_set_simple_format.c vnadata_set_z0.c vnadata_set_z0_vector.c \
 	vnadata_update_format_string.c vnaproperty_internal.h vnaproperty.c \
 	vnaproperty_import_yaml_from_string.c \

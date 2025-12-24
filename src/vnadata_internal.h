@@ -32,7 +32,9 @@
 /*
  * vdi_flags values: optional feature flags (see vnadata_init)
  */
-#define VF_PER_F_Z0	0x0001
+#define VF_PER_F_Z0		0x0001	/* per-frequency reference impedances */
+#define VF_FILENAME_SEEN	0x0002	/* vdi_name set by filename */
+#define VF_NAME_SET		0x0004	/* vdi_name set by user */
 
 /*
  * _VNADATA_IS_POWER: return true if parameter represents power or log-power
@@ -73,6 +75,11 @@ typedef struct vnadata_format_descriptor {
 } vnadata_format_descriptor_t;
 
 /*
+ * VNADATA_MAX_NAME: longest string length for vnadata_set_name
+ */
+#define VNADATA_MAX_NAME	31
+
+/*
  * vnadata_internal_t: internal version of vnadata_t
  */
 typedef struct vnadata_internal {
@@ -84,6 +91,9 @@ typedef struct vnadata_internal {
 
     /* user-visible portion of this structure */
     vnadata_t vdi_vd;
+
+    /* name for this standard */
+    char vdi_name[VNADATA_MAX_NAME + 1];
 
     /* user-supplied error callback or NULL */
     vnaerr_error_fn_t *vdi_error_fn;
@@ -146,6 +156,13 @@ extern void _vnadata_error(const vnadata_internal_t *vdip,
 #else
     ;
 #endif
+
+/* _vnadata_set_name_from_dimensions: provide a default name from dims */
+extern void _vnadata_set_name_from_dimensions(vnadata_internal_t *vdip);
+
+/* _vnadata_set_name_from_filename: provide a default name from filename */
+extern void _vnadata_set_name_from_filename(vnadata_internal_t *vdip,
+	const char *filename);
 
 /* _vnadata_extend_p: extend the port allocation for Z0 */
 extern int _vnadata_extend_p(vnadata_internal_t *vdip, int new_p_allocation);
