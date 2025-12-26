@@ -354,20 +354,21 @@ extern void vnacal_new_free(vnacal_new_t *vnp);
 /*
  * vnacal_make_scalar_parameter: create frequency-independent parameter
  *   @vcp: pointer returned from vnacal_create or vnacal_load
- *   @gamma: coefficient of reflection or transmission
+ *   @coefficient: coefficient of reflection or transmission
  */
-extern int vnacal_make_scalar_parameter(vnacal_t *vcp, double complex gamma);
+extern int vnacal_make_scalar_parameter(vnacal_t *vcp,
+	double complex coefficient);
 
 /*
  * vnacal_make_vector_parameter: create frequency-dependent parameter
  *   @vcp: pointer returned from vnacal_create or vnacal_load
- *   @frequencies: length of frequency_vector and gamma_vector
+ *   @frequencies: length of frequency_vector and coefficient_vector
  *   @frequency_vector: vector of increasing frequency values
- *   @gamma_vector: vector of per-frequency gamma values
+ *   @coefficient_vector: vector of per-frequency parameter values
  */
 extern int vnacal_make_vector_parameter(vnacal_t *vcp,
 	const double *frequency_vector, int frequencies,
-	const double complex *gamma_vector);
+	const double complex *coefficient_vector);
 
 /*
  * vnacal_make_unknown_parameter: create an unknown parameter

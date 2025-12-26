@@ -89,13 +89,13 @@ typedef struct vnacal_parameter {
 	struct {
 	    /*
 	     * For vector parameters, frequencies, frequency_vector and
-	     * gamma_vector are set up in vnacal_make_vector_parameter;
+	     * coefficient_vector are set up in vnacal_make_vector_parameter;
 	     * for unknown and correlated parameters, these are set up
 	     * in vnacal_new_solve.
 	     */
 	    int frequencies;
 	    double *frequency_vector;
-	    double complex *gamma_vector;
+	    double complex *coefficient_vector;
 	    struct {
 		/* pointer to related parameter */
 		struct vnacal_parameter *other;
@@ -123,10 +123,10 @@ typedef struct vnacal_parameter {
 /*
  * Hide the union
  */
-#define vpmr_gamma			u.scalar
+#define vpmr_coefficient		u.scalar
 #define vpmr_frequencies		u.vector.frequencies
 #define vpmr_frequency_vector		u.vector.frequency_vector
-#define vpmr_gamma_vector		u.vector.gamma_vector
+#define vpmr_coefficient_vector		u.vector.coefficient_vector
 #define vpmr_other			u.vector.unknown.other
 #define vmpr_correlated			u.vector.unknown.u.correlated
 #define vpmr_sigma_frequencies		vmpr_correlated.sigma_frequencies

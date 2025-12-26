@@ -33,12 +33,12 @@
  * vnacal_make_vector_parameter: create frequency-dependent parameter
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @frequency_vector: vector of increasing frequency values
- *   @frequencies: length of frequency_vector and gamma_vector
- *   @gamma_vector: vector of per-frequency gamma values
+ *   @frequencies: length of frequency_vector and coefficient_vector
+ *   @coefficient_vector: vector of per-frequency values
  */
 int vnacal_make_vector_parameter(vnacal_t *vcp,
 	const double *frequency_vector, int frequencies,
-	const double complex *gamma_vector)
+	const double complex *coefficient_vector)
 {
     vnacal_parameter_t *vpmrp;
 
@@ -51,9 +51,9 @@ int vnacal_make_vector_parameter(vnacal_t *vcp,
 		"at least one frequency must be given");
 	return -1;
     }
-    if (frequency_vector == NULL || gamma_vector == NULL) {
+    if (frequency_vector == NULL || coefficient_vector == NULL) {
 	_vnacal_error(vcp, VNAERR_USAGE, "vnacal_make_vector_parameter: "
-		"frequency_vector and gamma_vector must be non-NULL");
+		"frequency_vector and coefficient_vector must be non-NULL");
 	return -1;
     }
     if (frequency_vector[0] < 0.0) {
@@ -84,16 +84,16 @@ int vnacal_make_vector_parameter(vnacal_t *vcp,
     }
     (void)memcpy((void *)vpmrp->vpmr_frequency_vector,
 	    (void *)frequency_vector, frequencies * sizeof(double));
-    vpmrp->vpmr_gamma_vector = calloc(frequencies, sizeof(double complex));
-    if (vpmrp->vpmr_gamma_vector == NULL) {
+    vpmrp->vpmr_coefficient_vector = calloc(frequencies, sizeof(double complex));
+    if (vpmrp->vpmr_coefficient_vector == NULL) {
 	_vnacal_error(vcp, VNAERR_SYSTEM,
 		"calloc: %s", strerror(errno));
 	vpmrp->vpmr_deleted = true;
 	_vnacal_release_parameter(vpmrp);
 	return -1;
     }
-    (void)memcpy((void *)vpmrp->vpmr_gamma_vector,
-	(void *)gamma_vector, frequencies * sizeof(double complex));
+    (void)memcpy((void *)vpmrp->vpmr_coefficient_vector,
+	(void *)coefficient_vector, frequencies * sizeof(double complex));
 
     return vpmrp->vpmr_index;
 }

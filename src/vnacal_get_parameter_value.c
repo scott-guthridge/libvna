@@ -54,7 +54,7 @@ double complex vnacal_get_parameter_value(vnacal_t *vcp, int parameter,
     }
     switch (vpmrp->vpmr_type) {
     case VNACAL_SCALAR:
-	return vpmrp->vpmr_gamma;
+	return vpmrp->vpmr_coefficient;
 
     case VNACAL_UNKNOWN:
     case VNACAL_CORRELATED:
@@ -79,7 +79,7 @@ double complex vnacal_get_parameter_value(vnacal_t *vcp, int parameter,
 	return HUGE_VAL;
     }
     return _vnacal_rfi(vpmrp->vpmr_frequency_vector,
-	    vpmrp->vpmr_gamma_vector,
+	    vpmrp->vpmr_coefficient_vector,
 	    vpmrp->vpmr_frequencies,
 	    MIN(vpmrp->vpmr_frequencies, VNACAL_MAX_M),
 	    &vpmrp->vpmr_segment,

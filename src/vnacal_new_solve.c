@@ -972,8 +972,8 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 
 	assert(vpmrp->vpmr_type == VNACAL_UNKNOWN ||
 	       vpmrp->vpmr_type == VNACAL_CORRELATED);
-	free((void *)vpmrp->vpmr_gamma_vector);
-	vpmrp->vpmr_gamma_vector = NULL;
+	free((void *)vpmrp->vpmr_coefficient_vector);
+	vpmrp->vpmr_coefficient_vector = NULL;
 	if (vpmrp->vpmr_frequencies != frequencies) {
 	    free((void *)vpmrp->vpmr_frequency_vector);
 	    vpmrp->vpmr_frequency_vector = NULL;
@@ -990,7 +990,7 @@ int _vnacal_new_solve_internal(vnacal_new_t *vnp)
 		(void *)vnp->vn_frequency_vector,
 		frequencies * sizeof(double));
 	assert(vnss.vnss_p_vector[index] != NULL);
-	vpmrp->vpmr_gamma_vector = vnss.vnss_p_vector[index];
+	vpmrp->vpmr_coefficient_vector = vnss.vnss_p_vector[index];
 	vnss.vnss_p_vector[index] = NULL;
     }
 

@@ -117,11 +117,11 @@ double complex _vnacal_get_parameter_value_i(vnacal_parameter_t *vpmrp,
 	    break;
 
 	case VNACAL_SCALAR:
-	    return vpmrp->vpmr_gamma;
+	    return vpmrp->vpmr_coefficient;
 
 	case VNACAL_VECTOR:
 	    return _vnacal_rfi(vpmrp->vpmr_frequency_vector,
-		    vpmrp->vpmr_gamma_vector,
+		    vpmrp->vpmr_coefficient_vector,
 		    vpmrp->vpmr_frequencies,
 		    MIN(vpmrp->vpmr_frequencies, VNACAL_MAX_M),
 		    &vpmrp->vpmr_segment,
@@ -240,7 +240,7 @@ static void _vnacal_free_parameter(vnacal_parameter_t *vpmrp)
 
     case VNACAL_VECTOR:
 	free((void *)vpmrp->vpmr_frequency_vector);
-	free((void *)vpmrp->vpmr_gamma_vector);
+	free((void *)vpmrp->vpmr_coefficient_vector);
 	break;
 
     default:
@@ -296,7 +296,7 @@ int _vnacal_setup_parameter_collection(const char *function, vnacal_t *vcp)
 	goto error;
     }
     vpmrp->vpmr_type = VNACAL_SCALAR;
-    vpmrp->vpmr_gamma = 0.0;
+    vpmrp->vpmr_coefficient = 0.0;
     assert(vpmrp->vpmr_index == VNACAL_MATCH);
 
     /*
@@ -307,7 +307,7 @@ int _vnacal_setup_parameter_collection(const char *function, vnacal_t *vcp)
 	goto error;
     }
     vpmrp->vpmr_type = VNACAL_SCALAR;
-    vpmrp->vpmr_gamma = 1.0;
+    vpmrp->vpmr_coefficient = 1.0;
     assert(vpmrp->vpmr_index == VNACAL_OPEN);
 
     /*
@@ -318,7 +318,7 @@ int _vnacal_setup_parameter_collection(const char *function, vnacal_t *vcp)
 	goto error;
     }
     vpmrp->vpmr_type = VNACAL_SCALAR;
-    vpmrp->vpmr_gamma = -1.0;
+    vpmrp->vpmr_coefficient = -1.0;
     assert(vpmrp->vpmr_index == VNACAL_SHORT);
 
 #if VNACAL_PREDEFINED_PARAMETERS != 3

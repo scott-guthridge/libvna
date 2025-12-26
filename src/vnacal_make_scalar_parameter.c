@@ -32,9 +32,9 @@
 /*
  * vnacal_make_scalar_parameter: create frequency-independent parameter
  *   @vcp: pointer returned from vnacal_create or vnacal_load
- *   @gamma: coefficient of reflection or transmission
+ *   @coefficient: coefficient of reflection or transmission
  */
-int vnacal_make_scalar_parameter(vnacal_t *vcp, double complex gamma)
+int vnacal_make_scalar_parameter(vnacal_t *vcp, double complex coefficient)
 {
     vnacal_parameter_t *vpmrp;
 
@@ -42,13 +42,13 @@ int vnacal_make_scalar_parameter(vnacal_t *vcp, double complex gamma)
 	errno = EINVAL;
 	return -1;
     }
-    if (gamma == 0.0) {
+    if (coefficient == 0.0) {
 	return VNACAL_MATCH;
     }
-    if (gamma == 1.0) {
+    if (coefficient == 1.0) {
 	return VNACAL_OPEN;
     }
-    if (gamma == -1.0) {
+    if (coefficient == -1.0) {
 	return VNACAL_SHORT;
     }
     vpmrp = _vnacal_alloc_parameter("vnacal_make_scalar_parameter", vcp);
@@ -56,6 +56,6 @@ int vnacal_make_scalar_parameter(vnacal_t *vcp, double complex gamma)
 	return -1;
     }
     vpmrp->vpmr_type = VNACAL_SCALAR;
-    vpmrp->vpmr_gamma = gamma;
+    vpmrp->vpmr_coefficient = coefficient;
     return vpmrp->vpmr_index;
 }

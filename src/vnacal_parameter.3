@@ -34,14 +34,14 @@ ll.
 .\"
 .PP
 .BI "int vnacal_make_scalar_parameter(vnacal_t *" vcp ,
-.BI "double complex " gamma );
+.BI "double complex " coefficient );
 .\"
 .PP
 .BI "int vnacal_make_vector_parameter(vnacal_t *" vcp ,
 .RS +4n
 .BI "const double *" frequency_vector ", int " frequencies ,
 .if n .br
-.BI "const double complex *" gamma_vector );
+.BI "const double complex *" coefficient_vector );
 .RS -4n
 .\"
 .PP
@@ -90,10 +90,11 @@ All of the functions take a pointer to a \fBvnacal_t\fP obtained from
 \fBvnacal_create\fP() or \fBvnacal_load\fP().  See \fBvnacal\fP(3).
 .PP
 \fBvnacal_make_scalar_parameter\fP() creates a frequency-independent
-parameter with a reflection coefficient of \fIgamma\fP.
+parameter with a reflection or transmission coefficient of
+\fIcoefficient\fP.
 .PP
 \fBvnacal_make_vector_parameter\fP() creates a frequency-dependent
-parameter, where \fIfrequency_vector\fP and \fIgamma_vector\fP are
+parameter, where \fIfrequency_vector\fP and \fIcoefficient_vector\fP are
 vectors of length \fIfrequencies\fP giving the frequency and value
 at each point.
 The library uses rational function interpolation to interpolate between
