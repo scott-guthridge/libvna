@@ -341,7 +341,7 @@ static int check_for_stray_matrices(const vnacal_calibration_t *calp,
     default:
 	abort();
     }
-    for (int i; i < N_MATRIX_NAMES; ++i) {
+    for (int i = 0; i < N_MATRIX_NAMES; ++i) {
 	if (mask & (1U << i)) {
 	    continue;
 	}
