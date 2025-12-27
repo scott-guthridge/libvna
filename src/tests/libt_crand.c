@@ -315,7 +315,7 @@ double complex libt_crand_nsmmra(double nu, double sigma,
  */
 typedef struct _cga {
     libt_crand_generator_t cga_base;
-    double		cga_sigma;
+    double		   cga_sigma;
 } _cga_t;
 
 /*
@@ -475,16 +475,16 @@ libt_crand_generator_t *libt_crand_generator(double nu, double sigma,
 			progname, strerror(errno));
 		exit(99);
 	    }
-	    cgp->cg_crand = libt_crandn;
+	    cgp->cg_crand = (libt_crand_function_t *)libt_crandn;
 
 	} else {
-	    if ((cgp = malloc(sizeof(_cga_t))) == NULL) {
+	    if ((cgap = malloc(sizeof(_cga_t))) == NULL) {
 		(void)fprintf(stderr, "%s: malloc: %s\n",
 			progname, strerror(errno));
 		exit(99);
 	    }
-	    cgap = (_cga_t *)cgp;
 	    cgap->cga_sigma = sigma;
+	    cgp = &cgap->cga_base;
 	    cgp->cg_crand = _cga;
 	}
 
@@ -497,7 +497,7 @@ libt_crand_generator_t *libt_crand_generator(double nu, double sigma,
 	 * with magnitude within min and max in a few iterations, use
 	 * the iterative generator.  The iterative generator is quite
 	 * a bit faster than the general one, so making a few tries is
-	 * faster.
+	 * worthwhile.
 	 */
 	if (q2 - q1 >= 0.25) {
 	    _cg1_t *cg1p;

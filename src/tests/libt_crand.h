@@ -13,8 +13,9 @@
  * libt_crand_generator_t: abstract complex random number generator
  */
 typedef struct libt_crand_generator libt_crand_generator_t;
+typedef double complex libt_crand_function_t(libt_crand_generator_t *cgp);
 struct libt_crand_generator {
-    double complex (*cg_crand)(libt_crand_generator_t *cgp);
+    libt_crand_function_t *cg_crand;
 };
 
 /* libt_crandn: return standard complex normal random numbers */

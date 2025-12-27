@@ -160,8 +160,8 @@ static libt_result_t test_vnaproperty_expr()
 	goto out;
     }
     if (keys[3] != NULL) {
-	(void)printf("%s: expected NULL, found 0x%08lX\n",
-		progname, (long)keys[3]);
+	(void)printf("%s: expected NULL, found %p\n",
+		progname, (void *)keys[3]);
 	result = T_FAIL;
 	goto out;
     }
