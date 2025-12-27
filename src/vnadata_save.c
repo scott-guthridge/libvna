@@ -713,7 +713,6 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
     vnadata_internal_t *vdip;
     vnadata_parameter_type_t type;
     int rows, ports, frequencies;
-    bool promote_ts2 = false;
     int aprecision;
     int rc = -1;
     const double *frequency_vector;
@@ -798,25 +797,21 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
     }
 
     /*
-     * Set the file type.  If we can determine that the type is Touchstone
-     * or NPD from the filename, use the determined type.  There's a
-     * special-case here in that we allow Touchstone 1 format to be
-     * saved with a ".ts" suffix, but will auto-promote it to Touchstone
-     * 2 below if necessary.  If we can't determine the filetype from
-     * the filename, but already have a filetype, keep the current type.
-     * If all else fails, default to the native NPD format.
+     * Try to set the type based on the filename.  If we cannot
+     * determine the type from the filename and a specific existing
+     * type is set, then use it; otherwise use NPD format.  Note that
+     * _vnadata_parse_filename returns VNADATA_FILETYPE_AUTO to indicate
+     * that it doesn't recognize the file extension.
      */
     {
 	vnadata_filetype_t filetype = _vnadata_parse_filename(filename, NULL);
 
-	if (filetype == VNADATA_FILETYPE_TOUCHSTONE2 &&
-		vdip->vdi_filetype == VNADATA_FILETYPE_TOUCHSTONE1) {
-	    promote_ts2 = true;
-	} else if (filetype != VNADATA_FILETYPE_AUTO) {
+	if (filetype != VNADATA_FILETYPE_AUTO) {
 	    vdip->vdi_filetype = filetype;
 	} else if (vdip->vdi_filetype == VNADATA_FILETYPE_AUTO) {
 	    vdip->vdi_filetype = VNADATA_FILETYPE_NPD;
 	}
+	/* else, keep the existing type */
     }
 
     /*
@@ -923,10 +918,6 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 	 * Touchstone 1 doesn't support more than four ports.
 	 */
 	if (ports > 4) {
-	    if (promote_ts2) {
-		vdip->vdi_filetype = VNADATA_FILETYPE_TOUCHSTONE2;
-		break;
-	    }
 	    _vnadata_error(vdip, VNAERR_USAGE, "%s: "
 		    "cannot save a system with more than four ports in "
 		    "Touchstone 1 file type", function);
@@ -939,11 +930,6 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
 	 */
 	for (int i = 1; i < ports; ++i) {
 	    if (z0_vector[i] != z0_vector[0]) {
-		if (promote_ts2) {
-		    vdip->vdi_filetype = VNADATA_FILETYPE_TOUCHSTONE2;
-		    i = ports;
-		    break;
-		}
 		_vnadata_error(vdip, VNAERR_USAGE, "%s: "
 			"cannot save ports with different reference "
 			"impedances in touchstone 1 format", function);

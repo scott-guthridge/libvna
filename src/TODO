@@ -14,6 +14,7 @@
       Make this more clear in the docs -- that the type is used only if
       load/save cannot determine it, and that load sets the type to that
       of the file loaded.
+      DONE
 
     - Consider renaming El (leakage) to Ed (directivity), and Ef (forward)
       to Et (transmission tracking).  Maintain backward compatiblity in
