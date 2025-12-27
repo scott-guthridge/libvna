@@ -23,7 +23,7 @@ vnacal_new_alloc, vnacal_new_free, vnacal_new_set_frequency_vector, vnacal_new_s
 .SH SYNOPSIS
 .B #include <vnacal.h>
 .\"
-.SS "Starting a New Calibration"
+.SS "Allocation and Set Up"
 .PP
 .BI "vnacal_new_t *vnacal_new_alloc(vnacal_t *" vcp ", vnacal_type_t " type ,
 .in +4n
@@ -173,7 +173,6 @@ vnacal_new_alloc, vnacal_new_free, vnacal_new_set_frequency_vector, vnacal_new_s
 .\"
 .PP
 .BI "int vnacal_new_set_iteration_limit(vnacal_new_t *" vnp ", int " iterations );
-.\"
 .PP
 Link with \fI-lvna\fP \fI-lyaml\fP \fI-lm\fP.
 .sp
@@ -225,19 +224,21 @@ Error term types are covered in more detail below.
 The \fIrows\fP and \fIcolumns\fP parameters give the dimensions of the
 calibration, where \fIrows\fP is the number of VNA ports that detect
 signal and \fIcolumns\fP is the number of VNA ports that transmit signal.
-Usually, all VNA ports can both transmit and detect signal, and both
-\fIrows\fP and \fIcolumns\fP are simply the number of VNA ports.
-But some vector network analyzers, such as certain models of the N2PK
-open source hardware VNA, transmit and detect signal on port 1 as usual,
+In most cases, all VNA ports both transmit and detect signal, and
+\fIrows\fP and \fIcolumns\fP are simply equal to the number of VNA ports.
+Some vector network analyzers, however, have detect-only or transmit-only
+ports.
+For example, a VNA may transmit and detect signal on port 1 as usual,
 but only detect signal on port 2.
-For this VNA, \fIrows\fP is 2 and \fIcolumns\fP is 1.
-If instead of having detect-only ports, a given VNA has some number of
-transmit-only ports, it can be modeled by making \fIcolumns\fP greater
-than \fIrows\fP.
-In all cases, however, the low-numbered ports forming the square portion
-of the matrix must be able to both transmit and detect, i.e. for the
-purpose of calibration, any detect-only or transmit-only ports must be
-given the highest port numbers, and the VNA cannot have both.
+In this case, \fIrows\fP would be 2 and \fIcolumns\fP would be 1.
+Conversely, if the VNA transmits signal on ports 1 and 2, but detects
+signal on port 1 only, then \fIrows\fP would be 1 and \fIcolumns\fP
+would be 2.
+In all cases, the low-numbered ports forming the square portion of the
+matrix must be able to both transmit and detect signal.
+For the purpose of calibration, any detect-only or transmit-only ports
+must therefore be assigned the highest port numbers, and a VNA cannot
+have both detect-only and transmit-only ports.
 .\"
 .SS "Error Term Types"
 .PP
@@ -250,14 +251,15 @@ if it has more rows than columns, U or E12 parameters must be used.
 Next, the actual number of error terms depends on the calibration
 dimensions, shown for both the square case (\fIrows\fP = \fIcolumns\fP =
 ports) and in the general rectangular case.
-When the dimensions are 2x2, the number of error terms matches the number
-in the calibration type name.
+When the dimensions are 2x2 (i.e. two full transmit/detect ports),
+the number of error terms matches the number in the calibration type name.
 Finally, all T and U types contain an arbitrary term.
 For example, in 2x2 T8, one of the eight terms is a free variable,
 so we have to solve for only seven unknowns.
 Similarly, in 2x2 T16, one variable is free and we have to solve for
 only fifteen unknowns.
-In the table, r is rows, c is columns and p is ports.
+In the table, r is rows, c is columns, and for the square case, p is
+ports (p = r = c).
 .TS
 tab(;) allbox;
 cccsc
@@ -324,8 +326,8 @@ Instead of taking complex values for the S-parameters directly, these
 functions take integer values that can be either one of the predefined
 constants: \fB\s-2VNACAL_MATCH\s+2\fP, \fB\s-2VNACAL_OPEN\s+2\fP,
 \fB\s-2VNACAL_SHORT\s+2\fP, \fB\s-2VNACAL_ZERO\s+2\fP,
-\fB\s-2VNACAL_ONE\s+2\fP; or an integer handle returned from one of the
-\fBvnacal_make_\fP*\fP_parameter\fP() functions.
+\fB\s-2VNACAL_ONE\s+2\fP; or an integer parameter handle returned from
+one of the \fBvnacal_make_\fP*\fP_parameter\fP() functions.
 See \fBvnacal_parameter\fP(3).
 There are two main reasons for this approach.
 First, it provides a single interface for parameters that are constant
@@ -357,7 +359,7 @@ When \fIa\fP and \fIb\fP matrices are given with these error term types,
 the library calculates the measurement matrix using
 .ie t \{\
 .EQ
-\fIa\fP { \fIb\fP sup -1 }.
+\fIb\fP { \fIa\fP sup -1 }.
 .EN
 .\}
 .el \{\
@@ -394,12 +396,11 @@ short-open double reflect standard with \fIport1\fP=3 and \fIport2\fP=2,
 the first element of the measurement matrix represents the open on VNA
 port 2.
 .PP
-If the standard has fewer ports than the VNA, the S-parameters measured
-by the unused VNA ports don't matter as long as they remain constant
-over the measurement, and as long as, except for leakage, they have no
-through signal to or from the ports under test.
-When possible, terminate unused VNA ports with loads close to the reference
-impedance to avoid adding unnecessary noise into the leakage measurements.
+In all but the T8 and U8 types, if the standard has fewer ports than
+the VNA, the S-parameters measured by the unused VNA ports are used to
+calculate leakage within the VNA.
+When possible, terminate unused VNA ports with loads close to the
+reference impedance to avoid adding unnecessary noise.
 .\"
 .SS "Starting a New Calibration"
 \fBvnacal_new_alloc\fP() creates a structure of type \fBvnacal_new_t\fP
@@ -494,7 +495,7 @@ Similarly, \fIsigma_tr_vector\fP is \fIfrequencies\fP long vector of
 standard deviations describing an additional noise source, e.g. random
 amplitude modulation in the signal generator, that is proportional to
 the RMS amplitude of the received signal.
-The later is optional and may be given as \s-2NULL\s+2.
+The latter is optional and may be given as \s-2NULL\s+2.
 Both noise sources are assumed to be Gaussian and i.i.d.
 If both vectors are given as \s-2NULL\s+2, then measurement error
 modeling is reset to disabled.
@@ -531,7 +532,7 @@ known.
 When measurement error modeling is enabled, \fBvnacal_new_solve\fP()
 computes a p-value giving the probability that the magnitudes of the
 residuals observed are less than or equal to those expected due to random
-errors, assuming that the measurements are consistent with the specifed
+errors, assuming that the measurements are consistent with the specified
 error model.
 The \fBvnacal_new_set_pvalue_limit\fP() function sets the
 \fIsignificance\fP below which the library should reject the null
