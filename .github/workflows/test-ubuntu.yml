@@ -1,6 +1,10 @@
 name: Test Ubuntu
 
-on: workflow_dispatch
+on:
+  push:
+    branches: [ development ]
+  pull_request:
+    branches: [ development ]
 
 jobs:
   build:
