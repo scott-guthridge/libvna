@@ -36,20 +36,27 @@
  *   @rows: rows in parameter_matrix
  *   @columns: columns in parameter_matrix
  *
- * Note: this function does not free the parameter matrix itself.  Use
- * free to return the memory.
+ * Deleted entries of parameter matrix are set to -1.  Note that this
+ * function does not free the parameter matrix itself.  Use free to
+ * return the memory.
  */
-void vnacal_delete_parameter_matrix(vnacal_t *vcp,
-	const int *parameter_matrix, int rows, int columns)
+int vnacal_delete_parameter_matrix(vnacal_t *vcp,
+	int *parameter_matrix, int rows, int columns)
 {
+    int rc;
+
     for (int row = 0; row < rows; ++row) {
 	for (int column = 0; column < columns; ++column) {
 	    const int cell = row * columns + column;
 	    int parameter = parameter_matrix[cell];
 
 	    if (parameter >= VNACAL_PREDEFINED_PARAMETERS) {
-		vnacal_delete_parameter(vcp, parameter);
+		if ((rc = vnacal_delete_parameter(vcp, parameter)) == -1) {
+		    return rc;
+		};
+		parameter_matrix[cell] = -1;
 	    }
 	}
     }
+    return 0;
 }

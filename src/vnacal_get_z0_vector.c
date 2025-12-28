@@ -32,9 +32,9 @@
  * vnacal_get_z0_vector: return a calibration reference impedance vector
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @ci: calibration index
+ *   @f: frequency at which to evaluate
  *   @vector: caller-provided #ports-long buffer to receive result
  *   @max_entries: number of double complex entries in vector
- *   @f: frequency at which to evaluate
  *
  *   Copies #ports reference impedances into the caller-provided buffer.
  *   The buffer should have space for at least one double complex entry
@@ -52,8 +52,8 @@
  *   number of VNA ports (number of entries placed into vector), or
  *   -1 on error
  */
-int vnacal_get_z0_vector(const vnacal_t *vcp, int ci,
-	double complex *vector, int max_entries, double f)
+int vnacal_get_z0_vector(const vnacal_t *vcp, int ci, double f,
+	double complex *vector, int max_entries)
 {
     const vnacal_calibration_t *calp;
     int ports;

@@ -125,9 +125,9 @@ ll.
 .BI "int vnacal_delete_parameter(vnacal_t *" vcp ", int " parameter );
 .\"
 .PP
-.BI "void vnacal_delete_parameter_matrix(vnacal_t *" vcp ,
+.BI "int vnacal_delete_parameter_matrix(vnacal_t *" vcp ,
 .if n .RS +4n
-.BI "const int *" parameter_matrix ,
+.BI "int *" parameter_matrix ,
 .if !n .RS +4n
 .BI "int " rows ", int " columns );
 .RS -4n
@@ -324,6 +324,7 @@ object.
 \fBvnacal_t\fP structure.
 Similarly, \fBvnacal_delete_parameter_matrix\fP() deletes all parameters
 in the given \fIparameter_matrix\fP.
+Entries are set to -1 as they're deleted.
 Note that this function does not call \fBfree\fP(3) on \fIparameter_matrix\fP.
 It's not an error to delete a parameter that has been added to a
 \fBvnacal_new_t\fP structure \- a copy of the parameter will continue

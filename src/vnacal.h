@@ -574,11 +574,12 @@ extern int vnacal_delete_parameter(vnacal_t *vcp, int parameter);
  *   @rows: rows in parameter_matrix
  *   @columns: columns in parameter_matrix
  *
- * Note: this function does not free the parameter matrix itself.  Use
- * free to return the memory.
+ * Deleted entries of parameter matrix are set to -1.  Note that this
+ * function does not free the parameter matrix itself.  Use free to
+ * return the memory.
  */
-extern void vnacal_delete_parameter_matrix(vnacal_t *vcp,
-	const int *parameter_matrix, int rows, int columns);
+extern int vnacal_delete_parameter_matrix(vnacal_t *vcp,
+	int *parameter_matrix, int rows, int columns);
 
 /*
  * vnacal_create: create the main structure for a new calibration
@@ -738,9 +739,9 @@ extern double complex vnacal_get_z0(const vnacal_t *vcp, int ci);
  * vnacal_get_z0_vector: return a calibration reference impedance vector
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @ci: calibration index
+ *   @f: frequency at which to evaluate
  *   @vector: caller-provided #ports-long buffer to receive result
  *   @max_entries: number of double complex entries in vector
- *   @f: frequency at which to evaluate
  *
  *   Copies #ports reference impedances into the caller-provided buffer.
  *   The buffer should have space for at least one double complex entry
@@ -758,8 +759,8 @@ extern double complex vnacal_get_z0(const vnacal_t *vcp, int ci);
  *   number of VNA ports (number of entries placed into vector), or
  *   -1 on error
  */
-extern int vnacal_get_z0_vector(const vnacal_t *vcp, int ci,
-	double complex *vector, int max_entries, double f);
+extern int vnacal_get_z0_vector(const vnacal_t *vcp, int ci, double f,
+	double complex *vector, int max_entries);
 
 /*
  * vnacal_set_fprecision: set the frequency value precision for vnacal_save
