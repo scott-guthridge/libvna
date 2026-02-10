@@ -90,6 +90,92 @@ static double complex calc_tline_coefficients(const vnacal_calkit_data_t *vcdp,
 }
 
 /*
+ * add_tline_from_zl: return s11 from impedance at end of transmission line
+ *   @vcdp: vnacal_calkit_data_t structure
+ *   @z0: the reference impedance
+ *   @f: frequency in Hz
+ *   @zl: load impedance
+ */
+static double complex add_tline_from_zl(const vnacal_calkit_data_t *vcdp,
+	double complex z0, double f, double complex zl)
+{
+    double complex zc, gl;
+    double complex e, tanh_num, tanh_den;
+    double complex num, den;
+
+    if (vcdp->vcd_flags & VNACAL_CKF_TRADITIONAL) {
+	gl = calc_tline_coefficients0(vcdp, f, &zc);
+    } else {
+	gl = calc_tline_coefficients(vcdp, f, &zc);
+    }
+
+    /*
+     * The input impedance of a transmission line terminated in zl is:
+     *   zi = zc * (zl + zc * tanh(gl)) / (zc + zl * tanh(gl)).
+     *
+     * But tanh is infinite at quarter wavelength delays.  To avoid
+     * infinity, use the substitution:
+     *
+     *     tanh(gl) = (exp(2 gl) - 1) / (exp(2 gl) + 1)
+     */
+    e = cexp(2.0 * gl);
+    tanh_num = e - 1.0;
+    tanh_den = e + 1.0;
+
+    /*
+     * Compute s11 = (zi - conj(z0)) / (zi + z0) with zi expressed
+     * in terms of tanh_num and tanh_den with inner fractions removed.
+     */
+    num = zc * (zc * tanh_num + zl * tanh_den)
+          - conj(z0) * (zc * tanh_den + zl * tanh_num);
+    den = zc * (z0 + zl) * tanh_den
+          + (zc * zc + z0 * zl) * tanh_num;
+
+    return num / den;
+}
+
+/*
+ * add_tline_from_yl: return s11 from admittance at end of transmission line
+ *   @vcdp: vnacal_calkit_data_t structure
+ *   @z0: the reference impedance
+ *   @f: frequency in Hz
+ *   @yl: load admittance
+ */
+static double complex add_tline_from_yl(const vnacal_calkit_data_t *vcdp,
+	double complex z0, double f, double complex yl)
+{
+    double complex zc, gl;
+    double complex e, tanh_num, tanh_den;
+    double complex num, den;
+
+    if (vcdp->vcd_flags & VNACAL_CKF_TRADITIONAL) {
+	gl = calc_tline_coefficients0(vcdp, f, &zc);
+    } else {
+	gl = calc_tline_coefficients(vcdp, f, &zc);
+    }
+
+    /*
+     * Use tanh(gl) = (exp(2 gl) - 1) / (exp(2 gl) + 1) to avoid
+     * infinity at quarter wavelengths.
+     */
+    e = cexp(2.0 * gl);
+    tanh_num = e - 1.0;
+    tanh_den = e + 1.0;
+
+    /*
+     * Compute s11 = (zi - conj(z0)) / (zi + z0) with zi expressed
+     * in terms of yl, tanh_num and tanh_den with inner fractions
+     * removed.
+     */
+    num = zc * (zc * yl * tanh_num + tanh_den)
+	  - conj(z0) * (zc * yl * tanh_den + tanh_num);
+    den = zc * (yl * z0 + 1.0) * tanh_den
+	  + (zc * zc * yl + z0) * tanh_num;
+
+    return num / den;
+}
+
+/*
  * eval_calkit_short: evaluate a calkit short standard at given frequency
  *   @vcdp: vnacal_calkit_data_t structure
  *   @z0: the reference impedance
@@ -102,18 +188,9 @@ static double complex eval_calkit_short(const vnacal_calkit_data_t *vcdp,
           f * (vcdp->vcd_l_coefficients[1] +
 	  f * (vcdp->vcd_l_coefficients[2] +
 	  f *  vcdp->vcd_l_coefficients[3]));
-    double complex Zl = I * 2.0 * M_PI * f * L;
-    double complex Zc, gl, ht, Zi;
+    double complex zl = I * 2.0 * M_PI * f * L;
 
-    if (vcdp->vcd_flags & VNACAL_CKF_TRADITIONAL) {
-	gl = calc_tline_coefficients0(vcdp, f, &Zc);
-    } else {
-	gl = calc_tline_coefficients(vcdp, f, &Zc);
-    }
-    ht = ctanh(gl);
-    Zi = Zc * (Zl + Zc * ht) / (Zc + Zl * ht);
-
-    return (Zi - conj(z0)) / (Zi + z0);
+    return add_tline_from_zl(vcdp, z0, f, zl);
 }
 
 /*
@@ -129,30 +206,9 @@ static double complex eval_calkit_open(const vnacal_calkit_data_t *vcdp,
           f * (vcdp->vcd_c_coefficients[1] +
 	  f * (vcdp->vcd_c_coefficients[2] +
 	  f *  vcdp->vcd_c_coefficients[3]));
-    double complex Zl;
-    double complex Zc, gl, ht, Zi;
+    double complex yl = I * 2.0 * M_PI * f * C;
 
-    /*
-     * Special-case zero frequency.  The result is 1.0 in the limit
-     * regardless of z0.
-     */
-    if (f == 0.0) {
-	return 1.0;
-    }
-
-    /*
-     * Handle the normal case.
-     */
-    Zl = 1.0 / (I * 2.0 * M_PI * f * C);
-    if (vcdp->vcd_flags & VNACAL_CKF_TRADITIONAL) {
-	gl = calc_tline_coefficients0(vcdp, f, &Zc);
-    } else {
-	gl = calc_tline_coefficients(vcdp, f, &Zc);
-    }
-    ht = ctanh(gl);
-    Zi = Zc * (Zl + Zc * ht) / (Zc + Zl * ht);
-
-    return (Zi - conj(z0)) / (Zi + z0);
+    return add_tline_from_yl(vcdp, z0, f, yl);
 }
 
 /*
@@ -164,18 +220,7 @@ static double complex eval_calkit_open(const vnacal_calkit_data_t *vcdp,
 static double complex eval_calkit_load(const vnacal_calkit_data_t *vcdp,
     double complex z0, double f)
 {
-    double complex Zl = vcdp->vcd_zl;
-    double complex Zc, gl, ht, Zi;
-
-    if (vcdp->vcd_flags & VNACAL_CKF_TRADITIONAL) {
-	gl = calc_tline_coefficients0(vcdp, f, &Zc);
-    } else {
-	gl = calc_tline_coefficients(vcdp, f, &Zc);
-    }
-    ht = ctanh(gl);
-    Zi = Zc * (Zl + Zc * ht) / (Zc + Zl * ht);
-
-    return (Zi - conj(z0)) / (Zi + z0);
+    return add_tline_from_zl(vcdp, z0, f, vcdp->vcd_zl);
 }
 
 /*
