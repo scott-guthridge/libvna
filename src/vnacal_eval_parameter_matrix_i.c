@@ -133,10 +133,10 @@ static double complex eval_calkit_open(const vnacal_calkit_data_t *vcdp,
     double complex Zc, gl, ht, Zi;
 
     /*
-     * Special-case zero frequency and zero capacitance.  The result is
-     * 1 in the limit regardless of z0.
+     * Special-case zero frequency.  The result is 1.0 in the limit
+     * regardless of z0.
      */
-    if (f == 0.0 || C == 0.0) {
+    if (f == 0.0) {
 	return 1.0;
     }
 
