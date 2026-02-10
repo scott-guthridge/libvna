@@ -424,6 +424,5 @@ main(int argc, char **argv)
 	break;
     }
     libt_isequal_init();
-    libt_isequal_eps *= 10.0;
     exit(test_vnacal_new_solt());
 }
