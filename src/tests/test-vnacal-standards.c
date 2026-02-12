@@ -87,6 +87,268 @@ static void error_fn(const char *message, void *arg, vnaerr_category_t category)
 }
 
 /*
+ * init_calkit_data: init calkit structure to neutral values
+ *   @vcdp: calkit structure to init
+ */
+static void init_calkit_data(vnacal_calkit_data_t *vcdp)
+{
+    (void)memset((void *)vcdp, 0, sizeof(*vcdp));
+    vcdp->vcd_offset_z0 = 50.0;
+    vcdp->vcd_fmax = INFINITY;
+
+#ifndef BINARY_ZERO_IS_DOUBLE_ZERO
+    vcdp->vcd_offset_delay = 0.0;
+    vcdp->vcd_offset_loss = 0.0;
+    vcdp->vcd_fmin = 0.0;
+    for (int i = 0; i < 4; ++i) {
+	vcdp->vcd_l_coefficients[i] = 0.0;
+    }
+#endif
+}
+
+/*
+ * run_basic_calkit_tests: test calkit zero value edge cases
+ */
+static libt_result_t run_basic_calkit_tests()
+{
+    vnacal_t *vcp = NULL;
+    int parameter_matrix[4] = { -1, -1, -1, -1 };
+    vnacal_calkit_data_t vcd;
+    double complex value_matrix[4];
+    double complex z0_vector[2];
+    libt_result_t result = T_FAIL;
+
+#define parameter parameter_matrix[0]
+#define value value_matrix[0]
+
+    /*
+     * If verbose, report.
+     */
+    if (opt_v != 0) {
+	(void)printf("Test degenerate calkit cases\n");
+    }
+
+    /*
+     * Create a vnacal_t for use in the tests below.
+     */
+    if ((vcp = vnacal_create(error_fn, NULL)) == NULL) {
+	goto out;
+    }
+
+    /*
+     * Test that short standard with no delay or loss is a short.
+     */
+    if (opt_v != 0) {
+	(void)printf("short standard with no delay\n");
+    }
+    init_calkit_data(&vcd);
+    vcd.vcd_type = VNACAL_CALKIT_SHORT;
+    if ((parameter = vnacal_make_calkit_parameter(vcp, &vcd)) == -1) {
+	goto out;
+    }
+    if ((value = vnacal_eval_parameter(vcp, parameter,
+		    1.0e+9, 50.0)) == HUGE_VAL) {
+	goto out;
+    }
+    TEST_EQUAL(value, -1.0, "short_no_delay");
+    if (vnacal_delete_parameter(vcp, parameter) == -1) {
+	goto out;
+    }
+    parameter = -1;
+
+    /*
+     * Test that short standard with quarter delay looks open, and
+     * with zero frequency is short again.
+     */
+    if (opt_v != 0) {
+	(void)printf("short standard with quarter wavelength delay\n");
+    }
+    vcd.vcd_offset_delay = 250e-12;
+    if ((parameter = vnacal_make_calkit_parameter(vcp, &vcd)) == -1) {
+	goto out;
+    }
+    if ((value = vnacal_eval_parameter(vcp, parameter,
+		    1.0e+9, 50.0)) == HUGE_VAL) {
+	goto out;
+    }
+    TEST_EQUAL(value, 1.0, "short_quarter_delay");
+    if ((value = vnacal_eval_parameter(vcp, parameter,
+		    0.0, 50.0)) == HUGE_VAL) {
+	goto out;
+    }
+    TEST_EQUAL(value, -1.0, "short_quarter_delay_zero_f");
+    if (vnacal_delete_parameter(vcp, parameter) == -1) {
+	goto out;
+    }
+    parameter = -1;
+
+    /*
+     * Test that open standard with no delay or loss is an open.
+     */
+    if (opt_v != 0) {
+	(void)printf("open standard with no delay\n");
+    }
+    init_calkit_data(&vcd);
+    vcd.vcd_type = VNACAL_CALKIT_OPEN;
+    if ((parameter = vnacal_make_calkit_parameter(vcp, &vcd)) == -1) {
+	goto out;
+    }
+    if ((value = vnacal_eval_parameter(vcp, parameter,
+		    1.0e+9, 50.0)) == HUGE_VAL) {
+	goto out;
+    }
+    TEST_EQUAL(value, 1.0, "open_no_delay");
+    if (vnacal_delete_parameter(vcp, parameter) == -1) {
+	goto out;
+    }
+    parameter = -1;
+
+    /*
+     * Test that open standard with quarter delay looks shorted, and
+     * with zero frequency is an open again.
+     */
+    if (opt_v != 0) {
+	(void)printf("open standard with quarter wavelength delay\n");
+    }
+    vcd.vcd_offset_delay = 250e-12;
+    if ((parameter = vnacal_make_calkit_parameter(vcp, &vcd)) == -1) {
+	goto out;
+    }
+    if ((value = vnacal_eval_parameter(vcp, parameter,
+		    1.0e+9, 50.0)) == HUGE_VAL) {
+	goto out;
+    }
+    TEST_EQUAL(value, -1.0, "open_quarter_delay");
+    if ((value = vnacal_eval_parameter(vcp, parameter,
+		    0.0, 50.0)) == HUGE_VAL) {
+	goto out;
+    }
+    TEST_EQUAL(value, 1.0, "open_quarter_delay_zero_f");
+    if (vnacal_delete_parameter(vcp, parameter) == -1) {
+	goto out;
+    }
+    parameter = -1;
+
+    /*
+     * Test that load standard with no delay is zero and
+     * that it's still zero with zero frequency.
+     */
+    if (opt_v != 0) {
+	(void)printf("load standard with no delay\n");
+    }
+    init_calkit_data(&vcd);
+    vcd.vcd_type = VNACAL_CALKIT_LOAD;
+    vcd.vcd_zl = 50.0;
+    if ((parameter = vnacal_make_calkit_parameter(vcp, &vcd)) == -1) {
+	goto out;
+    }
+    if ((value = vnacal_eval_parameter(vcp, parameter,
+		    1.0e+9, 50.0)) == HUGE_VAL) {
+	goto out;
+    }
+    TEST_EQUAL(value, 0.0, "load_no_delay");
+    if ((value = vnacal_eval_parameter(vcp, parameter,
+		    0.0, 50.0)) == HUGE_VAL) {
+	goto out;
+    }
+    TEST_EQUAL(value, 0.0, "load_no_delay_zero_f");
+    if (vnacal_delete_parameter(vcp, parameter) == -1) {
+	goto out;
+    }
+    parameter = -1;
+
+    /*
+     * Test that with quarter delay, it's still zero.
+     */
+    if (opt_v != 0) {
+	(void)printf("load standard with quarter wavelength delay\n");
+    }
+    vcd.vcd_offset_delay = 250e-12;
+    if ((parameter = vnacal_make_calkit_parameter(vcp, &vcd)) == -1) {
+	goto out;
+    }
+    if ((value = vnacal_eval_parameter(vcp, parameter,
+		    1.0e+9, 50.0)) == HUGE_VAL) {
+	goto out;
+    }
+    TEST_EQUAL(value, 0.0, "load_quarter_delay");
+    if (vnacal_delete_parameter(vcp, parameter) == -1) {
+	goto out;
+    }
+    parameter = -1;
+
+    /*
+     * Test that through standard with initial values is perfect.
+     */
+    if (opt_v != 0) {
+	(void)printf("through standard with no delay\n");
+    }
+    init_calkit_data(&vcd);
+    vcd.vcd_type = VNACAL_CALKIT_THROUGH;
+    z0_vector[0] = 50.0;
+    z0_vector[1] = 50.0;
+    if (vnacal_make_calkit_parameter_matrix(vcp, &vcd, parameter_matrix,
+		sizeof(parameter_matrix)) == -1) {
+	goto out;
+    }
+    if (vnacal_eval_parameter_matrix(vcp, parameter_matrix, 2, 2,
+		1.0e+9, z0_vector, value_matrix) == -1) {
+	goto out;
+    }
+    TEST_EQUAL(value_matrix[0], 0.0, "through_no_delay s11");
+    TEST_EQUAL(value_matrix[1], 1.0, "through_no_delay s12");
+    TEST_EQUAL(value_matrix[2], 1.0, "through_no_delay s21");
+    TEST_EQUAL(value_matrix[3], 0.0, "through_no_delay s22");
+    if (vnacal_delete_parameter_matrix(vcp, parameter_matrix, 2, 2) == -1) {
+	goto out;
+    }
+
+    /*
+     * Test through standard with quarter delay, then evaluate again
+     * with zero frequency.
+     */
+    if (opt_v != 0) {
+	(void)printf("through standard with quarter wavelength delay\n");
+    }
+    vcd.vcd_offset_delay = 250e-12;
+    if (vnacal_make_calkit_parameter_matrix(vcp, &vcd, parameter_matrix,
+		sizeof(parameter_matrix)) == -1) {
+	goto out;
+    }
+    if (vnacal_eval_parameter_matrix(vcp, parameter_matrix, 2, 2,
+		1.0e+9, z0_vector, value_matrix) == -1) {
+	goto out;
+    }
+    TEST_EQUAL(value_matrix[0], 0.0, "through_quarter_delay s11");
+    TEST_EQUAL(value_matrix[1], -I,  "through_quarter_delay s12");
+    TEST_EQUAL(value_matrix[2], -I,  "through_quarter_delay s21");
+    TEST_EQUAL(value_matrix[3], 0.0, "through_quarter_delay s22");
+    if (vnacal_eval_parameter_matrix(vcp, parameter_matrix, 2, 2,
+		0.0, z0_vector, value_matrix) == -1) {
+	goto out;
+    }
+    TEST_EQUAL(value_matrix[0], 0.0, "through_no_delay s11");
+    TEST_EQUAL(value_matrix[1], 1.0, "through_no_delay s12");
+    TEST_EQUAL(value_matrix[2], 1.0, "through_no_delay s21");
+    TEST_EQUAL(value_matrix[3], 0.0, "through_no_delay s22");
+    if (vnacal_delete_parameter_matrix(vcp, parameter_matrix, 2, 2) == -1) {
+	goto out;
+    }
+    result = T_PASS;
+
+out:
+    if (vcp != NULL) {
+	if (vnacal_delete_parameter_matrix(vcp, parameter_matrix, 2, 2) == -1) {
+	    result = T_FAIL;
+	}
+	vnacal_free(vcp);
+    }
+    return result;
+}
+#undef value
+#undef parameter
+
+/*
  * tf2_t: coefficients of a 2nd order transfer function
  */
 typedef struct tf2 {
@@ -558,7 +820,7 @@ typedef enum standard_type {
  * test_standard_t: describes any standard
  */
 typedef struct test_standard {
-    struct test   *ts_tp;	/* associated test test */
+    struct test		 *ts_tp;	/* associated test test */
     standard_type_t	  ts_type;	/* type of standard */
     int			  ts_ports;	/* number of ports in standard */
     union {
@@ -1707,6 +1969,16 @@ static libt_result_t run_test()
 {
     libt_result_t result = T_FAIL;
 
+    /*
+     * First, run some initial sanity tests.
+     */
+    if ((result = run_basic_calkit_tests()) == T_FAIL) {
+	goto out;
+    }
+
+    /*
+     * Run the main random test sequence.
+     */
     for (int trial = 1; trial <= NTRIALS; ++trial) {
 	if (trial <= NRECTANGULAR) {
 	    for (int rows = 0; rows <= 7; ++rows) {
