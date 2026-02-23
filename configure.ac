@@ -13,6 +13,12 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
 
+# Add Homebrew paths on macOS if present
+if test -d /opt/homebrew/include; then
+    CFLAGS="$CFLAGS -I/opt/homebrew/include"
+    LDFLAGS="$LDFLAGS -L/opt/homebrew/lib"
+fi
+
 # Checks for libraries.
 AC_CHECK_LIB([m], [sqrt])
 AC_CHECK_LIB([yaml], [yaml_document_initialize])
