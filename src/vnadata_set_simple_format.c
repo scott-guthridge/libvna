@@ -36,7 +36,7 @@ int _vnadata_set_simple_format(vnadata_internal_t *vdip,
 	vnadata_parameter_type_t type, vnadata_format_t format)
 {
     vnadata_format_descriptor_t *vfdp_new = NULL;
-    int rc;
+    int rc = -1;
 
     /*
      * Allocate the new format vector, length 1.
