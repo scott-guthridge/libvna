@@ -721,7 +721,7 @@ static libt_result_t run_test(int ports, bool use_fz01, bool use_fz02,
 	    double complex z0 = c.z01[z0_findex][row];
 	    double complex z0c = conj(z0);
 	    double r = creal(z0);
-	    double k = sqrt(cabs(r)) / r;
+	    double k = sqrt(fabs(r)) / r;
 	    for (int column = 0; column < ports; ++column) {
 		int cell = ports * row + column;
 		const double complex a1 = c.a1[findex][cell];
@@ -754,7 +754,7 @@ static libt_result_t run_test(int ports, bool use_fz01, bool use_fz02,
 	    double complex z0 = c.z02[z0_findex][row];
 	    double complex z0c = conj(z0);
 	    double r = creal(z0);
-	    double k = 1.0 / (2.0 * sqrt(cabs(r)));
+	    double k = 1.0 / (2.0 * sqrt(fabs(r)));
 	    for (int column = 0; column < ports; ++column) {
 		int cell = ports * row + column;
 		double complex v = c.v[findex][cell];

@@ -132,10 +132,10 @@ static libt_result_t test_vnacommon_qrsolve2()
 	 * Test square coefficient matrices.
 	 */
 	for (int n = 1; n <= 10; ++n) {
-	    const int o = 3;
+#	    define NRHS 3
 	    double complex a[n][n];
-	    double complex b[n][o];
-	    double complex x[n][o];
+	    double complex b[n][NRHS];
+	    double complex x[n][NRHS];
 	    int rank;
 
 	    /*
@@ -150,12 +150,12 @@ static libt_result_t test_vnacommon_qrsolve2()
 	    /*
 	     * Generate random matrices A and B, and solve for X.
 	     */
-	    rank = qrsolve2_helper(&x[0][0], &a[0][0], &b[0][0], n, n, o);
+	    rank = qrsolve2_helper(&x[0][0], &a[0][0], &b[0][0], n, n, NRHS);
 
 	    /*
 	     * Verify A X == B.
 	     */
-	    for (int k = 0; k < o; ++k) {
+	    for (int k = 0; k < NRHS; ++k) {
 		for (int i = 0; i < n; ++i) {
 		    double complex s = 0.0;
 
