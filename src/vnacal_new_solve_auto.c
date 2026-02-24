@@ -70,7 +70,7 @@ static void print_cmatrix(const char *name, double complex *a, int m, int n)
 int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	double complex *x_vector, int x_length)
 {
-    /* pointer to vnacal_new_t structore */
+    /* pointer to vnacal_new_t structure */
     vnacal_new_t *vnp = vnssp->vnss_vnp;
 
     /* current frequency index */
@@ -547,17 +547,16 @@ int _vnacal_new_solve_auto(vnacal_new_solve_state_t *vnssp,
 	 *   k1 = J^H k
 	 *
 	 * There are many suggestions in the literature for how to choose
-	 * lambda, some more practical than others.   N. Yamashita
-	 * and M. Fukushima, “On the rate of convergence of the
-	 * levenberg-marquardt method,” in Topics in Numerical Analysis,
-	 * pp. 239–249, Springer, Vienna, AS, USA, 2001, shows that the
-	 * choice lamba = ||j||^2 provides quadratic convergence.  We use
-	 * a variation on this: lambda = marquardt_multiplier * ||j||^2.
-	 * Where marquardt_multiplier is initially 1.  If the system
-	 * diverges, then we double marquart_multiplier and try again
-	 * until we get a better solution.  When we get a better solution,
-	 * we shrink marquardt_multiplier such that it's the greater of
-	 * 1 and the previous value scaled by the improvement in ||j||^2.
+	 * lambda, some more practical than others.  We use:
+         *
+	 *   lambda = marquardt_multiplier * ||k||^2
+         *
+	 * where marquardt_multiplier is initially 1.  If the system
+	 * diverges, then we double marquardt_multiplier and try
+	 * again until we get a better solution.  When we get a
+	 * better solution, we shrink marquardt_multiplier such
+	 * that it's the greater of 1 and the previous value scaled
+	 * by the improvement in ||k||^2.
 	 *
 	 * Finally, we use LU decomposition to solve:
 	 *

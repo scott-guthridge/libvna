@@ -147,7 +147,7 @@ int _vnacal_new_solve_init(vnacal_new_solve_state_t *vnssp, vnacal_new_t *vnp)
 		    vnltp = malloc(sizeof(vnacal_new_leakage_term_t));
 		    if (vnltp == NULL) {
 			_vnacal_error(vcp, VNAERR_SYSTEM,
-				"calloc: %s", strerror(errno));
+				"malloc: %s", strerror(errno));
 			vs_free(vnssp);
 			return -1;
 		    }

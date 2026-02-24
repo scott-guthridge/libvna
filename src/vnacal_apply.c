@@ -421,14 +421,14 @@ static void fill_ue14(const vnacal_layout_t *vlp,
 
 	m[1] -= el[0];			/* m12 -= el12 */
 	m[2] -= el[0];			/* m21 -= el12 */
-	a[0] = us[0] + m[0] * ux[0];	/* a11 = 1_us11 + m11 1_ux11 */
-	a[1] =         m[1] * ux[1];	/* a12 =          m12 1_ux22 */
-	a[2] =         m[2] * ux[1];    /* a21 =          m21 1_ux22 */
-	a[3] = us[0] + m[3] * ux[0];    /* a22 = 1_us11 + m22 1_ux11 */
-	b[0] = ui[0] + m[0] * um[0];	/* b11 = 1_ui11 + m11 1_um11 */
-	b[1] =         m[1] * um[1];	/* b12 =          m12 1_um22 */
-	b[2] =         m[2] * um[1];	/* b21 =          m21 1_um22 */
-	b[3] = ui[0] + m[3] * um[0];	/* b22 = 1_ui11 + m22 1_um11 */
+	a[0] = us[0] + m[0] * ux[0];	/* a11 = us11 + m11 ux11 */
+	a[1] =         m[1] * ux[1];	/* a12 =        m12 ux22 */
+	a[2] =         m[2] * ux[1];	/* a21 =        m21 ux22 */
+	a[3] = us[0] + m[3] * ux[0];	/* a22 = us11 + m22 ux11 */
+	b[0] = ui[0] + m[0] * um[0];	/* b11 = ui11 + m11 um11 */
+	b[1] =         m[1] * um[1];	/* b12 =        m12 um22 */
+	b[2] =         m[2] * um[1];	/* b21 =        m21 um22 */
+	b[3] = ui[0] + m[3] * um[0];	/* b22 = ui11 + m22 um11 */
 	return;
     }
 
@@ -930,8 +930,8 @@ int vnacal_apply(vnacal_t *vcp, int ci,
  *   @frequency_vector: vector of increasing frequency points
  *   @frequencies: number of frequencies in matrix and s_parameters
  *   @m: matrix of measured voltages
- *   @m_rows: number of rows in b
- *   @m_columns: number of columns in b
+ *   @m_rows: number of rows in m
+ *   @m_columns: number of columns in m
  *   @s_parameters: caller-allocated vnadata_t structure
  */
 int vnacal_apply_m(vnacal_t *vcp, int ci,

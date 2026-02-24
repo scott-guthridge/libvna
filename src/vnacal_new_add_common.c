@@ -1188,9 +1188,9 @@ int vnacal_new_add_double_reflect_m(vnacal_new_t *vnp,
 /*
  * TODO: In the T8 and U8 reflect cases, we need only the M diagonal.
  * Consider adding an alternative add_double_reflect to the API that takes
- * just m11 and m22 vectors intead of the full M matrix.  Note that in
+ * just m11 and m22 vectors instead of the full M matrix.  Note that in
  * AB, we still need the full A, so this shortcut can be used only in
- * The T8/U8 M cases.
+ * the T8/U8 M cases.
  *
  * int vnacal_new_add_single_reflect_m8(vnacal_new_t *vnp,
  *   const double complex *m11, int s11, int port)
