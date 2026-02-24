@@ -247,12 +247,12 @@ int _vnacal_new_set_z0_vector(const char *function, vnacal_new_t *vnp,
 	z0_type = VNACAL_Z0_SCALAR;
     } else if (length == ports) {
 	z0_type = VNACAL_Z0_VECTOR;
-    } else if (length != ports * vnp->vn_frequencies) {
+    } else if (length == ports * vnp->vn_frequencies) {
 	z0_type = VNACAL_Z0_MATRIX;
     } else {
 	_vnacal_error(vcp, VNAERR_USAGE,
 		"%s: z0_vector length must be 1, number of ports, or "
-		"number of ports * freqeuncies", function);
+		"number of ports * frequencies", function);
 	return -1;
     }
 
