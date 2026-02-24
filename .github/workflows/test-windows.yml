@@ -4,7 +4,7 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
     - name: Prepare git (Windows)
       # Tell git not to convert newlines to CR-LF.
