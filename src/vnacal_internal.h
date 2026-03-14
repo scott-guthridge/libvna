@@ -62,12 +62,19 @@ typedef enum vnacal_parameter_type {
     VNACAL_UNKNOWN,
     VNACAL_CORRELATED,
     VNACAL_CALKIT,
-    VNACAL_DATA
+    VNACAL_DATA,
+    VNACAL_EMBED,
+    VNACAL_DEEMBED
 } vnacal_parameter_type_t;
 
 /* forward */
 typedef struct vnacal_standard vnacal_standard_t;
+typedef struct vnacal_parameter vnacal_parameter_t;
+typedef struct vnacal_parameter_matrix_map vnacal_parameter_matrix_map_t;
 
+/*
+ * vnacal_standard_ops_t: subclass operations on vnacal_standard_t
+ */
 typedef struct vnacal_standard_ops {
     /* type of standard */
     vnacal_parameter_type_t stdo_type;
@@ -149,9 +156,30 @@ typedef struct vnacal_data_standard {
 } vnacal_data_standard_t;
 
 /*
+ * vnacal_embed_standard_t: an embedding or de-embedding
+ */
+typedef struct vnacal_embed_standard {
+    /* vnacal_standard_t base class */
+    vnacal_standard_t estd_base;
+
+    /* std_ports x std_ports matrix of parameter with references */
+    vnacal_parameter_t **estd_target_matrix;
+
+    /* parameter_matrix map for ves_target_matrix */
+    vnacal_parameter_matrix_map_t *estd_target_map;
+
+    /* fixture_ports x fixture_ports matrix of parameter with references */
+    vnacal_parameter_t **estd_fixture_matrix;
+
+    /* parameter matrix map for ves_fixture_matrix */
+    vnacal_parameter_matrix_map_t *estd_fixture_map;
+
+} vnacal_embed_standard_t;
+
+/*
  * vnacal_parameter_t: internal representation of a parameter
  */
-typedef struct vnacal_parameter {
+struct vnacal_parameter {
     /* parameter type */
     vnacal_parameter_type_t vpmr_type;
 
@@ -214,7 +242,7 @@ typedef struct vnacal_parameter {
 
 	} standard;
     } u;
-} vnacal_parameter_t;
+};
 
 /*
  * Hide the union
@@ -260,7 +288,9 @@ typedef struct vnacal_parameter {
  */
 #define VNACAL_IS_STANDARD_PARAMETER(vpmrp) \
     ((vpmrp)->vpmr_type == VNACAL_CALKIT || \
-     (vpmrp)->vpmr_type == VNACAL_DATA)
+     (vpmrp)->vpmr_type == VNACAL_DATA || \
+     (vpmrp)->vpmr_type == VNACAL_EMBED || \
+     (vpmrp)->vpmr_type == VNACAL_DEEMBED)
 
 /*
  * The parameter matrix for a calibration standard that is given to the
@@ -357,7 +387,7 @@ typedef struct vnacal_parameter_rmap {
  * vnacal_parameter_matrix_map_t: how the parameter matrix maps to ordinary
  *     parameters, calkit standards and data standards
  */
-typedef struct vnacal_parameter_matrix_map {
+struct vnacal_parameter_matrix_map {
     /* associated calibration structure */
     vnacal_t *vpmm_vcp;
 
@@ -373,7 +403,7 @@ typedef struct vnacal_parameter_matrix_map {
     /* linked list of ordinary parameters */
     vnacal_parameter_rmap_t *vpmm_parameter_rmap;
 
-} vnacal_parameter_matrix_map_t;
+};
 
 /*
  * vnacal_parameter_collection_t: collection of parameters
@@ -632,6 +662,18 @@ extern vnacal_parameter_matrix_map_t *_vnacal_analyze_parameter_matrix(
 /* _vnacal_free_parameter_matrix_map: free a vnacal_parameter_matrix_map_t */
 extern void _vnacal_free_parameter_matrix_map(
 	vnacal_parameter_matrix_map_t *vpmmp);
+
+/* _vnacal_make_data_parameter_matrix: make a parameter matrix from data */
+extern int _vnacal_make_data_parameter_matrix(const char *function,
+	vnacal_t *vcp, const vnadata_t *vdp,
+	int *parameter_matrix, size_t parameter_matrix_size);
+
+/* _vnacal_embed_parameter_matrix: embed/de-embed a DUT into/from a fixture */
+extern const vnacal_standard_ops_t _vnacal_embed_ops, _vnacal_deembed_ops;
+extern int _vnacal_embed_parameter_matrix(const char *function,
+	const vnacal_standard_ops_t *stdop, vnacal_t *vcp,
+	const int *target_matrix, int target_ports, const int *fixture_matrix,
+	int *result_matrix, size_t result_matrix_size);
 
 /* _vnacal_setup_parameter_collection: allocate the parameter collection */
 extern int _vnacal_setup_parameter_collection(const char *function,

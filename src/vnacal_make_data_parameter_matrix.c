@@ -161,7 +161,7 @@ static const vnacal_standard_ops_t _data_ops = {
  * programming against overrunning the caller's buffer.  Caller can delete
  * the returned parameters by a call to vnacal_delete_parameter_matrix.
  */
-static int _vnacal_make_data_parameter_matrix(const char *function,
+int _vnacal_make_data_parameter_matrix(const char *function,
 	vnacal_t *vcp, const vnadata_t *vdp,
 	int *parameter_matrix, size_t parameter_matrix_size)
 {

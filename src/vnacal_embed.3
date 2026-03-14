@@ -1,0 +1,198 @@
+.\"
+.\" Vector Network Analyzer Library
+.\" Copyright © 2020-2023 D Scott Guthridge <scott_guthridge@rompromity.net>
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published
+.\" by the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.\"
+.TH VNACAL_EMBED 3 "2026-04-01" GNU
+.nh
+.SH NAME
+vnacal_embed_parameter, vnacal_embed_parameter_matrix, vnacal_deembed_parameter, vnacal_deembed_parameter_matrix, vnacal_embed, vnacal_deembed \- embed and de-embed test fixture
+.\"
+.SH SYNOPSIS
+.B #include <vnacal.h>
+.\"
+.PP
+.BI "int vnacal_embed_parameter(vnacal_t *" vcp ", int " dut ,
+.if n .RS +4n
+.BI "const int " fixture_matrix "[2][2]);"
+.if n .RS -4n
+.\"
+.PP
+.BI "int vnacal_embed_parameter_matrix(vnacal_t *" vcp ,
+.RS +4n
+.BI "const int *" dut_matrix ", int " dut_ports ,
+.if n .br
+.BI "const int *" fixture_matrix ,
+.br
+.BI "int *" result_matrix ", size_t " result_matrix_size );
+.RS -4n
+.\"
+.PP
+.BI "int vnacal_deembed_parameter(vnacal_t *" vcp ", int " embedded ,
+.if n .RS +4n
+.BI "const int " fixture_matrix "[2][2]);"
+.if n .RS -4n
+.\"
+.PP
+.BI "int vnacal_deembed_parameter_matrix(vnacal_t *" vcp ,
+.RS +4n
+.BI "const int *" embedded_matrix ", int " embedded_ports ,
+.if n .br
+.BI "const int *" fixture_matrix ,
+.br
+.BI "int *" result_matrix ", size_t " result_matrix_size );
+.RS -4n
+.PP
+.\"
+.PP
+.BI "int vnacal_embed(vnacal_t *" vcp ,
+.BI "vnadata_t *" vdp_in ", vnadata_t *" vdp_out ,
+.RS +4n
+.BI "const int *" fixture_matrix ", int " fixture_ports );
+.RS -4n
+.\"
+.PP
+.BI "int vnacal_deembed(vnacal_t *" vcp ", vnadata_t *" vdp_in ,
+.if n .RS +4n
+.BI "vnadata_t *" vdp_out ,
+.if !n .RS +4n
+.BI "const int *" fixture_matrix ", int " fixture_ports );
+.RS -4n
+.\"
+.PP
+Link with \fI-lvna\fP \fI-lyaml\fP \fI-lm\fP.
+.sp
+.\"
+.SH DESCRIPTION
+These functions mathematically add or remove the effect of a test fixture
+to a device or standard.
+In the embedding case, we provide the network parameters of a device
+and of the test fixture, and the embed functions return the network
+parameters of the combined device and fixture.
+In the de-embedding case, we provide the network parameters of the
+combined device and fixture and of the fixture itself, and the de-embed
+functions return the network parameters of the device alone.
+.\"
+.PP
+All functions take \fIfixture_matrix\fP, a matrix of integer
+parameter handles representing the test fixture.
+The dimensions of \fIfixture_matrix\fP are
+(2 * \fIdut_ports\fP) x (2 * \fIdut_ports\fP).
+See \fBvnacal_parameter\fP(3) for a description of parameter matrices.
+The fixture can be a matrix containing a calkit standard, a data standard,
+scalar or vector parameters, unknown parameters previously calculated
+in \fBvnacal_new_solve\fP(), or a meaningful mixture or permutation of
+the above.
+.\"
+.PP
+The \fBvnacal_embed_parameter\fP() function takes a parameter handle
+representing a single-port device, for example a calkit short standard or
+the value \s-2VNACAL_OPEN\s+2 (describing a perfect open) and a two-port
+fixture, for example a short length of transmission line represented
+by a calkit through standard, and returns a parameter handle that can
+be evaluated at a given frequency and reference impedance, e.g. using
+\fBvnacal_eval_parameter\fP().
+The first port of \fIfixture_matrix\fP is the external VNA-facing
+port; the second port is the internal, device-facing port.
+If the ports of the parameter matrices have implicit reference impedances,
+i.e. are made of calkit and data standards, then the library automatically
+applies power wave reference renormalization as necessary to put the
+fixture and device references into conjugate match.
+If the parameter matrices contain ordinary parameters such as scalar or
+vector, however, then it's the caller's responsibility to make sure those
+parameters have meaningful reference impedances for their context.
+.\"
+.PP
+The \fBvnacal_embed_parameter_matrix\fP() function takes a parameter
+matrix representing a device with any positive number of ports.
+The dimensions of \fIdut_matrix\fP and \fIresult_matrix\fP are
+\fIdut_ports\fP x \fIdut_ports\fP, while the dimensions of
+\fIfixture_matrix\fP are (2 * \fIdut_ports\fP) x (2 * \fIdut_ports\fP).
+Fixture ports are ordered so that indices 0 through \fIdut_ports\fP -
+1 are the external (VNA-facing) ports, and indices \fIdut_ports\fP
+through 2 * \fIdut_ports\fP - 1 are the device-facing ports.
+The result is placed into the caller-provided buffer, \fIresult_matrix\fP.
+The \fIresult_matrix_size\fP parameter is the size in bytes of
+\fIresult_matrix\fP used to protect against buffer overrun.
+.\"
+.PP
+The \fBvnacal_deembed_parameter\fP() function takes a parameter
+handle representing a single-port device embedded in a fixture and the
+parameter matrix of the two-port fixture, and returns a parameter handle
+representing the device without the fixture.
+The result can be evaluated at a given frequency and reference impedance,
+e.g. using \fBvnacal_eval_parameter\fP().
+As described above, the first port of \fIfixture_matrix\fP is the external
+VNA-facing port; the second port is the internal, device-facing port.
+\fIfixture_matrix\fP faces the device.
+If the ports of the parameter matrices have implicit reference impedances,
+i.e. are made of calkit and data standards, then the library automatically
+applies power wave reference renormalization as necessary to put the
+fixture and device references into conjugate match.
+If the parameter matrices contain ordinary parameters such as scalar
+or vector, however, then it's the caller's responsibility to make sure
+those parameters have meaningful reference impedances for their context.
+.\"
+.PP
+The \fBvnacal_deembed_parameter_matrix\fP() function takes a parameter
+matrix representing the embedded device and fills the caller-allocated
+\fIresult_matrix\fP with parameters for the device alone.
+The dimensions of \fIembedded_matrix\fP and \fIresult_matrix\fP are
+\fIembedded_ports\fP x \fIembedded_ports\fP, while the dimensions
+of \fIfixture_matrix\fP are (2 * \fIembedded_ports\fP) x (2 *
+\fIembedded_ports\fP).
+Fixture ports are ordered so that indices 0 through \fIdut_ports\fP -
+1 are the external (VNA-facing) ports, and indices \fIdut_ports\fP
+through 2 * \fIdut_ports\fP - 1 are the device-facing ports.
+The result is placed into the caller-provided buffer, \fIresult_matrix\fP.
+The \fIresult_matrix_size\fP parameter is the size in bytes of
+\fIresult_matrix\fP used to protect against buffer overrun.
+.\"
+.PP
+The \fBvnacal_embed\fP() and \fBvnacal_deembed\fP() functions embed or
+de-embed, respectively, the network parameters in \fIvdp_in\fP and write
+the result into \fIvdp_out\fP.
+For an in-place conversion, \fIvdp_out\fP can be the same as \fIvdp_in\fP.
+The caller must initialize \fIvdp_out\fP with correct dimensions,
+desired parameter type, desired frequency vector, and desired reference
+impedances before the call.
+The \fIfixture_matrix\fP parameter is as described above;
+\fIfixture_ports\fP must be exactly twice the number of ports in
+\fIvdp_in\fP.
+.\"
+.SH "RETURN VALUE"
+The \fBvnacal_embed_parameter\fP() and \fBvnacal_deembed_parameter\fP()
+functions return a parameter handle suitable for passing to
+\fBvnacal_eval_parameter\fP() or one of the \fBvnacal_new_add_*\fP()
+functions, or -1 on error.
+The \fBvnacal_embed_parameter_matrix\fP() and
+\fBvnacal_deembed_parameter_matrix\fP() functions return the number of
+ports in \fIdut_matrix\fP and \fIresult_matrix\fP, or -1 on error.
+.\"
+.SH ERRORS
+On error, these functions invoke the \fIerror_fn\fP, given to
+\fBvnacal_create\fP() or \fBvnacal_load\fP() if provided, set \fBerrno\fP
+to one of the following values and return failure.
+.IP \fB\s-2EINVAL\s+2\fP
+An entry in \fIdut_matrix\fP or \fIfixture_matrix\fP is invalid.
+The \fIfixture_ports\fP parameter is not exactly twice the number of
+ports in \fIvdp_in\fP.
+The \fIresult_matrix_size\fP is insufficient to hold
+the returned matrix.
+.IP \fB\s-2ENOMEM\s+2\fP
+The library was unable to allocate memory.
+.\"
+.SH "SEE ALSO"
+.BR vnacal "(3), " vnacal_parameter "(3), " vnacal_new "(3)"

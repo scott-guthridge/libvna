@@ -22,6 +22,7 @@
 #include <complex.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include "vnadata.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,6 +73,9 @@ extern bool libt_isequal_label(double complex actual, double complex expected,
 /* libt_print_cmatrix: print an m by n serialized complex matrix */
 extern void libt_print_cmatrix(const char *tag, const double complex *a,
 	int m, int n);
+
+/* libt_print_vnadata: print a vnadata structure */
+extern void libt_print_vnadata(const char *tag, const vnadata_t *vdp);
 
 /* libt_randu: uniformally distributed numbers between min and max */
 extern double libt_randu(double min, double max);

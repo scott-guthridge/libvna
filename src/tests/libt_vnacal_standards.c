@@ -294,6 +294,8 @@ void libt_vnacal_print_standard(const libt_vnacal_terms_t *ttp,
 		case VNACAL_VECTOR:
 		case VNACAL_CALKIT:
 		case VNACAL_DATA:
+		case VNACAL_EMBED:
+		case VNACAL_DEEMBED:
 		    by_frequency = true;
 		    break;
 		case VNACAL_UNKNOWN:

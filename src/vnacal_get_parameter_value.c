@@ -62,8 +62,8 @@ double complex vnacal_get_parameter_value(vnacal_t *vcp,
             alt = "vnacal_eval_parameter_matrix";
         }
         _vnacal_error(vpmrp->vpmr_vcp, VNAERR_USAGE,
-                "%s: cannot be used on calkit "
-                "or data parameters; use %s instead",
+                "%s: cannot be used on calkit, data or embedded "
+                "parameters; use %s instead",
                 __func__, alt);
         result = HUGE_VAL;
 	goto out;

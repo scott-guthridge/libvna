@@ -67,7 +67,7 @@ static char *format_sxx(char *cur, char *end, int row, int column)
 }
 
 /*
- * _vnacal_get_parameter_name: copy of descriptive name for parameter into buffer
+ * _vnacal_get_parameter_name: copy descriptive name for parameter into buffer
  *   @vpmrp: parameter struct
  *   @with_sxx: include "sxx of" in front of standard parameters
  *   @buffer: buffer of at least PARAMETER_BUFFER_ALLOC + 1 chars for result
@@ -111,6 +111,8 @@ void _vnacal_get_parameter_name(const vnacal_parameter_t *vpmrp, bool with_sxx,
 
     case VNACAL_CALKIT:
     case VNACAL_DATA:
+    case VNACAL_DEEMBED:
+    case VNACAL_EMBED:
 	{
 	    vnacal_standard_t *stdp = vpmrp->vpmr_stdp;
 
@@ -257,25 +259,25 @@ vnacal_parameter_matrix_map_t *_vnacal_analyze_parameter_matrix(
      */
     if (initial) {
 	for (int cell = 0; cell < rows * columns; ++cell) {
-	    vnacal_parameter_t **vpmrp = &matrix[cell];
+	    vnacal_parameter_t **vpmrpp = &matrix[cell];
 
-	    if (*vpmrp == NULL)
+	    if (*vpmrpp == NULL)
 		continue;
 
-	    while ((*vpmrp)->vpmr_type == VNACAL_UNKNOWN ||
-	           (*vpmrp)->vpmr_type == VNACAL_CORRELATED) {
-		*vpmrp = (*vpmrp)->vpmr_other;
+	    while ((*vpmrpp)->vpmr_type == VNACAL_UNKNOWN ||
+	           (*vpmrpp)->vpmr_type == VNACAL_CORRELATED) {
+		*vpmrpp = (*vpmrpp)->vpmr_other;
 	    }
 	}
     } else {
 	for (int cell = 0; cell < rows * columns; ++cell) {
-	    vnacal_parameter_t **vpmrp = &matrix[cell];
+	    vnacal_parameter_t **vpmrpp = &matrix[cell];
 
-	    if (*vpmrp == NULL)
+	    if (*vpmrpp == NULL)
 		continue;
 
-	    if ((*vpmrp)->vpmr_type != VNACAL_UNKNOWN &&
-		(*vpmrp)->vpmr_type != VNACAL_CORRELATED)
+	    if ((*vpmrpp)->vpmr_type != VNACAL_UNKNOWN &&
+		(*vpmrpp)->vpmr_type != VNACAL_CORRELATED)
 		continue;
 
 	    if (matrix[cell]->vpmr_frequency_vector == NULL) {

@@ -533,6 +533,92 @@ extern int vnacal_load_data_parameter_matrix(vnacal_t *vcp,
 	size_t parameter_matrix_size);
 
 /*
+ * vnacal_embed_parameter: embed a single port DUT into a two-port fixture
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @fixture_matrix: 2x2 matrix describing the test fixture
+ *   @dut: parameter describing the DUT or standard
+ */
+extern int vnacal_embed_parameter(vnacal_t *vcp, int dut,
+	const int (*fixture_matrix)[2]);
+
+/*
+ * vnacal_embed_parameter_matrix: embed a DUT into a test fixture
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @dut_matrix: parameter matrix of DUT/standard
+ *   @dut_ports: number of DUT/standard ports
+ *   @fixture_matrix: parameter matrix of fixture
+ *   @result_matrix: caller-allocated matrix to receive result
+ *   @result_matrix_size: allocation in bytes of the result matrix
+ *
+ * Fill result_matrix with parameter indices suitable for passing to
+ * the vnacal_new_add_* functions.
+ *
+ * Returns the number of ports (rows and columns) of the standard.
+ * Caller can delete the returned parameters by a call to
+ * vnacal_delete_parameter_matrix.
+ */
+extern int vnacal_embed_parameter_matrix(vnacal_t *vcp,
+	const int *dut_matrix, int dut_ports,
+	const int *fixture_matrix,
+	int *result_matrix, size_t result_matrix_size);
+
+/*
+ * vnacal_deembed_parameter: de-embed a single port DUT from two-port fixture
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @embedded: parameter describing the DUT embedded in fixture
+ *   @fixture_matrix: 2x2 matrix describing the test fixture
+ */
+extern int vnacal_deembed_parameter(vnacal_t *vcp, int embedded,
+	const int (*fixture_matrix)[2]);
+
+/*
+ * vnacal_deembed_parameter_matrix: de-embed a DUT from a test fixture
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @embedded_matrix: parameter matrix of DUT/standard
+ *   @embedded_ports: number of DUT/standard ports
+ *   @fixture_matrix: parameter matrix of fixture
+ *   @result_matrix: caller-allocated matrix to receive result
+ *   @result_matrix_size: allocation in bytes of the result matrix
+ *
+ * Fill result_matrix with parameter indices suitable for passing to
+ * the vnacal_new_add_* functions.
+ *
+ * Returns the number of ports (rows and columns) of the standard.
+ * Caller can delete the returned parameters by a call to
+ * vnacal_delete_parameter_matrix.
+ */
+extern int vnacal_deembed_parameter_matrix(vnacal_t *vcp,
+	const int *embedded_matrix, int embedded_ports,
+	const int *fixture_matrix,
+	int *result_matrix, size_t result_matrix_size);
+
+/*
+ * vnacal_embed: embed DUT into test fixture using network parameter data
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @vdp_in: network parameter data to embed
+ *   @vdp_out: takes frequency vector, z0 and type as input; returns data
+ *   @fixture_matrix: parameter matrix of fixture
+ *   @fixture_ports: number of fixture ports (must be even)
+ *
+ *   For in-place conversion, vdp_out can be the same as vdp_in.
+ */
+extern int vnacal_embed(vnacal_t *vcp, vnadata_t *vdp_in, vnadata_t *vdp_out,
+	const int *fixture_matrix, int fixture_ports);
+
+/*
+ * vnacal_deembed: de-embed DUT from test fixture using network parameter data
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @vdp_in: network parameter data to de-embed
+ *   @vdp_out: takes frequency vector, z0 and type as input; returns data
+ *   @fixture_matrix: parameter matrix of fixture
+ *   @fixture_ports: number of fixture ports (must be even)
+ *
+ *   For in-place conversion, vdp_out can be the same as vdp_in.
+ */
+extern int vnacal_deembed(vnacal_t *vcp, vnadata_t *vdp_in, vnadata_t *vdp_out,
+	const int *fixture_matrix, int fixture_ports);
+
+/*
  * vnacal_get_parameter_value: evaluate a parameter at a given frequency
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @parameter: index of parameter

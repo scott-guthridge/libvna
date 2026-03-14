@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include "libt.h"
+#include "vnadata.h"
 
 #define SQRT2_2		0.707106781186547524400844362104
 
@@ -217,6 +218,57 @@ void libt_print_cmatrix(const char *tag, const double complex *a, int m, int n)
 	    double complex v = a[i * n + j];
 
 	    (void)printf(" %9.5f%+9.5fj", creal(v), cimag(v));
+	}
+	(void)printf("\n");
+    }
+    (void)printf("\n");
+}
+
+/*
+ * libt_print_vnadata: print a vnadata structure
+ */
+void libt_print_vnadata(const char *tag, const vnadata_t *vdp)
+{
+    const int frequencies = vnadata_get_frequencies(vdp);
+    const int rows = vnadata_get_rows(vdp);
+    const int columns = vnadata_get_columns(vdp);
+    const int ports = MAX(rows, columns);
+
+    (void)printf("%s (%s) type %s:\n", tag, vnadata_get_name(vdp),
+	    vnadata_get_type_name(vnadata_get_type(vdp)));
+    if (!vnadata_has_fz0(vdp)) {
+	printf("  z0:\n");
+	for (int port = 0; port < ports; ++port) {
+	    double complex z0 = vnadata_get_z0(vdp, port);
+
+	    (void)printf("    %f%+fj\n", creal(z0), cimag(z0));
+	}
+	(void)printf("\n");
+    } else {
+	printf("  fz0:\n");
+	for (int findex = 0; findex < frequencies; ++findex) {
+	    (void)printf("    %2d:", findex);
+	    for (int port = 0; port < ports; ++port) {
+		double complex z0 = vnadata_get_fz0(vdp, findex, port);
+
+		(void)printf(" %f%+fj", creal(z0), cimag(z0));
+	    }
+	    (void)printf("\n");
+	}
+	(void)printf("\n");
+    }
+    (void)printf("  data:\n");
+    for (int findex = 0; findex < frequencies; ++findex) {
+	(void)printf("    findex %d (%f)\n", findex,
+		vnadata_get_frequency(vdp, findex));
+	for (int row = 0; row < rows; ++row) {
+	    (void)printf("   ");
+	    for (int column = 0; column < columns; ++column) {
+		double complex value = vnadata_get_cell(vdp, findex,
+			row, column);
+		(void)printf(" %f%+fj", creal(value), cimag(value));
+	    }
+	    (void)printf("\n");
 	}
 	(void)printf("\n");
     }

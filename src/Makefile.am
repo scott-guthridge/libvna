@@ -19,7 +19,9 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnacal_add_calibration.c vnacal_apply.c \
 	vnacal_build_error_term_list.c vnacal_calibration.c \
 	vnacal_create.c vnacal_delete_calibration.c vnacal_delete_parameter.c \
-	vnacal_delete_parameter_matrix.c vnacal_error.c \
+	vnacal_delete_parameter_matrix.c \
+	vnacal_embed.c vnacal_deembed.c vnacal_embed_parameter_matrix.c \
+	vnacal_error.c \
 	vnacal_eval_parameter.c vnacal_eval_parameter_matrix.c \
 	vnacal_eval_parameter_matrix_i.c vnacal_find_calibration.c \
 	vnacal_free.c vnacal_get.c vnacal_get_parameter_value.c \
@@ -96,8 +98,8 @@ libvna_la_LDFLAGS = -no-undefined
 #
 # Man pages
 #
-dist_man_MANS = vnacal.3 vnacal_new.3 vnacal_parameter.3 vnaconv.3 \
-	vnadata.3 vnaerr.3 vnaproperty.3
+dist_man_MANS = vnacal.3 vnacal_new.3 vnacal_parameter.3 vnacal_embed.3 \
+	vnaconv.3 vnadata.3 vnaerr.3 vnaproperty.3
 
 #
 # Package Data
@@ -108,9 +110,13 @@ nodist_pkgconfig_DATA = libvna.pc
 #
 # Examples
 #
-noinst_PROGRAMS = vnaproperty-example vnacal-SOLT-example vnacal-TSD-example \
-		  vnacal-TRL-example \
+noinst_PROGRAMS = embed-deembed-example vnaproperty-example \
+	vnacal-SOLT-example vnacal-TSD-example vnacal-TRL-example \
 		  vnaconv-example vnadata-example convert-parameters
+
+embed_deembed_example_SOURCES = embed-deembed-example.c
+embed_deembed_example_LDADD = libvna.la -lyaml
+embed_deembed_example_LDFLAGS = -static
 
 vnaproperty_example_SOURCES = vnaproperty-example.c
 vnaproperty_example_LDADD = libvna.la -lyaml
@@ -143,40 +149,49 @@ convert_parameters_LDFLAGS = -static
 examplesdir = $(docdir)/examples
 
 dist_examples_DATA = BFCV-4085+_Plus25DegC.s2p MwT-1F.s2p \
+	MtoM-3.5mm-adapter.s2p embed-deembed-example.c \
+	embed-deembed-example.gnuplot \
 	vnacal-SOLT-example.c vnacal-SOLT-example.gnuplot \
 	vnacal-TSD-example.c vnacal-TSD-example.gnuplot \
 	vnacal-TRL-example.c vnacal-TRL-example.gnuplot \
 	vnaconv-example.c vnadata-example.c vnadata-example.npd \
 	convert-parameters.c convert-parameters.ts
 
+embed-deembed-example.out: embed-deembed-example
+	./embed-deembed-example > "$@"
+
 vnacal-SOLT-example.out: vnacal-SOLT-example
 	./vnacal-SOLT-example > "$@"
-
-plot-SOLT: vnacal-SOLT-example.out vnacal-SOLT-example.gnuplot
-	$(GNUPLOT) vnacal-SOLT-example.gnuplot
-
-vnacal-TSD-example.out: vnacal-TSD-example
-	./vnacal-TSD-example > "$@"
 
 vnacal-TRL-example.out: vnacal-TRL-example
 	./vnacal-TRL-example > "$@"
 
-plot-TSD: vnacal-TSD-example.out vnacal-TSD-example.gnuplot
-	$(GNUPLOT) vnacal-TSD-example.gnuplot
+vnacal-TSD-example.out: vnacal-TSD-example
+	./vnacal-TSD-example > "$@"
+
+plot-embed-deembed: embed-deembed-example.out embed-deembed-example.gnuplot
+	$(GNUPLOT) embed-deembed-example.gnuplot
+
+plot-SOLT: vnacal-SOLT-example.out vnacal-SOLT-example.gnuplot
+	$(GNUPLOT) vnacal-SOLT-example.gnuplot
 
 plot-TRL: vnacal-TRL-example.out vnacal-TRL-example.gnuplot
 	$(GNUPLOT) vnacal-TRL-example.gnuplot
+
+plot-TSD: vnacal-TSD-example.out vnacal-TSD-example.gnuplot
+	$(GNUPLOT) vnacal-TSD-example.gnuplot
 
 plot: plot-SOLT
 
 .3.pdf:
 	$(PDFROFF) -t -e -man --no-toc-relocation $< > "$@"
 
-pdfman: vnacal.pdf vnacal_new.pdf vnacal_parameter.pdf vnaconv.pdf \
-	vnadata.pdf vnaerr.pdf vnaproperty.pdf
+pdfman: vnacal.pdf vnacal_embed.pdf vnacal_new.pdf vnacal_parameter.pdf \
+	vnaconv.pdf vnadata.pdf vnaerr.pdf vnaproperty.pdf
 
 clean-local:
-	rm -f example.vnacal *.vnacal vnacal-SOLT-example.out \
-		vnacal-TSD-example.out vnacal-TRL-example.out \
-		vnacal.pdf vnacal_new.pdf vnacal_parameter.pdf \
-		vnaconv.pdf vnadata.pdf vnaerr.pdf vnaproperty.pdf
+	rm -f example.vnacal *.vnacal embed-deembed-example.out \
+		vnacal_parameter.pdf vnacal.pdf vnacal_new.pdf \
+		vnacal-SOLT-example.out vnacal-TRL-example.out \
+		vnacal-TSD-example.out vnaconv.pdf vnadata.pdf \
+		vnaerr.pdf vnaproperty.pdf

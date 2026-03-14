@@ -42,6 +42,7 @@ tags
 /src/tests/test-suite.log
 /src/tests/test-vnacal-apply
 /src/tests/test-vnacal-compat-V2
+/src/tests/test-vnacal-embed
 /src/tests/test-vnacal-pvalue
 /src/tests/test-vnacal-random
 /src/tests/test-vnacal-save-load
@@ -78,8 +79,11 @@ tags
 /src/tests/test-vnaproperty-map
 /src/tests/test-vnaproperty-scalar
 /src/tests/vnacal-test.vnacal
+/src/embed-deembed-example
+/src/embed-deembed-example.out
 /src/TRL.vnacal
 /src/TSD.vnacal
+/src/vnacal-embed.pdf
 /src/vnacal_new.pdf
 /src/vnacal_parameter.pdf
 /src/vnacal.pdf

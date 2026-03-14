@@ -210,6 +210,10 @@ static void _vnacal_free_parameter(vnacal_parameter_t *vpmrp)
 	vprmcp->vprmc_first_free = parameter;
     }
     switch (vpmrp->vpmr_type) {
+    case VNACAL_NEW:
+    case VNACAL_SCALAR:
+	break;
+
     case VNACAL_CORRELATED:
 	if (vpmrp->vpmr_sigma_frequency_vector !=
 		vpmrp->vpmr_other->vpmr_frequency_vector) {
@@ -232,11 +236,13 @@ static void _vnacal_free_parameter(vnacal_parameter_t *vpmrp)
 
     case VNACAL_CALKIT:
     case VNACAL_DATA:
+    case VNACAL_EMBED:
+    case VNACAL_DEEMBED:
 	_vnacal_release_standard(&vpmrp->vpmr_stdp);
 	break;
 
     default:
-	break;
+	abort();
     }
     free((void *)vpmrp);
 }
@@ -323,22 +329,133 @@ error:
     return -1;
 }
 
+#ifdef DEBUG
+/*
+ * print_parameter_collection: show the parameter collection for debug
+ *   @vprmcp: parameter collection
+ */
+void print_parameter_collection(const vnacal_parameter_collection_t *vprmcp)
+{
+    char name[PARAMETER_BUFFER_ALLOC + 1];
+
+    (void)printf("parameter collection:\n");
+    for (int slot = 0; slot < vprmcp->vprmc_allocation; ++slot) {
+	vnacal_parameter_t *vpmrp = vprmcp->vprmc_vector[slot];
+	vnacal_standard_t *stdp;
+	vnacal_embed_standard_t *estdp;
+
+	(void)printf("  slot %d: ", slot);
+	if (vpmrp == NULL) {
+	    (void)printf("free\n");
+	    continue;
+	}
+	_vnacal_get_parameter_name(vpmrp, /*with_sxx=*/true, name);
+	(void)printf("%s\n", name);
+	(void)printf("    hold_count %d", vpmrp->vpmr_hold_count);
+	if (vpmrp->vpmr_deleted) {
+	    (void)printf(" (DELETED)");
+	}
+	(void)printf("\n");
+	assert(vpmrp->vpmr_index == slot);
+
+	switch (vpmrp->vpmr_type) {
+	case VNACAL_NEW:
+	case VNACAL_VECTOR:
+	case VNACAL_UNKNOWN:
+	case VNACAL_CORRELATED:
+	default:
+	    continue;
+
+	case VNACAL_SCALAR:
+	    (void)printf("    value %f%+f\n",
+		    creal(vpmrp->vpmr_coefficient),
+		    cimag(vpmrp->vpmr_coefficient));
+	    continue;
+
+	case VNACAL_CALKIT:
+	case VNACAL_DATA:
+	    stdp = vpmrp->vpmr_stdp;
+	    (void)printf("    standard @%p refcount %d\n",
+		    (void *)stdp, stdp->std_refcount);
+	    continue;
+
+	case VNACAL_EMBED:
+	case VNACAL_DEEMBED:
+	    stdp = vpmrp->vpmr_stdp;
+	    estdp = (vnacal_embed_standard_t *)stdp;
+	    (void)printf("    standard @%p refcount %d\n",
+		    (void *)stdp, stdp->std_refcount);
+	    (void)printf("    target matrix:\n");
+	    for (int row = 0; row < stdp->std_ports; ++row) {
+		for (int column = 0; column < stdp->std_ports; ++column) {
+		    const int cell = stdp->std_ports * row + column;
+		    vnacal_parameter_t *vpmrp_temp;
+
+		    (void)printf("        %d %d ", row, column);
+		    vpmrp_temp = estdp->estd_target_matrix[cell];
+		    if (vpmrp_temp == NULL) {
+			(void)printf("null\n");
+			continue;
+		    }
+		    _vnacal_get_parameter_name(vpmrp_temp,
+			    /*with_sxx=*/true, name);
+		    (void)printf("slot %d \"%s\"\n",
+			    vpmrp_temp->vpmr_index, name);
+		}
+	    }
+	    (void)printf("    fixture matrix:\n");
+	    for (int row = 0; row < 2 * stdp->std_ports; ++row) {
+		for (int column = 0; column < 2 * stdp->std_ports; ++column) {
+		    const int cell = 2 * stdp->std_ports * row + column;
+		    vnacal_parameter_t *vpmrp_temp;
+
+		    (void)printf("        %d %d ", row, column);
+		    vpmrp_temp = estdp->estd_fixture_matrix[cell];
+		    if (vpmrp_temp == NULL) {
+			(void)printf("null\n");
+			continue;
+		    }
+		    _vnacal_get_parameter_name(vpmrp_temp,
+			    /*with_sxx=*/true, name);
+		    (void)printf("slot %d \"%s\"\n",
+			    vpmrp_temp->vpmr_index, name);
+		}
+	    }
+	    continue;
+	}
+    }
+    (void)fflush(stdout);
+}
+#endif
+
 /*
  * _vnacal_teardown_parameter_collection: free the parameter collection
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
  */
 void _vnacal_teardown_parameter_collection(vnacal_t *vcp)
 {
     vnacal_parameter_collection_t *vprmcp = &vcp->vc_parameter_collection;
 
+#ifdef DEBUG
+    print_parameter_collection(vprmcp);
+#endif /* DEBUG */
     for (int i = vprmcp->vprmc_allocation - 1; i >= 0; --i) {
 	vnacal_parameter_t *vpmrp = vprmcp->vprmc_vector[i];
 
-	if (vpmrp != NULL) {
-	    assert(!vpmrp->vpmr_deleted);
+	/*
+	 * Delete any parameters the caller didn't delete.
+	 */
+	if (vpmrp != NULL && !vpmrp->vpmr_deleted) {
 	    vpmrp->vpmr_deleted = true;
 	    _vnacal_release_parameter(vpmrp);
-	    assert(vprmcp->vprmc_vector[i] == NULL);
 	}
+    }
+#if DEBUG > 1
+    print_parameter_collection(vprmcp);
+#endif
+    /* check for refcount/memory leaks */
+    for (int i = vprmcp->vprmc_allocation - 1; i >= 0; --i) {
+	assert(vprmcp->vprmc_vector[i] == NULL);
     }
     free((void *)vprmcp->vprmc_vector);
     (void)memset((void *)&vcp->vc_parameter_collection, 0,
