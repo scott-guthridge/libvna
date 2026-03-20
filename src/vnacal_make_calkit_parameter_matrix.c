@@ -29,6 +29,305 @@
 #include "vnacal_internal.h"
 
 /*
+ * calc_tline_coefficients0: calc Zc, gl (classic version)
+ *   @vcdp: calibration kit data
+ *   @f: frequency in Hz
+ *   @Zc: address of complex to receive the characteristic impedance
+ *
+ * Returns the transmission coefficient times electrical length (gamma
+ * el).  This is the original version described in Keysight note 1287-11:
+ * https://people.ece.ubc.ca/robertor/Links_files/Files/AN-1287-11.pdf
+ * This form uses an approximation to avoid the need for complex square
+ * root.
+ */
+static double complex calc_tline_coefficients0(const vnacal_calkit_data_t *vcdp,
+	double f, double complex *Zc)
+{
+    double w = 2.0 * M_PI * f;				/* rad/s */
+    double fGrt = sqrt(f / 1.0e+9/*Hz*/);		/* unitless */
+    double offset_delay = vcdp->vcd_offset_delay;	/* s */
+    double offset_loss = vcdp->vcd_offset_loss;		/* Ω/s */
+    double offset_z0 = vcdp->vcd_offset_z0;		/* Ω */
+    double alpha_l = offset_loss * offset_delay * fGrt /
+		     (2.0 * offset_z0);
+    double beta_l = w * offset_delay + alpha_l;
+    double complex gamma_l = alpha_l + I * beta_l;
+    *Zc = offset_z0 + (f != 0.0 ?
+	(1.0 - I) * offset_loss * fGrt / (2.0 * w) : 0.0);
+
+    return gamma_l;
+}
+
+/*
+ * calc_tline_coefficients: calc Z, gl (revised version)
+ *   @vcdp: calibration kit data
+ *   @f: frequency in Hz
+ *   @Zc: address of complex to receive the characteristic impedance
+ *
+ * Returns the transmission coefficient times electrical length
+ * (gamma el).  This is the revised version described here:
+ * https://www.keysight.com/us/en/assets/7018-01375/application-notes/
+ * 5989-4840.pdf
+ */
+static double complex calc_tline_coefficients(const vnacal_calkit_data_t *vcdp,
+	double f, double complex *Zc)
+{
+    double complex temp;
+    double offset_delay = vcdp->vcd_offset_delay;	/* s */
+    double offset_loss = vcdp->vcd_offset_loss;		/* Ω/s */
+    double offset_z0 = vcdp->vcd_offset_z0;		/* Ω */
+
+    if (f != 0.0) {
+	temp = csqrt(1.0 +
+		     (1.0 - I) * offset_loss /
+		     (2.0 * M_PI * sqrt(1.0e+9 * f) * offset_z0));
+    } else {
+	temp = 1.0;
+    }
+    *Zc = offset_z0 * temp;
+    return I * 2.0 * M_PI * f * offset_delay * temp;
+}
+
+/*
+ * add_tline_from_zl: return s11 from impedance at end of transmission line
+ *   @vcdp: vnacal_calkit_data_t structure
+ *   @z0: the reference impedance
+ *   @f: frequency in Hz
+ *   @zl: load impedance
+ */
+static double complex add_tline_from_zl(const vnacal_calkit_data_t *vcdp,
+	double complex z0, double f, double complex zl)
+{
+    double complex zc, gl;
+    double complex e, tanh_num, tanh_den;
+    double complex num, den;
+
+    if (vcdp->vcd_flags & VNACAL_CKF_TRADITIONAL) {
+	gl = calc_tline_coefficients0(vcdp, f, &zc);
+    } else {
+	gl = calc_tline_coefficients(vcdp, f, &zc);
+    }
+
+    /*
+     * The input impedance of a transmission line terminated in zl is:
+     *   zi = zc * (zl + zc * tanh(gl)) / (zc + zl * tanh(gl)).
+     *
+     * But tanh is infinite at quarter wavelength delays.  To avoid
+     * infinity, use the substitution:
+     *
+     *     tanh(gl) = (exp(2 gl) - 1) / (exp(2 gl) + 1)
+     */
+    e = cexp(2.0 * gl);
+    tanh_num = e - 1.0;
+    tanh_den = e + 1.0;
+
+    /*
+     * Compute s11 = (zi - conj(z0)) / (zi + z0) with zi expressed
+     * in terms of tanh_num and tanh_den with inner fractions removed.
+     */
+    num = zc * (zc * tanh_num + zl * tanh_den)
+          - conj(z0) * (zc * tanh_den + zl * tanh_num);
+    den = zc * (z0 + zl) * tanh_den
+          + (zc * zc + z0 * zl) * tanh_num;
+
+    return num / den;
+}
+
+/*
+ * add_tline_from_yl: return s11 from admittance at end of transmission line
+ *   @vcdp: vnacal_calkit_data_t structure
+ *   @z0: the reference impedance
+ *   @f: frequency in Hz
+ *   @yl: load admittance
+ */
+static double complex add_tline_from_yl(const vnacal_calkit_data_t *vcdp,
+	double complex z0, double f, double complex yl)
+{
+    double complex zc, gl;
+    double complex e, tanh_num, tanh_den;
+    double complex num, den;
+
+    if (vcdp->vcd_flags & VNACAL_CKF_TRADITIONAL) {
+	gl = calc_tline_coefficients0(vcdp, f, &zc);
+    } else {
+	gl = calc_tline_coefficients(vcdp, f, &zc);
+    }
+
+    /*
+     * Use tanh(gl) = (exp(2 gl) - 1) / (exp(2 gl) + 1) to avoid
+     * infinity at quarter wavelengths.
+     */
+    e = cexp(2.0 * gl);
+    tanh_num = e - 1.0;
+    tanh_den = e + 1.0;
+
+    /*
+     * Compute s11 = (zi - conj(z0)) / (zi + z0) with zi expressed
+     * in terms of yl, tanh_num and tanh_den with inner fractions
+     * removed.
+     */
+    num = zc * (zc * yl * tanh_num + tanh_den)
+	  - conj(z0) * (zc * yl * tanh_den + tanh_num);
+    den = zc * (yl * z0 + 1.0) * tanh_den
+	  + (zc * zc * yl + z0) * tanh_num;
+
+    return num / den;
+}
+
+/*
+ * eval_calkit_short: evaluate a calkit short standard at given frequency
+ *   @vcdp: vnacal_calkit_data_t structure
+ *   @z0: the reference impedance
+ *   @f: frequency in Hz
+ */
+static double complex eval_calkit_short(const vnacal_calkit_data_t *vcdp,
+    double complex z0, double f)
+{
+    double L = vcdp->vcd_l_coefficients[0] +
+          f * (vcdp->vcd_l_coefficients[1] +
+	  f * (vcdp->vcd_l_coefficients[2] +
+	  f *  vcdp->vcd_l_coefficients[3]));
+    double complex zl = I * 2.0 * M_PI * f * L;
+
+    return add_tline_from_zl(vcdp, z0, f, zl);
+}
+
+/*
+ * eval_calkit_open: evaluate a calkit open standard at given frequency
+ *   @vcdp: vnacal_calkit_data_t structure
+ *   @z0: the reference impedance
+ *   @f: frequency in Hz
+ */
+static double complex eval_calkit_open(const vnacal_calkit_data_t *vcdp,
+    double complex z0, double f)
+{
+    double C = vcdp->vcd_c_coefficients[0] +
+          f * (vcdp->vcd_c_coefficients[1] +
+	  f * (vcdp->vcd_c_coefficients[2] +
+	  f *  vcdp->vcd_c_coefficients[3]));
+    double complex yl = I * 2.0 * M_PI * f * C;
+
+    return add_tline_from_yl(vcdp, z0, f, yl);
+}
+
+/*
+ * eval_calkit_load: evaluate a calkit load standard at given frequency
+ *   @vcdp: vnacal_calkit_data_t structure
+ *   @z0: the reference impedance
+ *   @f: frequency in Hz
+ */
+static double complex eval_calkit_load(const vnacal_calkit_data_t *vcdp,
+    double complex z0, double f)
+{
+    return add_tline_from_zl(vcdp, z0, f, vcdp->vcd_zl);
+}
+
+/*
+ * eval_calkit_through: evaluate a calkit through standard at given frequency
+ *   @vcdp: vnacal_calkit_data_t structure
+ *   @z0_vector: the reference impedances
+ *   @f: frequency in Hz
+ *   @result_matrix: 2x2 complex matrix to receive the result
+ */
+static void eval_calkit_through(const vnacal_calkit_data_t *vcdp,
+    const double complex *z0_vector, double f, double complex *result_matrix)
+{
+    double complex zc, gl, z1, z2, p, p2, mp, pp, c, d;
+    double z1r, z2r, rt;
+
+    if (vcdp->vcd_flags & VNACAL_CKF_TRADITIONAL) {
+	gl = calc_tline_coefficients0(vcdp, f, &zc);
+    } else {
+	gl = calc_tline_coefficients(vcdp, f, &zc);
+    }
+
+    /*
+     * Effectively, we find the ABCD parameters of the transmission line
+     * and convert them to S parameters, e.g.:
+     *   double complex a[2][2];
+     *
+     *   a[0][0] = ccosh(gl);
+     *   a[0][1] = csinh(gl) * zc;
+     *   a[1][0] = csinh(gl) / zc;
+     *   a[1][1] = ccosh(gl);
+     *   vnaconv_atos(a, (double complex (*)[2])result_matrix, z0_vector);
+     *
+     * If we convert the trig functions to exponential form, expand the
+     * conversion and then refactor, however; we get the more numerically
+     * stable form below.
+     */
+    p = cexp(-gl);
+    p2 = p * p;
+    pp = 1.0 + p2;
+    mp = 1.0 - p2;
+    z1 = z0_vector[0];
+    z2 = z0_vector[1];
+    z1r = creal(z1);
+    z2r = creal(z2);
+    rt = sqrt(fabs(z1r / z2r));
+    d = pp * (z1 + z2) * zc + mp * (z1 * z2 + zc * zc);
+    c = 4.0 * p * zc / d;
+    result_matrix[0] = ((pp * z2 + mp * zc) * zc -
+                        (mp * z2 + pp * zc) * conj(z1)) / d;
+    result_matrix[1] = c * z1r / rt;
+    result_matrix[2] = c * z2r * rt;
+    result_matrix[3] = ((pp * z1 + mp * zc) * zc -
+                        (mp * z1 + pp * zc) * conj(z2)) / d;
+}
+
+/*
+ * eval_calkit_standard: evaluate the standard into result_matrix
+ *   @stdp: vnacal_standard_t structure
+ *   @function: name of user-called function
+ *   @z0_vector: reference impedance vector
+ *   @frequency: frequency (in Hz) to evaluate
+ *   @result_matrix: caller-allocated matrix to hold result
+ */
+static int eval_calkit_standard(vnacal_standard_t *stdp, const char *function,
+	const double complex *z0_vector, double frequency,
+	double complex *result_matrix)
+{
+    vnacal_calkit_standard_t *cstdp;
+
+    assert(stdp->std_ops->stdo_type == VNACAL_CALKIT);
+    cstdp = (vnacal_calkit_standard_t *)stdp;
+    switch (cstdp->cstd_calkit_data.vcd_type) {
+    case VNACAL_CALKIT_SHORT:
+	result_matrix[0] = eval_calkit_short(&cstdp->cstd_calkit_data,
+		z0_vector[0], frequency);
+	break;
+
+    case VNACAL_CALKIT_OPEN:
+	result_matrix[0] = eval_calkit_open(&cstdp->cstd_calkit_data,
+		z0_vector[0], frequency);
+	break;
+
+    case VNACAL_CALKIT_LOAD:
+	result_matrix[0] = eval_calkit_load(&cstdp->cstd_calkit_data,
+		z0_vector[0], frequency);
+	break;
+
+    case VNACAL_CALKIT_THROUGH:
+	eval_calkit_through(&cstdp->cstd_calkit_data, z0_vector,
+		frequency, result_matrix);
+	break;
+
+    default:
+	abort();
+    }
+    return 0;
+}
+
+/*
+ * _calkit_ops: subclass operations on vnacal_calkit_standard_t
+ */
+static const vnacal_standard_ops_t _calkit_ops = {
+    .stdo_type = VNACAL_CALKIT,
+    .stdo_eval = eval_calkit_standard,
+    .stdo_free = NULL
+};
+
+/*
  * vnacal_make_calkit_parameter_matrix: make parameter matrix for kit standard
  *   @function: name of user-called function
  *   @vcp: pointer returned from vnacal_create or vnacal_load
@@ -49,6 +348,7 @@ static int _vnacal_make_calkit_parameter_matrix(const char *function,
 	vnacal_t *vcp, const vnacal_calkit_data_t *vcdp,
 	int *parameter_matrix, size_t parameter_matrix_size)
 {
+    vnacal_calkit_standard_t *cstdp = NULL;
     vnacal_standard_t *stdp = NULL;
     const char *name;
     int ports = 0;
@@ -72,65 +372,37 @@ static int _vnacal_make_calkit_parameter_matrix(const char *function,
 		"%s: insufficient result matrix allocation", function);
 	return -1;
     }
-    for (int cell = 0; cell < ports * ports; ++cell) {
-	parameter_matrix[cell] = -1;
-    }
+    _vnacal_init_parameter_matrix(parameter_matrix, ports, ports);
 
     /*
      * Allocate and init the standard.
      */
-    if ((stdp = malloc(sizeof(vnacal_standard_t))) == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+    if ((cstdp = _vnacal_alloc_standard(function, vcp, &_calkit_ops,
+		    ports, sizeof(vnacal_calkit_standard_t))) == NULL) {
 	goto error;
     }
-    (void)memset((void *)stdp, 0, sizeof(*stdp));
-    stdp->std_type = VNACAL_CALKIT;
+    stdp = &cstdp->cstd_base;
     if ((stdp->std_name = strdup(name)) == NULL) {
 	goto error;
     }
-    stdp->std_ports = ports;
-    stdp->std_refcount = 0;
-    stdp->std_vcp = vcp;
-    stdp->std_calkit_data = *vcdp;
+    cstdp->cstd_calkit_data = *vcdp;
 
     /*
      * Add the parameter structures.
      */
-    for (int row = 0; row < ports; ++row) {
-	for (int column = 0; column < ports; ++column) {
-	    const int cell = ports * row + column;
-	    vnacal_parameter_t *vpmrp;
-
-	    vpmrp = _vnacal_alloc_parameter(function, vcp);
-	    if (vpmrp == NULL) {
-		goto error;
-	    }
-	    vpmrp->vpmr_type = VNACAL_CALKIT;
-	    vpmrp->vpmr_stdp = stdp;
-	    vpmrp->vpmr_row = row;
-	    vpmrp->vpmr_column = column;
-	    parameter_matrix[cell] = vpmrp->vpmr_index;
-	}
+    if (_vnacal_fill_standard_parameter_matrix(function, stdp,
+		parameter_matrix) == -1) {
+	goto error;
     }
-    stdp->std_refcount = ports * ports;
+    _vnacal_release_standard(&stdp);	/* release initial reference */
+    assert(stdp != NULL);
     return ports;
 
 error:
-    for (int row = 0; row < ports; ++row) {
-	for (int column = 0; column < ports; ++column) {
-	    const int cell = ports * row + column;
-	    int idx = parameter_matrix[cell];
-	    vnacal_parameter_t *vpmrp;
-
-	    if (idx == -1) {
-		break;
-	    }
-	    vpmrp = vcp->vc_parameter_collection.vprmc_vector[idx];
-	    vpmrp->vpmr_type = VNACAL_NEW; /* prevent deletion of standard */
-	    _vnacal_release_parameter(vpmrp);
-	}
+    if (stdp != NULL) {
+	_vnacal_release_standard(&stdp); /* release initial reference */
+	assert(stdp == NULL);
     }
-    _vnacal_free_standard(stdp);
     return -1;
 }
 

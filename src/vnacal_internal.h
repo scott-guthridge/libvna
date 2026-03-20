@@ -65,42 +65,29 @@ typedef enum vnacal_parameter_type {
     VNACAL_DATA
 } vnacal_parameter_type_t;
 
-/*
- * vnacal_data_standard_t: a standard based on network parameter data
- */
-typedef struct vnacal_data_standard {
-    /* number of frequency points */
-    int vds_frequencies;
+/* forward */
+typedef struct vnacal_standard vnacal_standard_t;
 
-    /* vector of frequency values */
-    double *vds_frequency_vector;
-
-    /* indicates per-frequency reference impedances */
-    bool vds_has_fz0;
-
-    /* most recent segment used in _vnacal_rfi */
-    int vds_segment;
-
-    /* reference impedances */
-    union {
-	/* vector of reference impedances by port */
-	double complex *vds_z0_vector;
-
-	/* vector by port of vector by frequency of reference impedances */
-	double complex **vds_z0_vector_vector;
-    } u;
-
-    /* serialized matrix of vectors (by frequency) of S parameters */
-    double complex **vds_data;
-
-} vnacal_data_standard_t;
-
-/*
- * vnacal_standard_t: a computed or data standard
- */
-typedef struct vnacal_standard {
+typedef struct vnacal_standard_ops {
     /* type of standard */
-    vnacal_parameter_type_t std_type;
+    vnacal_parameter_type_t stdo_type;
+
+    /* evaluate the standard at the given frequency */
+    int (*stdo_eval)(struct vnacal_standard *stdp, const char *function,
+	const double complex *z0_vector, double frequency,
+	double complex *result_matrix);
+
+    /* destruct the derived struct members */
+    void (*stdo_free)(struct vnacal_standard *stdp);
+
+} vnacal_standard_ops_t;
+
+/*
+ * vnacal_standard_t: base class for standards
+ */
+struct vnacal_standard {
+    /* class-specific type and operations */
+    const vnacal_standard_ops_t *std_ops;
 
     /* name of standard for error messages */
     char *std_name;
@@ -114,18 +101,52 @@ typedef struct vnacal_standard {
     /* back pointer to vnacal_t structure */
     vnacal_t *std_vcp;
 
-    /* details based on standard type */
-    union {
-	vnacal_calkit_data_t calkit_data;
-	vnacal_data_standard_t data_standard;
-    } u;
-} vnacal_standard_t;
+};
 
 /*
- * Hide the union.
+ * vnacal_calkit_standard_t: a calibration kit standard
  */
-#define std_calkit_data			u.calkit_data
-#define std_data_standard		u.data_standard
+typedef struct vnacal_calkit_standard {
+    /* vnacal_standard_t base class */
+    vnacal_standard_t cstd_base;
+
+    /* calkit parameters */
+    vnacal_calkit_data_t cstd_calkit_data;
+
+} vnacal_calkit_standard_t;
+
+/*
+ * vnacal_data_standard_t: a standard based on network parameter data
+ */
+typedef struct vnacal_data_standard {
+    /* vnacal_standard_t base class */
+    vnacal_standard_t dstd_base;
+
+    /* number of frequency points */
+    int dstd_frequencies;
+
+    /* vector of frequency values */
+    double *dstd_frequency_vector;
+
+    /* indicates per-frequency reference impedances */
+    bool dstd_has_fz0;
+
+    /* most recent segment used in _vnacal_rfi */
+    int dstd_segment;
+
+    /* reference impedances */
+    union {
+	/* vector of reference impedances by port */
+	double complex *dstd_z0_vector;
+
+	/* vector by port of vector by frequency of reference impedances */
+	double complex **dstd_z0_vector_vector;
+    } u;
+
+    /* serialized matrix of vectors (by frequency) of S parameters */
+    double complex **dstd_data;
+
+} vnacal_data_standard_t;
 
 /*
  * vnacal_parameter_t: internal representation of a parameter
@@ -547,14 +568,31 @@ extern void _vnacal_release_parameter(vnacal_parameter_t *vpmrp);
 extern const char *_vnacal_get_calkit_name(const vnacal_calkit_data_t *vcdp,
 	int *ip_ports);
 
-/* _vnacal_free_standard: free a vnacal_standard_t structure */
-extern void _vnacal_free_standard(vnacal_standard_t *stdp);
+/* _vnacal_alloc_standard: allocate a vnacal_standard_t structure */
+extern void *_vnacal_alloc_standard(const char *function, vnacal_t *vcp,
+	const vnacal_standard_ops_t *ops, int ports, size_t size);
+
+/* _vnacal_release_standard: decrement the reference count on a standard */
+extern void _vnacal_release_standard(vnacal_standard_t **stdpp);
 
 /* _vnacal_get_parameter_frange: get the frequency limits for the parameter */
 extern void _vnacal_get_parameter_frange(vnacal_parameter_t *vpmrp,
 	double *fmin, double *fmax);
 
-/* vnacal_eval_parameter_matrix: evaluate parameter matrix at given frequency */
+/* _vnacal_init_parameter_matrix: initialize parameter matrix to -1's */
+static inline void _vnacal_init_parameter_matrix(int *parameter_matrix,
+	int rows, int columns)
+{
+    for (int cell = 0; cell < rows * columns; ++cell) {
+	parameter_matrix[cell] = -1;
+    }
+}
+
+/* _vnacal_fill_standard_parameter_matrix: fill parameter matrix */
+extern int _vnacal_fill_standard_parameter_matrix(const char *function,
+	vnacal_standard_t *stdp, int *parameter_matrix);
+
+/* _vnacal_eval_parameter_matrix: eval parameter matrix at given frequency */
 extern int _vnacal_eval_parameter_matrix_i(const char *function,
 	const vnacal_parameter_matrix_map_t *vpmmp, double frequency,
 	const double complex *z0_vector, double complex *result_matrix);

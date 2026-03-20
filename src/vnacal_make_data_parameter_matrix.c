@@ -29,7 +29,120 @@
 #include <stdlib.h>
 #include <string.h>
 #include "vnacal_internal.h"
+#include "vnaconv.h"
 #include "vnadata.h"
+
+/*
+ * eval_data_standard: evaluate a data standard at a given frequency
+ *   @function: name of user-called function
+ *   @stdp: vnacal_standard_t structure
+ *   @segment_ptr: most recent index to optimize _vnacal_rfi (init to 0)
+ *   @zr_vector: reference impedances
+ *   @frequency: frequency at which to evaluate
+ *   @result_matrix: caller-provided buffer to receive the result
+ */
+static int eval_data_standard(vnacal_standard_t *stdp,
+	const char *function, const double complex *zr_vector,
+	double frequency, double complex *result_matrix)
+{
+    assert(stdp->std_ops->stdo_type == VNACAL_DATA);
+    vnacal_data_standard_t *dstdp = (vnacal_data_standard_t *)stdp;
+    vnacal_t *vcp = stdp->std_vcp;
+    const int ports = stdp->std_ports;
+    const int frequencies = dstdp->dstd_frequencies;
+    const double *frequency_vector = dstdp->dstd_frequency_vector;
+    const double fmin = frequency_vector[0];
+    const double fmax = frequency_vector[frequencies - 1];
+    double f_lower, f_upper;
+    double complex *zd_vector;
+    double complex zd_temp[ports];
+    int segment = dstdp->dstd_segment;
+
+    /*
+     * Test if frequency is in bounds.
+     */
+    f_lower = (1.0 - VNACAL_F_EXTRAPOLATION) * fmin;
+    f_upper = (1.0 + VNACAL_F_EXTRAPOLATION) * fmax;
+    if (frequency < f_lower || frequency > f_upper) {
+	_vnacal_error(vcp, VNAERR_USAGE, "%s: "
+		"frequency %e must be between %e and %e for %s standard\n",
+		function, frequency, fmin, fmax, stdp->std_name);
+	return -1;
+    }
+
+    /*
+     * Copy the data matrix, interpolating as necessary.
+     */
+    for (int cell = 0; cell < ports * ports; ++cell) {
+	result_matrix[cell] = _vnacal_rfi(frequency_vector,
+		dstdp->dstd_data[cell], frequencies,
+		MIN(frequencies, VNACAL_MAX_M), &segment, frequency);
+    }
+
+    /*
+     * Find the reference impedances of the data.  If different,
+     * renormalize the result matrix.
+     */
+    if (!dstdp->dstd_has_fz0) {
+	zd_vector = dstdp->u.dstd_z0_vector;
+    } else {
+	for (int port = 0; port < ports; ++port) {
+	    zd_temp[port] = _vnacal_rfi(frequency_vector,
+		    dstdp->u.dstd_z0_vector_vector[port], frequencies,
+		    MIN(frequencies, VNACAL_MAX_M), &segment, frequency);
+	}
+	zd_vector = zd_temp;
+    }
+    for (int port = 0; port < ports; ++port) {
+	if (cabs(zd_vector[port] - zr_vector[port]) > 1.0e-5) {
+	    vnaconv_stosrn(result_matrix, result_matrix,
+		    zd_vector, zr_vector, ports);
+	    break;
+	}
+    }
+    dstdp->dstd_segment = segment;
+    return 0;
+}
+
+/*
+ * free_data_standard: destruct the derived portion of vnacal_data_standard_t
+ */
+static void free_data_standard(vnacal_standard_t *stdp)
+{
+    const int ports = stdp->std_ports;
+    vnacal_data_standard_t *dstdp;
+
+    assert(stdp->std_ops->stdo_type == VNACAL_DATA);
+    dstdp = (vnacal_data_standard_t *)stdp;
+    (void)free((void *)dstdp->dstd_frequency_vector);
+    if (dstdp->dstd_has_fz0) {
+	double complex **vector_vector;
+
+	if ((vector_vector = dstdp->u.dstd_z0_vector_vector) != NULL) {
+	    for (int port = 0; port < ports; ++port) {
+		free((void *)vector_vector[port]);
+	    }
+	    free((void *)vector_vector);
+	}
+    } else {
+	free((void *)dstdp->u.dstd_z0_vector);
+    }
+    if (dstdp->dstd_data != NULL) {
+	for (int cell = 0; cell < ports * ports; ++cell) {
+	    free((void *)dstdp->dstd_data[cell]);
+	}
+	free((void *)dstdp->dstd_data);
+    }
+}
+
+/*
+ * _data_ops: subclass operations on vnacal_data_standard_t
+ */
+static const vnacal_standard_ops_t _data_ops = {
+    .stdo_type = VNACAL_DATA,
+    .stdo_eval = eval_data_standard,
+    .stdo_free = free_data_standard,
+};
 
 /*
  * _vnacal_make_data_parameter_matrix: make a parameter matrix from data
@@ -54,7 +167,7 @@ static int _vnacal_make_data_parameter_matrix(const char *function,
 {
     vnadata_t *vdp_copy = NULL;
     vnacal_standard_t *stdp = NULL;
-    vnacal_data_standard_t *vdsp = NULL;
+    vnacal_data_standard_t *dstdp = NULL;
     int rows, columns, ports;
     int frequencies;
     bool has_fz0;
@@ -79,11 +192,9 @@ static int _vnacal_make_data_parameter_matrix(const char *function,
     }
 
     /*
-     * Init the parameter matrix for the error clean-up code at the end.
+     * Init the parameter matrix to -1's.
      */
-    for (int cell = 0; cell < rows * columns; ++cell) {
-	parameter_matrix[cell] = -1;
-    }
+    _vnacal_init_parameter_matrix(parameter_matrix, rows, columns);
 
     /*
      * If the network parameter data is not S parameters, convert.
@@ -113,23 +224,18 @@ static int _vnacal_make_data_parameter_matrix(const char *function,
     frequencies = vnadata_get_frequencies(vdp);
 
     /*
-     * Allocate and init the vnacal_standard_t structure.
+     * Allocate and init the vnacal_data_standard_t structure.
      */
-    if ((stdp = malloc(sizeof(vnacal_standard_t))) == NULL) {
-	_vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+    if ((dstdp = _vnacal_alloc_standard(function, vcp, &_data_ops,
+		    ports, sizeof(vnacal_data_standard_t))) == NULL) {
 	goto error;
     }
-    (void)memset((void *)stdp, 0, sizeof(*stdp));
-    stdp->std_type = VNACAL_DATA;
+    stdp = &dstdp->dstd_base;
     if ((stdp->std_name = strdup(vnadata_get_name(vdp))) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYSTEM, "strdup: %s", strerror(errno));
 	goto error;
     }
-    stdp->std_ports = ports;
-    stdp->std_refcount = 0;
-    stdp->std_vcp = vcp;
-    vdsp = &stdp->std_data_standard;
-    vdsp->vds_frequencies = frequencies;
+    dstdp->dstd_frequencies = frequencies;
     if ((frequency_vector = calloc(frequencies, sizeof(double))) == NULL) {
 	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	goto error;
@@ -137,9 +243,9 @@ static int _vnacal_make_data_parameter_matrix(const char *function,
     (void)memcpy((void *)frequency_vector,
 	    (void *)vnadata_get_frequency_vector(vdp),
 	    frequencies * sizeof(double));
-    vdsp->vds_frequency_vector = frequency_vector;
-    vdsp->vds_has_fz0 = has_fz0 = vnadata_has_fz0(vdp);
-    vdsp->vds_segment = 0;
+    dstdp->dstd_frequency_vector = frequency_vector;
+    dstdp->dstd_has_fz0 = has_fz0 = vnadata_has_fz0(vdp);
+    dstdp->dstd_segment = 0;
     if (has_fz0) {
 	double complex **z0_vector_vector;
 
@@ -148,7 +254,7 @@ static int _vnacal_make_data_parameter_matrix(const char *function,
 	    _vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	    goto error;
 	}
-	vdsp->u.vds_z0_vector_vector = z0_vector_vector;
+	dstdp->u.dstd_z0_vector_vector = z0_vector_vector;
 	for (int port = 0; port < ports; ++port) {
 	    double complex *vector;
 
@@ -170,7 +276,7 @@ static int _vnacal_make_data_parameter_matrix(const char *function,
 	    _vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	    goto error;
 	}
-	vdsp->u.vds_z0_vector = z0_vector;
+	dstdp->u.dstd_z0_vector = z0_vector;
 	(void)memcpy((void *)z0_vector, (void *)vnadata_get_z0_vector(vdp),
 		ports * sizeof(double complex));
     }
@@ -179,7 +285,7 @@ static int _vnacal_make_data_parameter_matrix(const char *function,
 	_vnacal_error(vcp, VNAERR_SYSTEM, "calloc: %s", strerror(errno));
 	goto error;
     }
-    vdsp->vds_data = data_matrix;
+    dstdp->dstd_data = data_matrix;
     for (int row = 0; row < rows; ++row) {
 	for (int column = 0; column < columns; ++column) {
 	    const int cell = row * columns + column;
@@ -198,40 +304,22 @@ static int _vnacal_make_data_parameter_matrix(const char *function,
     data_matrix = NULL;  /* now owned by standard */
 
     /*
-     * Fill the resulting parameter matrix.
+     * Fill the parameter matrix.
      */
-    for (int row = 0; row < rows; ++row) {
-	for (int column = 0; column < columns; ++column) {
-	    vnacal_parameter_t *vpmrp;
-
-	    vpmrp = _vnacal_alloc_parameter(__func__, vcp);
-	    if (vpmrp == NULL) {
-		goto error;
-	    }
-	    vpmrp->vpmr_type = VNACAL_DATA;
-	    vpmrp->vpmr_stdp = stdp;
-	    vpmrp->vpmr_row = row;
-	    vpmrp->vpmr_column = column;
-	    parameter_matrix[columns * row + column] = vpmrp->vpmr_index;
-	}
+    if (_vnacal_fill_standard_parameter_matrix(function, stdp,
+		parameter_matrix) == -1) {
+	goto error;
     }
-    stdp->std_refcount = rows * columns;
+    _vnacal_release_standard(&stdp);	/* release initial reference */
+    assert(stdp != NULL);
     vnadata_free(vdp_copy);
     return ports;
 
 error:
-    for (int cell = 0; cell < rows * columns; ++cell) {
-	int idx = parameter_matrix[cell];
-	vnacal_parameter_t *vpmrp;
-
-	if (idx == -1) {
-	    break;
-	}
-	vpmrp = vcp->vc_parameter_collection.vprmc_vector[idx];
-	vpmrp->vpmr_type = VNACAL_NEW; /* prevent deletion of standard */
-	_vnacal_release_parameter(vpmrp);
+    if (stdp != NULL) {
+	_vnacal_release_standard(&stdp);
+	assert(stdp == NULL);
     }
-    _vnacal_free_standard(stdp);
     vnadata_free(vdp_copy);
     return -1;
 }

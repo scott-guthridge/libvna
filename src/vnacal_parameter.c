@@ -69,8 +69,14 @@ void _vnacal_get_parameter_frange(vnacal_parameter_t *vpmrp,
 	    break;
 
 	case VNACAL_CALKIT:
-	    *fmin = vpmrp->vpmr_stdp->std_calkit_data.vcd_fmin;
-	    *fmax = vpmrp->vpmr_stdp->std_calkit_data.vcd_fmax;
+	    {
+		vnacal_standard_t *stdp = vpmrp->vpmr_stdp;
+		vnacal_calkit_standard_t *cstdp =
+		    (vnacal_calkit_standard_t *)stdp;
+
+		*fmin = cstdp->cstd_calkit_data.vcd_fmin;
+		*fmax = cstdp->cstd_calkit_data.vcd_fmax;
+	    }
 	    break;
 
 	case VNACAL_VECTOR:
@@ -81,10 +87,10 @@ void _vnacal_get_parameter_frange(vnacal_parameter_t *vpmrp,
 	case VNACAL_DATA:
 	    {
 		vnacal_standard_t *stdp = vpmrp->vpmr_stdp;
-		vnacal_data_standard_t *vdsp = &stdp->std_data_standard;
+		vnacal_data_standard_t *dstdp = (vnacal_data_standard_t *)stdp;
 
-		*fmin = vdsp->vds_frequency_vector[0];
-		*fmax = vdsp->vds_frequency_vector[vdsp->vds_frequencies - 1];
+		*fmin = dstdp->dstd_frequency_vector[0];
+		*fmax = dstdp->dstd_frequency_vector[dstdp->dstd_frequencies - 1];
 	    }
 	    break;
 
@@ -187,52 +193,6 @@ vnacal_parameter_t *_vnacal_alloc_parameter(const char *function, vnacal_t *vcp)
 }
 
 /*
- * _vnacal_free_standard: free a vnacal_standard_t structure
- */
-void _vnacal_free_standard(vnacal_standard_t *stdp)
-{
-    if (stdp == NULL) {
-	return;
-    }
-    (void)free((void *)stdp->std_name);
-    switch (stdp->std_type) {
-    case VNACAL_CALKIT:
-	break;
-
-    case VNACAL_DATA:
-	{
-	    const int ports = stdp->std_ports;
-	    vnacal_data_standard_t *vdsp = &stdp->std_data_standard;
-
-	    (void)free((void *)vdsp->vds_frequency_vector);
-	    if (vdsp->vds_has_fz0) {
-		double complex **vector_vector;
-
-		if ((vector_vector = vdsp->u.vds_z0_vector_vector) != NULL) {
-		    for (int port = 0; port < ports; ++port) {
-			free((void *)vector_vector[port]);
-		    }
-		    free((void *)vector_vector);
-		}
-	    } else {
-		free((void *)vdsp->u.vds_z0_vector);
-	    }
-	    if (vdsp->vds_data != NULL) {
-		for (int cell = 0; cell < ports * ports; ++cell) {
-		    free((void *)vdsp->vds_data[cell]);
-		}
-		free((void *)vdsp->vds_data);
-	    }
-	}
-	break;
-
-    default:
-	assert(!"unhandled case");
-    }
-    free((void *)stdp);
-}
-
-/*
  * _vnacal_free_parameter: remove a parameter from the table and free
  *   @vpmrp: pointer returned from _vnacal_get_parameter
  */
@@ -272,11 +232,7 @@ static void _vnacal_free_parameter(vnacal_parameter_t *vpmrp)
 
     case VNACAL_CALKIT:
     case VNACAL_DATA:
-	assert(vpmrp->vpmr_stdp->std_refcount > 0);
-	if (--vpmrp->vpmr_stdp->std_refcount == 0) {
-	    _vnacal_free_standard(vpmrp->vpmr_stdp);
-	    vpmrp->vpmr_stdp = NULL;
-	}
+	_vnacal_release_standard(&vpmrp->vpmr_stdp);
 	break;
 
     default:

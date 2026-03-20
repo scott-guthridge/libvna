@@ -127,7 +127,9 @@ static void get_parameter_name(const vnacal_parameter_t *vpmrp, char *buffer)
 	     * Add the name of the standard.
 	     */
 	    if (vpmrp->vpmr_type == VNACAL_CALKIT) {
-		const vnacal_calkit_data_t *vcdp = &stdp->std_calkit_data;
+		const vnacal_calkit_standard_t *cstdp =
+		    (const vnacal_calkit_standard_t *)stdp;
+		const vnacal_calkit_data_t *vcdp = &cstdp->cstd_calkit_data;
 		const char *subtype = "?";
 
 		switch (vcdp->vcd_type) {
@@ -222,6 +224,46 @@ const char *_vnacal_get_calkit_name(const vnacal_calkit_data_t *vcdp,
 	break;
     }
     return NULL;
+}
+
+/*
+ * _vnacal_fill_standard_parameter_matrix: fill parameter matrix
+ *   @function: user-called function
+ *   @stdp: pointer to standard
+ *   @parameter_matrix: caller-supplied parameter matrix
+ *
+ *   Note: parameter_matrix must be initialized to -1's.
+ */
+int _vnacal_fill_standard_parameter_matrix(const char *function,
+	vnacal_standard_t *stdp, int *parameter_matrix)
+{
+    const vnacal_parameter_type_t type = stdp->std_ops->stdo_type;
+    vnacal_t *vcp = stdp->std_vcp;
+    const int ports = stdp->std_ports;
+
+    for (int row = 0; row < ports; ++row) {
+	for (int column = 0; column < ports; ++column) {
+	    const int cell = ports * row + column;
+	    vnacal_parameter_t *vpmrp;
+
+	    vpmrp = _vnacal_alloc_parameter(function, vcp);
+	    if (vpmrp == NULL) {
+		goto error;
+	    }
+	    ++stdp->std_refcount;
+	    vpmrp->vpmr_type = type;
+	    vpmrp->vpmr_stdp = stdp;
+	    vpmrp->vpmr_row = row;
+	    vpmrp->vpmr_column = column;
+	    parameter_matrix[cell] = vpmrp->vpmr_index;
+	}
+    }
+    return 0;
+
+error:
+    vnacal_delete_parameter_matrix(stdp->std_vcp, parameter_matrix,
+	    ports, ports);
+    return -1;
 }
 
 /*
@@ -626,4 +668,73 @@ void _vnacal_free_parameter_matrix_map(vnacal_parameter_matrix_map_t *vpmmp)
 	free((void *)vprmp);
     }
     free((void *)vpmmp);
+}
+
+/*
+ * _vnacal_alloc_standard: allocate a vnacal_standard_t structure
+ *   @function: name of user-called function
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @ops: type and class-specific operations
+ *   @ports: number of ports, assumed square
+ *   @size: size of derived subtype in bytes
+ *
+ * Return:
+ *   Derived standard structure with reference count of 1.  When
+ *   the reference count becomes zero, stdo_free is called to free
+ *   subclass-specific data, then the structure is freed.
+ */
+void *_vnacal_alloc_standard(const char *function, vnacal_t *vcp,
+	const vnacal_standard_ops_t *ops, int ports, size_t size)
+{
+    vnacal_standard_t *stdp;
+
+    assert(size >= sizeof(vnacal_standard_t));
+    if ((stdp = malloc(size)) == NULL) {
+	_vnacal_error(vcp, VNAERR_SYSTEM, "malloc: %s", strerror(errno));
+	return NULL;
+    }
+    (void)memset((void *)stdp, 0, size);
+    stdp->std_ops = ops;
+    stdp->std_name = NULL;
+    stdp->std_ports = ports;
+    stdp->std_refcount = 1;
+    stdp->std_vcp = vcp;
+
+    return stdp;
+}
+
+/*
+ * _vnacal_free_standard: free a vnacal_standard_t structure
+ *   @stdp: standard
+ */
+static void _vnacal_free_standard(vnacal_standard_t *stdp)
+{
+    if (stdp != NULL) {
+	const vnacal_standard_ops_t *stdop = stdp->std_ops;
+
+	assert(stdp->std_refcount == 0);
+	if (stdop->stdo_free != NULL) {
+	    stdop->stdo_free(stdp);
+	}
+	(void)free((void *)stdp->std_name);
+	free((void *)stdp);
+    }
+}
+
+/*
+ * _vnacal_release_standard: decrement the reference count on a standard
+ *   @stdpp: address of pointer to standard
+ *
+ *  Frees standard and sets *stdpp to NULL if the reference count goes
+ *  to zero.
+ */
+void _vnacal_release_standard(vnacal_standard_t **stdpp)
+{
+    vnacal_standard_t *stdp = *stdpp;
+
+    assert(stdp->std_refcount > 0);
+    if (--stdp->std_refcount == 0) {
+	_vnacal_free_standard(stdp);
+	*stdpp = stdp = NULL;
+    }
 }
