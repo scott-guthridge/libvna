@@ -93,6 +93,10 @@ int vnacal_get_calibration_end(const vnacal_t *vcp)
  * vnacal_get_name: return the calibration name
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @ci: calibration index
+ *
+ *   Returns NULL without invoking the error callback if there is
+ *   no calibration at ci, thus this function can be used to test
+ *   if a calibration exists at the given index.
  */
 const char *vnacal_get_name(const vnacal_t *vcp, int ci)
 {
@@ -109,9 +113,9 @@ const char *vnacal_get_name(const vnacal_t *vcp, int ci)
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @ci: calibration index
  *
- *   If ci is invalid, this function returns VNACAL_NOTYPE and
- *   does not report an error.  Thus, this function can be used
- *   to test if a calibration index is valid.
+ *   Returns VNACAL_NOTYPE without invoking the error callback if there
+ *   is no calibration at ci, thus this function can be used to test if
+ *   a calibration exists at the given index.
  */
 vnacal_type_t vnacal_get_type(const vnacal_t *vcp, int ci)
 {

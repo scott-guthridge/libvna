@@ -757,8 +757,7 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
     /*
      * Get the characteristics of network parameter data and make sure
      * the parameter type is known.  Note that for VPT_ZIN, the data
-     * are stored as a row vector, but they really represent a diagonal
-     * matrix.
+     * represent a diagonal matrix, but are stored as a row vector.
      */
     type = vdp->vd_type;
     if (type == VPT_UNDEF) {
@@ -797,8 +796,8 @@ static int vnadata_save_common(vnadata_t *vdp, FILE *fp, const char *filename,
     }
 
     /*
-     * Try to set the type based on the filename.  If we cannot
-     * determine the type from the filename and a specific existing
+     * Try to set the file type based on the filename.  If we
+     * cannot determine it filename and a specific existing file
      * type is set, then use it; otherwise use NPD format.  Note that
      * _vnadata_parse_filename returns VNADATA_FILETYPE_AUTO to indicate
      * that it doesn't recognize the file extension.

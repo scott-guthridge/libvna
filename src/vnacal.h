@@ -617,9 +617,9 @@ extern int vnacal_save(vnacal_t *vcp, const char *pathname);
 extern const char *vnacal_get_filename(const vnacal_t *vcp);
 
 /*
- * vnacal_add_calibration: add a new calibration
+ * vnacal_add_calibration: add or replace a calibration
  *   @vcp: pointer returned from vnacal_create or vnacal_load
- *   @name: name of new calibration
+ *   @name: name of new calibration (replaces if exists)
  *   @vnp: pointer to vnacal_new_t structure
  */
 extern int vnacal_add_calibration(vnacal_t *vcp, const char *name,
@@ -649,13 +649,21 @@ extern int vnacal_get_calibration_end(const vnacal_t *vcp);
  * vnacal_get_name: return the name of the given calibration
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @ci: calibration index
+ *
+ * Returns NULL without invoking the error callback if there is
+ * no calibration at ci, thus this function can be used to test
+ * if a calibration exists at the given index.
  */
 extern const char *vnacal_get_name(const vnacal_t *vcp, int ci);
 
 /*
- * vnacal_get_type: return the type of error terms
+ * vnacal_get_type: return the error term type
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @ci: calibration index
+ *
+ * Returns VNACAL_NOTYPE without invoking the error callback if there
+ * is no calibration at ci, thus this function can be used to test if
+ * a calibration exists at the given index.
  */
 extern vnacal_type_t vnacal_get_type(const vnacal_t *vcp, int ci);
 
@@ -752,8 +760,8 @@ extern double complex vnacal_get_z0(const vnacal_t *vcp, int ci);
  *   is duplicated for each port.  When it's VNACAL_Z0_VECTOR, the entries
  *   are copied into the user's buffer.  When it's VNACAL_Z0_MATRIX,
  *   then the function returns the reference impedances for the given
- *   frequency, interpolating if necessary.  The frequency argument is
- *   ignored if the z0 type is not VNACAL_Z0_MATRIX.
+ *   frequency, interpolating if necessary.  If the z0 type is not
+ *   VNACAL_Z0_MATRIX, f is ignored.
  *
  * Return:
  *   number of VNA ports (number of entries placed into vector), or
@@ -811,7 +819,7 @@ extern int vnacal_property_count(vnacal_t *vcp, int ci,
  *   @format: printf format string forming the property expression
  *   @...:    optional variable arguments
  *
- * Caller can free the vector by a call to free.
+ * Caller should free the returned vector with a call to free.
  */
 extern const char **vnacal_property_keys(vnacal_t *vcp, int ci,
 	const char *format, ...)
@@ -877,7 +885,7 @@ extern vnaproperty_t *vnacal_property_get_subtree(vnacal_t *vcp, int ci,
 ;
 
 /*
- * vnacal_property_set_subtree: for subtree and return address
+ * vnacal_property_set_subtree: make path to subtree and return address of root
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @ci: calibration index
  *   @format:  printf-like format string forming the property expression

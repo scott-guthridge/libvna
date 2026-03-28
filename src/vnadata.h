@@ -127,7 +127,7 @@ extern void _vnadata_bounds_error(const char *function, const vnadata_t *vdp,
 	const char *what, int value);
 
 /*
- * vnadata_alloc_and_init: allocate a vnadata_t structure and initialize to zero
+ * vnadata_alloc_and_init: allocate a vnadata_t structure and init to zeros
  *   @error_fn: optional error reporting function (NULL if not used)
  *   @error_arg: user data passed through to the error function (or NULL)
  *   @type: parameter type (see above)
@@ -164,16 +164,16 @@ static inline vnadata_t *vnadata_alloc_and_init(vnaerr_error_fn_t *error_fn,
  *   the allocation as necessary and initializes any newly allocated
  *   or vacated cells, but doesn't otherwise reorganize existing data.
  *   Because of the way the the data are stored, changing the number
- *   of frequencies or the number of rows is value preserving, as is
- *   changing between a row vector and a column vector; however, changing
- *   the number of columns, in general, results in values appearing
- *   in the wrong cells.  This can actually be desirable, for example,
+ *   of frequencies or the number of rows is value preserving, as
+ *   is changing between a row vector and a column vector; however,
+ *   changing the number of columns, in general, results in values
+ *   appearing in the wrong cells.  This can be desirable, for example,
  *   when transforming the first row of a 4x4 matrix incorrectly stored
- *   as a 2x2 matrix.
+ *   as a 2x2 matrix when parsing Touchstone v1.
  *
- *   Changing the dimensions invalidates earlier pointers returned
- *   from vnadata_get_frequency_vector, vnadata_get_matrix and
- *   vnadata_get_z0_vector.
+ *   Note that changing the dimensions invalidates earlier pointers
+ *   returned from vnadata_get_frequency_vector, vnadata_get_matrix
+ *   and vnadata_get_z0_vector.
  */
 extern int vnadata_resize(vnadata_t *vdp, vnadata_parameter_type_t type,
 	int rows, int columns, int frequencies);
@@ -636,10 +636,9 @@ extern int vnadata_rconvert(const vnadata_t *vdp_in, vnadata_t *vdp_out,
  *   @vdp: a pointer to the vnadata_t structure
  *   @frequency: new frequency value
  *
- *   Increase the number of frequencies in the data set by one creating
- *   zero-filled data elements.  This is useful when parsing Touchstone
- *   version 1 files where we don't know the number of frequencies
- *   up front.
+ *   Increase the number of frequencies in the data set by one, creating
+ *   zero-filled data elements.  This is useful when parsing network
+ *   parameter data if we don't know the number of frequencies up front.
  */
 extern int vnadata_add_frequency(vnadata_t *vdp, double frequency);
 
@@ -681,7 +680,7 @@ extern const char *vnadata_get_format(const vnadata_t *vdp);
  *     {prc,prl,src,srl}
  *     vswr
  *
- *   If not set, a suitable default will be provided.
+ *   If not set, defaults to the current parameter type with "ri" suffix.
  */
 extern int vnadata_set_format(vnadata_t *vdp, const char *format);
 

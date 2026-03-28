@@ -104,7 +104,7 @@ int vnacal_property_count(vnacal_t *vcp, int ci,
  *   @format: printf format string forming the property expression
  *   @...:    optional variable arguments
  *
- * Caller can free the vector by a call to free.
+ * Caller should free the returned vector with a call to free.
  */
 const char **vnacal_property_keys(vnacal_t *vcp, int ci,
 	const char *format, ...)
@@ -217,7 +217,7 @@ vnaproperty_t *vnacal_property_get_subtree(vnacal_t *vcp, int ci,
 }
 
 /*
- * vnacal_property_set_subtree: for subtree and return address
+ * vnacal_property_set_subtree: make path to subtree and return address of root
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @ci: calibration index
  *   @format:  printf-like format string forming the property expression

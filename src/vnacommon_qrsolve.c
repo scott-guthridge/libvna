@@ -30,9 +30,9 @@
 
 /*
  * _vnacommon_qrsolve: solve the system A X = B
- *  @x:	      nxo result matrix
- *  @a:       mxn serialized coefficient matrix (destroyed)
- *  @b:       mxo constant term matrix (destroyed)
+ *  @x:	nxo result matrix
+ *  @a: mxn serialized coefficient matrix (destroyed)
+ *  @b: mxo constant term matrix (destroyed)
  *  @m: number of rows in A and B
  *  @n: number of columns in A, and rows in X
  *  @o: number of columns in B and X

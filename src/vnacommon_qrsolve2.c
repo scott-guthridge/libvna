@@ -81,7 +81,7 @@ void _vnacommon_qrsolve2(double complex *x, const double complex *q,
     }
 
     /*
-     * If the system is undetermined, set the remaining X's to
+     * If the system is underdetermined, set the remaining X's to
      * zero.
      */
     for (int i = m; i < n; ++i) {

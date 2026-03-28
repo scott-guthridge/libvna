@@ -252,14 +252,14 @@ typedef struct vnacal_parameter {
  * data parameters, however, we need to know the reference impedances
  * of the VNA ports, and this implies that there has to be a consistent
  * mapping between the ports of the standard and the ports of the VNA.
- * For example, suppose we have a four-port VNA and that a two-port
- * standard described by a vnadata_t structure is connected to VNA
- * ports 1 and 2, a calkit open parameter is connected to VNA port 3,
- * and a perfect short described by VNACAL_SHORT (a regular scalar
- * parameter) is connected to port 4.  Suppose the S parameters of the
- * data standard are called d11, d12, d21, and d22; the S parameter
- * of the open standard is o11, and the perfect short is called s11.
- * A valid parameter matrix for this would be:
+ * For example, suppose we have a four-port VNA and a two-port standard
+ * described by a vnadata_t structure is connected to VNA ports 1 and 2,
+ * a calkit open parameter is connected to VNA port 3, and a perfect short
+ * described by VNACAL_SHORT (a regular scalar parameter) is connected
+ * to port 4.  Suppose the S parameters of the data standard are called
+ * d11, d12, d21, and d22; the S parameter of the open standard is o11,
+ * and the perfect short is called s11.  A valid parameter matrix for
+ * this would be:
  *
  *    d22 d21 0   0
  *    d12 d11 0   0
@@ -281,10 +281,10 @@ typedef struct vnacal_parameter {
  *   0   0   0    0
  *   0   0   s11  0
  *
- * There are several problems here.  First, the two data port standards
- * have an inconsistent mapping with s11 of the parameter matrix
- * suggesting that VNA port 1 maps to data standard port 2, but s12
- * and s21 suggesting that VNA port 1 maps to data standard port 1
+ * There are several problems here.  First, the elements of the data
+ * port standard have an inconsistent mapping where s11 of the parameter
+ * matrix suggests that VNA port 1 maps to data standard port 2, but
+ * s12 and s21 suggest that VNA port 1 maps to data standard port 1
  * and VNA port 2 maps to data standard port 2.  VNA port 2 appears
  * to be connected to both the data standard and the open standard.
  * And single port standard s11 is not on the major diagonal.
@@ -321,7 +321,7 @@ typedef struct vnacal_standard_rmap {
  *	matrix
  */
 typedef struct vnacal_parameter_rmap {
-    /* pointer to regular parameter */
+    /* pointer to ordinary parameter */
     vnacal_parameter_t *vprm_parameter;
 
     /* cell of parameter matrix this parameter fills */
@@ -333,7 +333,7 @@ typedef struct vnacal_parameter_rmap {
 } vnacal_parameter_rmap_t;
 
 /*
- * vnacal_parameter_matrix_map_t: how the parameter matrix maps to regular
+ * vnacal_parameter_matrix_map_t: how the parameter matrix maps to ordinary
  *     parameters, calkit standards and data standards
  */
 typedef struct vnacal_parameter_matrix_map {
@@ -349,7 +349,7 @@ typedef struct vnacal_parameter_matrix_map {
     /* linked list of (multi-port) standards */
     vnacal_standard_rmap_t *vpmm_standard_rmap;
 
-    /* linked list of regular parameters */
+    /* linked list of ordinary parameters */
     vnacal_parameter_rmap_t *vpmm_parameter_rmap;
 
 } vnacal_parameter_matrix_map_t;
@@ -445,7 +445,7 @@ typedef struct vnacal_error_term_matrix {
 } vnacal_error_term_matrix_t;
 
 /*
- * vnacal_t: structure returned from vnacal_load
+ * vnacal_t: structure returned from vnacal_create and vnacal_load
  */
 struct vnacal {
     /* magic number */
@@ -466,7 +466,7 @@ struct vnacal {
     /* vector of pointers to vnacal_calibration_t */
     vnacal_calibration_t **vc_calibration_vector;
 
-    /* calibration filename */
+    /* calibration filename or NULL */
     char *vc_filename;
 
     /* precision for frequency values */
@@ -478,11 +478,11 @@ struct vnacal {
     /* global properties */
     vnaproperty_t *vc_properties;
 
-    /* doubly linked ring list of vnacal_new_t structures */
+    /* doubly linked ring list of associated vnacal_new_t structures */
     list_t vc_new_head;
 };
 
-/* report an error */
+/* _vnacal_error: report an error */
 extern void _vnacal_error(const vnacal_t *vcp, vnaerr_category_t category,
 	const char *format, ...)
 #ifdef __GNUC__
