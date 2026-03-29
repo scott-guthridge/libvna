@@ -168,7 +168,6 @@ static int _vnacal_make_data_parameter_matrix(const char *function,
     vnadata_t *vdp_copy = NULL;
     vnacal_standard_t *stdp = NULL;
     vnacal_data_standard_t *dstdp = NULL;
-    int rows, columns, ports;
     int frequencies;
     bool has_fz0;
     double *frequency_vector;
@@ -183,17 +182,13 @@ static int _vnacal_make_data_parameter_matrix(const char *function,
 		"%s: vdp cannot be NULL", function);
 	return -1;
     }
-    rows = vnadata_get_rows(vdp);
-    columns = vnadata_get_columns(vdp);
+    const int rows = vnadata_get_rows(vdp);
+    const int columns = vnadata_get_columns(vdp);
     if (rows * columns * sizeof(int) > parameter_matrix_size) {
 	_vnacal_error(vcp, VNAERR_USAGE,
 		"%s: insufficient result matrix allocation", function);
 	return -1;
     }
-
-    /*
-     * Init the parameter matrix to -1's.
-     */
     _vnacal_init_parameter_matrix(parameter_matrix, rows, columns);
 
     /*
@@ -219,8 +214,8 @@ static int _vnacal_make_data_parameter_matrix(const char *function,
      * the z0 values would have to match at evaluation time.  We may add
      * that functionality later, but for now, support only square data.
      */
-    assert(rows == columns);
-    ports = rows;
+    assert(rows == columns);	/* already enforced in vnadata_t */
+    const int ports = rows;
     frequencies = vnadata_get_frequencies(vdp);
 
     /*

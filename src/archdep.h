@@ -79,6 +79,11 @@ extern void _vna_remque(void *elem);
 #define remque _vna_remque
 #endif /* HAVE_REMQUE */
 
+#ifndef HAVE_STPECPYx /* Linux */
+extern char *_vna_stpecpy(char *dst, char *end, const char *src);
+#define stpecpy _vna_stpecpy
+#endif /* HAVE_STPECPY */
+
 #ifndef HAVE_STRCASECMP /* 4.4BSD, POSIX.1-2001, POSIX.1-2008 */
 extern int _vna_strcasecmp(const char *s1, const char *s2);
 #define strcasecmp _vna_strcasecmp

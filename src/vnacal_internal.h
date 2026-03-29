@@ -568,6 +568,29 @@ extern void _vnacal_release_parameter(vnacal_parameter_t *vpmrp);
 extern const char *_vnacal_get_calkit_name(const vnacal_calkit_data_t *vcdp,
 	int *ip_ports);
 
+/*
+ * SXX_BUFFER_ALLOC: size of buffer to hold "s%d_%d" safely
+ */
+#define SXX_BUFFER_ALLOC	(2 * (1 + 3 * sizeof(int)) + 3)
+
+/*
+ * MAX_DATA_STD_NAME: maximum length data standard name to show in error msg
+ */
+#define MAX_DATA_STD_NAME	31
+
+/*
+ * PARAMETER_BUFFER_ALLOC: buffer size to hold maximum length parameter name
+ *   correlated parameter\0
+ *   s22 of calkit through standard\0
+ *   sNNN_NNN of "..............................." standard\0
+ */
+#define PARAMETER_BUFFER_ALLOC \
+    (SXX_BUFFER_ALLOC + 3 + 1 + MAX_DATA_STD_NAME + 1 + 9 + 1)
+
+/* _vnacal_get_parameter_name: copy descriptive name for parameter */
+extern void _vnacal_get_parameter_name(const vnacal_parameter_t *vpmrp,
+	bool with_sxx, char *buffer);
+
 /* _vnacal_alloc_standard: allocate a vnacal_standard_t structure */
 extern void *_vnacal_alloc_standard(const char *function, vnacal_t *vcp,
 	const vnacal_standard_ops_t *ops, int ports, size_t size);

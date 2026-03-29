@@ -37,7 +37,8 @@ AC_TYPE_UINT8_T
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_FUNC_STRTOD
-AC_CHECK_FUNCS([insque isascii mkdir random remque strcasecmp strdup vasprintf])
+AC_CHECK_FUNCS([insque isascii mkdir random remque stpecpy strcasecmp
+	strdup vasprintf])
 
 # Check if binary zero is double zero
 AC_MSG_CHECKING([whether zeroed double is equal to 0.0])

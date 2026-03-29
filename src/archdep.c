@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifndef HAVE_INSQUE
 
@@ -94,6 +95,31 @@ long _vna_random(void)
 }
 
 #endif /* HAVE_RANDOM */
+#ifndef HAVE_STPECPYx
+
+/*
+ * _vna_stpecpy: copy from src to dst, not writing beyond end[-1]
+ *   @dst: destination string
+ *   @end: one past end of destination buffer
+ *   @src: srouce string
+ *
+ *   Always NULL-terminates if dst < end.
+ *
+ * Return:
+ *   The location of the terminating NUL character to allow chaining.
+ */
+char *_vna_stpecpy(char *dst, char *end, const char *src)
+{
+    if (dst >= end) {
+	return dst;
+    }
+    (void)strncpy(dst, src, end - dst);
+    end[-1] = '\000';
+    dst += strlen(dst);
+    return dst;
+}
+
+#endif /* HAVE_STPECPY */
 #ifndef HAVE_STRCASECMP
 
 /*
