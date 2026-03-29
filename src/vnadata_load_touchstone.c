@@ -726,7 +726,7 @@ static int load_touchstone1(ts_parser_state_t *tpsp)
 
     if (tpsp->tps_value_count % 2 == 0 || tpsp->tps_value_count < 3) {
 	_vnadata_error(vdip, VNAERR_SYNTAX, "%s (line %d) error: "
-		"first Touchstone V1 data line must have a odd number "
+		"first Touchstone V1 data line must have an odd number "
 		"greater than 1 of fields",
 	    tpsp->tps_filename, tpsp->tps_line);
 	return -1;
