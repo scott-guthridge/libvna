@@ -67,7 +67,7 @@ vnaconv-example.c:
     L-pad.
 
     Build:
-	cc -g -o vnaconv-example vnaconv-example.c -lvna -lm
+	cc -g -o vnaconv-example vnaconv-example.c -lvna -lyaml -lm
 
     Run:
 	./vnaconv-example
@@ -78,18 +78,18 @@ vnadata-example.c:
     from z-parameters to s-parameters.
 
     Build:
-	cc -g -o vnadata-example vnadata-example.c -lvna -lm
+	cc -g -o vnadata-example vnadata-example.c -lvna -lyaml -lm
 
     Run:
 	./vnadata-example
 
 
-convert-parameters:
+convert-parameters.c:
     Program to convert between network parameter types and between
     touchstone and NPD file formats.
 
     Build:
-	cc -o convert-parameters convert-parameters.c -lvna -lm
+	cc -o convert-parameters convert-parameters.c -lvna -lyaml -lm
 
     Usage:
 	./convert-parameters [-f format] input-file output-file
@@ -109,4 +109,13 @@ convert-parameters:
 
 	./convert-parameters -f IL,RL,VSWR convert-parameters.ts out.npd
 
+embed-dembed-example.c:
+    Example of embedding a DUT into a test fixture and de-embedding
+    a DUT from a test fixture.
 
+    Build:
+	cc -o embed-deembed-example embed-deembed-example.c -lvna -lyaml -lm
+
+    Run:
+	./embed-deembed-example > embed-deembed-example.out
+	gnuplot embed-deembed-example.gnuplot
