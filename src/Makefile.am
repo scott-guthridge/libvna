@@ -1,6 +1,6 @@
 #
 # Vector Network Analyzer Library
-# Copyright © 2020-2024 D Scott Guthridge <scott_guthridge@rompromity.net>
+# Copyright © 2020-2026 D Scott Guthridge <scott_guthridge@rompromity.net>
 #
 ACLOCAL_AMFLAGS= -I m4
 GNUPLOT= gnuplot
