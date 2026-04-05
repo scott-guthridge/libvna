@@ -27,6 +27,7 @@ libvna_la_SOURCES = archdep.h archdep.c vnacal_internal.h \
 	vnacal_layout.c vnacal_layout.h vnacal_load.c \
 	vnacal_make_calkit_parameter_matrix.c \
 	vnacal_make_correlated_parameter.c vnacal_make_scalar_parameter.c \
+	vnacal_load_data_parameter_matrix.c \
 	vnacal_make_data_parameter_matrix.c \
 	vnacal_make_unknown_parameter.c vnacal_make_vector_parameter.c \
 	vnacal_name_to_type.c vnacal_new_add_common.c vnacal_new.c \

@@ -511,6 +511,28 @@ extern int vnacal_make_data_parameter_matrix(vnacal_t *vcp,
 	size_t parameter_matrix_size);
 
 /*
+ * vnacal_load_data_parameter_matrix: load a parameter matrix from file
+ *   @vcp: pointer returned from vnacal_create or vnacal_load
+ *   @filename: filename of Touchstone of NPD file to load
+ *   @parameter_matrix: caller-allocated matrix to receive result
+ *   @parameter_matrix_size: size in bytes of the result matrix
+ *
+ * Fill parameter_matrix with parameter indices suitable for passing to
+ * the vnacal_new_add_* functions.  Automatically handles parameter
+ * conversion, interpolation and renormalization.  Data must be
+ * convertable to S-parameters.  The parameter_matrix_size parameter is
+ * the allocation in bytes of the result matrix, used to protect against
+ * buffer overrun.
+ *
+ * Returns the number of ports (rows and columns) of the standard.
+ * Caller can delete the returned parameters by a call to
+ * vnacal_delete_parameter_matrix.
+ */
+extern int vnacal_load_data_parameter_matrix(vnacal_t *vcp,
+	const char *filename, int *parameter_matrix,
+	size_t parameter_matrix_size);
+
+/*
  * vnacal_get_parameter_value: evaluate a parameter at a given frequency
  *   @vcp: pointer returned from vnacal_create or vnacal_load
  *   @parameter: index of parameter

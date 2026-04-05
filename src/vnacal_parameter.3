@@ -18,7 +18,7 @@
 .TH VNACAL_PARAMETER 3 "2022-11-25" GNU
 .nh
 .SH NAME
-vnacal_make_scalar_parameter, vnacal_make_vector_parameter, vnacal_make_calkit_parameter, vnacal_make_calkit_parameter_matrix, vnacal_make_data_parameter, vnacal_make_data_parameter_matrix, vnacal_make_unknown_parameter, vnacal_make_correlated_parameter, vnacal_get_parameter_value, vnacal_eval_parameter, vnacal_eval_parameter_matrix, vnacal_delete_parameter, vnacal_delete_parameter_matrix \- calibration parameter construction and evaluation
+vnacal_make_scalar_parameter, vnacal_make_vector_parameter, vnacal_make_calkit_parameter, vnacal_make_calkit_parameter_matrix, vnacal_make_data_parameter, vnacal_make_data_parameter_matrix, vnacal_load_data_parameter_matrix, vnacal_make_unknown_parameter, vnacal_make_correlated_parameter, vnacal_get_parameter_value, vnacal_eval_parameter, vnacal_eval_parameter_matrix, vnacal_delete_parameter, vnacal_delete_parameter_matrix \- calibration parameter construction and evaluation
 
 .\"
 .SH SYNOPSIS
@@ -72,6 +72,16 @@ ll.
 .BI "int vnacal_make_data_parameter_matrix(vnacal_t *" vcp ,
 .if n .RS +4n
 .BI "const vnadata_t *" vdp ",
+.if !n .RS +4n
+.BI "int *" parameter_matrix ,
+.if n .br
+.BI "size_t " parameter_matrix_size );
+.RS -4n
+.\"
+.PP
+.BI "int vnacal_load_data_parameter_matrix(vnacal_t *" vcp ,
+.if n .RS +4n
+.BI "const *" filename ",
 .if !n .RS +4n
 .BI "int *" parameter_matrix ,
 .if n .br
@@ -257,6 +267,11 @@ and returns the number of ports of the standard.
 The \fIparameter_matrix_size\fP parameter gives the size of
 \fIparameter_matrix\fP in bytes and is used to protect against buffer
 overrun.
+.PP
+\fBvnacal_load_data_parameter_matrix\fP() is the same as
+\fBvnacal_make_data_parameter_matrix\fP() except that it takes,
+\fIfilename\fP, the name of a Touchstone of NPD file to load
+instead of a \fBvnadata_t\fP structure.
 .PP
 \fBvnacal_make_unknown_parameter\fP() creates a parameter with unknown
 value, where \fIinitial_guess\fP is either one of the pre-defined
