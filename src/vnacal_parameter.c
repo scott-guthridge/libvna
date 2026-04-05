@@ -28,6 +28,94 @@
 #include <string.h>
 #include "vnacal_internal.h"
 
+
+/*
+ * _vnacal_format_sxx: write the name of an S parameter into buffer
+ *   @cur: buffer of at least size SXX_BUFFER_ALLOC
+ *   @end: one past the end of buffer
+ *   @row: zero-based row
+ *   @column: zero-based column
+ */
+char *_vnacal_format_sxx(char *cur, char *end, int row, int column)
+{
+    if (cur >= end) {
+	return end;
+    }
+    (void)snprintf(cur, end - cur, "S%d%s%d",
+	    row + 1,
+	    row > 8 || column > 8 ? "_" : "",
+	    column + 1);
+    end[-1] = '\000';
+    cur += strlen(cur);
+    return cur;
+}
+
+/*
+ * _vnacal_get_parameter_name: copy descriptive name for parameter into buffer
+ *   @vpmrp: parameter struct
+ *   @with_sxx: include "sxx of" in front of standard parameters
+ *   @buffer: buffer of at least PARAMETER_BUFFER_ALLOC + 1 chars for result
+ */
+void _vnacal_get_parameter_name(const vnacal_parameter_t *vpmrp, bool with_sxx,
+	char *buffer)
+{
+    char *cur = buffer;
+    char *end = &buffer[PARAMETER_BUFFER_ALLOC];
+
+    switch (vpmrp->vpmr_type) {
+    case VNACAL_NEW:
+    default:
+	abort();
+
+    case VNACAL_SCALAR:
+	(void)snprintf(cur, end - cur, "scalar(%f",
+		creal(vpmrp->vpmr_coefficient));
+	end[-1] = '\000';
+	cur += strlen(cur);
+	if (cimag(vpmrp->vpmr_coefficient) != 0.0) {
+	    (void)snprintf(cur, end - cur, "%+fj",
+		    cimag(vpmrp->vpmr_coefficient));
+	}
+	end[-1] = '\000';
+	cur += strlen(cur);
+	(void)stpecpy(cur, end, ") parameter");
+	return;
+
+    case VNACAL_VECTOR:
+	(void)stpecpy(cur, end, "vector parameter");
+	return;
+
+    case VNACAL_UNKNOWN:
+	(void)stpecpy(cur, end, "unknown parameter");
+	return;
+
+    case VNACAL_CORRELATED:
+	(void)stpecpy(cur, end, "correlated parameter");
+	return;
+
+    case VNACAL_CALKIT:
+    case VNACAL_DATA:
+    case VNACAL_DEEMBED:
+    case VNACAL_EMBED:
+	{
+	    vnacal_standard_t *stdp = vpmrp->vpmr_stdp;
+
+	    /*
+	     * If the standard has more than one port and with_sxx was
+	     * given, start with "Sxx of ", where xx describes the S
+	     * parameter of the standard.
+	     */
+	    if (stdp->std_ports > 1 && with_sxx) {
+		cur = _vnacal_format_sxx(cur, end,
+			vpmrp->vpmr_row, vpmrp->vpmr_column);
+		cur = stpecpy(cur, end, " of ");
+	    }
+	    (void)stpecpy(cur, end, stdp->std_name);
+	}
+	return;
+    }
+}
+
 /*
  * _vnacal_get_parameter: return a pointer to the parameter
  *   @vcp: pointer returned from vnacal_create or vnacal_load

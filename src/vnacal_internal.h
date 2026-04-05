@@ -617,6 +617,9 @@ extern const char *_vnacal_get_calkit_name(const vnacal_calkit_data_t *vcdp,
 #define PARAMETER_BUFFER_ALLOC \
     (SXX_BUFFER_ALLOC + 3 + 1 + MAX_DATA_STD_NAME + 1 + 9 + 1)
 
+/* _vnacal_format_sxx: write the name of an S parameter into buffer */
+extern char *_vnacal_format_sxx(char *cur, char *end, int row, int column);
+
 /* _vnacal_get_parameter_name: copy descriptive name for parameter */
 extern void _vnacal_get_parameter_name(const vnacal_parameter_t *vpmrp,
 	bool with_sxx, char *buffer);

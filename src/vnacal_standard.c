@@ -46,92 +46,6 @@ typedef struct vnacal_parameter_forw_map {
 } vnacal_parameter_forw_map_t;
 
 /*
- * format_sxx: write the name of an S parameter into buffer
- *   @cur: buffer of at least size SXX_BUFFER_ALLOC
- *   @end: one past the end of buffer
- *   @row: zero-based row
- *   @column: zero-based column
- */
-static char *format_sxx(char *cur, char *end, int row, int column)
-{
-    if (cur >= end) {
-	return end;
-    }
-    (void)snprintf(cur, end - cur, "S%d%s%d",
-	    row + 1,
-	    row > 8 || column > 8 ? "_" : "",
-	    column + 1);
-    end[-1] = '\000';
-    cur += strlen(cur);
-    return cur;
-}
-
-/*
- * _vnacal_get_parameter_name: copy descriptive name for parameter into buffer
- *   @vpmrp: parameter struct
- *   @with_sxx: include "sxx of" in front of standard parameters
- *   @buffer: buffer of at least PARAMETER_BUFFER_ALLOC + 1 chars for result
- */
-void _vnacal_get_parameter_name(const vnacal_parameter_t *vpmrp, bool with_sxx,
-	char *buffer)
-{
-    char *cur = buffer;
-    char *end = &buffer[PARAMETER_BUFFER_ALLOC];
-
-    switch (vpmrp->vpmr_type) {
-    case VNACAL_NEW:
-    default:
-	abort();
-
-    case VNACAL_SCALAR:
-	(void)snprintf(cur, end - cur, "scalar(%f",
-		creal(vpmrp->vpmr_coefficient));
-	end[-1] = '\000';
-	cur += strlen(cur);
-	if (cimag(vpmrp->vpmr_coefficient) != 0.0) {
-	    (void)snprintf(cur, end - cur, "%+fj",
-		    cimag(vpmrp->vpmr_coefficient));
-	}
-	end[-1] = '\000';
-	cur += strlen(cur);
-	(void)stpecpy(cur, end, ") parameter");
-	return;
-
-    case VNACAL_VECTOR:
-	(void)stpecpy(cur, end, "vector parameter");
-	return;
-
-    case VNACAL_UNKNOWN:
-	(void)stpecpy(cur, end, "unknown parameter");
-	return;
-
-    case VNACAL_CORRELATED:
-	(void)stpecpy(cur, end, "correlated parameter");
-	return;
-
-    case VNACAL_CALKIT:
-    case VNACAL_DATA:
-    case VNACAL_DEEMBED:
-    case VNACAL_EMBED:
-	{
-	    vnacal_standard_t *stdp = vpmrp->vpmr_stdp;
-
-	    /*
-	     * If the standard has more than one port and with_sxx was
-	     * given, start with "Sxx of ", where xx describes the S
-	     * parameter of the standard.
-	     */
-	    if (stdp->std_ports > 1 && with_sxx) {
-		cur = format_sxx(cur, end, vpmrp->vpmr_row, vpmrp->vpmr_column);
-		cur = stpecpy(cur, end, " of ");
-	    }
-	    (void)stpecpy(cur, end, stdp->std_name);
-	}
-	return;
-    }
-}
-
-/*
  * report_port_conflict: report inconsistent mapping
  *   @function: name of user-called function
  *   @vcp: vnacal_t structure
@@ -154,11 +68,11 @@ static void report_port_conflict(const char *function, vnacal_t *vcp,
 	    /*with_sxx=*/true, parameter_name1);
     _vnacal_get_parameter_name(matrix[origin_cell],
 	    /*with_sxx=*/true, parameter_name2);
-    format_sxx(buf1, &buf1[SXX_BUFFER_ALLOC], row, column);
-    format_sxx(buf2, &buf2[SXX_BUFFER_ALLOC],
+    _vnacal_format_sxx(buf1, &buf1[SXX_BUFFER_ALLOC], row, column);
+    _vnacal_format_sxx(buf2, &buf2[SXX_BUFFER_ALLOC],
 	    origin_cell / columns, origin_cell % columns);
     _vnacal_error(vcp, VNAERR_USAGE,
-	    "%s: %s at %s conflicts with %s at %s in parameter matrix",
+	    "%s: %s at %s in parameter matrix conflicts with %s at %s",
 	    function, parameter_name1, buf1, parameter_name2, buf2);
 }
 
@@ -359,8 +273,9 @@ vnacal_parameter_matrix_map_t *_vnacal_analyze_parameter_matrix(
 		    char buf1[SXX_BUFFER_ALLOC];
 		    char buf2[SXX_BUFFER_ALLOC];
 
-		    format_sxx(buf1, &buf1[SXX_BUFFER_ALLOC], r, c);
-		    format_sxx(buf2, &buf2[SXX_BUFFER_ALLOC], row, column);
+		    _vnacal_format_sxx(buf1, &buf1[SXX_BUFFER_ALLOC], r, c);
+		    _vnacal_format_sxx(buf2, &buf2[SXX_BUFFER_ALLOC],
+			    row, column);
 		    _vnacal_error(vcp, VNAERR_USAGE,
 			     "%s: off-diagonal element %s of %s standard "
 			     "cannot appear in diagonal element %s of "
@@ -379,8 +294,9 @@ vnacal_parameter_matrix_map_t *_vnacal_analyze_parameter_matrix(
 		    char buf1[SXX_BUFFER_ALLOC];
 		    char buf2[SXX_BUFFER_ALLOC];
 
-		    format_sxx(buf1, &buf1[SXX_BUFFER_ALLOC], r, c);
-		    format_sxx(buf2, &buf2[SXX_BUFFER_ALLOC], row, column);
+		    _vnacal_format_sxx(buf1, &buf1[SXX_BUFFER_ALLOC], r, c);
+		    _vnacal_format_sxx(buf2, &buf2[SXX_BUFFER_ALLOC],
+			    row, column);
 		    _vnacal_error(vcp, VNAERR_USAGE,
 			    "%s: diagonal element %s of %s standard "
 			    "cannot appear in off-diagonal element %s of "
@@ -589,7 +505,7 @@ vnacal_parameter_matrix_map_t *_vnacal_analyze_parameter_matrix(
 		    }
 		}
 		assert(origin >= 0);
-		format_sxx(buf, &buf[SXX_BUFFER_ALLOC],
+		_vnacal_format_sxx(buf, &buf[SXX_BUFFER_ALLOC],
 			origin / std_ports, origin % std_ports);
 		_vnacal_error(vcp, VNAERR_USAGE,
 			"%s: no elements of port %d of the %s standard "
