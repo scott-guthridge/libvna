@@ -51,6 +51,9 @@ double complex _vnacommon_minverse(complex double *x, complex double *a, int n)
      * Replace A with its in-place LU decomposition.
      */
     d = _vnacommon_lu(a, row_index, n);
+    if (d == 0.0) {
+	return d;
+    }
 
     /*
      * For each column...

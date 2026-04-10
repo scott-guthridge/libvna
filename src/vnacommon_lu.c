@@ -49,7 +49,13 @@ double complex _vnacommon_lu(complex double *a, int *row_index, int n)
 #define A(i, j)		((a)[(i) * n + (j)])
 
     /*
-     * Find row_scale.  Initialize row_index.
+     * Initialize row_index.
+     */
+    for (int i = 0; i < n; ++i)
+	row_index[i] = i;
+
+    /*
+     * Find row_scale.
      */
     for (int i = 0; i < n; ++i) {
 	double max = 0.0;
@@ -65,7 +71,6 @@ double complex _vnacommon_lu(complex double *a, int *row_index, int n)
 	    return 0.0;
 	}
 	row_scale[i] = 1.0 / max;
-	row_index[i] = i;
     }
 
     /*

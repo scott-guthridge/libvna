@@ -56,6 +56,9 @@ double complex _vnacommon_mldivide(complex double *x, complex double *a,
      * Replace A with its in-place LU decomposition.
      */
     d = _vnacommon_lu(a, row_index, m);
+    if (d == 0.0) {
+	return d;
+    }
 
     /*
      * For each column...
