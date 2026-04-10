@@ -162,6 +162,12 @@ typedef struct vnacal_embed_standard {
     /* vnacal_standard_t base class */
     vnacal_standard_t estd_base;
 
+    /* minimum allowed frequency */
+    double estd_fmin;
+
+    /* maximum allowed frequency */
+    double estd_fmax;
+
     /* std_ports x std_ports matrix of parameter with references */
     vnacal_parameter_t **estd_target_matrix;
 

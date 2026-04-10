@@ -156,6 +156,16 @@ void _vnacal_get_parameter_frange(vnacal_parameter_t *vpmrp,
 	    *fmax = INFINITY;
 	    break;
 
+	case VNACAL_VECTOR:
+	    *fmin = vpmrp->vpmr_frequency_vector[0];
+	    *fmax = vpmrp->vpmr_frequency_vector[vpmrp->vpmr_frequencies - 1];
+	    break;
+
+	case VNACAL_UNKNOWN:
+	case VNACAL_CORRELATED:
+	    vpmrp = vpmrp->vpmr_other;
+	    continue;
+
 	case VNACAL_CALKIT:
 	    {
 		vnacal_standard_t *stdp = vpmrp->vpmr_stdp;
@@ -167,25 +177,28 @@ void _vnacal_get_parameter_frange(vnacal_parameter_t *vpmrp,
 	    }
 	    break;
 
-	case VNACAL_VECTOR:
-	    *fmin = vpmrp->vpmr_frequency_vector[0];
-	    *fmax = vpmrp->vpmr_frequency_vector[vpmrp->vpmr_frequencies - 1];
-	    break;
-
 	case VNACAL_DATA:
 	    {
 		vnacal_standard_t *stdp = vpmrp->vpmr_stdp;
 		vnacal_data_standard_t *dstdp = (vnacal_data_standard_t *)stdp;
 
 		*fmin = dstdp->dstd_frequency_vector[0];
-		*fmax = dstdp->dstd_frequency_vector[dstdp->dstd_frequencies - 1];
+		*fmax = dstdp->dstd_frequency_vector[
+		    dstdp->dstd_frequencies - 1];
 	    }
 	    break;
 
-	case VNACAL_UNKNOWN:
-	case VNACAL_CORRELATED:
-	    vpmrp = vpmrp->vpmr_other;
-	    continue;
+	case VNACAL_EMBED:
+	case VNACAL_DEEMBED:
+	    {
+		vnacal_standard_t *stdp = vpmrp->vpmr_stdp;
+		vnacal_embed_standard_t *estdp =
+		    (vnacal_embed_standard_t *)stdp;
+
+		*fmin = estdp->estd_fmin;
+		*fmax = estdp->estd_fmax;
+	    }
+	    break;
 
 	default:
 	    assert(!"unexpected parameter type");

@@ -291,6 +291,12 @@ void libt_vnacal_print_standard(const libt_vnacal_terms_t *ttp,
 		    abort();
 		case VNACAL_SCALAR:
 		    break;
+
+		case VNACAL_UNKNOWN:
+		case VNACAL_CORRELATED:
+		    vpmrp = vpmrp->vpmr_other;
+		    continue;
+
 		case VNACAL_VECTOR:
 		case VNACAL_CALKIT:
 		case VNACAL_DATA:
@@ -298,10 +304,6 @@ void libt_vnacal_print_standard(const libt_vnacal_terms_t *ttp,
 		case VNACAL_DEEMBED:
 		    by_frequency = true;
 		    break;
-		case VNACAL_UNKNOWN:
-		case VNACAL_CORRELATED:
-		    vpmrp = vpmrp->vpmr_other;
-		    continue;
 		}
 		break;
 	    }

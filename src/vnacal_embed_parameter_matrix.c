@@ -317,6 +317,8 @@ int _vnacal_embed_parameter_matrix(const char *function,
     const int fixture_ports = 2 * target_ports;
     const int target_cells = target_ports * target_ports;
     const int fixture_cells = fixture_ports * fixture_ports;
+    double fmin = 0.0;
+    double fmax = INFINITY;
 
     assert(type == VNACAL_EMBED || type == VNACAL_DEEMBED);
     if (vcp == NULL || vcp->vc_magic != VC_MAGIC) {
@@ -366,24 +368,42 @@ int _vnacal_embed_parameter_matrix(const char *function,
     }
     for (int cell = 0; cell < target_cells; ++cell) {
 	vnacal_parameter_t *vpmrp;
+	double temp_fmin, temp_fmax;
 
 	vpmrp = _vnacal_get_parameter(vcp, target_matrix[cell]);
 	if (vpmrp == NULL) {
 	    goto error;
+	}
+	_vnacal_get_parameter_frange(vpmrp, &temp_fmin, &temp_fmax);
+	if (temp_fmin > fmin) {
+	    fmin = temp_fmin;
+	}
+	if (temp_fmax < fmax) {
+	    fmax = temp_fmax;
 	}
 	_vnacal_hold_parameter(vpmrp);
 	estdp->estd_target_matrix[cell] = vpmrp;
     }
     for (int cell = 0; cell < fixture_cells; ++cell) {
 	vnacal_parameter_t *vpmrp;
+	double temp_fmin, temp_fmax;
 
 	vpmrp = _vnacal_get_parameter(vcp, fixture_matrix[cell]);
 	if (vpmrp == NULL) {
 	    goto error;
 	}
+	_vnacal_get_parameter_frange(vpmrp, &temp_fmin, &temp_fmax);
+	if (temp_fmin > fmin) {
+	    fmin = temp_fmin;
+	}
+	if (temp_fmax < fmax) {
+	    fmax = temp_fmax;
+	}
 	_vnacal_hold_parameter(vpmrp);
 	estdp->estd_fixture_matrix[cell] = vpmrp;
     }
+    estdp->estd_fmin = fmin;
+    estdp->estd_fmax = fmax;
     if ((estdp->estd_target_map = _vnacal_analyze_parameter_matrix(__func__,
 		    vcp, estdp->estd_target_matrix, target_ports, target_ports,
 		    /*initial=*/false)) == NULL) {
