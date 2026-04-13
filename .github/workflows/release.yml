@@ -24,7 +24,7 @@ jobs:
         git config --global core.autocrlf false
         git config --global core.eol lf
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Build Debian Package (Linux)
       if: ${{ runner.os == 'Linux' }}
       run: |
@@ -42,7 +42,7 @@ jobs:
             /libvna/tools/make-rpm
     - name: Upload Artifacts (Linux)
       if: ${{ runner.os == 'Linux' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ matrix.buildplat.sys }}-${{ matrix.buildplat.arch }}
         path: |
@@ -73,7 +73,7 @@ jobs:
         ls -l package/pkg
     - name: Upload Artifacts (Windows)
       if: ${{ runner.os == 'Windows' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ matrix.buildplat.sys }}-${{ matrix.buildplat.arch }}
         path: |
@@ -90,19 +90,18 @@ jobs:
       contents: write
     steps:
     - name: Download Artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         path: artifacts
         merge-multiple: true
-    - name: Create Release
-      uses: actions/create-release@v1
+    - name: Create release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }}
-        draft: false
-        prerelease: false
+      run: |
+        gh release create "$GITHUB_REF_NAME" \
+          --repo "$GITHUB_REPOSITORY" \
+          --title "Release $GITHUB_REF_NAME" \
+          --notes ""
     - name: Upload Release Assets
       uses: alexellis/upload-assets@0.4.1
       env:
